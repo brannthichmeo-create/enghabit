@@ -1,0 +1,29 @@
+node_modules/
+dist/
+build/
+.turbo/
+
+# Env — KHÔNG BAO GIỜ commit file .env thật (xem CLAUDE.md > Quy chuẩn kết nối database)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Build tool caches
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Expo (mobile)
+.expo/

@@ -1,0 +1,26 @@
+{
+  "name": "enghabit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "English Learning Habit Building Application",
+  "scripts": {
+    "build:shared": "pnpm --filter @enghabit/shared build",
+    "dev:be": "pnpm --filter @enghabit/be dev",
+    "dev:fe": "pnpm --filter @enghabit/fe dev",
+    "build": "pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/be build && pnpm --filter @enghabit/fe build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "db:migrate": "pnpm --filter @enghabit/be db:migrate",
+    "db:studio": "pnpm --filter @enghabit/be db:studio",
+    "db:seed": "pnpm --filter @enghabit/be db:seed"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.4"
+}
