@@ -20,6 +20,14 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 
+# Claude Code — settings.json dùng chung cả nhóm nên vẫn commit,
+# chỉ bỏ qua cấu hình cá nhân của từng người
+.claude/settings.local.json
+
+# Dự án dùng pnpm — chặn lockfile của npm/yarn lọt vào gây xung đột
+package-lock.json
+yarn.lock
+
 # Build tool caches
 .vite/
 coverage/
