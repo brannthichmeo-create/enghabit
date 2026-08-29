@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { StatsRangeInput } from '@enghabit/shared';
 import { useCurrentUser } from '../../auth/auth.store';
+import { useGoalProgress } from '../../goals/goal.hooks';
+import { useDueCount } from '../../flashcards/flashcard.hooks';
 import { useStatsSummary, useStreak } from '../statistics.hooks';
 
 const RANGE_LABELS: Record<StatsRangeInput['range'], string> = {
@@ -14,6 +17,8 @@ export function DashboardPage(): JSX.Element {
   const [range, setRange] = useState<StatsRangeInput['range']>('week');
   const summary = useStatsSummary(range);
   const streak = useStreak();
+  const goalProgress = useGoalProgress();
+  const dueCount = useDueCount();
 
   return (
     <div className="space-y-6">
@@ -21,6 +26,20 @@ export function DashboardPage(): JSX.Element {
         <h1 className="text-2xl font-bold text-slate-900">Xin chào, {user?.name ?? 'bạn'}</h1>
         <p className="text-sm text-slate-500">Cùng xem tiến độ học tập của bạn hôm nay</p>
       </div>
+
+      {/* Nhắc việc cần làm hôm nay — đưa user vào hành động thay vì chỉ xem số liệu. */}
+      {dueCount.data !== undefined && dueCount.data > 0 && (
+        <Link
+          to="/flashcards"
+          className="flex items-center justify-between rounded-xl bg-amber-50 px-5 py-4 transition hover:bg-amber-100"
+        >
+          <div>
+            <p className="font-medium text-amber-900">Bạn có {dueCount.data} từ cần ôn hôm nay</p>
+            <p className="text-sm text-amber-700">Ôn ngay để giữ chuỗi ngày học</p>
+          </div>
+          <span className="text-amber-700">→</span>
+        </Link>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -67,6 +86,38 @@ export function DashboardPage(): JSX.Element {
 
         {summary.data && <ActivityChart data={summary.data.daily} />}
       </section>
+
+      {goalProgress.data && goalProgress.data.length > 0 && (
+        <section className="rounded-xl bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900">Tiến độ mục tiêu</h2>
+            <Link to="/goals" className="text-sm text-indigo-600 hover:underline">
+              Quản lý
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {goalProgress.data.map((goal) => (
+              <div key={goal.goalId}>
+                <div className="mb-1 flex justify-between text-sm">
+                  <span className="text-slate-600">
+                    {goal.currentValue} / {goal.targetValue}
+                  </span>
+                  <span className={goal.isCompleted ? 'font-medium text-green-600' : 'text-slate-500'}>
+                    {goal.isCompleted ? '✓ Hoàn thành' : `${goal.completionRate}%`}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full transition-all ${goal.isCompleted ? 'bg-green-500' : 'bg-indigo-500'}`}
+                    style={{ width: `${goal.completionRate}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
