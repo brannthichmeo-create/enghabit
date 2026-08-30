@@ -1,5 +1,6 @@
 import axios, { AxiosError, type AxiosInstance } from 'axios';
 import { useAuthStore } from '../../features/auth/auth.store';
+import { API_BASE_URL } from './config';
 
 /**
  * HTTP client dùng chung cho mọi feature.
@@ -9,7 +10,7 @@ import { useAuthStore } from '../../features/auth/auth.store';
  */
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE_URL,
   withCredentials: true, // để cookie refreshToken (httpOnly) được gửi kèm
   headers: { 'Content-Type': 'application/json' },
 });

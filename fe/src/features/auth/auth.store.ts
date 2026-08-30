@@ -2,6 +2,7 @@ import axios from 'axios';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AuthResponse, PublicUser } from '@enghabit/shared';
+import { API_BASE_URL } from '../../shared/lib/config';
 
 /**
  * Trạng thái đăng nhập.
@@ -33,7 +34,7 @@ export const useAuthStore = create<AuthState>()(
 
       refresh: async () => {
         try {
-          const { data } = await axios.post<AuthResponse>('/api/v1/auth/refresh', {}, { withCredentials: true });
+          const { data } = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
           set({ user: data.user, accessToken: data.accessToken });
           return data.accessToken;
         } catch {

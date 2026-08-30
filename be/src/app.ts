@@ -22,6 +22,10 @@ import { adminRoutes } from './modules/admin/admin.routes.js';
 export function createApp(): Express {
   const app = express();
 
+  // Render/Railway đứng sau proxy. Không bật cái này thì Express coi kết nối là
+  // http và sẽ từ chối đặt cookie `Secure`, khiến đăng nhập hỏng khi deploy.
+  app.set('trust proxy', 1);
+
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGIN.split(','), credentials: true }));
   app.use(express.json({ limit: '1mb' }));

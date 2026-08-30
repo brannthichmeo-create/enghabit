@@ -1,0 +1,21 @@
+# Cấu hình deploy backend lên Render.
+#
+# Đây là monorepo pnpm nên phải build `shared` trước, vì `be` import từ bản dist
+# của nó — build thẳng `be` sẽ lỗi không tìm thấy @enghabit/shared.
+services:
+  - type: web
+    name: enghabit-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/be build
+    startCommand: pnpm --filter @enghabit/be start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Các biến còn lại đặt trong bảng điều khiển Render, KHÔNG ghi vào file này:
+      #   DATABASE_URL      chuỗi kết nối Aiven, nhớ kèm ?connection_limit=5&sslaccept=strict
+      #   CORS_ORIGIN       tên miền Vercel, ví dụ https://enghabit.vercel.app
+      #   JWT_ACCESS_SECRET, JWT_REFRESH_SECRET   chuỗi ngẫu nhiên dài, mỗi cái một giá trị
+      #   ENABLE_REMINDER_JOB=false   gói free bị ngủ khi không có request nên cron không đáng tin

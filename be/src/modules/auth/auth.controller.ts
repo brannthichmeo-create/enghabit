@@ -7,6 +7,7 @@ import type {
 } from '@enghabit/shared';
 import { BadRequestError } from '../../common/errors/app-error.js';
 import { currentUser } from '../../common/middlewares/auth-guard.js';
+import { isProduction } from '../../config/env.js';
 import * as authService from './auth.service.js';
 
 /**
@@ -42,7 +43,13 @@ export async function logout(req: Request, res: Response): Promise<void> {
   const token = (req.cookies?.[REFRESH_COOKIE] as string | undefined) ?? (req.body?.refreshToken as string | undefined);
   if (token) await authService.logout(token);
 
-  res.clearCookie(REFRESH_COOKIE);
+  // Phải khớp thuộc tính lúc đặt, nếu không trình duyệt sẽ không xoá đúng cookie đó
+  res.clearCookie(REFRESH_COOKIE, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/api/v1/auth',
+  });
   res.status(204).send();
 }
 
@@ -59,12 +66,19 @@ export async function changePassword(req: Request, res: Response): Promise<void>
   res.status(204).send();
 }
 
-/** httpOnly để JavaScript phía client không đọc được, giảm rủi ro XSS đánh cắp token. */
+/**
+ * httpOnly để JavaScript phía client không đọc được, giảm rủi ro XSS đánh cắp token.
+ *
+ * Khi deploy, frontend (vercel.app) và backend (onrender.com) nằm ở hai tên miền
+ * khác nhau nên cookie là cross-site. Trình duyệt CHỈ gửi cookie cross-site khi có
+ * `SameSite=None` kèm `Secure` — để `lax` như môi trường dev thì cookie bị chặn
+ * âm thầm và tính năng tự gia hạn phiên đăng nhập sẽ hỏng mà không báo lỗi gì.
+ */
 function setRefreshCookie(res: Response, token: string): void {
   res.cookie(REFRESH_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000,
     path: '/api/v1/auth',
   });
