@@ -13,6 +13,7 @@ import { goalRoutes } from './modules/goals/goal.routes.js';
 import { habitRoutes } from './modules/habits/habit.routes.js';
 import { topicRoutes } from './modules/topics/topic.routes.js';
 import { flashcardRoutes } from './modules/flashcards/flashcard.routes.js';
+import { lessonRoutes } from './modules/lessons/lesson.routes.js';
 import { quizRoutes } from './modules/quizzes/quiz.routes.js';
 import { statisticsRoutes } from './modules/statistics/statistics.routes.js';
 import { notificationRoutes } from './modules/notifications/notification.routes.js';
@@ -48,6 +49,7 @@ export function createApp(): Express {
   api.use('/habits', habitRoutes);
   api.use('/topics', topicRoutes);
   api.use('/flashcards', flashcardRoutes);
+  api.use('/lessons', lessonRoutes);
   api.use('/quizzes', quizRoutes);
   api.use('/statistics', statisticsRoutes);
   api.use('/notifications', notificationRoutes);

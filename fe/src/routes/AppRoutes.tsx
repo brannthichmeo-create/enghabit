@@ -6,6 +6,7 @@ import { RegisterPage } from '../features/auth/components/RegisterPage';
 import { DashboardPage } from '../features/statistics/components/DashboardPage';
 import { HabitsPage } from '../features/habits/components/HabitsPage';
 import { GoalsPage } from '../features/goals/components/GoalsPage';
+import { PathPage } from '../features/lessons/components/PathPage';
 import { VocabularyPage } from '../features/vocabulary/components/VocabularyPage';
 import { FlashcardPage } from '../features/flashcards/components/FlashcardPage';
 import { QuizzesPage } from '../features/quizzes/components/QuizzesPage';
@@ -27,6 +28,7 @@ export function AppRoutes(): JSX.Element {
 
       <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
         <Route path="/" element={<Feature name="Thống kê"><DashboardPage /></Feature>} />
+        <Route path="/learn" element={<Feature name="Bài học"><PathPage /></Feature>} />
         <Route path="/habits" element={<Feature name="Thói quen"><HabitsPage /></Feature>} />
         <Route path="/goals" element={<Feature name="Mục tiêu"><GoalsPage /></Feature>} />
         <Route path="/vocabulary" element={<Feature name="Từ vựng"><VocabularyPage /></Feature>} />

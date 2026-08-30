@@ -1,4 +1,4 @@
-import { BookOpen, LayoutDashboard, ListChecks, LogOut, Layers, Shield, Target } from 'lucide-react';
+import { BookOpen, GraduationCap, LayoutDashboard, ListChecks, LogOut, Layers, Shield, Target } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
@@ -8,6 +8,7 @@ import { Logo } from './Logo';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
+  { to: '/learn', label: 'Học', icon: GraduationCap },
   { to: '/habits', label: 'Thói quen', icon: ListChecks },
   { to: '/goals', label: 'Mục tiêu', icon: Target },
   { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen },

@@ -5,4 +5,5 @@ export * from './habit.schema.js';
 export * from './vocabulary.schema.js';
 export * from './quiz.schema.js';
 export * from './statistics.schema.js';
+export * from './lesson.schema.js';
 export * from './notification.schema.js';
