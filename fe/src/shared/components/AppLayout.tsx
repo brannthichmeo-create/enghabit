@@ -4,6 +4,7 @@ import { UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLogout } from '../../features/auth/auth.hooks';
 import { useDueCount } from '../../features/flashcards/flashcard.hooks';
+import { Logo } from './Logo';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
@@ -26,12 +27,7 @@ export function AppLayout(): JSX.Element {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4">
           <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand">
-                <span className="text-sm font-bold text-white">E</span>
-              </div>
-              <span className="text-lg font-bold tracking-tight text-slate-900">Enghabit</span>
-            </div>
+            <Logo size="sm" />
 
             <div className="flex items-center gap-3">
               <span className="hidden text-sm text-slate-600 sm:inline">{user?.name}</span>

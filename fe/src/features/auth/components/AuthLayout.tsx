@@ -1,5 +1,6 @@
 import { CalendarCheck, Flame, Layers, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { Logo } from '../../../shared/components/Logo';
 
 /**
  * Khung hai cột cho màn hình đăng nhập / đăng ký.
@@ -35,11 +36,8 @@ export function AuthLayout({ children }: { children: ReactNode }): JSX.Element {
       <div className="flex flex-1 items-center justify-center px-5 py-10">
         <div className="w-full max-w-sm">
           {/* Logo chỉ hiện trên mobile, vì màn hình lớn đã có logo ở panel trái */}
-          <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand">
-              <span className="text-sm font-bold text-white">E</span>
-            </div>
-            <span className="text-lg font-bold tracking-tight text-slate-900">Enghabit</span>
+          <div className="mb-8 lg:hidden">
+            <Logo size="md" />
           </div>
 
           {children}
@@ -60,11 +58,14 @@ function BrandPanel(): JSX.Element {
       </div>
 
       <div className="relative p-10">
-        <div className="flex animate-enter-up items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
-            <span className="font-bold text-white">E</span>
-          </div>
-          <span className="text-xl font-bold tracking-tight text-white">Enghabit</span>
+        <div className="animate-enter-up">
+          {/* Nền panel tối nên logo đặt trong ô sáng bo góc để nét vẽ đậm vẫn đọc được */}
+          <span className="inline-flex items-center gap-2.5">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/95 p-1.5">
+              <img src="/logo.png" alt="" aria-hidden className="h-full w-full object-contain" />
+            </span>
+            <span className="text-xl font-bold tracking-tight text-white">Enghabit</span>
+          </span>
         </div>
       </div>
 

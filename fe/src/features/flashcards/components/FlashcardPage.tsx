@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, CheckCircle2, PartyPopper, RotateCw } from 'lucide-react';
+import { BookOpen, CheckCircle2, RotateCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ReviewQuality } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
@@ -83,9 +83,8 @@ export function FlashcardPage(): JSX.Element {
       <div>
         <PageHeader title="Ôn tập flashcard" />
         <Card className="py-10 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
-            <PartyPopper className="h-6 w-6 text-emerald-600" aria-hidden />
-          </div>
+          {/* Linh vật xuất hiện ở đúng khoảnh khắc đáng ăn mừng — hợp hơn icon chung chung */}
+          <img src="/logo.png" alt="" aria-hidden className="mx-auto mb-2 h-24 w-24 object-contain" />
           <p className="text-lg font-semibold text-slate-900">Hoàn thành phiên ôn tập</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
             Bạn đã ôn {reviewedCount} từ. Hoạt động đã được ghi nhận vào chuỗi ngày học.

@@ -2,12 +2,39 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Nhiều kích thước favicon: trình duyệt tự chọn cái vừa nhất thay vì thu nhỏ
+      ảnh lớn, nhờ vậy icon 16px trên tab không bị nhoè.
+    -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/icon-48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Màu thanh trình duyệt trên mobile, khớp với header trắng của app -->
+    <meta name="theme-color" content="#ffffff" />
+
     <title>Enghabit — Xây dựng thói quen học tiếng Anh</title>
+    <meta
+      name="description"
+      content="Ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh: học từ vựng, ôn flashcard, làm quiz và theo dõi chuỗi ngày học."
+    />
+
+    <!-- Thẻ xem trước khi chia sẻ link qua Facebook, Zalo, Slack... -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Enghabit — Xây dựng thói quen học tiếng Anh" />
+    <meta
+      property="og:description"
+      content="Học từ vựng, ôn flashcard, làm quiz và theo dõi chuỗi ngày học của bạn."
+    />
+    <meta property="og:image" content="/icon-512.png" />
   </head>
   <body>
     <div id="root"></div>
