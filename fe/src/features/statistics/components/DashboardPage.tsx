@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { Award, CalendarCheck, ChevronRight, Flame, Layers, Target } from 'lucide-react';
 import type { StatsRangeInput, StreakSummary } from '@enghabit/shared';
 import { ActivityChart } from '../../../shared/components/ActivityChart';
+import { ActivityCalendarChart } from '../../../shared/components/ActivityCalendar';
 import { Card, SectionTitle, ProgressBar, Skeleton } from '../../../shared/components/ui';
 import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useGoalProgress } from '../../goals/goal.hooks';
 import { useDueCount } from '../../flashcards/flashcard.hooks';
-import { useStatsSummary, useStreak } from '../statistics.hooks';
+import { useActivityCalendar, useStatsSummary, useStreak } from '../statistics.hooks';
 
 const RANGE_LABELS: Record<StatsRangeInput['range'], string> = {
   day: '7 ngày',
@@ -23,6 +24,7 @@ export function DashboardPage(): JSX.Element {
   const streak = useStreak();
   const goalProgress = useGoalProgress();
   const dueCount = useDueCount();
+  const calendar = useActivityCalendar();
 
   const totalActivities = summary.data
     ? Object.values(summary.data.totals).reduce((sum, n) => sum + n, 0)
@@ -84,6 +86,17 @@ export function DashboardPage(): JSX.Element {
         {summary.isLoading && <Skeleton className="h-[248px] w-full" />}
         {summary.isError && <p className="py-8 text-center text-sm text-red-600">Không tải được thống kê</p>}
         {summary.data && <ActivityChart data={summary.data.daily} />}
+      </Card>
+
+      <Card>
+        <h2 className="mb-1 font-semibold text-slate-900">Lịch học cả năm</h2>
+        <p className="mb-3 text-sm text-slate-500">
+          Nhìn lại toàn bộ hành trình: chuỗi ngày liền mạch và những khoảng bị gián đoạn
+        </p>
+
+        {calendar.isLoading && <Skeleton className="h-[150px] w-full" />}
+        {calendar.isError && <p className="py-6 text-center text-sm text-red-600">Không tải được lịch học</p>}
+        {calendar.data && <ActivityCalendarChart data={calendar.data} />}
       </Card>
 
       {goalProgress.data && goalProgress.data.length > 0 && (

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { statsRangeSchema } from '@enghabit/shared';
+import { calendarRangeSchema, statsRangeSchema } from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
 import { requireAuth } from '../../common/middlewares/auth-guard.js';
 import { validateQuery } from '../../common/middlewares/validate.js';
@@ -11,3 +11,4 @@ statisticsRoutes.use(requireAuth);
 
 statisticsRoutes.get('/summary', validateQuery(statsRangeSchema), asyncHandler(controller.summary));
 statisticsRoutes.get('/streak', asyncHandler(controller.streak));
+statisticsRoutes.get('/calendar', validateQuery(calendarRangeSchema), asyncHandler(controller.calendar));

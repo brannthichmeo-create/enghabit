@@ -8,6 +8,7 @@ import {
   startOfWeek,
   streakDeadline,
   todayLocalDate,
+  type ActivityCalendar,
   type DailyStat,
   type LocalDate,
   type StatsRangeInput,
@@ -123,6 +124,71 @@ export async function getStreak(userId: number, timezone: string): Promise<Strea
     isAlive: isStreakAlive(state, today),
     deadline: streakDeadline(state),
   };
+}
+
+/**
+ * Dữ liệu cho biểu đồ lịch kiểu GitHub: mỗi ngày một ô, đậm nhạt theo số hoạt động.
+ *
+ * Chỉ lấy tổng số mỗi ngày (không tách theo loại) vì biểu đồ này trả lời câu hỏi
+ * "có học hay không, nhiều hay ít" — chi tiết theo loại đã có ở biểu đồ cột.
+ */
+export async function getActivityCalendar(
+  userId: number,
+  timezone: string,
+  months: number,
+): Promise<ActivityCalendar> {
+  const today = todayLocalDate(timezone);
+  const from = addMonths(today, -months);
+
+  const rows = await prisma.activityLog.groupBy({
+    by: ['localDate'],
+    where: { userId, localDate: { gte: toDbDate(from), lte: toDbDate(today) } },
+    _count: { _all: true },
+  });
+
+  const countByDate = new Map(rows.map((r) => [fromDbDate(r.localDate), r._count._all]));
+
+  const days = eachDayBetween(from, today).map((date) => ({
+    date,
+    count: countByDate.get(date) ?? 0,
+  }));
+
+  const activeCounts = days.filter((d) => d.count > 0).map((d) => d.count);
+
+  return {
+    from,
+    to: today,
+    days,
+    totalActivities: activeCounts.reduce((sum, n) => sum + n, 0),
+    activeDays: activeCounts.length,
+    thresholds: computeThresholds(activeCounts),
+  };
+}
+
+/**
+ * Ngưỡng chia 4 mức đậm nhạt, lấy theo phân vị của những ngày CÓ hoạt động.
+ *
+ * Dùng phân vị thay vì chia đều theo giá trị lớn nhất: một ngày học đột biến
+ * sẽ không làm toàn bộ các ngày còn lại tụt xuống mức nhạt nhất.
+ */
+function computeThresholds(activeCounts: number[]): [number, number, number] {
+  if (activeCounts.length === 0) return [1, 2, 3];
+
+  const sorted = [...activeCounts].sort((a, b) => a - b);
+  const at = (p: number): number => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] ?? 1;
+
+  // Đảm bảo các ngưỡng tăng dần kể cả khi dữ liệu ít và trùng nhau nhiều.
+  const t1 = Math.max(1, at(0.25));
+  const t2 = Math.max(t1 + 1, at(0.5));
+  const t3 = Math.max(t2 + 1, at(0.75));
+  return [t1, t2, t3];
+}
+
+/** Cộng/trừ số tháng vào một LocalDate, giữ nguyên ngày trong tháng khi có thể. */
+function addMonths(date: LocalDate, delta: number): LocalDate {
+  const [year, month, day] = date.split('-').map(Number) as [number, number, number];
+  const d = new Date(Date.UTC(year, month - 1 + delta, day));
+  return d.toISOString().slice(0, 10);
 }
 
 function rangeStart(range: StatsRangeInput['range'], today: LocalDate): LocalDate {

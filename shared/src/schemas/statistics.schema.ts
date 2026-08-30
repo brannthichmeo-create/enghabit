@@ -18,6 +18,33 @@ export interface DailyStat {
   totalActivities: number;
 }
 
+/** Số tháng lịch sử tối đa cho biểu đồ lịch — 12 tháng như GitHub. */
+export const calendarRangeSchema = z.object({
+  months: z.coerce.number().int().min(1).max(12).default(12),
+});
+export type CalendarRangeInput = z.infer<typeof calendarRangeSchema>;
+
+/** Một ô trong biểu đồ lịch: một ngày và tổng số hoạt động của ngày đó. */
+export interface CalendarDay {
+  date: LocalDate;
+  count: number;
+}
+
+export interface ActivityCalendar {
+  from: LocalDate;
+  to: LocalDate;
+  days: CalendarDay[];
+  /** Tổng số hoạt động trong toàn khoảng. */
+  totalActivities: number;
+  /** Số ngày có ít nhất một hoạt động. */
+  activeDays: number;
+  /**
+   * Ngưỡng chia mức đậm nhạt, tính theo phân vị của các ngày có hoạt động.
+   * Backend tính sẵn để mọi client tô màu giống nhau.
+   */
+  thresholds: [number, number, number];
+}
+
 export interface StreakSummary {
   currentStreak: number;
   longestStreak: number;
