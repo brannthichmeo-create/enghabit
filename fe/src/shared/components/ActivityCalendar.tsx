@@ -7,11 +7,12 @@ import { addDays, type ActivityCalendar as CalendarData, type CalendarDay } from
  * Đây là cách nhanh nhất để thấy thói quen của cả năm trong một cái nhìn —
  * chuỗi ngày liền mạch, những khoảng bỏ bê, và xu hướng gần đây.
  *
- * Màu là thang tuần tự MỘT sắc (chàm), độ sáng giảm dần đều — đã kiểm tra tính đơn điệu.
+ * Màu là thang tuần tự MỘT sắc (xanh ngọc theo logo), độ sáng giảm dần đều —
+ * đã kiểm tra tính đơn điệu bằng công thức luminance, không chọn bằng mắt.
  * Không dùng nhiều màu khác nhau vì đây là dữ liệu độ lớn, không phải phân loại.
  */
 
-const LEVEL_COLORS = ['#eceef2', '#c7d2fe', '#818cf8', '#4f46e5', '#3730a3'];
+const LEVEL_COLORS = ['#eceef2', '#b2eff0', '#7ee5e7', '#21c7ca', '#178a8c'];
 
 const WEEKDAY_LABELS = ['T2', '', 'T4', '', 'T6', '', 'CN'];
 

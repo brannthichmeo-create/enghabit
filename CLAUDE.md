@@ -112,6 +112,21 @@ Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, 
 - Dùng `async/await`, không dùng `.then()` chain. Mọi promise phải được bắt lỗi (try/catch hoặc error middleware), không để unhandled rejection.
 - Format/lint theo cấu hình ESLint + Prettier ở root, áp dụng chung cho cả 3 app.
 
+## Quy chuẩn màu và logo (frontend)
+
+- Màu thương hiệu khai báo trong `fe/src/index.css` dưới dạng **kênh màu** (`--brand: 19 112 114;`),
+  không phải hex. Tailwind cần dạng này để áp được độ mờ (`text-ink/70`, `bg-brand/20`);
+  nếu khai báo hex thuần, các class có `/` **bị bỏ qua âm thầm** — không báo lỗi, chỉ mất màu khi chạy.
+- Các giá trị màu đã kiểm tra tương phản WCAG, **không đổi bằng cảm tính**. Đổi thì phải kiểm tra lại:
+  `--brand` chữ trắng đạt 5.85:1, `--ink` trên `--brand-vivid` đạt 9.81:1.
+- **Xanh ngọc của logo (`--brand-vivid`) chỉ dùng làm nền lớn hoặc trang trí** — chữ trắng trên nền
+  đó chỉ đạt 1.59:1, không đọc được. Nút và link dùng `--brand` (xanh đậm).
+- Thang màu biểu đồ (`--series-*`) và thang lịch hoạt động là hai bộ riêng, đã qua kiểm tra
+  phân biệt cho người mù màu và tính đơn điệu độ sáng. Không hoán đổi thứ tự.
+- Logo: `mark.svg` (mốc thu gọn) dùng cho favicon và nơi nhỏ dưới 40px; `logo.png` (linh vật đầy đủ)
+  dùng cho nơi lớn. Linh vật có chân tay mảnh nên ở cỡ nhỏ chỉ còn là một vệt màu.
+  Luôn dùng qua component `Logo`, không tự chèn thẻ `img`.
+
 ## Quy tắc xây dựng tính năng mới
 
 - Tạo tính năng mới luôn tạo đủ cặp `be/src/modules/<feature>` và `fe/src/features/<feature>` theo đúng khuôn mẫu đã có sẵn — không tự sáng tạo cấu trúc riêng cho 1 feature.

@@ -15,10 +15,28 @@
   --surface-card: #ffffff;
   --border-subtle: #e8e8ea;
 
-  /* Thương hiệu */
-  --brand: #4f46e5;
-  --brand-strong: #4338ca;
-  --brand-soft: #eef2ff;
+  /*
+   * Thương hiệu — thang xanh ngọc lấy đúng sắc độ của logo (hue 181).
+   * Màu xanh ngọc gốc của logo (#5AE0E1) chỉ đạt 1.59:1 với chữ trắng nên
+   * KHÔNG dùng cho nút hay chữ; nó chỉ làm nền lớn/trang trí.
+   * Các giá trị dưới đây đã kiểm tra tương phản WCAG, đừng đổi bằng cảm tính.
+   */
+  /*
+   * Ghi dưới dạng KÊNH MÀU (không có dấu #) để Tailwind áp được độ mờ,
+   * ví dụ text-ink/70. Với `var(--x)` dạng hex thuần thì các class như /70 sẽ
+   * bị bỏ qua âm thầm — lỗi này không báo gì, chỉ mất màu khi chạy thật.
+   */
+  --brand: 19 112 114;        /* #137072 — nút và link, chữ trắng đạt 5.85:1 */
+  --brand-strong: 14 86 88;   /* #0e5658 — hover, đạt 8.43:1 */
+  --brand-soft: 239 251 251;  /* #effbfb — nền mục đang chọn, chữ --brand đạt 5.54:1 */
+  --brand-vivid: 90 224 225;  /* #5ae0e1 — xanh ngọc logo, chỉ làm nền lớn/trang trí */
+
+  /* Vàng của logo, dùng làm màu nhấn. Chữ navy trên nền vàng đạt 9.16:1 */
+  --accent: 251 188 31;       /* #fbbc1f */
+  --accent-ink: 138 98 0;     /* #8a6200 — chữ vàng đậm trên nền trắng, đạt 5.49:1 */
+
+  /* Màu nét vẽ của logo — dùng cho chữ trên nền xanh ngọc sáng (9.81:1) */
+  --ink: 26 36 51;            /* #1a2433 */
 
   /* Chuỗi dữ liệu biểu đồ — thứ tự cố định, không hoán đổi */
   --series-vocab: #2a78d6;
@@ -45,7 +63,7 @@
 
   /* Viền focus rõ ràng cho người dùng bàn phím, thay vì outline mặc định của trình duyệt */
   :focus-visible {
-    outline: 2px solid var(--brand);
+    outline: 2px solid rgb(var(--brand));
     outline-offset: 2px;
   }
 

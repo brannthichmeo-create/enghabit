@@ -67,7 +67,7 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
                     onClick={() => setAnswers({ ...answers, [question.id]: optionIndex })}
                     className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
                       isSelected
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
+                        ? 'border-brand bg-brand-soft text-brand-strong'
                         : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -116,7 +116,7 @@ function QuizResultView({
       />
 
       <Card className="mb-4 text-center">
-        <p className="text-4xl font-bold text-indigo-600">
+        <p className="text-4xl font-bold text-brand">
           {result.score}/{result.total}
         </p>
         <p className="mt-1 text-sm text-slate-500">Đạt {result.percentage}%</p>

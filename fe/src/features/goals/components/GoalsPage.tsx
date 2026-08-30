@@ -100,7 +100,7 @@ function ProgressBar({ target, progress }: { target: number; progress?: GoalProg
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-slate-100">
         <div
-          className={`h-full rounded-full transition-all ${progress?.isCompleted ? 'bg-green-500' : 'bg-indigo-500'}`}
+          className={`h-full rounded-full transition-all ${progress?.isCompleted ? 'bg-emerald-500' : 'bg-brand'}`}
           style={{ width: `${rate}%` }}
         />
       </div>

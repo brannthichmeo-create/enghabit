@@ -37,7 +37,7 @@ export function ContentManager(): JSX.Element {
 
         <div className="space-y-2">
           {topics.data?.map((topic) => (
-            <Card key={topic.id} className={selectedTopicId === topic.id ? 'ring-2 ring-indigo-500' : ''}>
+            <Card key={topic.id} className={selectedTopicId === topic.id ? 'ring-2 ring-brand' : ''}>
               <div className="flex items-start justify-between gap-3">
                 <button onClick={() => setSelectedTopicId(topic.id)} className="min-w-0 text-left">
                   <div className="flex flex-wrap items-center gap-2">

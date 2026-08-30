@@ -93,7 +93,7 @@ export function HabitForm({ onCreated }: { onCreated: () => void }): JSX.Element
                   onClick={() => toggleDay(day.value)}
                   className={`h-9 w-11 rounded-lg text-sm font-medium transition ${
                     customDays.includes(day.value)
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-brand text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >

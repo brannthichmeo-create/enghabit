@@ -7,11 +7,18 @@ export default {
         sans: ['Inter var', 'Inter', 'system-ui', 'Segoe UI', 'sans-serif'],
       },
       colors: {
+        // <alpha-value> cho phép dùng các biến thể độ mờ như bg-brand/20, text-ink/70
         brand: {
-          DEFAULT: 'var(--brand)',
-          strong: 'var(--brand-strong)',
-          soft: 'var(--brand-soft)',
+          DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
+          strong: 'rgb(var(--brand-strong) / <alpha-value>)',
+          soft: 'rgb(var(--brand-soft) / <alpha-value>)',
+          vivid: 'rgb(var(--brand-vivid) / <alpha-value>)',
         },
+        accent: {
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          ink: 'rgb(var(--accent-ink) / <alpha-value>)',
+        },
+        ink: 'rgb(var(--ink) / <alpha-value>)',
         series: {
           vocab: 'var(--series-vocab)',
           flashcard: 'var(--series-flashcard)',
