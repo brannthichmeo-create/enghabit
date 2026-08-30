@@ -48,6 +48,15 @@
     outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
+
+  /*
+   * Ẩn nút hiện mật khẩu và nút xoá có sẵn của Edge/IE.
+   * App đã có nút hiện/ẩn riêng — để cả hai sẽ hiện hai con mắt cạnh nhau.
+   */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
 }
 
 @layer utilities {
@@ -58,5 +67,19 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+}
+
+/**
+ * Tôn trọng cài đặt giảm chuyển động của hệ điều hành.
+ * Người bị say chuyển động hoặc rối loạn tiền đình có thể khó chịu với hiệu ứng nền trôi.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

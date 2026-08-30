@@ -27,10 +27,33 @@ export default {
       keyframes: {
         'slide-up': { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'none' } },
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
+        // Vào màn hình: dịch lên kèm mờ dần, dùng cho từng phần tử của form
+        'enter-up': { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'none' } },
+        // Khối màu trôi chậm ở nền panel thương hiệu.
+        // Chỉ animate transform để trình duyệt chạy trên GPU, không gây giật.
+        'drift-a': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(40px, -30px) scale(1.1)' },
+          '66%': { transform: 'translate(-25px, 25px) scale(0.95)' },
+        },
+        'drift-b': {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(-35px, 30px) scale(1.08)' },
+          '66%': { transform: 'translate(30px, -20px) scale(0.94)' },
+        },
+        // Nhịp đập nhẹ cho biểu tượng ngọn lửa streak
+        'pulse-soft': {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0.85', transform: 'scale(1.06)' },
+        },
       },
       animation: {
         'slide-up': 'slide-up 200ms ease-out',
         'fade-in': 'fade-in 150ms ease-out',
+        'enter-up': 'enter-up 500ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        'drift-a': 'drift-a 18s ease-in-out infinite',
+        'drift-b': 'drift-b 22s ease-in-out infinite',
+        'pulse-soft': 'pulse-soft 2.4s ease-in-out infinite',
       },
     },
   },
