@@ -1,6 +1,7 @@
 import {
   ActivityType,
   HabitFrequency,
+  addDays,
   todayLocalDate,
   type CheckInHabitInput,
   type CreateHabitInput,
@@ -16,24 +17,38 @@ import { recordActivity } from '../activity-logs/activity-log.service.js';
 export interface HabitWithStatus extends Habit {
   /** Đã check-in trong ngày hôm nay chưa (theo timezone của user). */
   checkedInToday: boolean;
+  /** Các ngày đã check-in trong 7 ngày gần nhất — để client vẽ mức độ đều đặn. */
+  recentCheckIns: LocalDate[];
 }
 
+/** Số ngày lịch sử trả kèm mỗi thói quen, đủ để nhìn ra thói quen tuần này. */
+const RECENT_DAYS = 7;
+
 /**
- * Danh sách thói quen kèm trạng thái check-in hôm nay.
+ * Danh sách thói quen kèm trạng thái hôm nay và lịch sử 7 ngày.
  *
  * Trả sẵn `checkedInToday` để client vô hiệu hoá nút Check-in ngay khi tải trang —
  * nếu không, user bấm lại sẽ nhận lỗi 409 dù không làm gì sai.
  */
 export async function listHabits(userId: number, timezone: string): Promise<HabitWithStatus[]> {
   const today = todayLocalDate(timezone);
+  const from = addDays(today, -(RECENT_DAYS - 1));
 
   const habits = await prisma.habit.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
-    include: { checkIns: { where: { localDate: toDbDate(today) }, select: { id: true } } },
+    include: {
+      checkIns: {
+        where: { localDate: { gte: toDbDate(from), lte: toDbDate(today) } },
+        select: { localDate: true },
+      },
+    },
   });
 
-  return habits.map(({ checkIns, ...habit }) => ({ ...habit, checkedInToday: checkIns.length > 0 }));
+  return habits.map(({ checkIns, ...habit }) => {
+    const dates = checkIns.map((c) => fromDbDate(c.localDate));
+    return { ...habit, checkedInToday: dates.includes(today), recentCheckIns: dates };
+  });
 }
 
 export async function createHabit(userId: number, input: CreateHabitInput): Promise<Habit> {

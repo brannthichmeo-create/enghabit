@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { BookOpen, CheckCircle2, PartyPopper, RotateCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { ReviewQuality } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
-import { Button, Card, EmptyState, ErrorMessage, Loading, PageHeader } from '../../../shared/components/ui';
+import { Button, Card, EmptyState, ErrorMessage, PageHeader, Skeleton } from '../../../shared/components/ui';
 import { useDueCards, useSubmitReview } from '../flashcard.hooks';
 
 /**
@@ -10,6 +12,15 @@ import { useDueCards, useSubmitReview } from '../flashcard.hooks';
  * Danh sách thẻ được giữ ở state cục bộ trong suốt phiên: nếu refetch giữa chừng,
  * thẻ vừa ôn sẽ biến mất khỏi danh sách và làm nhảy vị trí đang học.
  */
+
+/** 4 mức đánh giá, xếp từ quên tới nhớ rõ. Màu đi kèm nhãn chữ nên không phụ thuộc màu để hiểu. */
+const RATINGS = [
+  { quality: ReviewQuality.BLACKOUT, label: 'Quên rồi', hint: 'Ôn lại ngày mai', className: 'bg-red-600 hover:bg-red-700' },
+  { quality: ReviewQuality.CORRECT_HARD, label: 'Khó nhớ', hint: 'Ôn lại sớm', className: 'bg-orange-500 hover:bg-orange-600' },
+  { quality: ReviewQuality.CORRECT, label: 'Nhớ được', hint: 'Giãn cách bình thường', className: 'bg-brand hover:bg-brand-strong' },
+  { quality: ReviewQuality.PERFECT, label: 'Rất dễ', hint: 'Giãn cách dài hơn', className: 'bg-emerald-600 hover:bg-emerald-700' },
+];
+
 export function FlashcardPage(): JSX.Element {
   const dueCards = useDueCards();
   const submitReview = useSubmitReview();
@@ -35,7 +46,15 @@ export function FlashcardPage(): JSX.Element {
     );
   };
 
-  if (dueCards.isLoading) return <Loading />;
+  if (dueCards.isLoading) {
+    return (
+      <div>
+        <PageHeader title="Ôn tập flashcard" />
+        <Skeleton className="h-[260px] w-full" />
+      </div>
+    );
+  }
+
   if (dueCards.isError) return <ErrorMessage>{getErrorMessage(dueCards.error)}</ErrorMessage>;
 
   if (cards.length === 0) {
@@ -43,8 +62,16 @@ export function FlashcardPage(): JSX.Element {
       <div>
         <PageHeader title="Ôn tập flashcard" />
         <EmptyState
-          title="Không có từ nào cần ôn hôm nay"
-          description="Vào mục Từ vựng để thêm từ mới vào danh sách học"
+          icon={CheckCircle2}
+          title="Bạn đã ôn hết từ cho hôm nay"
+          description="Quay lại vào ngày mai, hoặc thêm từ mới vào danh sách học để ôn tiếp."
+          action={
+            <Link to="/vocabulary">
+              <Button icon={BookOpen} variant="secondary">
+                Thêm từ mới
+              </Button>
+            </Link>
+          }
         />
       </div>
     );
@@ -55,39 +82,60 @@ export function FlashcardPage(): JSX.Element {
     return (
       <div>
         <PageHeader title="Ôn tập flashcard" />
-        <Card className="text-center">
+        <Card className="py-10 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
+            <PartyPopper className="h-6 w-6 text-emerald-600" aria-hidden />
+          </div>
           <p className="text-lg font-semibold text-slate-900">Hoàn thành phiên ôn tập</p>
-          <p className="mt-1 text-sm text-slate-500">Bạn đã ôn {reviewedCount} từ. Chuỗi ngày học được ghi nhận.</p>
-          <Button
-            className="mt-4"
-            onClick={() => {
-              setIndex(0);
-              setReviewedCount(0);
-              void dueCards.refetch();
-            }}
-          >
-            Tải phiên mới
-          </Button>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
+            Bạn đã ôn {reviewedCount} từ. Hoạt động đã được ghi nhận vào chuỗi ngày học.
+          </p>
+          <div className="mt-5 flex justify-center gap-2">
+            <Button
+              icon={RotateCw}
+              onClick={() => {
+                setIndex(0);
+                setReviewedCount(0);
+                void dueCards.refetch();
+              }}
+            >
+              Tải phiên mới
+            </Button>
+            <Link to="/">
+              <Button variant="secondary">Xem thống kê</Button>
+            </Link>
+          </div>
         </Card>
       </div>
     );
   }
 
+  const progress = (index / cards.length) * 100;
+
   return (
-    <div>
+    <div className="mx-auto max-w-2xl">
       <PageHeader title="Ôn tập flashcard" description={`Thẻ ${index + 1} / ${cards.length}`} />
 
-      {submitReview.isError && <ErrorMessage>{getErrorMessage(submitReview.error)}</ErrorMessage>}
+      {/* Thanh tiến độ phiên — user biết còn bao nhiêu, giảm cảm giác ôn mãi không hết */}
+      <div className="mb-4 h-1 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-full rounded-full bg-brand transition-all duration-300" style={{ width: `${progress}%` }} />
+      </div>
 
-      <Card className="mb-4 min-h-[220px] text-center">
-        <span className="text-xs uppercase tracking-wide text-slate-400">{card.topicName}</span>
+      {submitReview.isError && (
+        <div className="mb-3">
+          <ErrorMessage>{getErrorMessage(submitReview.error)}</ErrorMessage>
+        </div>
+      )}
 
-        <p className="mt-4 text-3xl font-bold text-slate-900">{card.word}</p>
-        {card.phonetic && <p className="mt-1 text-sm text-slate-500">{card.phonetic}</p>}
+      <Card className="mb-4 flex min-h-[260px] flex-col items-center justify-center text-center">
+        <span className="text-xs font-medium uppercase tracking-wider text-slate-400">{card.topicName}</span>
+
+        <p className="mt-4 text-4xl font-bold tracking-tight text-slate-900">{card.word}</p>
+        {card.phonetic && <p className="mt-1.5 text-sm text-slate-500">{card.phonetic}</p>}
 
         {revealed ? (
-          <div className="mt-6 border-t border-slate-100 pt-4">
-            <p className="text-xl text-indigo-700">{card.meaning}</p>
+          <div className="mt-6 w-full animate-fade-in border-t border-slate-100 pt-5">
+            <p className="text-xl font-medium text-brand-strong">{card.meaning}</p>
             {card.example && <p className="mt-2 text-sm italic text-slate-500">"{card.example}"</p>}
           </div>
         ) : (
@@ -98,41 +146,28 @@ export function FlashcardPage(): JSX.Element {
       </Card>
 
       {revealed && (
-        <div>
-          <p className="mb-2 text-center text-sm text-slate-500">Bạn nhớ từ này ở mức nào?</p>
+        <div className="animate-slide-up">
+          <p className="mb-2.5 text-center text-sm text-slate-500">Bạn nhớ từ này ở mức nào?</p>
+
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <RateButton label="Quên rồi" tone="bg-red-600" onClick={() => handleRate(ReviewQuality.BLACKOUT)} disabled={submitReview.isPending} />
-            <RateButton label="Khó nhớ" tone="bg-orange-500" onClick={() => handleRate(ReviewQuality.CORRECT_HARD)} disabled={submitReview.isPending} />
-            <RateButton label="Nhớ được" tone="bg-indigo-600" onClick={() => handleRate(ReviewQuality.CORRECT)} disabled={submitReview.isPending} />
-            <RateButton label="Rất dễ" tone="bg-green-600" onClick={() => handleRate(ReviewQuality.PERFECT)} disabled={submitReview.isPending} />
+            {RATINGS.map((rating) => (
+              <button
+                key={rating.quality}
+                onClick={() => handleRate(rating.quality)}
+                disabled={submitReview.isPending}
+                className={`flex flex-col items-center rounded-xl px-2 py-3 text-white transition-colors disabled:opacity-50 ${rating.className}`}
+              >
+                <span className="text-sm font-medium">{rating.label}</span>
+                <span className="mt-0.5 text-[10px] text-white/75">{rating.hint}</span>
+              </button>
+            ))}
           </div>
+
           <p className="mt-3 text-center text-xs text-slate-400">
             Lựa chọn của bạn quyết định khi nào từ này xuất hiện lại (thuật toán SM-2)
           </p>
         </div>
       )}
     </div>
-  );
-}
-
-function RateButton({
-  label,
-  tone,
-  onClick,
-  disabled,
-}: {
-  label: string;
-  tone: string;
-  onClick: () => void;
-  disabled: boolean;
-}): JSX.Element {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-lg py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 ${tone}`}
-    >
-      {label}
-    </button>
   );
 }

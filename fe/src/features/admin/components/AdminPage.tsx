@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { UserRole } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
-import { Badge, Button, Card, ErrorMessage, Loading, PageHeader } from '../../../shared/components/ui';
+import { Badge, Button, Card, ErrorMessage, SkeletonList, PageHeader } from '../../../shared/components/ui';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useAdminUsers, useDeleteUser, useSystemStats } from '../admin.hooks';
 import { ContentManager } from './ContentManager';
@@ -45,7 +45,7 @@ export function AdminPage(): JSX.Element {
 function SystemStatsPanel(): JSX.Element {
   const stats = useSystemStats();
 
-  if (stats.isLoading) return <Loading />;
+  if (stats.isLoading) return <SkeletonList rows={3} />;
   if (stats.isError) return <ErrorMessage>{getErrorMessage(stats.error)}</ErrorMessage>;
   if (!stats.data) return <ErrorMessage>Không tải được thống kê</ErrorMessage>;
 
@@ -76,7 +76,7 @@ function UsersPanel(): JSX.Element {
   const users = useAdminUsers(page);
   const deleteUser = useDeleteUser();
 
-  if (users.isLoading) return <Loading />;
+  if (users.isLoading) return <SkeletonList rows={3} />;
   if (users.isError) return <ErrorMessage>{getErrorMessage(users.error)}</ErrorMessage>;
   if (!users.data) return <ErrorMessage>Không tải được danh sách</ErrorMessage>;
 
@@ -104,7 +104,7 @@ function UsersPanel(): JSX.Element {
                   <td className="py-2.5 font-medium text-slate-800">{user.name}</td>
                   <td className="py-2.5 text-slate-600">{user.email}</td>
                   <td className="py-2.5">
-                    <Badge tone={user.role === UserRole.ADMIN ? 'indigo' : 'slate'}>
+                    <Badge tone={user.role === UserRole.ADMIN ? 'brand' : 'slate'}>
                       {user.role === UserRole.ADMIN ? 'Quản trị' : 'Người học'}
                     </Badge>
                   </td>

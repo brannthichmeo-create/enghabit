@@ -1,3 +1,62 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * Design token của Enghabit.
+ *
+ * Màu biểu đồ lấy từ bảng màu đã chạy qua validator (kiểm tra dải sáng, chroma,
+ * khả năng phân biệt với người mù màu). Không đổi các giá trị này bằng cảm tính —
+ * nếu cần đổi, chạy lại validator trước.
+ */
+:root {
+  /* Nền và mực */
+  --surface-page: #f7f7f8;
+  --surface-card: #ffffff;
+  --border-subtle: #e8e8ea;
+
+  /* Thương hiệu */
+  --brand: #4f46e5;
+  --brand-strong: #4338ca;
+  --brand-soft: #eef2ff;
+
+  /* Chuỗi dữ liệu biểu đồ — thứ tự cố định, không hoán đổi */
+  --series-vocab: #2a78d6;
+  --series-flashcard: #eb6834;
+  --series-quiz: #1baf7a;
+  --series-habit: #eda100;
+
+  /* Trạng thái */
+  --status-good: #1baf7a;
+  --status-warn: #eda100;
+  --status-danger: #e34948;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--surface-page);
+    color: theme('colors.slate.900');
+  }
+
+  /* Viền focus rõ ràng cho người dùng bàn phím, thay vì outline mặc định của trình duyệt */
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Ẩn thanh cuộn ngang ở thanh điều hướng trên mobile mà vẫn cuộn được */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

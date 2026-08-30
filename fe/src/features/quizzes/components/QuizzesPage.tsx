@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getErrorMessage } from '../../../shared/lib/api-client';
-import { Badge, Button, Card, EmptyState, ErrorMessage, Loading, PageHeader } from '../../../shared/components/ui';
+import { Badge, Button, Card, EmptyState, ErrorMessage, SkeletonList, PageHeader } from '../../../shared/components/ui';
 import { useQuizAttempts, useQuizzes } from '../quiz.hooks';
 import { QuizAttempt } from './QuizAttempt';
 
@@ -18,7 +18,7 @@ export function QuizzesPage(): JSX.Element {
     <div>
       <PageHeader title="Kiểm tra kiến thức" description="Làm quiz để củng cố những gì đã học" />
 
-      {quizzes.isLoading && <Loading />}
+      {quizzes.isLoading && <SkeletonList rows={3} />}
       {quizzes.isError && <ErrorMessage>{getErrorMessage(quizzes.error)}</ErrorMessage>}
 
       {quizzes.data?.length === 0 && (

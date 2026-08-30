@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { VocabLevel } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
-import { Badge, Button, Card, EmptyState, ErrorMessage, Loading, PageHeader } from '../../../shared/components/ui';
+import { Badge, Button, Card, EmptyState, ErrorMessage, SkeletonList, PageHeader } from '../../../shared/components/ui';
 import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import { useLearnVocabulary } from '../../flashcards/flashcard.hooks';
 import { useTopics, useTopicVocabulary } from '../vocabulary.hooks';
@@ -14,7 +14,7 @@ export function VocabularyPage(): JSX.Element {
 
   const selectedTopic = topics.data?.find((t) => t.id === selectedTopicId);
 
-  if (topics.isLoading) return <Loading />;
+  if (topics.isLoading) return <SkeletonList rows={3} />;
   if (topics.isError) return <ErrorMessage>{getErrorMessage(topics.error)}</ErrorMessage>;
 
   // Danh sách chủ đề
@@ -58,7 +58,7 @@ export function VocabularyPage(): JSX.Element {
         }
       />
 
-      {vocabulary.isLoading && <Loading />}
+      {vocabulary.isLoading && <SkeletonList rows={3} />}
       {vocabulary.isError && <ErrorMessage>{getErrorMessage(vocabulary.error)}</ErrorMessage>}
       {learnVocabulary.isError && <ErrorMessage>{getErrorMessage(learnVocabulary.error)}</ErrorMessage>}
 

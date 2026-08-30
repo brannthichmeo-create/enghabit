@@ -9,7 +9,7 @@ import {
   ErrorMessage,
   Field,
   Input,
-  Loading,
+  SkeletonList,
   Select,
 } from '../../../shared/components/ui';
 import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
@@ -31,7 +31,7 @@ export function ContentManager(): JSX.Element {
           <TopicForm />
         </div>
 
-        {topics.isLoading && <Loading />}
+        {topics.isLoading && <SkeletonList rows={3} />}
         {topics.isError && <ErrorMessage>{getErrorMessage(topics.error)}</ErrorMessage>}
         {deleteTopic.isError && <ErrorMessage>{getErrorMessage(deleteTopic.error)}</ErrorMessage>}
 
@@ -181,7 +181,7 @@ function VocabularyManager({ topicId }: { topicId: number }): JSX.Element {
         </form>
       </Card>
 
-      {vocabulary.isLoading && <Loading />}
+      {vocabulary.isLoading && <SkeletonList rows={3} />}
       {vocabulary.data?.length === 0 && <EmptyState title="Chủ đề này chưa có từ nào" />}
 
       <div className="space-y-2">

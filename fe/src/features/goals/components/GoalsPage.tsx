@@ -16,7 +16,7 @@ import {
   ErrorMessage,
   Field,
   Input,
-  Loading,
+  SkeletonList,
   PageHeader,
   Select,
 } from '../../../shared/components/ui';
@@ -46,7 +46,7 @@ export function GoalsPage(): JSX.Element {
         </div>
       )}
 
-      {goals.isLoading && <Loading />}
+      {goals.isLoading && <SkeletonList rows={3} />}
       {goals.isError && <ErrorMessage>{getErrorMessage(goals.error)}</ErrorMessage>}
 
       {goals.data?.length === 0 && (
@@ -60,7 +60,7 @@ export function GoalsPage(): JSX.Element {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold text-slate-900">{GOAL_TYPE_LABELS[goal.type]}</h3>
-                  <Badge tone={goal.status === GoalStatus.ACTIVE ? 'indigo' : 'slate'}>
+                  <Badge tone={goal.status === GoalStatus.ACTIVE ? 'brand' : 'slate'}>
                     {goal.period === GoalPeriod.DAILY ? 'Mỗi ngày' : 'Mỗi tuần'}
                   </Badge>
                 </div>

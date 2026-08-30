@@ -1,3 +1,4 @@
+import { Loader2, type LucideIcon } from 'lucide-react';
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
 
 /**
@@ -6,29 +7,72 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAt
  */
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+type ButtonSize = 'sm' | 'md';
 
-const BUTTON_STYLES: Record<ButtonVariant, string> = {
-  primary: 'bg-indigo-600 text-white hover:bg-indigo-700',
-  secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
+  primary: 'bg-brand text-white hover:bg-brand-strong shadow-sm',
+  secondary: 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50',
   danger: 'bg-red-600 text-white hover:bg-red-700',
-  ghost: 'text-slate-600 hover:bg-slate-100',
+  ghost: 'text-slate-500 hover:bg-slate-100 hover:text-slate-800',
 };
+
+const BUTTON_SIZES: Record<ButtonSize, string> = {
+  sm: 'px-2.5 py-1.5 text-xs gap-1.5',
+  md: 'px-4 py-2 text-sm gap-2',
+};
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: LucideIcon;
+  /** Hiện spinner và khoá nút — dùng khi mutation đang chạy. */
+  loading?: boolean;
+}
 
 export function Button({
   variant = 'primary',
+  size = 'md',
+  icon: Icon,
+  loading = false,
   className = '',
+  children,
+  disabled,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }): JSX.Element {
+}: ButtonProps): JSX.Element {
   return (
     <button
       {...props}
-      className={`rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${BUTTON_STYLES[variant]} ${className}`}
-    />
+      disabled={disabled ?? loading}
+      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+      ) : (
+        Icon && <Icon className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} aria-hidden />
+      )}
+      {children}
+    </button>
   );
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }): JSX.Element {
-  return <div className={`rounded-xl bg-white p-5 shadow-sm ${className}`}>{children}</div>;
+export function Card({
+  children,
+  className = '',
+  interactive = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  interactive?: boolean;
+}): JSX.Element {
+  return (
+    <div
+      className={`rounded-xl border border-slate-200/70 bg-white p-5 shadow-card ${
+        interactive ? 'transition-shadow hover:shadow-card-hover' : ''
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function PageHeader({
@@ -41,11 +85,20 @@ export function PageHeader({
   action?: ReactNode;
 }): JSX.Element {
   return (
-    <div className="mb-6 flex items-start justify-between gap-4">
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
         {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
       </div>
+      {action}
+    </div>
+  );
+}
+
+export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }): JSX.Element {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{children}</h2>
       {action}
     </div>
   );
@@ -70,7 +123,7 @@ export function Field({
 }
 
 const CONTROL_CLASS =
-  'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500';
+  'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-brand focus:ring-4 focus:ring-brand/10';
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>): JSX.Element {
   return <input {...props} className={`${CONTROL_CLASS} ${props.className ?? ''}`} />;
@@ -80,34 +133,94 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>): JSX.Elem
   return <select {...props} className={`${CONTROL_CLASS} ${props.className ?? ''}`} />;
 }
 
-/** Thông báo lỗi dạng inline, dùng thống nhất cho mọi form. */
 export function ErrorMessage({ children }: { children: ReactNode }): JSX.Element | null {
   if (!children) return null;
   return (
-    <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+    <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
       {children}
     </p>
   );
 }
 
-export function EmptyState({ title, description }: { title: string; description?: string }): JSX.Element {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: {
+  icon?: LucideIcon;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}): JSX.Element {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 py-12 text-center">
-      <p className="font-medium text-slate-600">{title}</p>
-      {description && <p className="mt-1 text-sm text-slate-400">{description}</p>}
+    <div className="rounded-xl border border-dashed border-slate-300 bg-white/50 px-6 py-14 text-center">
+      {Icon && (
+        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-slate-100">
+          <Icon className="h-5 w-5 text-slate-400" aria-hidden />
+        </div>
+      )}
+      <p className="font-medium text-slate-700">{title}</p>
+      {description && <p className="mx-auto mt-1 max-w-sm text-sm text-slate-400">{description}</p>}
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
 
-export function Loading(): JSX.Element {
-  return <p className="py-8 text-center text-sm text-slate-400">Đang tải...</p>;
+/**
+ * Khung xám thay cho chữ "Đang tải...".
+ * Giữ đúng chỗ nội dung sắp hiện nên trang không bị nhảy layout khi dữ liệu về.
+ */
+export function Skeleton({ className = '' }: { className?: string }): JSX.Element {
+  return <div className={`animate-pulse rounded-lg bg-slate-200/70 ${className}`} />;
 }
 
-export function Badge({ children, tone = 'slate' }: { children: ReactNode; tone?: 'slate' | 'green' | 'indigo' }): JSX.Element {
-  const tones = {
-    slate: 'bg-slate-100 text-slate-600',
-    green: 'bg-green-100 text-green-700',
-    indigo: 'bg-indigo-100 text-indigo-700',
-  };
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
+export function SkeletonList({ rows = 3 }: { rows?: number }): JSX.Element {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: rows }, (_, i) => (
+        <Skeleton key={i} className="h-[86px] w-full" />
+      ))}
+    </div>
+  );
+}
+
+type BadgeTone = 'slate' | 'green' | 'brand' | 'amber';
+
+const BADGE_TONES: Record<BadgeTone, string> = {
+  slate: 'bg-slate-100 text-slate-600',
+  green: 'bg-emerald-50 text-emerald-700',
+  brand: 'bg-brand-soft text-brand-strong',
+  amber: 'bg-amber-50 text-amber-700',
+};
+
+export function Badge({
+  children,
+  tone = 'slate',
+  icon: Icon,
+}: {
+  children: ReactNode;
+  tone?: BadgeTone;
+  icon?: LucideIcon;
+}): JSX.Element {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_TONES[tone]}`}
+    >
+      {Icon && <Icon className="h-3 w-3" aria-hidden />}
+      {children}
+    </span>
+  );
+}
+
+/** Thanh tiến độ dùng chung cho mục tiêu và tỷ lệ hoàn thành. */
+export function ProgressBar({ percent, done = false }: { percent: number; done?: boolean }): JSX.Element {
+  return (
+    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+      <div
+        className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-emerald-500' : 'bg-brand'}`}
+        style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+      />
+    </div>
+  );
 }

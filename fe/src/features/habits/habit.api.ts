@@ -12,6 +12,8 @@ export interface Habit {
   createdAt: string;
   /** Backend tính sẵn theo timezone user — client không tự đoán để tránh bấm nhầm gây lỗi 409. */
   checkedInToday: boolean;
+  /** Các ngày đã check-in trong 7 ngày gần nhất, để vẽ dải mức độ đều đặn. */
+  recentCheckIns: LocalDate[];
 }
 
 export interface CheckInRecord {
