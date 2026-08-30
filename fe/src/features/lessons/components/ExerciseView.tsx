@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ExerciseType, type Exercise } from '@enghabit/shared';
 import { Input } from '../../../shared/components/ui';
+import { AudioButton } from './AudioButton';
 
 /**
  * Hiển thị một bài tập và thu đáp án của người học.
@@ -34,7 +35,83 @@ export function ExerciseView({ exercise, onAnswer, locked }: Props): JSX.Element
       return <TypeView exercise={exercise} onAnswer={onAnswer} locked={locked} />;
     case ExerciseType.MATCH_PAIRS:
       return <MatchView exercise={exercise} onAnswer={onAnswer} locked={locked} />;
+    case ExerciseType.LISTEN_CHOOSE:
+    case ExerciseType.LISTEN_TYPE:
+      return <ListenView exercise={exercise} onAnswer={onAnswer} locked={locked} />;
   }
+}
+
+/**
+ * Bài nghe: phát âm rồi chọn nghĩa hoặc gõ lại từ.
+ *
+ * KHÔNG hiển thị `speakText` ra màn hình — hiện chữ là mất hẳn ý nghĩa luyện nghe.
+ */
+function ListenView({
+  exercise,
+  onAnswer,
+  locked,
+}: {
+  exercise: Extract<Exercise, { speakText: string }>;
+  onAnswer: Props['onAnswer'];
+  locked: boolean;
+}): JSX.Element {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [text, setText] = useState('');
+
+  useEffect(() => {
+    setSelected(null);
+    setText('');
+    onAnswer(null);
+  }, [exercise.id]);
+
+  const isChoose = exercise.type === ExerciseType.LISTEN_CHOOSE;
+
+  return (
+    <div>
+      <div className="flex flex-col items-center gap-3">
+        <AudioButton text={exercise.speakText} audioUrl={exercise.audioUrl} autoPlay />
+        <p className="text-xs text-slate-400">Bấm loa để nghe lại</p>
+      </div>
+
+      {isChoose ? (
+        <div className="mt-6 grid gap-2 sm:grid-cols-2">
+          {(exercise.options ?? []).map((option) => (
+            <button
+              key={option}
+              disabled={locked}
+              onClick={() => {
+                setSelected(option);
+                onAnswer({ value: option });
+              }}
+              className={`rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed ${
+                selected === option
+                  ? 'border-brand bg-brand-soft text-brand-strong'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mx-auto mt-6 max-w-xs">
+          <Input
+            value={text}
+            disabled={locked}
+            placeholder="Gõ từ bạn nghe được..."
+            onChange={(e) => {
+              setText(e.target.value);
+              onAnswer(e.target.value.trim() ? { value: e.target.value } : null);
+            }}
+            className="text-center"
+          />
+          <p className="mt-2 text-center text-xs text-slate-400">
+            Từ này có {exercise.letterCount} chữ cái
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** Dạng trắc nghiệm: chọn nghĩa, chọn từ, và điền chỗ trống. */

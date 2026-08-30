@@ -61,11 +61,16 @@ export function generateLessonExercises({ words, pool, seed }: GenerateOptions):
   const wordTexts = pool.map((w) => w.word);
 
   words.forEach((word, position) => {
-    // Vòng 1: nhận biết — nhìn từ đoán nghĩa
-    exercises.push(buildChoice(word, ExerciseType.CHOOSE_MEANING, meanings, rand));
+    // Vòng 1: nhận biết. Xen kẽ bài nghe để không chỉ toàn đọc chữ —
+    // nghe là kỹ năng riêng, nhìn mặt chữ nhiều không tự sinh ra khả năng nghe.
+    if (position % 2 === 1) {
+      exercises.push(buildListenChoose(word, meanings, rand));
+    } else {
+      exercises.push(buildChoice(word, ExerciseType.CHOOSE_MEANING, meanings, rand));
+    }
 
     // Vòng 2: dạng khó dần, luân phiên để không lặp đơn điệu
-    const secondRound = pickSecondRound(word, position);
+    const secondRound = pickSecondRound(word, position, position % 2 === 1);
     switch (secondRound) {
       case ExerciseType.FILL_BLANK:
         exercises.push(buildFillBlank(word, wordTexts, rand));
@@ -75,6 +80,9 @@ export function generateLessonExercises({ words, pool, seed }: GenerateOptions):
         break;
       case ExerciseType.TYPE_WORD:
         exercises.push(buildTypeWord(word));
+        break;
+      case ExerciseType.LISTEN_TYPE:
+        exercises.push(buildListenType(word));
         break;
       default:
         exercises.push(buildChoice(word, ExerciseType.CHOOSE_WORD, wordTexts, rand));
@@ -91,16 +99,31 @@ export function generateLessonExercises({ words, pool, seed }: GenerateOptions):
 
 /**
  * Chọn dạng bài vòng 2 cho từng từ.
+ *
  * Ưu tiên dạng cần câu ví dụ nếu từ đó có ví dụ; nếu không thì lùi về dạng không cần.
+ * Nếu vòng 1 đã là bài nghe thì vòng 2 KHÔNG dùng bài nghe nữa — cùng một từ mà
+ * nghe hai lần liên tiếp vừa đơn điệu vừa không luyện thêm được kỹ năng nào khác.
  */
-function pickSecondRound(word: Vocabulary, position: number): ExerciseType {
+function pickSecondRound(
+  word: Vocabulary,
+  position: number,
+  firstRoundWasListening: boolean,
+): ExerciseType {
   const hasExample = Boolean(word.example && word.example.trim().split(/\s+/).length >= 4);
   const containsWord = hasExample && word.example!.toLowerCase().includes(word.word.toLowerCase());
 
-  const rotation = position % 3;
+  const rotation = position % 4;
   if (rotation === 0 && containsWord) return ExerciseType.FILL_BLANK;
   if (rotation === 1 && hasExample) return ExerciseType.ARRANGE_WORDS;
-  if (rotation === 2) return ExerciseType.TYPE_WORD;
+
+  // Dạng nghe-gõ đặt ở vị trí CHẴN, vì vị trí lẻ vòng 1 đã là bài nghe rồi.
+  // Từ nhiều chữ (vd "boarding pass") gõ theo tai rất dễ sai chính tả nên bỏ qua.
+  if (rotation === 2 && !firstRoundWasListening && !word.word.includes(' ')) {
+    return ExerciseType.LISTEN_TYPE;
+  }
+
+  if (rotation === 3 || firstRoundWasListening) return ExerciseType.TYPE_WORD;
+
   return ExerciseType.CHOOSE_WORD;
 }
 
@@ -178,5 +201,31 @@ function buildMatchPairs(words: Vocabulary[], rand: () => number): Exercise {
     prompt: EXERCISE_PROMPTS[ExerciseType.MATCH_PAIRS],
     words: shuffle(words, rand).map((w) => ({ id: w.id, text: w.word })),
     meanings: shuffle(words, rand).map((w) => ({ id: w.id, text: w.meaning })),
+  };
+}
+
+/** Nghe phát âm rồi chọn nghĩa. Đề bài không chứa chữ của từ. */
+function buildListenChoose(word: Vocabulary, pool: string[], rand: () => number): Exercise {
+  return {
+    id: `${ExerciseType.LISTEN_CHOOSE}-${word.id}`,
+    type: ExerciseType.LISTEN_CHOOSE,
+    vocabularyId: word.id,
+    prompt: EXERCISE_PROMPTS[ExerciseType.LISTEN_CHOOSE],
+    speakText: word.word,
+    audioUrl: word.audioUrl,
+    options: shuffle([word.meaning, ...pickDistractors(pool, word.meaning, 3, rand)], rand),
+  };
+}
+
+/** Nghe phát âm rồi gõ lại từ. Chỉ gợi ý số chữ cái, không lộ mặt chữ. */
+function buildListenType(word: Vocabulary): Exercise {
+  return {
+    id: `${ExerciseType.LISTEN_TYPE}-${word.id}`,
+    type: ExerciseType.LISTEN_TYPE,
+    vocabularyId: word.id,
+    prompt: EXERCISE_PROMPTS[ExerciseType.LISTEN_TYPE],
+    speakText: word.word,
+    audioUrl: word.audioUrl,
+    letterCount: word.word.length,
   };
 }

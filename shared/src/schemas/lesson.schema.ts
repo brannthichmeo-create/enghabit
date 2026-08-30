@@ -58,8 +58,35 @@ export interface TypeWordExercise extends ExerciseBase {
   firstLetter: string;
 }
 
+/**
+ * Bài nghe.
+ *
+ * `speakText` BẮT BUỘC phải gửi xuống client vì giọng đọc của trình duyệt chạy ở
+ * phía client — không có chữ thì không đọc được. Đánh đổi: người dùng mở DevTools
+ * có thể thấy đáp án.
+ *
+ * Chấp nhận đánh đổi này vì: (1) giải pháp thay thế là tự tạo hàng trăm file âm
+ * thanh, quá tốn cho quy mô dự án; (2) việc CHẤM ĐIỂM vẫn ở backend nên không thể
+ * làm giả kết quả; (3) người cố tình xem đáp án chỉ tự hại việc học của mình.
+ *
+ * Giao diện TUYỆT ĐỐI không được hiển thị `speakText` — trừ khi trình duyệt không
+ * đọc được, lúc đó hiện chữ còn hơn để người học kẹt.
+ */
+export interface ListenExercise extends ExerciseBase {
+  type: typeof ExerciseType.LISTEN_TYPE | typeof ExerciseType.LISTEN_CHOOSE;
+  /** Chữ để trình duyệt đọc. Không được render ra màn hình. */
+  speakText: string;
+  /** Đường dẫn audio do admin nhập; null thì client tự đọc bằng trình duyệt. */
+  audioUrl: string | null;
+  /** Chỉ có ở dạng chọn nghĩa. */
+  options?: string[];
+  /** Chỉ có ở dạng gõ lại: số chữ cái, để người học ước lượng độ dài. */
+  letterCount?: number;
+}
+
 export type Exercise =
   | ChoiceExercise
+  | ListenExercise
   | MatchPairsExercise
   | ArrangeWordsExercise
   | FillBlankExercise

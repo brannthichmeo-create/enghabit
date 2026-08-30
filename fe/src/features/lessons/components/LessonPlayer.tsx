@@ -206,5 +206,9 @@ function describeExercise(exercise: Exercise): string {
       return exercise.hint;
     case ExerciseType.MATCH_PAIRS:
       return exercise.words.map((w) => w.text).join(', ');
+    // Bài đã nộp xong nên hiện chữ ở đây không còn ảnh hưởng gì
+    case ExerciseType.LISTEN_TYPE:
+    case ExerciseType.LISTEN_CHOOSE:
+      return exercise.speakText;
   }
 }

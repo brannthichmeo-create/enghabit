@@ -174,11 +174,13 @@ export async function submitLesson(
 function grade(answer: SubmitLessonInput['answers'][number], vocabulary: Vocabulary): boolean {
   switch (answer.type) {
     case ExerciseType.CHOOSE_MEANING:
+    case ExerciseType.LISTEN_CHOOSE:
       return normalize(answer.value) === normalize(vocabulary.meaning);
 
     case ExerciseType.CHOOSE_WORD:
     case ExerciseType.FILL_BLANK:
     case ExerciseType.TYPE_WORD:
+    case ExerciseType.LISTEN_TYPE:
       return normalize(answer.value) === normalize(vocabulary.word);
 
     case ExerciseType.ARRANGE_WORDS: {

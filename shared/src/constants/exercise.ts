@@ -18,6 +18,10 @@ export const ExerciseType = {
   FILL_BLANK: 'FILL_BLANK',
   /** Gõ lại từ tiếng Anh khi nhìn thấy nghĩa. */
   TYPE_WORD: 'TYPE_WORD',
+  /** Nghe phát âm rồi gõ lại từ — không hiện chữ. */
+  LISTEN_TYPE: 'LISTEN_TYPE',
+  /** Nghe phát âm rồi chọn nghĩa đúng. */
+  LISTEN_CHOOSE: 'LISTEN_CHOOSE',
 } as const;
 export type ExerciseType = (typeof ExerciseType)[keyof typeof ExerciseType];
 
@@ -29,6 +33,8 @@ export const EXERCISE_PROMPTS: Record<ExerciseType, string> = {
   [ExerciseType.ARRANGE_WORDS]: 'Sắp xếp thành câu hoàn chỉnh',
   [ExerciseType.FILL_BLANK]: 'Điền từ còn thiếu vào chỗ trống',
   [ExerciseType.TYPE_WORD]: 'Gõ từ tiếng Anh tương ứng',
+  [ExerciseType.LISTEN_TYPE]: 'Nghe và gõ lại từ bạn nghe được',
+  [ExerciseType.LISTEN_CHOOSE]: 'Nghe và chọn nghĩa đúng',
 };
 
 /** Số từ vựng trong một bài học. Ngắn để hoàn thành trong vài phút. */

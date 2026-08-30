@@ -67,6 +67,8 @@ enum ExerciseType {
   ARRANGE_WORDS
   FILL_BLANK
   TYPE_WORD
+  LISTEN_TYPE
+  LISTEN_CHOOSE
 }
 
 enum DevicePlatform {
