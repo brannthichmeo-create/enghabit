@@ -2,14 +2,9 @@ import { useState } from 'react';
 import { VocabLevel } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Badge, Button, Card, EmptyState, ErrorMessage, Loading, PageHeader } from '../../../shared/components/ui';
+import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import { useLearnVocabulary } from '../../flashcards/flashcard.hooks';
 import { useTopics, useTopicVocabulary } from '../vocabulary.hooks';
-
-const LEVEL_LABELS: Record<VocabLevel, string> = {
-  [VocabLevel.BEGINNER]: 'Cơ bản',
-  [VocabLevel.INTERMEDIATE]: 'Trung cấp',
-  [VocabLevel.ADVANCED]: 'Nâng cao',
-};
 
 export function VocabularyPage(): JSX.Element {
   const topics = useTopics();
@@ -38,7 +33,7 @@ export function VocabularyPage(): JSX.Element {
               <Card className="h-full transition hover:shadow-md">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-semibold text-slate-900">{topic.name}</h3>
-                  <Badge>{LEVEL_LABELS[topic.level]}</Badge>
+                  <Badge>{VOCAB_LEVEL_LABELS[topic.level]}</Badge>
                 </div>
                 {topic.description && <p className="mt-1 text-sm text-slate-500">{topic.description}</p>}
                 <p className="mt-3 text-xs text-slate-400">{topic.vocabularyCount} từ vựng</p>

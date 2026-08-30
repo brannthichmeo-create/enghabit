@@ -10,6 +10,8 @@ export interface Habit {
   reminderTime: string | null;
   isActive: boolean;
   createdAt: string;
+  /** Backend tính sẵn theo timezone user — client không tự đoán để tránh bấm nhầm gây lỗi 409. */
+  checkedInToday: boolean;
 }
 
 export interface CheckInRecord {

@@ -5,7 +5,8 @@ import { currentUser } from '../../common/middlewares/auth-guard.js';
 import * as habitService from './habit.service.js';
 
 export async function list(req: Request, res: Response): Promise<void> {
-  res.json(await habitService.listHabits(currentUser(req).id));
+  const user = currentUser(req);
+  res.json(await habitService.listHabits(user.id, user.timezone));
 }
 
 export async function create(req: Request, res: Response): Promise<void> {

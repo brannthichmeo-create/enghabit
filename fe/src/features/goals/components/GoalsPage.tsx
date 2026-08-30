@@ -20,15 +20,9 @@ import {
   PageHeader,
   Select,
 } from '../../../shared/components/ui';
+import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useCreateGoal, useDeleteGoal, useGoalProgress, useGoals } from '../goal.hooks';
-
-const GOAL_TYPE_LABELS: Record<GoalType, string> = {
-  [GoalType.VOCAB_PER_DAY]: 'Số từ vựng học mỗi ngày',
-  [GoalType.MINUTES_PER_DAY]: 'Số lượt ôn tập mỗi ngày',
-  [GoalType.LESSONS_PER_WEEK]: 'Số bài quiz mỗi tuần',
-  [GoalType.STREAK_TARGET]: 'Chuỗi ngày học liên tiếp',
-};
 
 export function GoalsPage(): JSX.Element {
   const goals = useGoals();

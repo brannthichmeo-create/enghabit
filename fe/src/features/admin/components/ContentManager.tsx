@@ -12,14 +12,9 @@ import {
   Loading,
   Select,
 } from '../../../shared/components/ui';
+import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import { useTopics, useTopicVocabulary } from '../../vocabulary/vocabulary.hooks';
 import { useCreateTopic, useCreateVocabulary, useDeleteTopic } from '../admin.hooks';
-
-const LEVEL_LABELS: Record<VocabLevel, string> = {
-  [VocabLevel.BEGINNER]: 'Cơ bản',
-  [VocabLevel.INTERMEDIATE]: 'Trung cấp',
-  [VocabLevel.ADVANCED]: 'Nâng cao',
-};
 
 /** Quản lý chủ đề và từ vựng. Chọn một chủ đề để thêm/xem từ trong chủ đề đó. */
 export function ContentManager(): JSX.Element {
@@ -47,7 +42,7 @@ export function ContentManager(): JSX.Element {
                 <button onClick={() => setSelectedTopicId(topic.id)} className="min-w-0 text-left">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium text-slate-900">{topic.name}</span>
-                    <Badge>{LEVEL_LABELS[topic.level]}</Badge>
+                    <Badge>{VOCAB_LEVEL_LABELS[topic.level]}</Badge>
                   </div>
                   <p className="mt-0.5 text-xs text-slate-400">{topic.vocabularyCount} từ vựng</p>
                 </button>
@@ -111,7 +106,7 @@ function TopicForm(): JSX.Element {
 
         <Field label="Trình độ">
           <Select value={level} onChange={(e) => setLevel(e.target.value as VocabLevel)}>
-            {Object.entries(LEVEL_LABELS).map(([value, label]) => (
+            {Object.entries(VOCAB_LEVEL_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { StatsRangeInput } from '@enghabit/shared';
+import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useGoalProgress } from '../../goals/goal.hooks';
 import { useDueCount } from '../../flashcards/flashcard.hooks';
@@ -99,9 +100,12 @@ export function DashboardPage(): JSX.Element {
           <div className="space-y-3">
             {goalProgress.data.map((goal) => (
               <div key={goal.goalId}>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span className="text-slate-600">
-                    {goal.currentValue} / {goal.targetValue}
+                <div className="mb-1 flex justify-between gap-3 text-sm">
+                  <span className="truncate text-slate-700">
+                    {GOAL_TYPE_LABELS[goal.type]}{' '}
+                    <span className="text-slate-400">
+                      ({goal.currentValue}/{goal.targetValue})
+                    </span>
                   </span>
                   <span className={goal.isCompleted ? 'font-medium text-green-600' : 'text-slate-500'}>
                     {goal.isCompleted ? '✓ Hoàn thành' : `${goal.completionRate}%`}
@@ -147,17 +151,33 @@ function ActivityChart({ data }: { data: { date: string; totalActivities: number
   const max = Math.max(1, ...data.map((d) => d.totalActivities));
 
   return (
-    <div className="flex h-40 items-end gap-1 overflow-x-auto">
-      {data.map((day) => (
-        <div key={day.date} className="flex min-w-[24px] flex-1 flex-col items-center gap-1">
+    <div className="flex h-40 gap-1 overflow-x-auto">
+      {data.map((day) => {
+        const ratio = day.totalActivities / max;
+        return (
           <div
-            className="w-full rounded-t bg-indigo-500 transition-all"
-            style={{ height: `${(day.totalActivities / max) * 100}%` }}
+            key={day.date}
+            className="flex h-full min-w-[28px] flex-1 flex-col items-center gap-1"
             title={`${day.date}: ${day.totalActivities} hoạt động`}
-          />
-          <span className="text-[10px] text-slate-400">{day.date.slice(8)}</span>
-        </div>
-      ))}
+          >
+            {/*
+              Vùng vẽ cột phải có chiều cao xác định (flex-1 trong cột h-full),
+              nếu không thì height tính theo % của thanh bar sẽ không có cơ sở và cột biến mất.
+            */}
+            <div className="flex w-full flex-1 items-end">
+              {day.totalActivities > 0 && (
+                <div
+                  className="w-full rounded-t bg-indigo-500 transition-all"
+                  // Chặn dưới 4% để ngày có ít hoạt động vẫn nhìn thấy được.
+                  style={{ height: `${Math.max(4, ratio * 100)}%` }}
+                />
+              )}
+            </div>
+            <span className="text-[10px] leading-none text-slate-500">{day.totalActivities}</span>
+            <span className="text-[10px] leading-none text-slate-400">{day.date.slice(8)}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

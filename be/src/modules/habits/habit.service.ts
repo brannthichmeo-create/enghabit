@@ -13,8 +13,27 @@ import { ConflictError, NotFoundError } from '../../common/errors/app-error.js';
 import { fromDbDate, toDbDate } from '../../common/utils/db-date.js';
 import { recordActivity } from '../activity-logs/activity-log.service.js';
 
-export async function listHabits(userId: number): Promise<Habit[]> {
-  return prisma.habit.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+export interface HabitWithStatus extends Habit {
+  /** Đã check-in trong ngày hôm nay chưa (theo timezone của user). */
+  checkedInToday: boolean;
+}
+
+/**
+ * Danh sách thói quen kèm trạng thái check-in hôm nay.
+ *
+ * Trả sẵn `checkedInToday` để client vô hiệu hoá nút Check-in ngay khi tải trang —
+ * nếu không, user bấm lại sẽ nhận lỗi 409 dù không làm gì sai.
+ */
+export async function listHabits(userId: number, timezone: string): Promise<HabitWithStatus[]> {
+  const today = todayLocalDate(timezone);
+
+  const habits = await prisma.habit.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    include: { checkIns: { where: { localDate: toDbDate(today) }, select: { id: true } } },
+  });
+
+  return habits.map(({ checkIns, ...habit }) => ({ ...habit, checkedInToday: checkIns.length > 0 }));
 }
 
 export async function createHabit(userId: number, input: CreateHabitInput): Promise<Habit> {
