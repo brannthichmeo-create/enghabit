@@ -16,6 +16,7 @@ export default {
           raised: 'rgb(var(--surface-raised) / <alpha-value>)',
         },
         sunken: 'rgb(var(--sunken) / <alpha-value>)',
+        hover: 'rgb(var(--hover) / <alpha-value>)',
         line: {
           DEFAULT: 'rgb(var(--line) / <alpha-value>)',
           strong: 'rgb(var(--line-strong) / <alpha-value>)',

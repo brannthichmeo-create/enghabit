@@ -217,27 +217,23 @@ Ví dụ: trong bảng đang dùng, cam và vàng không được đứng cạnh
 
 ## Bảng đối chiếu bảng màu hiện tại
 
-Đo ngày 31/08/2026. Chạy lại sau mỗi lần đổi màu.
+Đo ngày 31/08/2026, sau khi đổi nền trang sang `#B5B777`. Chạy lại sau mỗi lần đổi màu.
 
 | Cặp màu | Dùng ở đâu | Sáng | Tối | Ngưỡng |
 |---|---|---|---|---|
-| `text` / `page` | Chữ chính trên nền trang | 15.04:1 ✓ | 14.90:1 ✓ | 4.5 |
-| `text-soft` / `surface` | Chữ phụ trên thẻ | 8.79:1 ✓ | 8.42:1 ✓ | 4.5 |
-| `text-muted` / `surface` | Chữ mờ trên thẻ | 4.98:1 ✓ | 5.05:1 ✓ | 4.5 |
-| `brand-strong` / `page` | Liên kết, nhãn nhấn | 4.87:1 ✓ | 12.66:1 ✓ | 4.5 |
+| `text` / `page` | Chữ chính trên nền trang | 7.56:1 ✓ | 14.90:1 ✓ | 4.5 |
+| `text-soft` / `page` | Chữ phụ trên nền trang | 4.75:1 ✓ | 9.29:1 ✓ | 4.5 |
+| `text-soft` / `surface` | Chữ phụ trên thẻ | 9.97:1 ✓ | 8.42:1 ✓ | 4.5 |
+| `brand-strong` / `page` | Liên kết trên nền trang | 4.65:1 ✓ | 12.66:1 ✓ | 4.5 |
 | `on-brand` / `brand` | Chữ trên nút chính | 5.09:1 ✓ | 9.50:1 ✓ | 4.5 |
 | `success` / `surface` | Chữ trạng thái thành công | 6.00:1 ✓ | 6.70:1 ✓ | 4.5 |
 | `danger` / `surface` | Chữ trạng thái lỗi | 6.02:1 ✓ | 5.79:1 ✓ | 4.5 |
 | `accent-ink` / `surface` | Chữ màu nhấn | 6.36:1 ✓ | 9.63:1 ✓ | 4.5 |
 | `line-control` / `surface` | Viền ô nhập | 3.15:1 ✓ | 3.34:1 ✓ | 3 |
-| `line-strong` / `surface` | Viền trang trí | 1.59:1 — | 1.90:1 — | không bắt buộc |
 
-**Hai chỗ chưa đạt đã được sửa** — chính bảng đối chiếu này phát hiện ra:
+**Cái giá của nền trang có màu.** Nền `#B5B777` sáng vừa (L=59%) chứ không gần trắng, nên mọi chữ đặt trực tiếp lên nó phải đậm hơn hẳn mới đạt 4.5:1. Hệ quả: `--text-soft` và `--text-muted` buộc phải **dùng chung một bậc** — không còn dư địa để phân biệt "chữ phụ" với "chữ mờ" trên nền trang.
 
-1. `--text-muted` ở chế độ sáng thiếu 0.35 → đổi `124 126 108` thành `112 113 96` (#707160).
-2. Viền ô nhập trước đây dùng `--line-strong` (1.59:1). Viền ô nhập là ranh giới **duy nhất** của control nên phải đạt 3:1, trong khi viền trang trí thì không bắt buộc. Tách thành token riêng `--line-control`.
-
-Đây chính là lý do phải chạy bảng đối chiếu: cả hai lỗi đều không nhìn ra được bằng mắt.
+Muốn khôi phục ba bậc chữ thì phải làm nền nhạt hơn. Đây là đánh đổi có ý thức, không phải sơ suất.
 
 ---
 

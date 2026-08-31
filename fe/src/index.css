@@ -19,25 +19,43 @@
   color-scheme: light;
 
   /*
-   * Nền không dùng trắng tinh mà ngả nhẹ về sắc olive của thương hiệu.
-   * Trắng tinh phản xạ mạnh, nhìn lâu chói mắt; nền giấy ấm dịu hơn hẳn.
+   * Nền trang là olive nhạt #B5B777 — làm nền màu cho các thẻ trắng nổi lên.
+   *
+   * Nền này sáng vừa (L=59%) chứ không phải gần trắng, nên MỌI chữ đặt trực tiếp
+   * lên nó phải đậm hơn bình thường mới đạt 4.5:1. Xem --text-soft/--text-muted
+   * bên dưới: hai bậc này đã bị kéo đậm để dùng được trên cả nền trang lẫn thẻ trắng.
    */
-  --page: 250 249 242;
+  --page: 181 183 119; /* #b5b777 */
   --surface: 255 255 255;
   --surface-raised: 255 255 255;
+  /* Vùng chìm BÊN TRONG thẻ trắng (dải nút, nền biểu đồ, khung chờ tải) */
   --sunken: 242 241 231;
-  --line: 228 227 214;
-  --line-strong: 207 206 188;
+
+  /*
+   * Trạng thái di chuột trên NỀN HỆ THỐNG (sidebar, thanh trên cùng).
+   * Tách khỏi --sunken vì hai chỗ này nằm trên hai nền khác nhau: nền hệ thống
+   * có màu nên hover phải đậm hơn nó, còn trong thẻ trắng thì hover phải nhạt.
+   */
+  --hover: 166 168 101;
+  /* Nền trang có màu nên viền nhạt sẽ chìm; dùng bậc đậm hơn để thẻ tách ra rõ */
+  --line: 213 214 178;
+  --line-strong: 168 169 142;
   /*
    * Viền ô nhập là ranh giới DUY NHẤT của control nên phải đạt 3:1 (xem
    * docs/color-rules.md R6). --line-strong chỉ 1.59:1, dùng cho viền trang trí.
    */
   --line-control: 146 147 118; /* #929376 — đạt 3.15:1 trên nền thẻ */
 
-  /* Chữ cũng ngả olive thay vì đen thuần, giảm độ gắt khi đọc lâu */
-  --text: 34 35 26;
-  --text-soft: 74 76 60;
-  --text-muted: 112 113 96; /* #707160 — trên nền thẻ đạt 4.98:1 */
+  /*
+   * Chữ ngả olive thay vì đen thuần, giảm độ gắt khi đọc lâu.
+   *
+   * text-soft và text-muted phải đạt 4.5:1 trên CẢ nền trang #B5B777 lẫn thẻ
+   * trắng. Ràng buộc chặt hơn là nền trang, nên hai bậc này đậm hơn thông thường
+   * và chênh lệch với text chính không nhiều — đây là cái giá của nền màu đậm.
+   */
+  --text: 34 35 26; /* #22231a — trên nền trang 7.56:1 */
+  --text-soft: 67 68 47; /* #43442f — nền trang 4.75:1, thẻ trắng 9.97:1 */
+  --text-muted: 67 68 47; /* dùng chung bậc với text-soft vì không còn dư địa */
 
   /*
    * Màu thương hiệu #8E9141 — dùng ĐÚNG mã màu đã chọn làm nền nút.
@@ -45,7 +63,7 @@
    * xem --on-brand. Bậc đậm hơn dùng khi olive làm CHỮ trên nền sáng.
    */
   --brand: 142 145 65; /* #8e9141 */
-  --brand-strong: 111 113 51; /* #6f7133 — làm chữ/link trên nền sáng, đạt 4.87:1 */
+  --brand-strong: 69 70 32; /* #454620 — làm chữ/link; trên nền trang đạt 4.65:1 */
   --brand-soft: 240 241 228;
   --brand-vivid: 195 199 110;
 
@@ -96,6 +114,8 @@
     --surface: 30 32 22;
     --surface-raised: 38 40 25;
     --sunken: 25 26 18;
+  --hover: 42 45 32;
+    --hover: 42 45 32;
     --line: 51 53 42;
     --line-strong: 74 77 60;
   --line-control: 113 114 90; /* #71725a — đạt 3.34:1 trên nền thẻ */
@@ -148,6 +168,7 @@
   --surface: 30 32 22;
   --surface-raised: 38 40 25;
   --sunken: 25 26 18;
+  --hover: 42 45 32;
   --line: 51 53 42;
   --line-strong: 74 77 60;
 

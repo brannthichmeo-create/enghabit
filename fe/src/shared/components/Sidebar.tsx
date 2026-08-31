@@ -66,7 +66,8 @@ export function Sidebar({
   ];
 
   return (
-    <div className="flex h-full flex-col bg-surface">
+    /* Nền hệ thống, không phải nền thẻ — sidebar là một phần của khung app */
+    <div className="flex h-full flex-col bg-page">
       <div className={`flex items-center px-4 py-4 ${collapsed ? 'justify-center px-2' : ''}`}>
         <Link to="/" onClick={onNavigate}>
           <Logo size="sm" withText={!collapsed} />
@@ -112,7 +113,7 @@ export function Sidebar({
         <Link
           to="/profile"
           onClick={onNavigate}
-          className={`flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-sunken ${
+          className={`flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-hover ${
             collapsed ? 'justify-center' : ''
           }`}
           title={collapsed ? user?.name : undefined}
@@ -128,7 +129,7 @@ export function Sidebar({
 
         <button
           onClick={() => logout.mutate()}
-          className={`mt-0.5 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-content-muted transition-colors hover:bg-sunken hover:text-content ${
+          className={`mt-0.5 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-content-muted transition-colors hover:bg-hover hover:text-content ${
             collapsed ? 'justify-center' : ''
           }`}
           title={collapsed ? 'Đăng xuất' : undefined}
@@ -141,7 +142,7 @@ export function Sidebar({
       {/* Nút thu gọn chỉ có nghĩa trên màn hình rộng, nơi sidebar luôn hiện */}
       <button
         onClick={onToggleCollapse}
-        className="hidden items-center gap-2 border-t border-line px-4 py-2.5 text-xs text-content-muted transition-colors hover:bg-sunken hover:text-content lg:flex"
+        className="hidden items-center gap-2 border-t border-line px-4 py-2.5 text-xs text-content-muted transition-colors hover:bg-hover hover:text-content lg:flex"
         aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
       >
         <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} aria-hidden />
@@ -172,7 +173,7 @@ function Item({
         `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
           isActive
             ? 'bg-brand-soft text-brand-strong'
-            : 'text-content-soft hover:bg-sunken hover:text-content'
+            : 'text-content-soft hover:bg-hover hover:text-content'
         } ${collapsed ? 'justify-center px-2' : ''}`
       }
     >

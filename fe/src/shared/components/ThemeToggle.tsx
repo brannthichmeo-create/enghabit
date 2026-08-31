@@ -76,7 +76,7 @@ export function ThemeToggle(): JSX.Element {
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-content-muted transition-colors hover:bg-sunken hover:text-content"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-content-muted transition-colors hover:bg-hover hover:text-content"
         aria-label="Chọn chế độ giao diện"
         aria-haspopup="menu"
         aria-expanded={open}

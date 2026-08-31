@@ -70,7 +70,7 @@ export function AppLayout(): JSX.Element {
           <aside className="fixed inset-y-0 left-0 z-50 w-60 border-r border-line shadow-xl lg:hidden">
             <button
               onClick={() => setDrawerOpen(false)}
-              className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-content-muted hover:bg-sunken hover:text-content"
+              className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-content-muted hover:bg-hover hover:text-content"
               aria-label="Đóng menu"
             >
               <X className="h-4 w-4" />
@@ -89,7 +89,7 @@ export function AppLayout(): JSX.Element {
           <div className="flex items-center gap-3 px-4 py-2.5">
             <button
               onClick={() => setDrawerOpen(true)}
-              className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-sunken hover:text-content lg:hidden"
+              className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-hover hover:text-content lg:hidden"
               aria-label="Mở menu"
             >
               <Menu className="h-5 w-5" />
