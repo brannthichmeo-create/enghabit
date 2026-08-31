@@ -18,9 +18,9 @@ import { TOPICS, buildMeaningQuestions } from './seed-data/content.js';
  *   pnpm --filter @enghabit/be db:seed
  *
  * Tài khoản:
- *   admin@enghabit.local / Admin12345   (quản trị viên)
- *   user@enghabit.local  / User12345    (có sẵn 45 ngày lịch sử học để xem thống kê)
- *   newbie@enghabit.local / User12345   (tài khoản trắng, để xem giao diện lúc chưa có dữ liệu)
+ *   admin@enghabit.com  / A1234567   (quản trị viên)
+ *   user@enghabit.com   / A1234567   (có sẵn 45 ngày lịch sử học để xem thống kê)
+ *   newbie@enghabit.com / A1234567   (tài khoản trắng, để xem giao diện lúc chưa có dữ liệu)
  */
 
 const prisma = new PrismaClient();
@@ -41,9 +41,9 @@ function activeDayOffsets(): number[] {
 async function main(): Promise<void> {
   console.log('Bắt đầu seed...\n');
 
-  const admin = await upsertUser('admin@enghabit.local', 'Quản trị viên', 'Admin12345', UserRole.ADMIN);
-  const learner = await upsertUser('user@enghabit.local', 'Nguyễn Minh Anh', 'User12345');
-  await upsertUser('newbie@enghabit.local', 'Người dùng mới', 'User12345');
+  const admin = await upsertUser('admin@enghabit.com', 'Quản trị viên', 'A1234567', UserRole.ADMIN);
+  const learner = await upsertUser('user@enghabit.com', 'Nguyễn Minh Anh', 'A1234567');
+  await upsertUser('newbie@enghabit.com', 'Người dùng mới', 'A1234567');
 
   const vocabByTopic = await seedContent(admin.id);
   await seedLearnerData(learner.id, vocabByTopic);
@@ -383,9 +383,9 @@ async function printSummary(): Promise<void> {
   console.log(`  ${users} người dùng | ${topics} chủ đề | ${vocab} từ vựng`);
   console.log(`  ${quizzes} quiz (${questions} câu hỏi) | ${logs} hoạt động`);
   console.log('\nTài khoản đăng nhập:');
-  console.log('  admin@enghabit.local  / Admin12345  (quản trị viên)');
-  console.log('  user@enghabit.local   / User12345   (có sẵn dữ liệu học tập)');
-  console.log('  newbie@enghabit.local / User12345   (tài khoản trắng)');
+  console.log('  admin@enghabit.com  / A1234567   (quản trị viên)');
+  console.log('  user@enghabit.com   / A1234567   (có sẵn dữ liệu học tập)');
+  console.log('  newbie@enghabit.com / A1234567   (tài khoản trắng)');
 }
 
 main()

@@ -38,8 +38,9 @@ Tài khoản mẫu sau khi seed:
 
 | Vai trò | Email | Mật khẩu |
 |---|---|---|
-| Quản trị viên | admin@enghabit.local | Admin12345 |
-| Người học | user@enghabit.local | User12345 |
+| Quản trị viên | admin@enghabit.com | A1234567 |
+| Người học (có sẵn dữ liệu) | user@enghabit.com | A1234567 |
+| Tài khoản trắng | newbie@enghabit.com | A1234567 |
 
 ## Cấu trúc
 
