@@ -75,16 +75,16 @@ function BrandPanel(): JSX.Element {
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface p-1.5 shadow-sm">
               <img src="/logo.png" alt="" aria-hidden className="h-full w-full object-contain" />
             </span>
-            <Wordmark size="lg" variant="light" />
+            <Wordmark size="lg" on="light" />
           </span>
         </div>
       </div>
 
       <div className="relative px-10">
-        <h2 className="max-w-sm animate-enter-up text-3xl font-bold leading-tight text-ink [animation-delay:80ms]">
+        <h2 className="max-w-sm animate-enter-up text-3xl font-bold leading-tight text-on-brand [animation-delay:80ms]">
           Học tiếng Anh đều đặn, mỗi ngày một chút
         </h2>
-        <p className="mt-3 max-w-sm animate-enter-up text-sm leading-relaxed text-ink/75 [animation-delay:140ms]">
+        <p className="mt-3 max-w-sm animate-enter-up text-sm leading-relaxed text-on-brand/80 [animation-delay:140ms]">
           Vấn đề không nằm ở thiếu tài liệu, mà ở việc duy trì. ENG//HABIT giúp bạn biến việc học
           thành thói quen và thấy rõ mình đang tiến bộ.
         </p>
@@ -100,8 +100,8 @@ function BrandPanel(): JSX.Element {
                 <item.icon className="h-4 w-4 text-brand-strong" aria-hidden />
               </div>
               <div>
-                <p className="text-sm font-semibold text-ink">{item.title}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-ink/70">{item.description}</p>
+                <p className="text-sm font-semibold text-on-brand">{item.title}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-on-brand/75">{item.description}</p>
               </div>
             </li>
           ))}
@@ -109,7 +109,7 @@ function BrandPanel(): JSX.Element {
       </div>
 
       <div className="relative p-10">
-        <p className="animate-enter-up text-xs text-ink/60 [animation-delay:520ms]">
+        <p className="animate-enter-up text-xs text-on-brand/70 [animation-delay:520ms]">
           Ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh
         </p>
       </div>

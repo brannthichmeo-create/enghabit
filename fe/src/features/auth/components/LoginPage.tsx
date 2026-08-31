@@ -82,7 +82,7 @@ export function LoginPage(): JSX.Element {
 
         <p className="animate-enter-up text-center text-sm text-content-muted [animation-delay:240ms]">
           Chưa có tài khoản?{' '}
-          <Link to="/register" className="font-medium text-brand transition-colors hover:text-brand-strong">
+          <Link to="/register" className="font-medium text-brand-strong underline-offset-2 transition-colors hover:underline">
             Đăng ký miễn phí
           </Link>
         </p>

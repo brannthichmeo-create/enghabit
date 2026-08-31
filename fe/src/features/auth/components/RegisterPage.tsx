@@ -99,7 +99,7 @@ export function RegisterPage(): JSX.Element {
 
         <p className="animate-enter-up text-center text-sm text-content-muted [animation-delay:300ms]">
           Đã có tài khoản?{' '}
-          <Link to="/login" className="font-medium text-brand transition-colors hover:text-brand-strong">
+          <Link to="/login" className="font-medium text-brand-strong underline-offset-2 transition-colors hover:underline">
             Đăng nhập
           </Link>
         </p>
