@@ -123,7 +123,7 @@ export function Field({
 }
 
 const CONTROL_CLASS =
-  'mt-1.5 w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10';
+  'mt-1.5 w-full rounded-lg border border-line-control bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10';
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>): JSX.Element {
   return <input {...props} className={`${CONTROL_CLASS} ${props.className ?? ''}`} />;

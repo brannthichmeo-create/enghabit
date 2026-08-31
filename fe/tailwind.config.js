@@ -19,6 +19,7 @@ export default {
         line: {
           DEFAULT: 'rgb(var(--line) / <alpha-value>)',
           strong: 'rgb(var(--line-strong) / <alpha-value>)',
+          control: 'rgb(var(--line-control) / <alpha-value>)',
         },
         content: {
           DEFAULT: 'rgb(var(--text) / <alpha-value>)',

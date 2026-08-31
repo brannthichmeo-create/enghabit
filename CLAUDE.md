@@ -114,6 +114,10 @@ Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, 
 
 ## Quy chuẩn màu và logo (frontend)
 
+> Bộ quy tắc phối màu đầy đủ (25 quy tắc, có mã R1-R25 để trích dẫn) nằm trong
+> **`docs/color-rules.md`**. Đọc file đó trước khi đổi bất kỳ màu nào, và chạy lại
+> bảng đối chiếu tương phản ở cuối file sau khi đổi.
+
 - Màu thương hiệu khai báo trong `fe/src/index.css` dưới dạng **kênh màu** (`--brand: 19 112 114;`),
   không phải hex. Tailwind cần dạng này để áp được độ mờ (`text-ink/70`, `bg-brand/20`);
   nếu khai báo hex thuần, các class có `/` **bị bỏ qua âm thầm** — không báo lỗi, chỉ mất màu khi chạy.

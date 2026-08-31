@@ -30,7 +30,7 @@ export function AuthField({ label, icon: Icon, error, hint, ...props }: AuthFiel
           className={`w-full rounded-lg border bg-surface py-2.5 pl-9 pr-3 text-sm text-content outline-none transition-colors placeholder:text-content-muted ${
             error
               ? 'border-danger/60 focus:border-danger focus:ring-4 focus:ring-danger/10'
-              : 'border-line-strong focus:border-brand focus:ring-4 focus:ring-brand/10'
+              : 'border-line-control focus:border-brand focus:ring-4 focus:ring-brand/10'
           }`}
         />
       </div>

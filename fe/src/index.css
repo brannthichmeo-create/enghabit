@@ -28,11 +28,16 @@
   --sunken: 242 241 231;
   --line: 228 227 214;
   --line-strong: 207 206 188;
+  /*
+   * Viền ô nhập là ranh giới DUY NHẤT của control nên phải đạt 3:1 (xem
+   * docs/color-rules.md R6). --line-strong chỉ 1.59:1, dùng cho viền trang trí.
+   */
+  --line-control: 146 147 118; /* #929376 — đạt 3.15:1 trên nền thẻ */
 
   /* Chữ cũng ngả olive thay vì đen thuần, giảm độ gắt khi đọc lâu */
   --text: 34 35 26;
   --text-soft: 74 76 60;
-  --text-muted: 124 126 108;
+  --text-muted: 112 113 96; /* #707160 — trên nền thẻ đạt 4.98:1 */
 
   /*
    * Màu thương hiệu #8E9141 — dùng ĐÚNG mã màu đã chọn làm nền nút.
@@ -93,6 +98,8 @@
     --sunken: 25 26 18;
     --line: 51 53 42;
     --line-strong: 74 77 60;
+  --line-control: 113 114 90; /* #71725a — đạt 3.34:1 trên nền thẻ */
+    --line-control: 113 114 90; /* #71725a — đạt 3.34:1 trên nền thẻ */
 
     --text: 233 233 223;
     --text-soft: 185 187 166;
