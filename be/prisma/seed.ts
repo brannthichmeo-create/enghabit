@@ -47,6 +47,7 @@ async function main(): Promise<void> {
 
   const vocabByTopic = await seedContent(admin.id);
   await seedLearnerData(learner.id, vocabByTopic);
+  await seedLoginHistory([admin.id, learner.id]);
 
   await printSummary();
 }
@@ -139,6 +140,74 @@ async function seedLearnerData(userId: number, vocabByTopic: Map<string, number[
   await seedVocabProgress(userId, learnedVocabIds);
   await seedQuizAttempts(userId);
   await recomputeStreak(userId);
+}
+
+/**
+ * Nhật ký đăng nhập 30 ngày cho trang "Lượt truy cập" của quản trị viên.
+ *
+ * Có xen vài lần sai mật khẩu, vì màn hình này tồn tại chính là để nhìn ra loại sự
+ * kiện đó — seed toàn lần thành công thì không kiểm chứng được phần hiển thị lỗi.
+ */
+async function seedLoginHistory(userIds: number[]): Promise<void> {
+  const existing = await prisma.loginEvent.count();
+  if (existing > 0) {
+    console.log(`  (đã có ${existing} lượt đăng nhập — bỏ qua phần tạo nhật ký truy cập)`);
+    return;
+  }
+
+  const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
+  const agents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile Safari/604.1',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36 Edg/131.0',
+  ];
+
+  // Bắt đầu từ hôm qua: mốc giờ cố định 19-22h, nếu tính cả hôm nay thì bản ghi sẽ
+  // rơi vào tương lai khi chạy seed lúc sáng.
+  const events: Prisma.LoginEventCreateManyInput[] = [];
+  for (let offset = 30; offset >= 1; offset -= 1) {
+    for (const [index, user] of users.entries()) {
+      // Không phải ngày nào cũng đăng nhập — chừa khoảng trống cho giống thật.
+      if ((offset + index) % 3 === 0) continue;
+
+      events.push({
+        userId: user.id,
+        email: user.email,
+        success: true,
+        ipAddress: `14.161.${20 + (offset % 8)}.${10 + index}`,
+        userAgent: agents[(offset + index) % agents.length] as string,
+        createdAt: instantAtOffset(offset, 19 + index),
+      });
+    }
+
+    // Vài lần gõ sai mật khẩu rải rác trong tháng.
+    if (offset % 9 === 0 && users[1]) {
+      events.push({
+        userId: users[1].id,
+        email: users[1].email,
+        success: false,
+        reason: 'WRONG_PASSWORD',
+        ipAddress: '14.161.33.7',
+        userAgent: agents[0] as string,
+        createdAt: instantAtOffset(offset, 22),
+      });
+    }
+  }
+
+  await prisma.loginEvent.createMany({ data: events });
+
+  // lastLoginAt là dữ liệu dẫn xuất từ nhật ký — đặt lại cho khớp thay vì bịa số.
+  for (const user of users) {
+    const latest = await prisma.loginEvent.findFirst({
+      where: { userId: user.id, success: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (latest) {
+      await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: latest.createdAt } });
+    }
+  }
+
+  console.log(`  Đã tạo ${events.length} lượt đăng nhập mẫu`);
 }
 
 async function seedHabits(userId: number) {

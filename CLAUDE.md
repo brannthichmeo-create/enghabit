@@ -22,11 +22,21 @@ Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có 
 - Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user)
 
 ### Chức năng cho quản trị viên
-- Quản lý người dùng
-- Quản lý chủ đề và từ vựng
-- Quản lý câu hỏi quiz
-- Quản lý nội dung học tập
-- Theo dõi hoạt động/thống kê hệ thống
+
+Quản trị viên **vận hành hệ thống, không phải người học**: đăng nhập bằng tài khoản
+`ADMIN` sẽ vào thẳng `/admin`, không thấy màn hình học, streak hay XP (route guard
+`Learner` trong `fe/src/routes/AppRoutes.tsx` đẩy admin về khu quản trị).
+
+- **Tổng quan hệ thống** (`/admin`) — quy mô người dùng, người hoạt động 1/7/30 ngày, cơ cấu hoạt động, kho nội dung, tình trạng kết nối DB, uptime API
+- **Quản lý tài khoản** (`/admin/users`) — tìm kiếm/lọc/sắp xếp, xem hồ sơ chi tiết, đổi vai trò, khoá–mở khoá, đặt lại mật khẩu, xoá
+- **Lượt truy cập** (`/admin/access`) — nhật ký đăng nhập (cả lần thất bại), lượt truy cập theo ngày, phiên đang mở
+- **Nội dung học tập** (`/admin/content`) — chủ đề, từ vựng, câu hỏi quiz
+
+Ba quy tắc an toàn bắt buộc giữ khi sửa module này (đã cài trong `admin.service.ts`):
+không tự hạ quyền/khoá/xoá chính mình, không xoá hay hạ quyền **quản trị viên hoạt
+động cuối cùng** (mất hết admin thì phải sửa tay trong DB mới vào lại được), và khoá
+tài khoản thì **thu hồi luôn refresh token** — nếu không, người bị khoá vẫn dùng tiếp
+tới khi token hết hạn 30 ngày.
 
 ## Kiến trúc & tech stack
 
@@ -66,6 +76,13 @@ Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, 
 ## Data model cốt lõi (tóm tắt)
 
 `ActivityLog` là **nguồn sự thật duy nhất** cho mọi hoạt động học (học từ, ôn flashcard, làm quiz, check-in habit). Chi tiết entity xem `docs/er-diagram.md` khi được tạo.
+
+`LoginEvent` là **nguồn sự thật cho mọi số liệu lượt truy cập**: mỗi lần đăng nhập,
+kể cả thất bại, ghi một dòng (`success`, `reason`, IP, user-agent). `User.lastLoginAt`
+chỉ là bản sao cho nhanh, luôn tái tạo được từ bảng này — không tính lượt truy cập từ
+`RefreshToken` hay bất kỳ nguồn nào khác. Khác với `ActivityLog`, `LoginEvent` group
+theo **ngày giờ máy chủ**, không theo `local_date`: đây là sự kiện kỹ thuật của hệ
+thống, không gắn với "một ngày học" của riêng người dùng nào.
 
 **`UserStreak` là dữ liệu dẫn xuất (cache), không phải nguồn sự thật.** Bảng này lưu sẵn `current_streak`/`longest_streak` chỉ để đọc nhanh, và luôn phải tái tạo được 100% từ `ActivityLog`. Vì vậy:
 
