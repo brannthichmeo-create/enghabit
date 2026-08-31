@@ -18,6 +18,8 @@ interface AuthState {
   user: PublicUser | null;
   accessToken: string | null;
   setSession: (response: AuthResponse) => void;
+  /** Cập nhật thông tin user mà không đụng tới token — dùng sau khi sửa hồ sơ. */
+  setUser: (user: PublicUser) => void;
   clearSession: () => void;
   refresh: () => Promise<string | null>;
 }
@@ -29,6 +31,8 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
 
       setSession: (response) => set({ user: response.user, accessToken: response.accessToken }),
+
+      setUser: (user) => set({ user }),
 
       clearSession: () => set({ user: null, accessToken: null }),
 

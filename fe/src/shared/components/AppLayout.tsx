@@ -1,98 +1,144 @@
-import { BookOpen, GraduationCap, LayoutDashboard, ListChecks, LogOut, Layers, Shield, Target } from 'lucide-react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { UserRole } from '@enghabit/shared';
-import { useCurrentUser } from '../../features/auth/auth.store';
-import { useLogout } from '../../features/auth/auth.hooks';
-import { useDueCount } from '../../features/flashcards/flashcard.hooks';
-import { Logo } from './Logo';
+import { Flame, Menu, Sparkles, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { useLevel, useStreak } from '../../features/statistics/statistics.hooks';
+import { Sidebar } from './Sidebar';
 import { ThemeToggle } from './ThemeToggle';
 
-const NAV_ITEMS = [
-  { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
-  { to: '/learn', label: 'Học', icon: GraduationCap },
-  { to: '/habits', label: 'Thói quen', icon: ListChecks },
-  { to: '/goals', label: 'Mục tiêu', icon: Target },
-  { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen },
-  { to: '/flashcards', label: 'Ôn tập', icon: Layers },
-  { to: '/quizzes', label: 'Quiz', icon: Shield },
-];
+/**
+ * Khung chung sau khi đăng nhập: thanh điều hướng dọc bên trái, nội dung bên phải.
+ *
+ * Màn hình rộng thì sidebar luôn hiện và thu gọn được. Màn hình hẹp thì nó ẩn đi,
+ * mở ra dạng ngăn kéo phủ lên — nhồi sidebar cố định vào màn hình điện thoại sẽ
+ * chiếm mất nửa chỗ đọc nội dung.
+ */
 
-/** Khung chung cho các trang sau khi đăng nhập. */
+const COLLAPSE_KEY = 'enghabit-sidebar-collapsed';
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function AppLayout(): JSX.Element {
-  const user = useCurrentUser();
-  const logout = useLogout();
-  const dueCount = useDueCount();
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+    } catch {
+      /* trình duyệt chặn lưu — vẫn dùng được trong phiên này */
+    }
+  }, [collapsed]);
+
+  // Đổi trang thì đóng ngăn kéo, nếu không nó che mất trang vừa mở
+  useEffect(() => setDrawerOpen(false), [location.pathname]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setDrawerOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drawerOpen]);
 
   return (
     <div className="min-h-screen">
-      {/* sticky để thanh điều hướng luôn trong tầm với khi cuộn danh sách dài */}
-      <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="flex items-center justify-between py-3">
-            <Logo size="sm" />
+      {/* Sidebar cố định trên màn hình rộng */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 hidden border-r border-line transition-[width] duration-200 lg:block ${
+          collapsed ? 'w-[68px]' : 'w-60'
+        }`}
+      >
+        <Sidebar collapsed={collapsed} onToggleCollapse={() => setCollapsed((v) => !v)} />
+      </aside>
 
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm text-content-soft sm:inline">{user?.name}</span>
-              <ThemeToggle />
-              <button
-                onClick={() => logout.mutate()}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-content-muted transition-colors hover:bg-sunken hover:text-content"
-              >
-                <LogOut className="h-4 w-4" aria-hidden />
-                <span className="hidden sm:inline">Đăng xuất</span>
-              </button>
-            </div>
+      {/* Ngăn kéo trên màn hình hẹp */}
+      {drawerOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            onClick={() => setDrawerOpen(false)}
+            aria-hidden
+          />
+          <aside className="fixed inset-y-0 left-0 z-50 w-60 border-r border-line shadow-xl lg:hidden">
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-content-muted hover:bg-sunken hover:text-content"
+              aria-label="Đóng menu"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <Sidebar
+              collapsed={false}
+              onToggleCollapse={() => undefined}
+              onNavigate={() => setDrawerOpen(false)}
+            />
+          </aside>
+        </>
+      )}
+
+      <div className={`transition-[padding] duration-200 ${collapsed ? 'lg:pl-[68px]' : 'lg:pl-60'}`}>
+        <header className="sticky top-0 z-20 border-b border-line bg-page/90 backdrop-blur">
+          <div className="flex items-center gap-3 px-4 py-2.5">
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-sunken hover:text-content lg:hidden"
+              aria-label="Mở menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
+            <div className="flex-1" />
+
+            <QuickStats />
+            <ThemeToggle />
           </div>
+        </header>
 
-          <nav className="-mx-1 flex gap-0.5 overflow-x-auto px-1 pb-2 no-scrollbar">
-            {NAV_ITEMS.map((item) => (
-              <NavItem
-                key={item.to}
-                {...item}
-                // Số từ tới hạn ôn hiện ngay trên nav để user biết còn việc cần làm
-                badge={item.to === '/flashcards' ? dueCount.data : undefined}
-              />
-            ))}
-            {user?.role === UserRole.ADMIN && <NavItem to="/admin" label="Quản trị" icon={Shield} />}
-          </nav>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <Outlet />
-      </main>
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
 
-function NavItem({
-  to,
-  label,
-  icon: Icon,
-  badge,
-}: {
-  to: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  badge?: number;
-}): JSX.Element {
+/**
+ * Chuỗi ngày và cấp độ ngay trên thanh trên cùng.
+ * Đây là hai chỉ số người học liếc nhìn thường xuyên nhất, để ở đây thì không
+ * phải quay về trang Tổng quan mới xem được.
+ */
+function QuickStats(): JSX.Element {
+  const streak = useStreak();
+  const level = useLevel();
+
   return (
-    <NavLink
-      to={to}
-      end={to === '/'}
-      className={({ isActive }) =>
-        `flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-          isActive ? 'bg-brand-soft text-brand-strong' : 'text-content-muted hover:bg-sunken hover:text-content'
-        }`
-      }
-    >
-      <Icon className="h-4 w-4" aria-hidden />
-      {label}
-      {badge !== undefined && badge > 0 && (
-        <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold leading-none text-on-brand">
-          {badge}
-        </span>
-      )}
-    </NavLink>
+    <div className="flex items-center gap-1.5">
+      <span
+        className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-1 text-xs font-medium tabular-nums text-content-soft"
+        title={`Chuỗi ngày học${streak.data?.isAlive === false ? ' — đã đứt' : ''}`}
+      >
+        <Flame
+          className={`h-3.5 w-3.5 ${streak.data?.isAlive ? 'text-accent' : 'text-content-muted'}`}
+          aria-hidden
+        />
+        {streak.data?.currentStreak ?? 0}
+      </span>
+
+      <span
+        className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-1 text-xs font-medium tabular-nums text-content-soft"
+        title={`Cấp ${level.data?.level ?? 1} · ${level.data?.xp ?? 0} XP`}
+      >
+        <Sparkles className="h-3.5 w-3.5 text-brand" aria-hidden />
+        {level.data?.level ?? 1}
+      </span>
+    </div>
   );
 }

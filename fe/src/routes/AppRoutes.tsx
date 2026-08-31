@@ -10,6 +10,7 @@ import { PathPage } from '../features/lessons/components/PathPage';
 import { VocabularyPage } from '../features/vocabulary/components/VocabularyPage';
 import { FlashcardPage } from '../features/flashcards/components/FlashcardPage';
 import { QuizzesPage } from '../features/quizzes/components/QuizzesPage';
+import { ProfilePage } from '../features/profile/components/ProfilePage';
 import { AdminPage } from '../features/admin/components/AdminPage';
 import { FeatureErrorBoundary } from '../shared/components/FeatureErrorBoundary';
 import { AppLayout } from '../shared/components/AppLayout';
@@ -34,6 +35,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/vocabulary" element={<Feature name="Từ vựng"><VocabularyPage /></Feature>} />
         <Route path="/flashcards" element={<Feature name="Flashcard"><FlashcardPage /></Feature>} />
         <Route path="/quizzes" element={<Feature name="Quiz"><QuizzesPage /></Feature>} />
+        <Route path="/profile" element={<Feature name="Trang cá nhân"><ProfilePage /></Feature>} />
 
         <Route
           path="/admin"

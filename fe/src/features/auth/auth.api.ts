@@ -1,4 +1,11 @@
-import type { AuthResponse, LoginInput, PublicUser, RegisterInput, UpdateProfileInput } from '@enghabit/shared';
+import type {
+  AuthResponse,
+  ChangePasswordInput,
+  LoginInput,
+  PublicUser,
+  RegisterInput,
+  UpdateProfileInput,
+} from '@enghabit/shared';
 import { apiClient } from '../../shared/lib/api-client';
 
 /** Tầng gọi API của feature auth. Component không gọi axios trực tiếp. */
@@ -25,4 +32,9 @@ export async function getMe(): Promise<PublicUser> {
 export async function updateMe(input: UpdateProfileInput): Promise<PublicUser> {
   const { data } = await apiClient.patch<PublicUser>('/auth/me', input);
   return data;
+}
+
+/** Đổi mật khẩu. Backend thu hồi mọi phiên cũ nên các thiết bị khác sẽ bị đăng xuất. */
+export async function changePassword(input: ChangePasswordInput): Promise<void> {
+  await apiClient.post('/auth/me/change-password', input);
 }
