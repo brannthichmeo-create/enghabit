@@ -24,7 +24,11 @@ export async function register(req: Request, res: Response): Promise<void> {
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const result = await authService.login(req.body as LoginInput);
+  const result = await authService.login(req.body as LoginInput, {
+    // req.ip đã tính sẵn theo X-Forwarded-For nhờ `trust proxy` đặt trong app.ts
+    ipAddress: req.ip,
+    userAgent: req.get('user-agent'),
+  });
   setRefreshCookie(res, result.refreshToken);
   res.json(result);
 }

@@ -23,6 +23,13 @@ enum UserRole {
   ADMIN
 }
 
+/// Trạng thái tài khoản. LOCKED thì không đăng nhập được nhưng dữ liệu học vẫn giữ
+/// nguyên — khoá là biện pháp có thể đảo ngược, khác hẳn với xoá.
+enum UserStatus {
+  ACTIVE
+  LOCKED
+}
+
 enum GoalType {
   VOCAB_PER_DAY
   MINUTES_PER_DAY
@@ -85,8 +92,13 @@ model User {
   id           Int      @id @default(autoincrement())
   name         String   @db.VarChar(100)
   email        String   @unique @db.VarChar(190) // 190 để vừa giới hạn index utf8mb4
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  role         UserRole @default(USER)
+  passwordHash String     @map("password_hash") @db.VarChar(255)
+  role         UserRole   @default(USER)
+  status       UserStatus @default(ACTIVE)
+
+  /// Lần đăng nhập thành công gần nhất. Dẫn xuất từ LoginEvent, lưu sẵn để danh sách
+  /// người dùng của trang quản trị không phải join bảng nhật ký cho từng dòng.
+  lastLoginAt DateTime? @map("last_login_at")
 
   /// Timezone IANA, vd "Asia/Ho_Chi_Minh". Dùng để tính localDate của ActivityLog.
   timezone String @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
@@ -106,9 +118,34 @@ model User {
   notificationSetting NotificationSetting?
   devices             UserDevice[]
   refreshTokens       RefreshToken[]
+  loginEvents         LoginEvent[]
   createdTopics       Topic[]              @relation("TopicCreatedBy")
 
   @@map("users")
+}
+
+/// Nhật ký đăng nhập — nguồn dữ liệu cho phần "lượt truy cập" của trang quản trị.
+///
+/// Ghi cả lần thất bại (userId = null khi email không tồn tại) để quản trị viên nhìn
+/// ra được dấu hiệu dò mật khẩu, chứ không chỉ thấy các lần vào thành công.
+model LoginEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  email     String   @db.VarChar(190)
+  success   Boolean
+  /// Lý do thất bại: NO_ACCOUNT | WRONG_PASSWORD | LOCKED. Null khi thành công.
+  reason    String?  @db.VarChar(32)
+  ipAddress String?  @map("ip_address") @db.VarChar(45) // 45 = đủ cho IPv6
+  userAgent String?  @map("user_agent") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// Xoá người dùng thì giữ lại dòng nhật ký (userId = null) — số liệu truy cập lịch sử
+  /// không được biến mất chỉ vì một tài khoản bị xoá.
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("login_events")
 }
 
 /// Refresh token được lưu dạng hash để nếu DB lộ thì token cũng không dùng lại được.

@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import {
   DEFAULT_TIMEZONE,
+  LoginFailReason,
+  UserStatus,
   type AuthResponse,
   type LoginInput,
   type PublicUser,
@@ -10,7 +12,7 @@ import {
 } from '@enghabit/shared';
 import type { User } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { ConflictError, NotFoundError, UnauthorizedError } from '../../common/errors/app-error.js';
+import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../../common/errors/app-error.js';
 import { issueRefreshToken, revokeRefreshToken, rotateRefreshToken, signAccessToken } from './token.service.js';
 
 const BCRYPT_ROUNDS = 10;
@@ -34,15 +36,63 @@ export async function register(input: RegisterInput): Promise<AuthResponse> {
   return buildAuthResponse(user);
 }
 
-export async function login(input: LoginInput): Promise<AuthResponse> {
+/**
+ * Đăng nhập.
+ *
+ * Mọi lượt thử — kể cả thất bại — đều ghi vào LoginEvent để trang quản trị thống kê
+ * được lượt truy cập và nhìn ra dấu hiệu dò mật khẩu. `client` là thông tin kỹ thuật
+ * của request, do controller lấy từ req rồi truyền xuống (service không đụng tới req).
+ */
+export async function login(input: LoginInput, client: LoginClientInfo = {}): Promise<AuthResponse> {
   const user = await prisma.user.findUnique({ where: { email: input.email } });
 
   // Cùng một thông báo cho cả hai trường hợp để không lộ email nào đã tồn tại.
   const invalid = new UnauthorizedError('Email hoặc mật khẩu không đúng');
-  if (!user) throw invalid;
-  if (!(await bcrypt.compare(input.password, user.passwordHash))) throw invalid;
+
+  if (!user) {
+    await recordLoginEvent(input.email, null, LoginFailReason.NO_ACCOUNT, client);
+    throw invalid;
+  }
+  if (!(await bcrypt.compare(input.password, user.passwordHash))) {
+    await recordLoginEvent(input.email, user.id, LoginFailReason.WRONG_PASSWORD, client);
+    throw invalid;
+  }
+  if (user.status === UserStatus.LOCKED) {
+    // Nói rõ lý do ở trường hợp này: mật khẩu đã đúng nên không lộ thêm thông tin gì,
+    // mà người dùng cần biết phải liên hệ quản trị viên thay vì thử lại mật khẩu.
+    await recordLoginEvent(input.email, user.id, LoginFailReason.LOCKED, client);
+    throw new ForbiddenError('Tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên.');
+  }
+
+  await Promise.all([
+    recordLoginEvent(input.email, user.id, null, client),
+    prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }),
+  ]);
 
   return buildAuthResponse(user);
+}
+
+export interface LoginClientInfo {
+  ipAddress?: string | undefined;
+  userAgent?: string | undefined;
+}
+
+async function recordLoginEvent(
+  email: string,
+  userId: number | null,
+  reason: LoginFailReason | null,
+  client: LoginClientInfo,
+): Promise<void> {
+  await prisma.loginEvent.create({
+    data: {
+      userId,
+      email,
+      success: reason === null,
+      reason,
+      ipAddress: client.ipAddress?.slice(0, 45) ?? null,
+      userAgent: client.userAgent?.slice(0, 255) ?? null,
+    },
+  });
 }
 
 export async function refresh(refreshToken: string): Promise<AuthResponse> {
@@ -50,6 +100,12 @@ export async function refresh(refreshToken: string): Promise<AuthResponse> {
   if (!rotated) throw new UnauthorizedError('Refresh token không hợp lệ hoặc đã hết hạn');
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: rotated.userId } });
+
+  // Khoá tài khoản phải cắt được cả phiên đang mở, nếu không người bị khoá vẫn dùng
+  // tiếp tới khi refresh token hết hạn (30 ngày).
+  if (user.status === UserStatus.LOCKED) {
+    throw new ForbiddenError('Tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên.');
+  }
 
   return {
     user: toPublicUser(user),
@@ -107,7 +163,9 @@ export function toPublicUser(user: User): PublicUser {
     name: user.name,
     email: user.email,
     role: user.role,
+    status: user.status,
     timezone: user.timezone,
     createdAt: user.createdAt.toISOString(),
+    lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
   };
 }

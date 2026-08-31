@@ -9,6 +9,24 @@ export const UserRole = {
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
+/**
+ * Trạng thái tài khoản. Khoá là biện pháp đảo ngược được: tài khoản LOCKED không
+ * đăng nhập được nhưng toàn bộ dữ liệu học vẫn còn nguyên.
+ */
+export const UserStatus = {
+  ACTIVE: 'ACTIVE',
+  LOCKED: 'LOCKED',
+} as const;
+export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
+
+/** Lý do một lượt đăng nhập thất bại — ghi vào LoginEvent.reason. */
+export const LoginFailReason = {
+  NO_ACCOUNT: 'NO_ACCOUNT',
+  WRONG_PASSWORD: 'WRONG_PASSWORD',
+  LOCKED: 'LOCKED',
+} as const;
+export type LoginFailReason = (typeof LoginFailReason)[keyof typeof LoginFailReason];
+
 /** Loại mục tiêu học người dùng có thể đặt ra. */
 export const GoalType = {
   /** Học N từ vựng mỗi ngày */

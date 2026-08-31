@@ -7,3 +7,4 @@ export * from './quiz.schema.js';
 export * from './statistics.schema.js';
 export * from './lesson.schema.js';
 export * from './notification.schema.js';
+export * from './admin.schema.js';

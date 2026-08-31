@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRole } from '../constants/enums.js';
+import { UserRole, UserStatus } from '../constants/enums.js';
 
 export const passwordSchema = z
   .string()
@@ -45,8 +45,11 @@ export interface PublicUser {
   name: string;
   email: string;
   role: UserRole;
+  status: UserStatus;
   timezone: string;
   createdAt: string;
+  /** ISO datetime lần đăng nhập gần nhất, null nếu chưa từng đăng nhập. */
+  lastLoginAt: string | null;
 }
 
 export interface AuthTokens {
