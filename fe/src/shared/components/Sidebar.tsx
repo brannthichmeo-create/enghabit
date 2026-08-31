@@ -1,10 +1,12 @@
 import {
   Activity,
+  Bell,
   BookOpen,
   ChevronLeft,
   GraduationCap,
   Layers,
   LayoutDashboard,
+  Megaphone,
   ListChecks,
   LogOut,
   Shield,
@@ -19,6 +21,7 @@ import { useLogout } from '../../features/auth/auth.hooks';
 import { useDueCount } from '../../features/flashcards/flashcard.hooks';
 import { useMistakeCount } from '../../features/lessons/lesson.hooks';
 import { useLevel } from '../../features/statistics/statistics.hooks';
+import { useUnreadCount } from '../../features/notifications/notification.hooks';
 import { Logo } from './Logo';
 
 /**
@@ -56,6 +59,7 @@ export function Sidebar({
   const dueCount = useDueCount(isLearner);
   const mistakeCount = useMistakeCount(isLearner);
   const level = useLevel(isLearner);
+  const unread = useUnreadCount();
 
   const isAdmin = !isLearner;
 
@@ -65,6 +69,7 @@ export function Sidebar({
     { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen },
     { to: '/flashcards', label: 'Ôn tập', icon: Layers, badge: dueCount.data },
     { to: '/quizzes', label: 'Quiz', icon: Shield },
+    { to: '/notifications', label: 'Thông báo', icon: Bell, badge: unread.data },
   ];
 
   const habitItems: NavItem[] = [
@@ -78,6 +83,7 @@ export function Sidebar({
     { to: '/admin/users', label: 'Tài khoản', icon: Users },
     { to: '/admin/access', label: 'Lượt truy cập', icon: Activity },
     { to: '/admin/content', label: 'Nội dung học tập', icon: BookOpen },
+    { to: '/admin/announcements', label: 'Gửi thông báo', icon: Megaphone },
   ];
 
   return (

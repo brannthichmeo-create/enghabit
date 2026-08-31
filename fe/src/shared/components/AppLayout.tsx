@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLevel, useStreak } from '../../features/statistics/statistics.hooks';
+import { NotificationBell } from '../../features/notifications/components/NotificationBell';
 import { Sidebar } from './Sidebar';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -100,6 +101,7 @@ export function AppLayout(): JSX.Element {
             <div className="flex-1" />
 
             <QuickStats />
+            <NotificationBell />
             <ThemeToggle />
           </div>
         </header>

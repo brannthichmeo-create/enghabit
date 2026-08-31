@@ -15,6 +15,8 @@ import { AdminOverviewPage } from '../features/admin/components/AdminOverviewPag
 import { AdminUsersPage } from '../features/admin/components/AdminUsersPage';
 import { AdminAccessPage } from '../features/admin/components/AdminAccessPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
+import { NotificationsPage } from '../features/notifications/components/NotificationsPage';
+import { AnnouncementPage } from '../features/notifications/components/AnnouncementPage';
 import { FeatureErrorBoundary } from '../shared/components/FeatureErrorBoundary';
 import { AppLayout } from '../shared/components/AppLayout';
 
@@ -44,14 +46,19 @@ export function AppRoutes(): JSX.Element {
         <Route path="/flashcards" element={<Learner name="Flashcard"><FlashcardPage /></Learner>} />
         <Route path="/quizzes" element={<Learner name="Quiz"><QuizzesPage /></Learner>} />
 
-        {/* Trang cá nhân dùng chung cho cả hai vai trò */}
+        {/* Trang cá nhân và thông báo dùng chung cho cả hai vai trò */}
         <Route path="/profile" element={<Feature name="Trang cá nhân"><ProfilePage /></Feature>} />
+        <Route path="/notifications" element={<Feature name="Thông báo"><NotificationsPage /></Feature>} />
 
         {/* --- Khu quản trị --- */}
         <Route path="/admin" element={<Admin name="Tổng quan hệ thống"><AdminOverviewPage /></Admin>} />
         <Route path="/admin/users" element={<Admin name="Quản lý tài khoản"><AdminUsersPage /></Admin>} />
         <Route path="/admin/access" element={<Admin name="Lượt truy cập"><AdminAccessPage /></Admin>} />
         <Route path="/admin/content" element={<Admin name="Nội dung học tập"><AdminContentPage /></Admin>} />
+        <Route
+          path="/admin/announcements"
+          element={<Admin name="Gửi thông báo"><AnnouncementPage /></Admin>}
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
