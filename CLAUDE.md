@@ -138,17 +138,25 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 - Màu thương hiệu khai báo trong `fe/src/index.css` dưới dạng **kênh màu** (`--brand: 19 112 114;`),
   không phải hex. Tailwind cần dạng này để áp được độ mờ (`text-ink/70`, `bg-brand/20`);
   nếu khai báo hex thuần, các class có `/` **bị bỏ qua âm thầm** — không báo lỗi, chỉ mất màu khi chạy.
-- Các giá trị màu đã kiểm tra tương phản WCAG, **không đổi bằng cảm tính**. Đổi thì phải kiểm tra lại:
-  `--brand` chữ trắng đạt 5.85:1, `--ink` trên `--brand-vivid` đạt 9.81:1.
-- **Xanh ngọc của logo (`--brand-vivid`) chỉ dùng làm nền lớn hoặc trang trí** — chữ trắng trên nền
-  đó chỉ đạt 1.59:1, không đọc được. Nút và link dùng `--brand` (xanh đậm).
+- Các giá trị màu đã kiểm tra tương phản WCAG, **không đổi bằng cảm tính**. Đổi thì phải chạy lại
+  bảng đối chiếu ở cuối `docs/color-rules.md`, trên **cả hai chế độ**.
+- **Nền hệ thống `#5A495C` là màu TỐI, nên có hai bộ token chữ, dùng nhầm là lỗi im lặng:**
+  `content` (`--text*`, chữ **trong thẻ** — tối ở chế độ sáng) và `on-page` (`--on-page*`, chữ **trên
+  nền hệ thống**: sidebar, thanh trên cùng, tiêu đề trang, mọi chữ ngoài thẻ — sáng ở chế độ sáng).
+  Ở chế độ tối hai bộ trùng giá trị nên đặt sai chỉ lộ ra ở chế độ sáng.
+- **`--brand` (olive `#8E9141`) chỉ đạt 3.35:1 trên nền trắng và 2.47:1 trên nền hệ thống** — không
+  dùng làm chữ. Link trong thẻ dùng `--brand-strong`, link trên nền hệ thống dùng `--on-page-link`.
+- **Panel đăng nhập luôn sáng ở cả hai chế độ**, nên chữ trên đó dùng `--on-brand` (tối ở cả hai
+  chế độ), tuyệt đối không dùng `--ink` — token này lật theo chế độ và sẽ thành chữ sáng trên nền
+  sáng (1.47:1).
 - Thang màu biểu đồ (`--series-*`) và thang lịch hoạt động là hai bộ riêng, đã qua kiểm tra
   phân biệt cho người mù màu và tính đơn điệu độ sáng. Không hoán đổi thứ tự.
 - **Tên hệ thống hiển thị là `ENG//HABIT`**, luôn dùng qua component `Wordmark`, không tự chèn thẻ
   `img` và không gõ tay chuỗi `ENG//HABIT` thành chữ. Tên là **ảnh** (`fe/public/wordmark.png` navy
-  cho chế độ sáng, `wordmark-dark.png` sáng màu cho chế độ tối) đã tách nền trong suốt từ bản thiết
-  kế gốc — vì là ảnh nên **màu không đổi theo token**, đổi bảng màu nền thì phải xuất lại file. Chỗ
-  nào nền luôn sáng bất kể chế độ (panel đăng nhập) thì truyền `variant="light"`. Tên gói npm
+  bản navy, `wordmark-dark.png` bản sáng màu) đã tách nền trong suốt từ bản thiết kế gốc — vì là ảnh
+  nên **màu không đổi theo token**, đổi bảng màu nền thì phải chạy lại `fe/scripts/make-wordmark.py`.
+  Chọn file theo **nền đang đứng**, không theo chế độ: khung app luôn `on="dark"` (nền hệ thống tối ở
+  cả hai chế độ), panel đăng nhập `on="light"`. Tên gói npm
   `@enghabit/*` giữ nguyên, đó là định danh mã nguồn chứ không phải tên hiển thị.
 - Logo: `mark.svg` (mốc thu gọn) dùng cho favicon và nơi nhỏ dưới 40px; `logo.png` (linh vật đầy đủ)
   dùng cho nơi lớn. Linh vật có chân tay mảnh nên ở cỡ nhỏ chỉ còn là một vệt màu.

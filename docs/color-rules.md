@@ -217,30 +217,40 @@ Ví dụ: trong bảng đang dùng, cam và vàng không được đứng cạnh
 
 ## Bảng đối chiếu bảng màu hiện tại
 
-Đo ngày 31/08/2026, sau khi đổi nền trang sang `#B5B777` và thêm màu tên hệ thống. Chạy lại sau mỗi lần đổi màu.
+Đo ngày 31/08/2026, sau khi đổi nền hệ thống sang mận `#5A495C`. Chạy lại sau mỗi lần đổi màu.
 
 | Cặp màu | Dùng ở đâu | Sáng | Tối | Ngưỡng |
 |---|---|---|---|---|
-| `text` / `page` | Chữ chính trên nền trang | 7.56:1 ✓ | 14.90:1 ✓ | 4.5 |
-| `text-soft` / `page` | Chữ phụ trên nền trang | 4.75:1 ✓ | 9.29:1 ✓ | 4.5 |
-| `text-soft` / `surface` | Chữ phụ trên thẻ | 9.97:1 ✓ | 8.42:1 ✓ | 4.5 |
-| `brand-strong` / `page` | Liên kết trên nền trang | 4.65:1 ✓ | 12.66:1 ✓ | 4.5 |
+| `text` / `surface` | Chữ chính trong thẻ | 16.42:1 ✓ | 11.56:1 ✓ | 4.5 |
+| `text-soft` / `surface` | Chữ phụ trong thẻ | 9.64:1 ✓ | 7.29:1 ✓ | 4.5 |
+| `text-muted` / `surface` | Chữ mờ trong thẻ | 5.81:1 ✓ | 4.80:1 ✓ | 4.5 |
+| `on-page` / `page` | Chữ chính trên nền hệ thống | 6.92:1 ✓ | 13.17:1 ✓ | 4.5 |
+| `on-page-soft` / `page` | Mục điều hướng | 5.37:1 ✓ | 8.31:1 ✓ | 4.5 |
+| `on-page-muted` / `page` | Nhãn nhóm, chữ mờ ngoài thẻ | 4.80:1 ✓ | 5.47:1 ✓ | 4.5 |
+| `on-page-link` / `page` | Liên kết trên nền hệ thống | 4.61:1 ✓ | 11.33:1 ✓ | 4.5 |
+| `brand-strong` / `surface` | Liên kết trong thẻ | 8.56:1 ✓ | 9.91:1 ✓ | 4.5 |
 | `on-brand` / `brand` | Chữ trên nút chính | 5.09:1 ✓ | 9.50:1 ✓ | 4.5 |
+| `on-brand` / `brand-vivid` | Chữ trên panel đăng nhập | 9.50:1 ✓ | 9.50:1 ✓ | 4.5 |
 | `success` / `surface` | Chữ trạng thái thành công | 6.00:1 ✓ | 6.70:1 ✓ | 4.5 |
 | `danger` / `surface` | Chữ trạng thái lỗi | 6.02:1 ✓ | 5.79:1 ✓ | 4.5 |
 | `accent-ink` / `surface` | Chữ màu nhấn | 6.36:1 ✓ | 9.63:1 ✓ | 4.5 |
-| `line-control` / `surface` | Viền ô nhập | 3.15:1 ✓ | 3.34:1 ✓ | 3 |
-| Ảnh tên / `page` | Tên ENG//HABIT trên nền hệ thống | 6.83:1 ✓ | 11.61:1 ✓ | 3 |
-| Ảnh tên / `surface` | Tên trên thẻ trắng | 14.34:1 ✓ | 10.51:1 ✓ | 3 |
-| Ảnh tên / `brand-vivid` | Tên trên panel đăng nhập | 8.00:1 ✓ | 8.00:1 ✓ | 3 |
+| `line-control` / `surface` | Viền ô nhập | 3.64:1 ✓ | 3.35:1 ✓ | 3 |
+| `surface` / `page` | Thẻ nổi trên nền hệ thống | 8.26:1 | 1.14:1 | — |
+| Ảnh tên sáng / `page` | ENG//HABIT trên nền hệ thống | 5.27:1 ✓ | 10.39:1 ✓ | 3 |
+| Ảnh tên navy / `brand-vivid` | ENG//HABIT trên panel đăng nhập | 8.00:1 ✓ | 8.00:1 ✓ | 3 |
 
-**Tên hệ thống là ảnh, không phải chữ — nên màu nằm trong file, không nằm trong token.** `fe/public/wordmark.png` là navy `#16255F` của bản thiết kế gốc: màu lạnh, đối lập với nền olive ấm nên tên tách hẳn ra mà không phải phóng to hay tô đậm thêm. Chế độ tối dùng file thứ hai `wordmark-dark.png` cùng hình dáng nhưng đổi sang `#C5CDF2`, vì navy trên nền `#15160F` chỉ còn 1.8:1.
+**Nền hệ thống tối buộc phải có HAI bộ chữ.** `#5A495C` là màu tối (trắng trên nó đạt 8.26:1, chữ đen chỉ 2.52:1), trong khi thẻ vẫn nền trắng. Hai nền ngược nhau nên không thể dùng chung một bộ token chữ:
 
-Hệ quả cần nhớ: **đổi bảng màu nền thì phải xuất lại hai file ảnh này**, chúng không tự đổi theo token như phần còn lại của giao diện. Panel đăng nhập luôn sáng ở cả hai chế độ nên ép dùng bản navy (`variant="light"`).
+| Bộ token | Dùng cho | Chế độ sáng |
+|---|---|---|
+| `content` (`--text*`) | Chữ **trong thẻ** | tối |
+| `on-page` (`--on-page*`) | Chữ **trên nền hệ thống**: sidebar, thanh trên cùng, tiêu đề trang, chữ ngoài thẻ | sáng |
 
-**Cái giá của nền trang có màu.** Nền `#B5B777` sáng vừa (L=59%) chứ không gần trắng, nên mọi chữ đặt trực tiếp lên nó phải đậm hơn hẳn mới đạt 4.5:1. Hệ quả: `--text-soft` và `--text-muted` buộc phải **dùng chung một bậc** — không còn dư địa để phân biệt "chữ phụ" với "chữ mờ" trên nền trang.
+Dùng nhầm bộ là lỗi im lặng — ở chế độ tối cả hai nền đều tối nên hai bộ trùng giá trị, chỉ chế độ sáng mới lộ ra. Vì vậy sau mỗi lần đổi màu phải chạy lại bộ đo trên **cả hai chế độ**, không chỉ chế độ đang mở.
 
-Muốn khôi phục ba bậc chữ thì phải làm nền nhạt hơn. Đây là đánh đổi có ý thức, không phải sơ suất.
+**Được lại ba bậc chữ.** Thời nền trang màu olive sáng, `text-soft` và `text-muted` buộc phải dùng chung một bậc vì phải đọc được trên cả nền trang lẫn thẻ trắng. Giờ chữ trên nền hệ thống đã tách sang bộ riêng nên `text-muted` được nhẹ lại đúng vai trò của nó (5.81:1 thay vì phải gồng lên 9.97:1).
+
+**Tên hệ thống là ảnh nên màu nằm trong file, không nằm trong token.** Nền hệ thống giờ tối ở cả hai chế độ, nên khung app luôn dùng bản sáng màu (`wordmark-dark.png`); bản navy gốc chỉ dùng ở panel đăng nhập — nơi nền luôn sáng. Đổi bảng màu nền thì phải xuất lại hai file bằng `fe/scripts/make-wordmark.py`.
 
 ---
 
