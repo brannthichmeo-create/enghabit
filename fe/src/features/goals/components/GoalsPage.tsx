@@ -59,7 +59,7 @@ export function GoalsPage(): JSX.Element {
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold text-slate-900">{GOAL_TYPE_LABELS[goal.type]}</h3>
+                  <h3 className="font-semibold text-content">{GOAL_TYPE_LABELS[goal.type]}</h3>
                   <Badge tone={goal.status === GoalStatus.ACTIVE ? 'brand' : 'slate'}>
                     {goal.period === GoalPeriod.DAILY ? 'Mỗi ngày' : 'Mỗi tuần'}
                   </Badge>
@@ -91,16 +91,16 @@ function ProgressBar({ target, progress }: { target: number; progress?: GoalProg
   return (
     <div className="mt-3">
       <div className="mb-1 flex justify-between text-sm">
-        <span className="text-slate-600">
+        <span className="text-content-soft">
           {current} / {target}
         </span>
-        <span className={progress?.isCompleted ? 'font-medium text-green-600' : 'text-slate-500'}>
+        <span className={progress?.isCompleted ? 'font-medium text-success' : 'text-content-muted'}>
           {progress?.isCompleted ? '✓ Hoàn thành' : `${rate}%`}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2 overflow-hidden rounded-full bg-sunken">
         <div
-          className={`h-full rounded-full transition-all ${progress?.isCompleted ? 'bg-emerald-500' : 'bg-brand'}`}
+          className={`h-full rounded-full transition-all ${progress?.isCompleted ? 'bg-success' : 'bg-brand'}`}
           style={{ width: `${rate}%` }}
         />
       </div>

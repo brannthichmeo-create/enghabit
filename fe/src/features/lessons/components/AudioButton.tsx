@@ -75,12 +75,12 @@ export function AudioButton({
   if (unsupported) {
     return (
       <div className="flex flex-col items-center gap-2">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-          <VolumeX className="h-7 w-7 text-slate-400" aria-hidden />
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sunken">
+          <VolumeX className="h-7 w-7 text-content-muted" aria-hidden />
         </div>
         {/* Trình duyệt không đọc được thì hiện chữ, thà mất tính chất bài nghe
             còn hơn để người học kẹt không làm tiếp được */}
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-content-muted">
           Trình duyệt không phát âm được — từ cần nghe là <strong>{text}</strong>
         </p>
       </div>
@@ -94,7 +94,7 @@ export function AudioButton({
       type="button"
       onClick={play}
       aria-label="Nghe lại"
-      className={`flex items-center justify-center rounded-full bg-brand text-white transition-transform hover:bg-brand-strong active:scale-95 ${
+      className={`flex items-center justify-center rounded-full bg-brand text-on-brand transition-transform hover:bg-brand-strong active:scale-95 ${
         isLarge ? 'h-16 w-16' : 'h-9 w-9'
       } ${playing ? 'animate-pulse-soft' : ''}`}
     >

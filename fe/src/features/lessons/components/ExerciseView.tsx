@@ -70,7 +70,7 @@ function ListenView({
     <div>
       <div className="flex flex-col items-center gap-3">
         <AudioButton text={exercise.speakText} audioUrl={exercise.audioUrl} autoPlay />
-        <p className="text-xs text-slate-400">Bấm loa để nghe lại</p>
+        <p className="text-xs text-content-muted">Bấm loa để nghe lại</p>
       </div>
 
       {isChoose ? (
@@ -86,7 +86,7 @@ function ListenView({
               className={`rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed ${
                 selected === option
                   ? 'border-brand bg-brand-soft text-brand-strong'
-                  : 'border-slate-200 hover:border-slate-300'
+                  : 'border-line hover:border-line-strong'
               }`}
             >
               {option}
@@ -105,7 +105,7 @@ function ListenView({
             }}
             className="text-center"
           />
-          <p className="mt-2 text-center text-xs text-slate-400">
+          <p className="mt-2 text-center text-xs text-content-muted">
             Từ này có {exercise.letterCount} chữ cái
           </p>
         </div>
@@ -138,14 +138,14 @@ function ChoiceView({
     <div>
       {isFillBlank ? (
         <div className="text-center">
-          <p className="text-xl leading-relaxed text-slate-900">{exercise.sentence}</p>
-          <p className="mt-2 text-sm text-slate-500">{exercise.hint}</p>
+          <p className="text-xl leading-relaxed text-content">{exercise.sentence}</p>
+          <p className="mt-2 text-sm text-content-muted">{exercise.hint}</p>
         </div>
       ) : (
         <div className="text-center">
-          <p className="text-3xl font-bold tracking-tight text-slate-900">{exercise.question}</p>
+          <p className="text-3xl font-bold tracking-tight text-content">{exercise.question}</p>
           {'phonetic' in exercise && exercise.phonetic && (
-            <p className="mt-1.5 text-sm text-slate-500">{exercise.phonetic}</p>
+            <p className="mt-1.5 text-sm text-content-muted">{exercise.phonetic}</p>
           )}
         </div>
       )}
@@ -162,7 +162,7 @@ function ChoiceView({
             className={`rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed ${
               selected === option
                 ? 'border-brand bg-brand-soft text-brand-strong'
-                : 'border-slate-200 hover:border-slate-300'
+                : 'border-line hover:border-line-strong'
             }`}
           >
             {option}
@@ -198,23 +198,23 @@ function ArrangeView({
 
   return (
     <div>
-      <p className="text-center text-sm text-slate-500">{exercise.hint}</p>
+      <p className="text-center text-sm text-content-muted">{exercise.hint}</p>
 
       {/* Vùng câu đang ghép — luôn giữ chiều cao để không nhảy layout khi thêm/bớt từ */}
-      <div className="mt-4 min-h-[64px] rounded-xl border-2 border-dashed border-slate-200 p-3">
+      <div className="mt-4 min-h-[64px] rounded-xl border-2 border-dashed border-line p-3">
         <div className="flex flex-wrap gap-2">
           {picked.map((tokenIndex, position) => (
             <button
               key={`${tokenIndex}-${position}`}
               disabled={locked}
               onClick={() => update(picked.filter((_, i) => i !== position))}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm"
+              className="rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-sm shadow-sm"
             >
               {exercise.tokens[tokenIndex]}
             </button>
           ))}
           {picked.length === 0 && (
-            <span className="px-1 py-1.5 text-sm text-slate-400">Chọn từ bên dưới để ghép câu</span>
+            <span className="px-1 py-1.5 text-sm text-content-muted">Chọn từ bên dưới để ghép câu</span>
           )}
         </div>
       </div>
@@ -223,7 +223,7 @@ function ArrangeView({
         {exercise.tokens.map((token, index) =>
           picked.includes(index) ? (
             // Giữ chỗ trống để các từ còn lại không bị dồn vị trí
-            <span key={index} className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm text-transparent">
+            <span key={index} className="rounded-lg bg-sunken px-3 py-1.5 text-sm text-transparent">
               {token}
             </span>
           ) : (
@@ -231,7 +231,7 @@ function ArrangeView({
               key={index}
               disabled={locked}
               onClick={() => update([...picked, index])}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition-colors hover:border-brand"
+              className="rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-sm transition-colors hover:border-brand"
             >
               {token}
             </button>
@@ -261,8 +261,8 @@ function TypeView({
 
   return (
     <div className="text-center">
-      <p className="text-2xl font-semibold text-slate-900">{exercise.question}</p>
-      <p className="mt-1.5 text-sm text-slate-500">Bắt đầu bằng chữ "{exercise.firstLetter}"</p>
+      <p className="text-2xl font-semibold text-content">{exercise.question}</p>
+      <p className="mt-1.5 text-sm text-content-muted">Bắt đầu bằng chữ "{exercise.firstLetter}"</p>
 
       <div className="mx-auto mt-6 max-w-xs">
         <Input
@@ -322,10 +322,10 @@ function MatchView({
               onClick={() => setActiveWord(word.id)}
               className={`w-full rounded-xl border-2 px-3 py-2.5 text-sm transition-colors ${
                 matchedWords.has(word.id)
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  ? 'border-success/40 bg-success-soft text-success'
                   : activeWord === word.id
                     ? 'border-brand bg-brand-soft text-brand-strong'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-line hover:border-line-strong'
               }`}
             >
               {word.text}
@@ -341,8 +341,8 @@ function MatchView({
               onClick={() => selectMeaning(meaning.id)}
               className={`w-full rounded-xl border-2 px-3 py-2.5 text-sm transition-colors disabled:opacity-60 ${
                 matchedMeanings.has(meaning.id)
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : 'border-slate-200 hover:border-slate-300'
+                  ? 'border-success/40 bg-success-soft text-success'
+                  : 'border-line hover:border-line-strong'
               }`}
             >
               {meaning.text}
@@ -351,7 +351,7 @@ function MatchView({
         </div>
       </div>
 
-      <p className="mt-3 text-center text-xs text-slate-400">
+      <p className="mt-3 text-center text-xs text-content-muted">
         {activeWord === null ? 'Chọn một từ ở cột trái' : 'Giờ chọn nghĩa tương ứng ở cột phải'}
       </p>
     </div>

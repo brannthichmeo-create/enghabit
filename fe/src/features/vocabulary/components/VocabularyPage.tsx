@@ -32,11 +32,11 @@ export function VocabularyPage(): JSX.Element {
             <button key={topic.id} onClick={() => setSelectedTopicId(topic.id)} className="text-left">
               <Card className="h-full transition hover:shadow-md">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-slate-900">{topic.name}</h3>
+                  <h3 className="font-semibold text-content">{topic.name}</h3>
                   <Badge>{VOCAB_LEVEL_LABELS[topic.level]}</Badge>
                 </div>
-                {topic.description && <p className="mt-1 text-sm text-slate-500">{topic.description}</p>}
-                <p className="mt-3 text-xs text-slate-400">{topic.vocabularyCount} từ vựng</p>
+                {topic.description && <p className="mt-1 text-sm text-content-muted">{topic.description}</p>}
+                <p className="mt-3 text-xs text-content-muted">{topic.vocabularyCount} từ vựng</p>
               </Card>
             </button>
           ))}
@@ -70,11 +70,11 @@ export function VocabularyPage(): JSX.Element {
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="text-lg font-semibold text-slate-900">{word.word}</span>
-                  {word.phonetic && <span className="text-sm text-slate-400">{word.phonetic}</span>}
+                  <span className="text-lg font-semibold text-content">{word.word}</span>
+                  {word.phonetic && <span className="text-sm text-content-muted">{word.phonetic}</span>}
                 </div>
-                <p className="text-slate-700">{word.meaning}</p>
-                {word.example && <p className="mt-1 text-sm italic text-slate-500">"{word.example}"</p>}
+                <p className="text-content-soft">{word.meaning}</p>
+                {word.example && <p className="mt-1 text-sm italic text-content-muted">"{word.example}"</p>}
               </div>
 
               {word.isLearning ? (

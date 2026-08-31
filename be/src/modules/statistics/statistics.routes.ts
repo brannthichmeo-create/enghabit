@@ -11,4 +11,5 @@ statisticsRoutes.use(requireAuth);
 
 statisticsRoutes.get('/summary', validateQuery(statsRangeSchema), asyncHandler(controller.summary));
 statisticsRoutes.get('/streak', asyncHandler(controller.streak));
+statisticsRoutes.get('/level', asyncHandler(controller.level));
 statisticsRoutes.get('/calendar', validateQuery(calendarRangeSchema), asyncHandler(controller.calendar));

@@ -5,38 +5,62 @@
 /**
  * Design token của Enghabit.
  *
- * Màu biểu đồ lấy từ bảng màu đã chạy qua validator (kiểm tra dải sáng, chroma,
- * khả năng phân biệt với người mù màu). Không đổi các giá trị này bằng cảm tính —
- * nếu cần đổi, chạy lại validator trước.
+ * Ghi dưới dạng KÊNH MÀU (không có dấu #) để Tailwind áp được độ mờ, ví dụ
+ * text-soft/70. Với `var(--x)` dạng hex thuần thì các class có `/` bị bỏ qua âm
+ * thầm — không báo lỗi, chỉ mất màu khi chạy thật.
+ *
+ * Tên token đặt theo VAI TRÒ (page, surface, text) chứ không theo màu, để khi
+ * đảo sang chế độ tối không phải đổi tên ở khắp nơi.
+ *
+ * Màu biểu đồ đã chạy qua validator (dải sáng, chroma, khả năng phân biệt cho
+ * người mù màu). Không đổi bằng cảm tính — nếu cần đổi, chạy lại validator.
  */
 :root {
-  /* Nền và mực */
-  --surface-page: #f7f7f8;
-  --surface-card: #ffffff;
-  --border-subtle: #e8e8ea;
+  color-scheme: light;
 
   /*
-   * Thương hiệu — thang xanh ngọc lấy đúng sắc độ của logo (hue 181).
-   * Màu xanh ngọc gốc của logo (#5AE0E1) chỉ đạt 1.59:1 với chữ trắng nên
-   * KHÔNG dùng cho nút hay chữ; nó chỉ làm nền lớn/trang trí.
-   * Các giá trị dưới đây đã kiểm tra tương phản WCAG, đừng đổi bằng cảm tính.
+   * Nền không dùng trắng tinh mà ngả nhẹ về sắc olive của thương hiệu.
+   * Trắng tinh phản xạ mạnh, nhìn lâu chói mắt; nền giấy ấm dịu hơn hẳn.
    */
+  --page: 250 249 242;
+  --surface: 255 255 255;
+  --surface-raised: 255 255 255;
+  --sunken: 242 241 231;
+  --line: 228 227 214;
+  --line-strong: 207 206 188;
+
+  /* Chữ cũng ngả olive thay vì đen thuần, giảm độ gắt khi đọc lâu */
+  --text: 34 35 26;
+  --text-soft: 74 76 60;
+  --text-muted: 124 126 108;
+
   /*
-   * Ghi dưới dạng KÊNH MÀU (không có dấu #) để Tailwind áp được độ mờ,
-   * ví dụ text-ink/70. Với `var(--x)` dạng hex thuần thì các class như /70 sẽ
-   * bị bỏ qua âm thầm — lỗi này không báo gì, chỉ mất màu khi chạy thật.
+   * Màu thương hiệu #8E9141 — dùng ĐÚNG mã màu đã chọn làm nền nút.
+   * Nó chỉ đạt 3.35:1 với chữ trắng nên chữ trên nó phải là olive-đen (5.09:1),
+   * xem --on-brand. Bậc đậm hơn dùng khi olive làm CHỮ trên nền sáng.
    */
-  --brand: 19 112 114;        /* #137072 — nút và link, chữ trắng đạt 5.85:1 */
-  --brand-strong: 14 86 88;   /* #0e5658 — hover, đạt 8.43:1 */
-  --brand-soft: 239 251 251;  /* #effbfb — nền mục đang chọn, chữ --brand đạt 5.54:1 */
-  --brand-vivid: 90 224 225;  /* #5ae0e1 — xanh ngọc logo, chỉ làm nền lớn/trang trí */
+  --brand: 142 145 65; /* #8e9141 */
+  --brand-strong: 111 113 51; /* #6f7133 — làm chữ/link trên nền sáng, đạt 4.87:1 */
+  --brand-soft: 240 241 228;
+  --brand-vivid: 195 199 110;
 
-  /* Vàng của logo, dùng làm màu nhấn. Chữ navy trên nền vàng đạt 9.16:1 */
-  --accent: 251 188 31;       /* #fbbc1f */
-  --accent-ink: 138 98 0;     /* #8a6200 — chữ vàng đậm trên nền trắng, đạt 5.49:1 */
+  /* Chữ đặt trên nền thương hiệu — tối ở CẢ HAI chế độ, vì olive luôn ở dải sáng vừa */
+  --on-brand: 28 29 16;
 
-  /* Màu nét vẽ của logo — dùng cho chữ trên nền xanh ngọc sáng (9.81:1) */
-  --ink: 26 36 51;            /* #1a2433 */
+  /* Vàng của logo, cùng họ vàng-lục với olive nên đứng cạnh nhau hoà hợp */
+  --accent: 234 178 45;
+  --accent-ink: 125 89 0;
+  --accent-soft: 250 245 226;
+
+  --ink: 28 29 16;
+
+  --success: 61 110 62;
+  --success-soft: 236 243 233;
+  --danger: 176 58 46;
+  --danger-soft: 250 238 236;
+
+  /* Chữ trên nền trạng thái (success/danger) — hai màu này đậm nên chữ trắng */
+  --on-fill: 255 255 255;
 
   /* Chuỗi dữ liệu biểu đồ — thứ tự cố định, không hoán đổi */
   --series-vocab: #2a78d6;
@@ -44,10 +68,118 @@
   --series-quiz: #1baf7a;
   --series-habit: #eda100;
 
-  /* Trạng thái */
-  --status-good: #1baf7a;
-  --status-warn: #eda100;
-  --status-danger: #e34948;
+  /* Thang lịch hoạt động, độ sáng giảm dần đơn điệu */
+  --cal-0: #ebeade;
+  --cal-1: #dfe0b8;
+  --cal-2: #c3c67f;
+  --cal-3: #9b9e47;
+  --cal-4: #6f7133;
+
+}
+
+/*
+ * Chế độ tối khai báo ở CẢ HAI nơi: media query cho người để hệ điều hành tự
+ * quyết, và [data-theme] cho người tự chọn trong app. Guard :not([data-theme='light'])
+ * để lựa chọn thủ công luôn thắng cài đặt hệ điều hành.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    /* Nền tối cũng ngả olive, không dùng đen thuần — dịu mắt hơn khi dùng lâu */
+    --page: 21 22 15;
+    --surface: 30 32 22;
+    --surface-raised: 38 40 25;
+    --sunken: 25 26 18;
+    --line: 51 53 42;
+    --line-strong: 74 77 60;
+
+    --text: 233 233 223;
+    --text-soft: 185 187 166;
+    --text-muted: 142 144 125;
+
+    /* Nền tối phải dùng bậc SÁNG của olive, không phải bậc đậm của chế độ sáng */
+    --brand: 195 199 110;
+    --brand-strong: 217 220 146;
+    --brand-soft: 42 44 26;
+    --brand-vivid: 195 199 110;
+
+    --on-brand: 28 29 16;
+
+    --accent: 234 178 45;
+    --accent-ink: 232 193 106;
+    --accent-soft: 42 35 16;
+
+    --ink: 233 233 223;
+
+    --success: 122 179 116;
+    --success-soft: 26 40 25;
+    --danger: 230 122 110;
+    --danger-soft: 48 26 23;
+
+    --on-fill: 21 22 15;
+
+    --series-vocab: #4d95e8;
+    --series-flashcard: #f07a4a;
+    --series-quiz: #2ecb95;
+    --series-habit: #f0b62e;
+
+    --cal-0: #22241a;
+    --cal-1: #3d4020;
+    --cal-2: #5c5f2c;
+    --cal-3: #8b8e3c;
+    --cal-4: #c3c76e;
+
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Nền tối cũng ngả olive, không dùng đen thuần — dịu mắt hơn khi dùng lâu */
+  --page: 21 22 15;
+  --surface: 30 32 22;
+  --surface-raised: 38 40 25;
+  --sunken: 25 26 18;
+  --line: 51 53 42;
+  --line-strong: 74 77 60;
+
+  --text: 233 233 223;
+  --text-soft: 185 187 166;
+  --text-muted: 142 144 125;
+
+  /* Nền tối phải dùng bậc SÁNG của olive, không phải bậc đậm của chế độ sáng */
+  --brand: 195 199 110;
+  --brand-strong: 217 220 146;
+  --brand-soft: 42 44 26;
+  --brand-vivid: 195 199 110;
+
+  --on-brand: 28 29 16;
+
+  --accent: 234 178 45;
+  --accent-ink: 232 193 106;
+  --accent-soft: 42 35 16;
+
+  --ink: 233 233 223;
+
+  --success: 122 179 116;
+  --success-soft: 26 40 25;
+  --danger: 230 122 110;
+  --danger-soft: 48 26 23;
+
+  --on-fill: 21 22 15;
+
+  --series-vocab: #4d95e8;
+  --series-flashcard: #f07a4a;
+  --series-quiz: #2ecb95;
+  --series-habit: #f0b62e;
+
+  --cal-0: #22241a;
+  --cal-1: #3d4020;
+  --cal-2: #5c5f2c;
+  --cal-3: #8b8e3c;
+  --cal-4: #c3c76e;
+
 }
 
 @layer base {
@@ -57,11 +189,11 @@
   }
 
   body {
-    background-color: var(--surface-page);
-    color: theme('colors.slate.900');
+    background-color: rgb(var(--page));
+    color: rgb(var(--text));
   }
 
-  /* Viền focus rõ ràng cho người dùng bàn phím, thay vì outline mặc định của trình duyệt */
+  /* Viền focus rõ ràng cho người dùng bàn phím, thay vì outline mặc định */
   :focus-visible {
     outline: 2px solid rgb(var(--brand));
     outline-offset: 2px;

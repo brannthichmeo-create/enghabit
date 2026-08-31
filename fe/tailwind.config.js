@@ -7,7 +7,24 @@ export default {
         sans: ['Inter var', 'Inter', 'system-ui', 'Segoe UI', 'sans-serif'],
       },
       colors: {
-        // <alpha-value> cho phép dùng các biến thể độ mờ như bg-brand/20, text-ink/70
+        // Màu ngữ nghĩa theo VAI TRÒ. Component dùng các tên này thay vì slate-*,
+        // nhờ vậy đổi sáng/tối chỉ cần đổi token trong index.css.
+        // <alpha-value> cho phép dùng biến thể độ mờ như bg-brand/20, text-soft/70.
+        page: 'rgb(var(--page) / <alpha-value>)',
+        surface: {
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          raised: 'rgb(var(--surface-raised) / <alpha-value>)',
+        },
+        sunken: 'rgb(var(--sunken) / <alpha-value>)',
+        line: {
+          DEFAULT: 'rgb(var(--line) / <alpha-value>)',
+          strong: 'rgb(var(--line-strong) / <alpha-value>)',
+        },
+        content: {
+          DEFAULT: 'rgb(var(--text) / <alpha-value>)',
+          soft: 'rgb(var(--text-soft) / <alpha-value>)',
+          muted: 'rgb(var(--text-muted) / <alpha-value>)',
+        },
         brand: {
           DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
           strong: 'rgb(var(--brand-strong) / <alpha-value>)',
@@ -17,8 +34,19 @@ export default {
         accent: {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
           ink: 'rgb(var(--accent-ink) / <alpha-value>)',
+          soft: 'rgb(var(--accent-soft) / <alpha-value>)',
         },
         ink: 'rgb(var(--ink) / <alpha-value>)',
+        'on-fill': 'rgb(var(--on-fill) / <alpha-value>)',
+        'on-brand': 'rgb(var(--on-brand) / <alpha-value>)',
+        success: {
+          DEFAULT: 'rgb(var(--success) / <alpha-value>)',
+          soft: 'rgb(var(--success-soft) / <alpha-value>)',
+        },
+        danger: {
+          DEFAULT: 'rgb(var(--danger) / <alpha-value>)',
+          soft: 'rgb(var(--danger-soft) / <alpha-value>)',
+        },
         series: {
           vocab: 'var(--series-vocab)',
           flashcard: 'var(--series-flashcard)',
@@ -27,7 +55,8 @@ export default {
         },
       },
       boxShadow: {
-        // Bóng nhẹ, nhiều lớp — tránh cảm giác "hộp nổi" thô của shadow mặc định
+        // Bóng nhẹ, nhiều lớp — tránh cảm giác "hộp nổi" thô của shadow mặc định.
+        // Nền tối gần như không thấy bóng nên chế độ đó dựa vào viền để tách lớp.
         card: '0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06)',
         'card-hover': '0 4px 8px rgb(16 24 40 / 0.06), 0 2px 4px rgb(16 24 40 / 0.04)',
       },

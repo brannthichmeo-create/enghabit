@@ -55,6 +55,15 @@ export interface StreakSummary {
   deadline: LocalDate | null;
 }
 
+/** XP và cấp độ, suy ra từ toàn bộ ActivityLog của user. */
+export interface LevelSummary {
+  xp: number;
+  level: number;
+  xpInLevel: number;
+  xpToNextLevel: number;
+  progressPercent: number;
+}
+
 export interface StatsSummary {
   range: StatsRangeInput['range'];
   from: LocalDate;
@@ -64,4 +73,5 @@ export interface StatsSummary {
   /** Số ngày có hoạt động / tổng số ngày trong khoảng, tính theo %. */
   activeDayRate: number;
   streak: StreakSummary;
+  level: LevelSummary;
 }

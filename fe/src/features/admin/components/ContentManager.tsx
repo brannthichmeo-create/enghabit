@@ -25,7 +25,7 @@ export function ContentManager(): JSX.Element {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Chủ đề</h2>
+        <h2 className="mb-3 font-semibold text-content">Chủ đề</h2>
 
         <div className="mb-4">
           <TopicForm />
@@ -41,10 +41,10 @@ export function ContentManager(): JSX.Element {
               <div className="flex items-start justify-between gap-3">
                 <button onClick={() => setSelectedTopicId(topic.id)} className="min-w-0 text-left">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-slate-900">{topic.name}</span>
+                    <span className="font-medium text-content">{topic.name}</span>
                     <Badge>{VOCAB_LEVEL_LABELS[topic.level]}</Badge>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-400">{topic.vocabularyCount} từ vựng</p>
+                  <p className="mt-0.5 text-xs text-content-muted">{topic.vocabularyCount} từ vựng</p>
                 </button>
 
                 <Button
@@ -65,7 +65,7 @@ export function ContentManager(): JSX.Element {
       </section>
 
       <section>
-        <h2 className="mb-3 font-semibold text-slate-900">Từ vựng</h2>
+        <h2 className="mb-3 font-semibold text-content">Từ vựng</h2>
         {selectedTopicId === null ? (
           <EmptyState title="Chọn một chủ đề" description="Chọn chủ đề bên trái để quản lý từ vựng" />
         ) : (
@@ -187,10 +187,10 @@ function VocabularyManager({ topicId }: { topicId: number }): JSX.Element {
       <div className="space-y-2">
         {vocabulary.data?.map((word) => (
           <Card key={word.id}>
-            <p className="font-medium text-slate-900">
-              {word.word} {word.phonetic && <span className="text-sm text-slate-400">{word.phonetic}</span>}
+            <p className="font-medium text-content">
+              {word.word} {word.phonetic && <span className="text-sm text-content-muted">{word.phonetic}</span>}
             </p>
-            <p className="text-sm text-slate-600">{word.meaning}</p>
+            <p className="text-sm text-content-soft">{word.meaning}</p>
           </Card>
         ))}
       </div>

@@ -31,10 +31,10 @@ export function QuizzesPage(): JSX.Element {
             <div className="flex h-full flex-col justify-between gap-3">
               <div>
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-slate-900">{quiz.title}</h3>
+                  <h3 className="font-semibold text-content">{quiz.title}</h3>
                   <Badge>{quiz.topic.name}</Badge>
                 </div>
-                <p className="mt-1 text-xs text-slate-400">{quiz._count.questions} câu hỏi</p>
+                <p className="mt-1 text-xs text-content-muted">{quiz._count.questions} câu hỏi</p>
               </div>
               <Button onClick={() => setActiveQuizId(quiz.id)}>Bắt đầu làm</Button>
             </div>
@@ -44,20 +44,20 @@ export function QuizzesPage(): JSX.Element {
 
       {attempts.data && attempts.data.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-3 font-semibold text-slate-900">Lịch sử làm bài</h2>
+          <h2 className="mb-3 font-semibold text-content">Lịch sử làm bài</h2>
           <Card>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-line">
               {attempts.data.slice(0, 10).map((attempt) => (
                 <li key={attempt.id} className="flex items-center justify-between py-2.5 text-sm">
                   <div>
-                    <p className="font-medium text-slate-800">{attempt.quiz.title}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="font-medium text-content">{attempt.quiz.title}</p>
+                    <p className="text-xs text-content-muted">
                       {new Date(attempt.completedAt).toLocaleString('vi-VN')}
                     </p>
                   </div>
                   <span
                     className={`font-semibold ${
-                      attempt.score / attempt.total >= 0.7 ? 'text-green-600' : 'text-slate-600'
+                      attempt.score / attempt.total >= 0.7 ? 'text-success' : 'text-content-soft'
                     }`}
                   >
                     {attempt.score}/{attempt.total}

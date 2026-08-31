@@ -21,13 +21,13 @@ export function AdminPage(): JSX.Element {
     <div>
       <PageHeader title="Quản trị hệ thống" description="Quản lý người dùng và nội dung học tập" />
 
-      <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1">
+      <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg bg-sunken p-1">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={`whitespace-nowrap rounded-md px-4 py-1.5 text-sm transition ${
-              tab === key ? 'bg-white font-medium text-slate-900 shadow-sm' : 'text-slate-600'
+              tab === key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
             }`}
           >
             {label}
@@ -62,8 +62,8 @@ function SystemStatsPanel(): JSX.Element {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
         <Card key={item.label}>
-          <p className="text-sm text-slate-500">{item.label}</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{item.value}</p>
+          <p className="text-sm text-content-muted">{item.label}</p>
+          <p className="mt-1 text-2xl font-bold text-content">{item.value}</p>
         </Card>
       ))}
     </div>
@@ -90,7 +90,7 @@ function UsersPanel(): JSX.Element {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-slate-500">
+              <tr className="border-b border-line text-left text-content-muted">
                 <th className="pb-2 font-medium">Tên</th>
                 <th className="pb-2 font-medium">Email</th>
                 <th className="pb-2 font-medium">Vai trò</th>
@@ -98,17 +98,17 @@ function UsersPanel(): JSX.Element {
                 <th className="pb-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line">
               {users.data.items.map((user) => (
                 <tr key={user.id}>
-                  <td className="py-2.5 font-medium text-slate-800">{user.name}</td>
-                  <td className="py-2.5 text-slate-600">{user.email}</td>
+                  <td className="py-2.5 font-medium text-content">{user.name}</td>
+                  <td className="py-2.5 text-content-soft">{user.email}</td>
                   <td className="py-2.5">
                     <Badge tone={user.role === UserRole.ADMIN ? 'brand' : 'slate'}>
                       {user.role === UserRole.ADMIN ? 'Quản trị' : 'Người học'}
                     </Badge>
                   </td>
-                  <td className="py-2.5 text-slate-500">
+                  <td className="py-2.5 text-content-muted">
                     {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                   </td>
                   <td className="py-2.5 text-right">
@@ -138,7 +138,7 @@ function UsersPanel(): JSX.Element {
           <Button variant="secondary" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
             Trước
           </Button>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-content-muted">
             Trang {page} / {totalPages}
           </span>
           <Button variant="secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>

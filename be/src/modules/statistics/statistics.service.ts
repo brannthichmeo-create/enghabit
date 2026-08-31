@@ -4,12 +4,15 @@ import {
   displayStreak,
   eachDayBetween,
   isStreakAlive,
+  levelFromXp,
+  xpFromActivityCounts,
   startOfMonth,
   startOfWeek,
   streakDeadline,
   todayLocalDate,
   type ActivityCalendar,
   type DailyStat,
+  type LevelSummary,
   type LocalDate,
   type StatsRangeInput,
   type StatsSummary,
@@ -32,9 +35,10 @@ export async function getSummary(
   const today = todayLocalDate(timezone);
   const from = rangeStart(range, today);
 
-  const [daily, streak] = await Promise.all([
+  const [daily, streak, level] = await Promise.all([
     getDailyStats(userId, from, today),
     getStreak(userId, timezone),
+    getLevel(userId),
   ]);
 
   const totals = daily.reduce(
@@ -62,7 +66,26 @@ export async function getSummary(
     totals,
     activeDayRate: daily.length === 0 ? 0 : Math.round((activeDays / daily.length) * 100),
     streak,
+    level,
   };
+}
+
+/**
+ * XP và cấp độ, tính từ TOÀN BỘ ActivityLog chứ không phải khoảng đang xem.
+ *
+ * XP là dữ liệu dẫn xuất, không lưu thành cột riêng — cùng nguyên tắc với streak,
+ * nên không bao giờ lệch với lịch sử hoạt động. Cách tính nằm ở @enghabit/shared
+ * để fe/mobile hiển thị được mà không cần gọi lại API.
+ */
+export async function getLevel(userId: number): Promise<LevelSummary> {
+  const rows = await prisma.activityLog.groupBy({
+    by: ['type'],
+    where: { userId },
+    _count: { _all: true },
+  });
+
+  const counts = Object.fromEntries(rows.map((r) => [r.type, r._count._all]));
+  return levelFromXp(xpFromActivityCounts(counts));
 }
 
 /**

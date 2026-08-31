@@ -96,14 +96,14 @@ function HabitCard({ habit }: { habit: Habit }): JSX.Element {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-slate-900">{habit.name}</h3>
+            <h3 className="font-semibold text-content">{habit.name}</h3>
             <Badge tone={habit.frequency === HabitFrequency.DAILY ? 'brand' : 'slate'}>
               {HABIT_FREQUENCY_LABELS[habit.frequency]}
             </Badge>
             {!habit.isActive && <Badge>Tạm dừng</Badge>}
           </div>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-content-muted">
             {habit.frequency === HabitFrequency.CUSTOM && habit.customDays && (
               <span>Các ngày: {formatWeekdays(habit.customDays)}</span>
             )}
@@ -162,19 +162,19 @@ function WeekStrip({ checkedDates }: { checkedDates: string[] }): JSX.Element {
             <div
               title={`${date}${isDone ? ' — đã check-in' : ''}`}
               className={`flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-medium ${
-                isDone ? 'bg-brand text-white' : 'bg-slate-100 text-transparent'
+                isDone ? 'bg-brand text-on-brand' : 'bg-sunken text-transparent'
               } ${isToday ? 'ring-2 ring-brand/30 ring-offset-1' : ''}`}
             >
               {isDone && <Check className="h-3 w-3" aria-hidden />}
             </div>
-            <span className={`text-[9px] ${isToday ? 'font-medium text-slate-600' : 'text-slate-400'}`}>
+            <span className={`text-[9px] ${isToday ? 'font-medium text-content-soft' : 'text-content-muted'}`}>
               {weekday}
             </span>
           </div>
         );
       })}
 
-      <span className="ml-2 text-xs text-slate-400">
+      <span className="ml-2 text-xs text-content-muted">
         {done.size}/7 ngày
       </span>
     </div>

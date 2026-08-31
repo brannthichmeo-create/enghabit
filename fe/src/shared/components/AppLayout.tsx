@@ -5,6 +5,7 @@ import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLogout } from '../../features/auth/auth.hooks';
 import { useDueCount } from '../../features/flashcards/flashcard.hooks';
 import { Logo } from './Logo';
+import { ThemeToggle } from './ThemeToggle';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
@@ -25,16 +26,17 @@ export function AppLayout(): JSX.Element {
   return (
     <div className="min-h-screen">
       {/* sticky để thanh điều hướng luôn trong tầm với khi cuộn danh sách dài */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4">
           <div className="flex items-center justify-between py-3">
             <Logo size="sm" />
 
             <div className="flex items-center gap-3">
-              <span className="hidden text-sm text-slate-600 sm:inline">{user?.name}</span>
+              <span className="hidden text-sm text-content-soft sm:inline">{user?.name}</span>
+              <ThemeToggle />
               <button
                 onClick={() => logout.mutate()}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-content-muted transition-colors hover:bg-sunken hover:text-content"
               >
                 <LogOut className="h-4 w-4" aria-hidden />
                 <span className="hidden sm:inline">Đăng xuất</span>
@@ -80,14 +82,14 @@ function NavItem({
       end={to === '/'}
       className={({ isActive }) =>
         `flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-          isActive ? 'bg-brand-soft text-brand-strong' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+          isActive ? 'bg-brand-soft text-brand-strong' : 'text-content-muted hover:bg-sunken hover:text-content'
         }`
       }
     >
       <Icon className="h-4 w-4" aria-hidden />
       {label}
       {badge !== undefined && badge > 0 && (
-        <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+        <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold leading-none text-on-brand">
           {badge}
         </span>
       )}

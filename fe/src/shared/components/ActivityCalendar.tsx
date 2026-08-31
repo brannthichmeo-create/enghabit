@@ -12,7 +12,15 @@ import { addDays, type ActivityCalendar as CalendarData, type CalendarDay } from
  * Không dùng nhiều màu khác nhau vì đây là dữ liệu độ lớn, không phải phân loại.
  */
 
-const LEVEL_COLORS = ['#eceef2', '#b2eff0', '#7ee5e7', '#21c7ca', '#178a8c'];
+// Đọc từ CSS variable thay vì mã màu cố định, để thang màu tự đổi theo chế độ
+// sáng/tối. Cả hai thang đều đã kiểm tra độ sáng giảm dần đơn điệu.
+const LEVEL_COLORS = [
+  'var(--cal-0)',
+  'var(--cal-1)',
+  'var(--cal-2)',
+  'var(--cal-3)',
+  'var(--cal-4)',
+];
 
 const WEEKDAY_LABELS = ['T2', '', 'T4', '', 'T6', '', 'CN'];
 
@@ -45,9 +53,9 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm text-slate-600">
-          <span className="font-semibold tabular-nums text-slate-900">{data.totalActivities}</span> hoạt động
-          trong <span className="font-semibold tabular-nums text-slate-900">{data.activeDays}</span> ngày
+        <p className="text-sm text-content-soft">
+          <span className="font-semibold tabular-nums text-content">{data.totalActivities}</span> hoạt động
+          trong <span className="font-semibold tabular-nums text-content">{data.activeDays}</span> ngày
         </p>
       </div>
 
@@ -94,10 +102,10 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         {/* Chỗ cố định cho chi tiết ngày đang trỏ để không nhảy layout */}
-        <p className="min-h-[18px] text-xs text-slate-500">
+        <p className="min-h-[18px] text-xs text-content-muted">
           {hovered ? (
             <>
-              <span className="font-medium text-slate-700">{formatDate(hovered.date)}</span>
+              <span className="font-medium text-content-soft">{formatDate(hovered.date)}</span>
               {hovered.count > 0 ? ` — ${hovered.count} hoạt động` : ' — không học'}
             </>
           ) : (
@@ -113,7 +121,7 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
 
 function Legend(): JSX.Element {
   return (
-    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+    <div className="flex items-center gap-1.5 text-xs text-content-muted">
       <span>Ít</span>
       {LEVEL_COLORS.map((color, i) => (
         <span
@@ -134,7 +142,7 @@ function WeekdayLabels(): JSX.Element {
       {WEEKDAY_LABELS.map((label, i) => (
         <span
           key={i}
-          className="text-[9px] leading-none text-slate-400"
+          className="text-[9px] leading-none text-content-muted"
           style={{ height: CELL, lineHeight: `${CELL}px` }}
         >
           {label}
@@ -171,7 +179,7 @@ function MonthLabels({ weeks }: { weeks: Week[] }): JSX.Element {
       {labels.map((label) => (
         <span
           key={label.index}
-          className="absolute text-[9px] leading-none text-slate-400"
+          className="absolute text-[9px] leading-none text-content-muted"
           style={{ left: label.index * (CELL + GAP) }}
         >
           {label.text}

@@ -10,10 +10,10 @@ type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 type ButtonSize = 'sm' | 'md';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-brand text-white hover:bg-brand-strong shadow-sm',
-  secondary: 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50',
-  danger: 'bg-red-600 text-white hover:bg-red-700',
-  ghost: 'text-slate-500 hover:bg-slate-100 hover:text-slate-800',
+  primary: 'bg-brand text-on-brand hover:bg-brand-strong shadow-sm',
+  secondary: 'bg-surface text-content-soft border border-line hover:bg-sunken',
+  danger: 'bg-danger text-on-fill hover:bg-danger/85',
+  ghost: 'text-content-muted hover:bg-sunken hover:text-content',
 };
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
@@ -66,7 +66,7 @@ export function Card({
 }): JSX.Element {
   return (
     <div
-      className={`rounded-xl border border-slate-200/70 bg-white p-5 shadow-card ${
+      className={`rounded-xl border border-line bg-surface p-5 shadow-card ${
         interactive ? 'transition-shadow hover:shadow-card-hover' : ''
       } ${className}`}
     >
@@ -87,8 +87,8 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+        <h1 className="text-2xl font-bold tracking-tight text-content">{title}</h1>
+        {description && <p className="mt-1 text-sm text-content-muted">{description}</p>}
       </div>
       {action}
     </div>
@@ -98,7 +98,7 @@ export function PageHeader({
 export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }): JSX.Element {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{children}</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">{children}</h2>
       {action}
     </div>
   );
@@ -115,15 +115,15 @@ export function Field({
 }): JSX.Element {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-sm font-medium text-content-soft">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-content-muted">{hint}</span>}
     </label>
   );
 }
 
 const CONTROL_CLASS =
-  'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-brand focus:ring-4 focus:ring-brand/10';
+  'mt-1.5 w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10';
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>): JSX.Element {
   return <input {...props} className={`${CONTROL_CLASS} ${props.className ?? ''}`} />;
@@ -136,7 +136,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>): JSX.Elem
 export function ErrorMessage({ children }: { children: ReactNode }): JSX.Element | null {
   if (!children) return null;
   return (
-    <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+    <p className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
       {children}
     </p>
   );
@@ -154,14 +154,14 @@ export function EmptyState({
   action?: ReactNode;
 }): JSX.Element {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white/50 px-6 py-14 text-center">
+    <div className="rounded-xl border border-dashed border-line-strong bg-surface/50 px-6 py-14 text-center">
       {Icon && (
-        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-slate-100">
-          <Icon className="h-5 w-5 text-slate-400" aria-hidden />
+        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-sunken">
+          <Icon className="h-5 w-5 text-content-muted" aria-hidden />
         </div>
       )}
-      <p className="font-medium text-slate-700">{title}</p>
-      {description && <p className="mx-auto mt-1 max-w-sm text-sm text-slate-400">{description}</p>}
+      <p className="font-medium text-content-soft">{title}</p>
+      {description && <p className="mx-auto mt-1 max-w-sm text-sm text-content-muted">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -172,7 +172,7 @@ export function EmptyState({
  * Giữ đúng chỗ nội dung sắp hiện nên trang không bị nhảy layout khi dữ liệu về.
  */
 export function Skeleton({ className = '' }: { className?: string }): JSX.Element {
-  return <div className={`animate-pulse rounded-lg bg-slate-200/70 ${className}`} />;
+  return <div className={`animate-pulse rounded-lg bg-sunken ${className}`} />;
 }
 
 export function SkeletonList({ rows = 3 }: { rows?: number }): JSX.Element {
@@ -188,10 +188,10 @@ export function SkeletonList({ rows = 3 }: { rows?: number }): JSX.Element {
 type BadgeTone = 'slate' | 'green' | 'brand' | 'amber';
 
 const BADGE_TONES: Record<BadgeTone, string> = {
-  slate: 'bg-slate-100 text-slate-600',
-  green: 'bg-emerald-50 text-emerald-700',
+  slate: 'bg-sunken text-content-soft',
+  green: 'bg-success-soft text-success',
   brand: 'bg-brand-soft text-brand-strong',
-  amber: 'bg-amber-50 text-amber-700',
+  amber: 'bg-accent-soft text-accent-ink',
 };
 
 export function Badge({
@@ -216,9 +216,9 @@ export function Badge({
 /** Thanh tiến độ dùng chung cho mục tiêu và tỷ lệ hoàn thành. */
 export function ProgressBar({ percent, done = false }: { percent: number; done?: boolean }): JSX.Element {
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+    <div className="h-2 overflow-hidden rounded-full bg-sunken">
       <div
-        className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-emerald-500' : 'bg-brand'}`}
+        className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-success' : 'bg-brand'}`}
         style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
       />
     </div>

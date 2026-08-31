@@ -4,7 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes } from './routes/AppRoutes';
 import { ToastProvider } from './shared/components/Toast';
+import { initTheme } from './shared/components/ThemeToggle';
 import './index.css';
+
+// Áp chế độ sáng/tối đã lưu trước khi render, tránh nháy sáng một nhịp
+initTheme();
 
 const queryClient = new QueryClient({
   defaultOptions: {

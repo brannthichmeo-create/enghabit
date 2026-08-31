@@ -17,28 +17,28 @@ interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
 export function AuthField({ label, icon: Icon, error, hint, ...props }: AuthFieldProps): JSX.Element {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-content-soft">{label}</span>
 
       <div className="relative">
         <Icon
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
           aria-hidden
         />
         <input
           {...props}
           aria-invalid={error ? true : undefined}
-          className={`w-full rounded-lg border bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 ${
+          className={`w-full rounded-lg border bg-surface py-2.5 pl-9 pr-3 text-sm text-content outline-none transition-colors placeholder:text-content-muted ${
             error
-              ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
-              : 'border-slate-300 focus:border-brand focus:ring-4 focus:ring-brand/10'
+              ? 'border-danger/60 focus:border-danger focus:ring-4 focus:ring-danger/10'
+              : 'border-line-strong focus:border-brand focus:ring-4 focus:ring-brand/10'
           }`}
         />
       </div>
 
       {error ? (
-        <span className="mt-1.5 block text-xs text-red-600">{error}</span>
+        <span className="mt-1.5 block text-xs text-danger">{error}</span>
       ) : (
-        hint && <span className="mt-1.5 block text-xs text-slate-400">{hint}</span>
+        hint && <span className="mt-1.5 block text-xs text-content-muted">{hint}</span>
       )}
     </label>
   );
@@ -56,27 +56,27 @@ export function PasswordField({
 
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-content-soft">{label}</span>
 
       <div className="relative">
         <Icon
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
           aria-hidden
         />
         <input
           {...props}
           type={visible ? 'text' : 'password'}
           aria-invalid={error ? true : undefined}
-          className={`w-full rounded-lg border bg-white py-2.5 pl-9 pr-10 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 ${
+          className={`w-full rounded-lg border bg-surface py-2.5 pl-9 pr-10 text-sm text-content outline-none transition-colors placeholder:text-content-muted ${
             error
-              ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
-              : 'border-slate-300 focus:border-brand focus:ring-4 focus:ring-brand/10'
+              ? 'border-danger/60 focus:border-danger focus:ring-4 focus:ring-danger/10'
+              : 'border-line-strong focus:border-brand focus:ring-4 focus:ring-brand/10'
           }`}
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-slate-400 transition-colors hover:text-slate-600"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-content-muted transition-colors hover:text-content-soft"
           aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -84,9 +84,9 @@ export function PasswordField({
       </div>
 
       {error ? (
-        <span className="mt-1.5 block text-xs text-red-600">{error}</span>
+        <span className="mt-1.5 block text-xs text-danger">{error}</span>
       ) : (
-        hint && <span className="mt-1.5 block text-xs text-slate-400">{hint}</span>
+        hint && <span className="mt-1.5 block text-xs text-content-muted">{hint}</span>
       )}
     </label>
   );
@@ -108,10 +108,10 @@ export function PasswordStrength({ password }: { password: string }): JSX.Elemen
   ].filter(Boolean).length;
 
   const levels = [
-    { label: 'Quá yếu', color: 'bg-red-500', text: 'text-red-600' },
-    { label: 'Yếu', color: 'bg-orange-500', text: 'text-orange-600' },
-    { label: 'Khá', color: 'bg-amber-500', text: 'text-amber-600' },
-    { label: 'Tốt', color: 'bg-emerald-500', text: 'text-emerald-600' },
+    { label: 'Quá yếu', color: 'bg-danger', text: 'text-danger' },
+    { label: 'Yếu', color: 'bg-series-flashcard', text: 'text-accent-ink' },
+    { label: 'Khá', color: 'bg-accent', text: 'text-accent-ink' },
+    { label: 'Tốt', color: 'bg-success', text: 'text-success' },
   ];
   const level = levels[Math.max(0, score - 1)] ?? levels[0];
 
@@ -122,7 +122,7 @@ export function PasswordStrength({ password }: { password: string }): JSX.Elemen
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-              i < score ? level?.color : 'bg-slate-200'
+              i < score ? level?.color : 'bg-line'
             }`}
           />
         ))}

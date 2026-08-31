@@ -31,17 +31,17 @@ export function PathPage(): JSX.Element {
 
       {mistakeCount.data !== undefined && mistakeCount.data > 0 && (
         <button onClick={() => setPracticing(true)} className="mb-6 block w-full text-left">
-          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 transition-colors hover:bg-amber-100">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100">
-              <RotateCw className="h-4 w-4 text-amber-700" aria-hidden />
+          <div className="flex items-center gap-3 rounded-xl border border-accent/40 bg-accent-soft px-5 py-4 transition-colors hover:bg-accent/20">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/20">
+              <RotateCw className="h-4 w-4 text-accent-ink" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-amber-900">
+              <p className="font-medium text-accent-ink">
                 {mistakeCount.data} từ bạn từng trả lời sai
               </p>
-              <p className="text-sm text-amber-700">Luyện lại để nhớ chắc hơn</p>
+              <p className="text-sm text-accent-ink">Luyện lại để nhớ chắc hơn</p>
             </div>
-            <Play className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+            <Play className="h-4 w-4 shrink-0 text-accent-ink" aria-hidden />
           </div>
         </button>
       )}
@@ -80,7 +80,7 @@ function TopicRow({
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-slate-900">{topic.name}</h3>
+            <h3 className="font-semibold text-content">{topic.name}</h3>
             <Badge>{VOCAB_LEVEL_LABELS[topic.level as VocabLevel]}</Badge>
             {allDone && (
               <Badge tone="green" icon={Check}>
@@ -88,10 +88,10 @@ function TopicRow({
               </Badge>
             )}
           </div>
-          {topic.description && <p className="mt-1 text-sm text-slate-500">{topic.description}</p>}
+          {topic.description && <p className="mt-1 text-sm text-content-muted">{topic.description}</p>}
         </div>
 
-        <span className="shrink-0 text-sm tabular-nums text-slate-500">
+        <span className="shrink-0 text-sm tabular-nums text-content-muted">
           {topic.completedLessons}/{topic.lessons.length} bài
         </span>
       </div>
@@ -119,7 +119,7 @@ function LessonNode({
   if (!lesson.isUnlocked) {
     return (
       <div
-        className="flex h-[68px] w-[92px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-200 text-slate-300"
+        className="flex h-[68px] w-[92px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line text-content-muted"
         title="Hoàn thành bài trước để mở khoá"
       >
         <Lock className="h-4 w-4" aria-hidden />
@@ -133,7 +133,7 @@ function LessonNode({
       onClick={() => onStart({ topicId: lesson.topicId, index: lesson.index })}
       className={`flex h-[68px] w-[92px] flex-col items-center justify-center gap-1 rounded-xl border-2 transition-colors ${
         lesson.isCompleted
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300'
+          ? 'border-success/40 bg-success-soft text-success hover:border-success/60'
           : 'border-brand bg-brand-soft text-brand-strong hover:bg-brand-soft/70'
       }`}
     >

@@ -51,7 +51,7 @@ export function ActivityChart({ data }: { data: DailyStat[] }): JSX.Element {
           {gridValues.map((value) => (
             <span
               key={value}
-              className="absolute right-0 -translate-y-1/2 text-[10px] tabular-nums text-slate-400"
+              className="absolute right-0 -translate-y-1/2 text-[10px] tabular-nums text-content-muted"
               style={{ bottom: `${(value / ceiling) * 100}%` }}
             >
               {value}
@@ -65,7 +65,7 @@ export function ActivityChart({ data }: { data: DailyStat[] }): JSX.Element {
             {gridValues.map((value) => (
               <div
                 key={value}
-                className="absolute w-full border-t border-slate-100"
+                className="absolute w-full border-t border-line"
                 style={{ bottom: `${(value / ceiling) * 100}%` }}
               />
             ))}
@@ -88,7 +88,7 @@ export function ActivityChart({ data }: { data: DailyStat[] }): JSX.Element {
             {data.map((day) => (
               <span
                 key={day.date}
-                className="min-w-0 flex-1 text-center text-[10px] tabular-nums text-slate-400"
+                className="min-w-0 flex-1 text-center text-[10px] tabular-nums text-content-muted"
               >
                 {day.date.slice(8)}
               </span>
@@ -98,11 +98,11 @@ export function ActivityChart({ data }: { data: DailyStat[] }): JSX.Element {
       </div>
 
       {/* Chi tiết ngày đang trỏ. Chiếm chỗ cố định để biểu đồ không nhảy khi rê chuột. */}
-      <div className="mt-3 min-h-[42px] border-t border-slate-100 pt-3">
+      <div className="mt-3 min-h-[42px] border-t border-line pt-3">
         {hoveredDay ? (
           <DayDetail day={hoveredDay} />
         ) : (
-          <p className="text-xs text-slate-400">Chọn một cột để xem chi tiết từng ngày</p>
+          <p className="text-xs text-content-muted">Chọn một cột để xem chi tiết từng ngày</p>
         )}
       </div>
     </div>
@@ -136,7 +136,7 @@ function DayColumn({
       {day.totalActivities > 0 && (
         <span
           className={`mb-1 text-center text-[10px] font-medium tabular-nums transition-colors ${
-            isHovered ? 'text-slate-900' : 'text-slate-400'
+            isHovered ? 'text-content' : 'text-content-muted'
           }`}
         >
           {day.totalActivities}
@@ -177,7 +177,7 @@ function DayColumn({
 function DayDetail({ day }: { day: DailyStat }): JSX.Element {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-      <span className="text-xs font-medium text-slate-700">
+      <span className="text-xs font-medium text-content-soft">
         {new Date(`${day.date}T00:00:00Z`).toLocaleDateString('vi-VN', {
           weekday: 'long',
           day: 'numeric',
@@ -185,9 +185,9 @@ function DayDetail({ day }: { day: DailyStat }): JSX.Element {
         })}
       </span>
       {SERIES.map((series) => (
-        <span key={series.key} className="flex items-center gap-1.5 text-xs text-slate-500">
+        <span key={series.key} className="flex items-center gap-1.5 text-xs text-content-muted">
           <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: series.color }} aria-hidden />
-          {series.label}: <span className="font-medium tabular-nums text-slate-700">{day[series.key]}</span>
+          {series.label}: <span className="font-medium tabular-nums text-content-soft">{day[series.key]}</span>
         </span>
       ))}
     </div>
@@ -199,7 +199,7 @@ function Legend(): JSX.Element {
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5">
       {SERIES.map((series) => (
-        <span key={series.key} className="flex items-center gap-1.5 text-xs text-slate-500">
+        <span key={series.key} className="flex items-center gap-1.5 text-xs text-content-muted">
           <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: series.color }} aria-hidden />
           {series.label}
         </span>

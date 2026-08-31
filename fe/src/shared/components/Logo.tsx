@@ -54,7 +54,7 @@ export function Logo({
       />
       {withText && (
         <span
-          className={`font-bold tracking-tight ${TEXT_SIZES[size]} ${onDark ? 'text-white' : 'text-slate-900'}`}
+          className={`font-bold tracking-tight ${TEXT_SIZES[size]} ${onDark ? 'text-white' : 'text-content'}`}
         >
           Enghabit
         </span>

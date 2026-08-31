@@ -74,20 +74,20 @@ export function LessonPlayer({
       <div className="mb-4 flex items-center gap-3">
         <button
           onClick={onExit}
-          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-sunken hover:text-content-soft"
           aria-label="Thoát bài học"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-line">
           <div
             className="h-full rounded-full bg-brand transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        <span className="shrink-0 text-sm tabular-nums text-slate-500">
+        <span className="shrink-0 text-sm tabular-nums text-content-muted">
           {index + 1}/{lesson.exercises.length}
         </span>
       </div>
@@ -99,7 +99,7 @@ export function LessonPlayer({
       )}
 
       <Card className="min-h-[320px]">
-        <p className="mb-5 text-center text-sm font-medium text-slate-500">{exercise.prompt}</p>
+        <p className="mb-5 text-center text-sm font-medium text-content-muted">{exercise.prompt}</p>
         <ExerciseView exercise={exercise} onAnswer={setCurrent} locked={submit.isPending} />
       </Card>
 
@@ -114,7 +114,7 @@ export function LessonPlayer({
           {isLast ? 'Nộp bài' : 'Câu tiếp theo'}
         </Button>
         {!current && (
-          <p className="mt-2 text-center text-xs text-slate-400">Hãy trả lời để tiếp tục</p>
+          <p className="mt-2 text-center text-xs text-content-muted">Hãy trả lời để tiếp tục</p>
         )}
       </div>
     </div>
@@ -138,20 +138,20 @@ function ResultView({
       <Card className="text-center">
         <div
           className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
-            result.passed ? 'bg-emerald-50' : 'bg-amber-50'
+            result.passed ? 'bg-success-soft' : 'bg-accent-soft'
           }`}
         >
           {result.passed ? (
-            <Check className="h-7 w-7 text-emerald-600" aria-hidden />
+            <Check className="h-7 w-7 text-success" aria-hidden />
           ) : (
-            <RotateCw className="h-7 w-7 text-amber-600" aria-hidden />
+            <RotateCw className="h-7 w-7 text-accent-ink" aria-hidden />
           )}
         </div>
 
-        <p className="mt-3 text-2xl font-bold tabular-nums text-slate-900">
+        <p className="mt-3 text-2xl font-bold tabular-nums text-content">
           {result.correct}/{result.total}
         </p>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-content-muted">
           {result.passed
             ? `Đạt ${result.percentage}% — bạn đã qua bài này`
             : `Đạt ${result.percentage}% — cần đúng từ 70% để qua bài`}
@@ -166,19 +166,19 @@ function ResultView({
 
       {wrongExercises.length > 0 && (
         <Card className="mt-4">
-          <p className="mb-2 text-sm font-semibold text-slate-900">
+          <p className="mb-2 text-sm font-semibold text-content">
             Những câu cần xem lại ({wrongExercises.length})
           </p>
-          <p className="mb-3 text-xs text-slate-500">
+          <p className="mb-3 text-xs text-content-muted">
             Các từ này đã được thêm vào mục "Ôn lại từ sai" để bạn luyện tiếp.
           </p>
           <ul className="space-y-1.5">
             {wrongExercises.map((e) => (
-              <li key={e.id} className="flex items-start gap-2 text-sm text-slate-600">
-                <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" aria-hidden />
+              <li key={e.id} className="flex items-start gap-2 text-sm text-content-soft">
+                <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" aria-hidden />
                 <span>
                   {describeExercise(e)}
-                  <span className="ml-1.5 text-xs text-slate-400">({e.prompt})</span>
+                  <span className="ml-1.5 text-xs text-content-muted">({e.prompt})</span>
                 </span>
               </li>
             ))}

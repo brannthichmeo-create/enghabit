@@ -62,19 +62,19 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
             key={toast.id}
             className={`pointer-events-auto flex animate-slide-up items-start gap-2.5 rounded-xl border px-4 py-3 shadow-lg ${
               toast.tone === 'success'
-                ? 'border-emerald-200 bg-white text-slate-800'
-                : 'border-red-200 bg-white text-slate-800'
+                ? 'border-success/40 bg-surface text-content'
+                : 'border-danger/40 bg-surface text-content'
             }`}
           >
             {toast.tone === 'success' ? (
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
             ) : (
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden />
             )}
             <span className="flex-1 text-sm">{toast.message}</span>
             <button
               onClick={() => dismiss(toast.id)}
-              className="shrink-0 rounded text-slate-400 hover:text-slate-600"
+              className="shrink-0 rounded text-content-muted hover:text-content-soft"
               aria-label="Đóng thông báo"
             >
               <X className="h-4 w-4" />

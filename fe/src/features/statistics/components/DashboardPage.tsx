@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Award, CalendarCheck, ChevronRight, Flame, Layers, Target } from 'lucide-react';
-import type { StatsRangeInput, StreakSummary } from '@enghabit/shared';
+import { BookOpen, CalendarCheck, ChevronRight, Layers, Target } from 'lucide-react';
+import type { StatsRangeInput } from '@enghabit/shared';
 import { ActivityChart } from '../../../shared/components/ActivityChart';
+import { HeroCard } from './HeroCard';
+import { useMistakeCount } from '../../lessons/lesson.hooks';
 import { ActivityCalendarChart } from '../../../shared/components/ActivityCalendar';
 import { Card, SectionTitle, ProgressBar, Skeleton } from '../../../shared/components/ui';
 import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
@@ -25,6 +27,7 @@ export function DashboardPage(): JSX.Element {
   const goalProgress = useGoalProgress();
   const dueCount = useDueCount();
   const calendar = useActivityCalendar();
+  const mistakeCount = useMistakeCount();
 
   const totalActivities = summary.data
     ? Object.values(summary.data.totals).reduce((sum, n) => sum + n, 0)
@@ -33,22 +36,22 @@ export function DashboardPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-content">
           Xin chào, {user?.name ?? 'bạn'}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">Cùng xem tiến độ học tập của bạn hôm nay</p>
+        <p className="mt-1 text-sm text-content-muted">Cùng xem tiến độ học tập của bạn hôm nay</p>
       </div>
 
-      {dueCount.data !== undefined && dueCount.data > 0 && <ReviewPrompt count={dueCount.data} />}
+      <HeroCard
+        streak={streak.data}
+        level={summary.data?.level}
+        dueCount={dueCount.data}
+        loading={streak.isLoading || summary.isLoading}
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StreakCard streak={streak.data} loading={streak.isLoading} />
-        <StatCard
-          icon={Award}
-          label="Kỷ lục"
-          value={streak.data ? `${streak.data.longestStreak}` : null}
-          unit="ngày"
-        />
+      <ContinueSection dueCount={dueCount.data} mistakeCount={mistakeCount.data} />
+
+      <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           icon={CalendarCheck}
           label="Tỷ lệ ngày có học"
@@ -56,14 +59,20 @@ export function DashboardPage(): JSX.Element {
           unit="%"
         />
         <StatCard icon={Layers} label="Tổng hoạt động" value={totalActivities?.toString() ?? null} />
+        <StatCard
+          icon={Target}
+          label="Kỷ lục chuỗi"
+          value={streak.data ? `${streak.data.longestStreak}` : null}
+          unit="ngày"
+        />
       </div>
 
       <Card>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-semibold text-slate-900">Hoạt động theo ngày</h2>
+          <h2 className="font-semibold text-content">Hoạt động theo ngày</h2>
 
           <div
-            className="flex gap-0.5 rounded-lg bg-slate-100 p-0.5"
+            className="flex gap-0.5 rounded-lg bg-sunken p-0.5"
             role="tablist"
             aria-label="Khoảng thời gian"
           >
@@ -74,7 +83,7 @@ export function DashboardPage(): JSX.Element {
                 aria-selected={range === key}
                 onClick={() => setRange(key)}
                 className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-                  range === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  range === key ? 'bg-surface text-content shadow-sm' : 'text-content-muted hover:text-content-soft'
                 }`}
               >
                 {RANGE_LABELS[key]}
@@ -84,18 +93,18 @@ export function DashboardPage(): JSX.Element {
         </div>
 
         {summary.isLoading && <Skeleton className="h-[248px] w-full" />}
-        {summary.isError && <p className="py-8 text-center text-sm text-red-600">Không tải được thống kê</p>}
+        {summary.isError && <p className="py-8 text-center text-sm text-danger">Không tải được thống kê</p>}
         {summary.data && <ActivityChart data={summary.data.daily} />}
       </Card>
 
       <Card>
-        <h2 className="mb-1 font-semibold text-slate-900">Lịch học cả năm</h2>
-        <p className="mb-3 text-sm text-slate-500">
+        <h2 className="mb-1 font-semibold text-content">Lịch học cả năm</h2>
+        <p className="mb-3 text-sm text-content-muted">
           Nhìn lại toàn bộ hành trình: chuỗi ngày liền mạch và những khoảng bị gián đoạn
         </p>
 
         {calendar.isLoading && <Skeleton className="h-[150px] w-full" />}
-        {calendar.isError && <p className="py-6 text-center text-sm text-red-600">Không tải được lịch học</p>}
+        {calendar.isError && <p className="py-6 text-center text-sm text-danger">Không tải được lịch học</p>}
         {calendar.data && <ActivityCalendarChart data={calendar.data} />}
       </Card>
 
@@ -119,13 +128,13 @@ export function DashboardPage(): JSX.Element {
               {goalProgress.data.map((goal) => (
                 <div key={goal.goalId}>
                   <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                    <span className="flex items-center gap-1.5 truncate text-sm text-slate-700">
-                      <Target className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                    <span className="flex items-center gap-1.5 truncate text-sm text-content-soft">
+                      <Target className="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden />
                       {GOAL_TYPE_LABELS[goal.type]}
                     </span>
                     <span
                       className={`shrink-0 text-sm tabular-nums ${
-                        goal.isCompleted ? 'font-medium text-emerald-600' : 'text-slate-500'
+                        goal.isCompleted ? 'font-medium text-success' : 'text-content-muted'
                       }`}
                     >
                       {goal.currentValue}/{goal.targetValue}
@@ -143,51 +152,76 @@ export function DashboardPage(): JSX.Element {
   );
 }
 
-/** Nhắc việc cần làm hôm nay — đưa user vào hành động thay vì chỉ đọc số liệu. */
-function ReviewPrompt({ count }: { count: number }): JSX.Element {
+/**
+ * Khối "tiếp tục việc đang dở" — hai lối vào lớn dẫn thẳng tới việc học.
+ *
+ * Đặt ngay dưới thẻ tổng hợp vì đây là thứ người học cần bấm, còn biểu đồ phía
+ * dưới chỉ để xem lại. Mỗi ô nói rõ còn bao nhiêu việc thay vì chỉ ghi tên mục.
+ */
+function ContinueSection({
+  dueCount,
+  mistakeCount,
+}: {
+  dueCount?: number;
+  mistakeCount?: number;
+}): JSX.Element {
   return (
-    <Link
-      to="/flashcards"
-      className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 transition-colors hover:bg-amber-100"
-    >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100">
-        <Layers className="h-4 w-4 text-amber-700" aria-hidden />
+    <section>
+      <SectionTitle>Tiếp tục việc đang dở</SectionTitle>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <ContinueTile
+          to="/learn"
+          icon={BookOpen}
+          title="Bài học"
+          note={mistakeCount ? `${mistakeCount} từ cần ôn lại` : 'Tiếp tục lộ trình'}
+          tone="brand"
+        />
+        <ContinueTile
+          to="/flashcards"
+          icon={Layers}
+          title="Ôn tập flashcard"
+          note={dueCount ? `${dueCount} từ tới hạn hôm nay` : 'Đã ôn hết hôm nay'}
+          tone="accent"
+        />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-amber-900">Bạn có {count} từ cần ôn hôm nay</p>
-        <p className="text-sm text-amber-700">Ôn ngay để giữ chuỗi ngày học</p>
-      </div>
-      <ChevronRight className="h-5 w-5 shrink-0 text-amber-600" aria-hidden />
-    </Link>
+    </section>
   );
 }
 
-/**
- * Thẻ chuỗi ngày — nhấn mạnh hơn các thẻ khác vì đây là chỉ số cốt lõi của app.
- * Khi chuỗi đã đứt thì đổi sang tông xám kèm lời nhắc, không tô màu rực rỡ cho số 0.
- */
-function StreakCard({ streak, loading }: { streak?: StreakSummary; loading: boolean }): JSX.Element {
-  if (loading) return <Skeleton className="h-[104px] w-full" />;
-
-  const alive = streak?.isAlive ?? false;
+function ContinueTile({
+  to,
+  icon: Icon,
+  title,
+  note,
+  tone,
+}: {
+  to: string;
+  icon: typeof Layers;
+  title: string;
+  note: string;
+  tone: 'brand' | 'accent';
+}): JSX.Element {
+  const styles =
+    tone === 'brand'
+      ? 'border-brand/40 bg-brand-soft hover:border-brand'
+      : 'border-accent/40 bg-accent-soft hover:border-accent';
+  const iconStyles = tone === 'brand' ? 'bg-brand text-on-brand' : 'bg-accent text-ink';
 
   return (
-    <div
-      className={`rounded-xl p-5 shadow-card ${
-        alive ? 'bg-gradient-to-br from-brand to-brand-strong text-white' : 'border border-slate-200 bg-white'
-      }`}
+    <Link
+      to={to}
+      className={`flex items-center gap-3 rounded-xl border-2 px-4 py-4 transition-colors ${styles}`}
     >
-      <div className="flex items-center gap-1.5">
-        <Flame className={`h-4 w-4 ${alive ? 'text-white/80' : 'text-slate-400'}`} aria-hidden />
-        <span className={`text-sm ${alive ? 'text-white/80' : 'text-slate-500'}`}>Chuỗi hiện tại</span>
-      </div>
-
-      <p className={`mt-1 text-2xl font-bold tabular-nums ${alive ? 'text-white' : 'text-slate-900'}`}>
-        {streak?.currentStreak ?? 0} <span className="text-base font-medium">ngày</span>
-      </p>
-
-      {!alive && <p className="mt-0.5 text-xs text-slate-400">Học hôm nay để bắt đầu chuỗi mới</p>}
-    </div>
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconStyles}`}>
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-content">{title}</span>
+        <span className="block text-sm text-content-muted">{note}</span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-content-muted" aria-hidden />
+    </Link>
   );
 }
 
@@ -197,7 +231,7 @@ function StatCard({
   value,
   unit,
 }: {
-  icon: typeof Award;
+  icon: typeof Layers;
   label: string;
   value: string | null;
   unit?: string;
@@ -207,12 +241,12 @@ function StatCard({
   return (
     <Card>
       <div className="flex items-center gap-1.5">
-        <Icon className="h-4 w-4 text-slate-400" aria-hidden />
-        <span className="text-sm text-slate-500">{label}</span>
+        <Icon className="h-4 w-4 text-content-muted" aria-hidden />
+        <span className="text-sm text-content-muted">{label}</span>
       </div>
-      <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+      <p className="mt-1 text-2xl font-bold tabular-nums text-content">
         {value}
-        {unit && <span className="text-base font-medium text-slate-500"> {unit}</span>}
+        {unit && <span className="text-base font-medium text-content-muted"> {unit}</span>}
       </p>
     </Card>
   );

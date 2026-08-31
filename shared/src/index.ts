@@ -8,5 +8,6 @@
 export * from './constants/index.js';
 export * from './date/local-date.js';
 export * from './streak/streak.js';
+export * from './level/level.js';
 export * from './srs/sm2.js';
 export * from './schemas/index.js';

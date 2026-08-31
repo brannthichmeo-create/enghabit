@@ -30,7 +30,7 @@ const HIGHLIGHTS: { icon: LucideIcon; title: string; description: string }[] = [
 
 export function AuthLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-surface">
       <BrandPanel />
 
       <div className="flex flex-1 items-center justify-center px-5 py-10">
@@ -59,7 +59,7 @@ function BrandPanel(): JSX.Element {
     <div className="relative hidden w-[45%] max-w-lg overflow-hidden bg-brand-vivid lg:flex lg:flex-col lg:justify-between">
       {/* Nền động: các khối màu mờ trôi chậm, chỉ dùng transform nên nhẹ với trình duyệt */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-16 top-10 h-72 w-72 animate-drift-a rounded-full bg-white/40 blur-3xl" />
+        <div className="absolute -left-16 top-10 h-72 w-72 animate-drift-a rounded-full bg-surface/40 blur-3xl" />
         <div className="absolute -right-10 bottom-0 h-80 w-80 animate-drift-b rounded-full bg-accent/25 blur-3xl" />
         <div className="absolute left-1/3 top-1/2 h-52 w-52 animate-drift-a rounded-full bg-brand/20 blur-3xl [animation-delay:-6s]" />
       </div>
@@ -71,7 +71,7 @@ function BrandPanel(): JSX.Element {
               Thân linh vật cùng màu xanh ngọc với nền panel nên sẽ chìm mất.
               Đặt trên nền trắng bo góc để tách khỏi nền.
             */}
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface p-1.5 shadow-sm">
               <img src="/logo.png" alt="" aria-hidden className="h-full w-full object-contain" />
             </span>
             <span className="text-xl font-bold tracking-tight text-ink">Enghabit</span>
@@ -95,7 +95,7 @@ function BrandPanel(): JSX.Element {
               className="flex animate-enter-up gap-3"
               style={{ animationDelay: `${220 + index * 90}ms` }}
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/60">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface/60">
                 <item.icon className="h-4 w-4 text-brand-strong" aria-hidden />
               </div>
               <div>

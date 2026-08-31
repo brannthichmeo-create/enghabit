@@ -54,8 +54,8 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
       <div className="space-y-3">
         {quiz.data.questions.map((question, questionIndex) => (
           <Card key={question.id}>
-            <p className="font-medium text-slate-900">
-              <span className="text-slate-400">Câu {questionIndex + 1}.</span> {question.questionText}
+            <p className="font-medium text-content">
+              <span className="text-content-muted">Câu {questionIndex + 1}.</span> {question.questionText}
             </p>
 
             <div className="mt-3 space-y-2">
@@ -68,7 +68,7 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
                     className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
                       isSelected
                         ? 'border-brand bg-brand-soft text-brand-strong'
-                        : 'border-slate-200 hover:border-slate-300'
+                        : 'border-line hover:border-line-strong'
                     }`}
                   >
                     {option}
@@ -85,7 +85,7 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
           {submitQuiz.isPending ? 'Đang nộp bài...' : 'Nộp bài'}
         </Button>
         {!allAnswered && (
-          <p className="mt-2 text-sm text-slate-400">Hãy trả lời tất cả các câu trước khi nộp</p>
+          <p className="mt-2 text-sm text-content-muted">Hãy trả lời tất cả các câu trước khi nộp</p>
         )}
       </div>
     </div>
@@ -119,10 +119,10 @@ function QuizResultView({
         <p className="text-4xl font-bold text-brand">
           {result.score}/{result.total}
         </p>
-        <p className="mt-1 text-sm text-slate-500">Đạt {result.percentage}%</p>
+        <p className="mt-1 text-sm text-content-muted">Đạt {result.percentage}%</p>
       </Card>
 
-      <h2 className="mb-3 font-semibold text-slate-900">Chi tiết đáp án</h2>
+      <h2 className="mb-3 font-semibold text-content">Chi tiết đáp án</h2>
       <div className="space-y-3">
         {result.details.map((detail, index) => {
           const question = questionById.get(detail.questionId);
@@ -130,16 +130,16 @@ function QuizResultView({
 
           return (
             <Card key={detail.questionId}>
-              <p className="font-medium text-slate-900">
-                <span className="text-slate-400">Câu {index + 1}.</span> {question.questionText}
+              <p className="font-medium text-content">
+                <span className="text-content-muted">Câu {index + 1}.</span> {question.questionText}
               </p>
 
               <div className="mt-2 space-y-1 text-sm">
-                <p className={detail.isCorrect ? 'text-green-700' : 'text-red-700'}>
+                <p className={detail.isCorrect ? 'text-success' : 'text-danger'}>
                   {detail.isCorrect ? '✓' : '✗'} Bạn chọn: {question.options[detail.selectedIndex]}
                 </p>
                 {!detail.isCorrect && (
-                  <p className="text-green-700">✓ Đáp án đúng: {question.options[detail.correctIndex]}</p>
+                  <p className="text-success">✓ Đáp án đúng: {question.options[detail.correctIndex]}</p>
                 )}
               </div>
             </Card>

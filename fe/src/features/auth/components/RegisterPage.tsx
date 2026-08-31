@@ -37,17 +37,17 @@ export function RegisterPage(): JSX.Element {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="animate-enter-up">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Tạo tài khoản</h1>
-          <p className="mt-1.5 text-sm text-slate-500">Bắt đầu xây dựng thói quen học mỗi ngày</p>
+          <h1 className="text-2xl font-bold tracking-tight text-content">Tạo tài khoản</h1>
+          <p className="mt-1.5 text-sm text-content-muted">Bắt đầu xây dựng thói quen học mỗi ngày</p>
         </div>
 
         {register.isError && (
           <div
             role="alert"
-            className="flex animate-slide-up items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5"
+            className="flex animate-slide-up items-start gap-2 rounded-lg border border-danger/40 bg-danger-soft px-3 py-2.5"
           >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />
-            <span className="text-sm text-red-700">{getErrorMessage(register.error)}</span>
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden />
+            <span className="text-sm text-danger">{getErrorMessage(register.error)}</span>
           </div>
         )}
 
@@ -97,7 +97,7 @@ export function RegisterPage(): JSX.Element {
           </Button>
         </div>
 
-        <p className="animate-enter-up text-center text-sm text-slate-500 [animation-delay:300ms]">
+        <p className="animate-enter-up text-center text-sm text-content-muted [animation-delay:300ms]">
           Đã có tài khoản?{' '}
           <Link to="/login" className="font-medium text-brand transition-colors hover:text-brand-strong">
             Đăng nhập

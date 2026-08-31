@@ -20,3 +20,7 @@ export async function calendar(req: Request, res: Response): Promise<void> {
   const { months } = getValidatedQuery(req, calendarRangeSchema);
   res.json(await statisticsService.getActivityCalendar(user.id, user.timezone, months));
 }
+
+export async function level(req: Request, res: Response): Promise<void> {
+  res.json(await statisticsService.getLevel(currentUser(req).id));
+}
