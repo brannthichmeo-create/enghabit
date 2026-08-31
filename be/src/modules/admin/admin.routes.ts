@@ -3,6 +3,7 @@ import {
   UserRole,
   accessLogQuerySchema,
   adminUserQuerySchema,
+  createAnnouncementSchema,
   createQuizQuestionSchema,
   createQuizSchema,
   createTopicSchema,
@@ -12,6 +13,7 @@ import {
   updateUserRoleSchema,
   updateUserStatusSchema,
   updateVocabularySchema,
+  type CreateAnnouncementInput,
   type CreateQuizInput,
   type CreateQuizQuestionInput,
   type CreateTopicInput,
@@ -26,6 +28,7 @@ import { asyncHandler } from '../../common/middlewares/async-handler.js';
 import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
 import { getValidatedQuery, validateBody, validateQuery } from '../../common/middlewares/validate.js';
 import { BadRequestError } from '../../common/errors/app-error.js';
+import * as notificationService from '../notifications/notification.service.js';
 import * as topicService from '../topics/topic.service.js';
 import * as adminService from './admin.service.js';
 
@@ -109,6 +112,23 @@ adminRoutes.get(
   validateQuery(accessLogQuerySchema),
   asyncHandler(async (req, res) => {
     res.json(await adminService.listLoginEvents(getValidatedQuery(req, accessLogQuerySchema)));
+  }),
+);
+
+// --- Thông báo tới người dùng (tái dùng notification.service) ---
+adminRoutes.get(
+  '/announcements/audience',
+  asyncHandler(async (req, res) => {
+    const role = req.query.role === 'ADMIN' || req.query.role === 'USER' ? req.query.role : undefined;
+    res.json({ count: await notificationService.countAudience(role) });
+  }),
+);
+
+adminRoutes.post(
+  '/announcements',
+  validateBody(createAnnouncementSchema),
+  asyncHandler(async (req, res) => {
+    res.status(201).json(await notificationService.createAnnouncement(req.body as CreateAnnouncementInput));
   }),
 );
 
