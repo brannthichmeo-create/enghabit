@@ -249,6 +249,33 @@
 }
 
 /**
+ * Đổi ảnh tên hệ thống theo chế độ giao diện.
+ *
+ * Ảnh không nhận token màu như chữ, nên phải render sẵn hai file rồi ẩn/hiện. Dùng
+ * đúng bộ ba selector như các token màu khác: media query lo trạng thái "theo hệ
+ * thống", `data-theme` lo lựa chọn tay và phải thắng được media query cả hai chiều.
+ */
+.wordmark-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .wordmark-light {
+    display: none;
+  }
+  :root:not([data-theme='light']) .wordmark-dark {
+    display: inline-block;
+  }
+}
+
+:root[data-theme='dark'] .wordmark-light {
+  display: none;
+}
+:root[data-theme='dark'] .wordmark-dark {
+  display: inline-block;
+}
+
+/**
  * Tôn trọng cài đặt giảm chuyển động của hệ điều hành.
  * Người bị say chuyển động hoặc rối loạn tiền đình có thể khó chịu với hiệu ứng nền trôi.
  */

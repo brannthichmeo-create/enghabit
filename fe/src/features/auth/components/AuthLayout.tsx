@@ -1,6 +1,7 @@
 import { CalendarCheck, Flame, Layers, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Logo } from '../../../shared/components/Logo';
+import { Wordmark } from '../../../shared/components/Wordmark';
 
 /**
  * Khung hai cột cho màn hình đăng nhập / đăng ký.
@@ -74,7 +75,7 @@ function BrandPanel(): JSX.Element {
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface p-1.5 shadow-sm">
               <img src="/logo.png" alt="" aria-hidden className="h-full w-full object-contain" />
             </span>
-            <span className="text-xl font-bold tracking-tight text-ink">Enghabit</span>
+            <Wordmark size="lg" variant="light" />
           </span>
         </div>
       </div>
@@ -84,7 +85,7 @@ function BrandPanel(): JSX.Element {
           Học tiếng Anh đều đặn, mỗi ngày một chút
         </h2>
         <p className="mt-3 max-w-sm animate-enter-up text-sm leading-relaxed text-ink/75 [animation-delay:140ms]">
-          Vấn đề không nằm ở thiếu tài liệu, mà ở việc duy trì. Enghabit giúp bạn biến việc học
+          Vấn đề không nằm ở thiếu tài liệu, mà ở việc duy trì. ENG//HABIT giúp bạn biến việc học
           thành thói quen và thấy rõ mình đang tiến bộ.
         </p>
 

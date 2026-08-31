@@ -1,4 +1,4 @@
-# Enghabit
+# ENG//HABIT
 
 Ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh — kết hợp học từ vựng/quiz, quản lý mục tiêu & thói quen, và theo dõi tiến độ bằng streak và thống kê.
 

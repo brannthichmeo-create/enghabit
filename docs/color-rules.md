@@ -217,7 +217,7 @@ Ví dụ: trong bảng đang dùng, cam và vàng không được đứng cạnh
 
 ## Bảng đối chiếu bảng màu hiện tại
 
-Đo ngày 31/08/2026, sau khi đổi nền trang sang `#B5B777`. Chạy lại sau mỗi lần đổi màu.
+Đo ngày 31/08/2026, sau khi đổi nền trang sang `#B5B777` và thêm màu tên hệ thống. Chạy lại sau mỗi lần đổi màu.
 
 | Cặp màu | Dùng ở đâu | Sáng | Tối | Ngưỡng |
 |---|---|---|---|---|
@@ -230,6 +230,13 @@ Ví dụ: trong bảng đang dùng, cam và vàng không được đứng cạnh
 | `danger` / `surface` | Chữ trạng thái lỗi | 6.02:1 ✓ | 5.79:1 ✓ | 4.5 |
 | `accent-ink` / `surface` | Chữ màu nhấn | 6.36:1 ✓ | 9.63:1 ✓ | 4.5 |
 | `line-control` / `surface` | Viền ô nhập | 3.15:1 ✓ | 3.34:1 ✓ | 3 |
+| Ảnh tên / `page` | Tên ENG//HABIT trên nền hệ thống | 6.83:1 ✓ | 11.61:1 ✓ | 3 |
+| Ảnh tên / `surface` | Tên trên thẻ trắng | 14.34:1 ✓ | 10.51:1 ✓ | 3 |
+| Ảnh tên / `brand-vivid` | Tên trên panel đăng nhập | 8.00:1 ✓ | 8.00:1 ✓ | 3 |
+
+**Tên hệ thống là ảnh, không phải chữ — nên màu nằm trong file, không nằm trong token.** `fe/public/wordmark.png` là navy `#16255F` của bản thiết kế gốc: màu lạnh, đối lập với nền olive ấm nên tên tách hẳn ra mà không phải phóng to hay tô đậm thêm. Chế độ tối dùng file thứ hai `wordmark-dark.png` cùng hình dáng nhưng đổi sang `#C5CDF2`, vì navy trên nền `#15160F` chỉ còn 1.8:1.
+
+Hệ quả cần nhớ: **đổi bảng màu nền thì phải xuất lại hai file ảnh này**, chúng không tự đổi theo token như phần còn lại của giao diện. Panel đăng nhập luôn sáng ở cả hai chế độ nên ép dùng bản navy (`variant="light"`).
 
 **Cái giá của nền trang có màu.** Nền `#B5B777` sáng vừa (L=59%) chứ không gần trắng, nên mọi chữ đặt trực tiếp lên nó phải đậm hơn hẳn mới đạt 4.5:1. Hệ quả: `--text-soft` và `--text-muted` buộc phải **dùng chung một bậc** — không còn dư địa để phân biệt "chữ phụ" với "chữ mờ" trên nền trang.
 

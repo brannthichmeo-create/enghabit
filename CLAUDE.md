@@ -10,7 +10,7 @@ Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có 
 
 ## Tổng quan hệ thống
 
-**Enghabit** (English Learning Habit Building Application) — ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh. Vấn đề cốt lõi cần giải quyết: người học thường không thiếu tài liệu mà thiếu cơ chế duy trì thói quen học đều đặn. Hệ thống kết hợp: **học tiếng Anh (từ vựng, quiz) + quản lý mục tiêu/thói quen + theo dõi tiến độ (streak, thống kê)**.
+**ENG//HABIT** (English Learning Habit Building Application) — ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh. Vấn đề cốt lõi cần giải quyết: người học thường không thiếu tài liệu mà thiếu cơ chế duy trì thói quen học đều đặn. Hệ thống kết hợp: **học tiếng Anh (từ vựng, quiz) + quản lý mục tiêu/thói quen + theo dõi tiến độ (streak, thống kê)**.
 
 ### Chức năng cho người học
 - Tạo tài khoản, quản lý thông tin cá nhân
@@ -144,6 +144,12 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
   đó chỉ đạt 1.59:1, không đọc được. Nút và link dùng `--brand` (xanh đậm).
 - Thang màu biểu đồ (`--series-*`) và thang lịch hoạt động là hai bộ riêng, đã qua kiểm tra
   phân biệt cho người mù màu và tính đơn điệu độ sáng. Không hoán đổi thứ tự.
+- **Tên hệ thống hiển thị là `ENG//HABIT`**, luôn dùng qua component `Wordmark`, không tự chèn thẻ
+  `img` và không gõ tay chuỗi `ENG//HABIT` thành chữ. Tên là **ảnh** (`fe/public/wordmark.png` navy
+  cho chế độ sáng, `wordmark-dark.png` sáng màu cho chế độ tối) đã tách nền trong suốt từ bản thiết
+  kế gốc — vì là ảnh nên **màu không đổi theo token**, đổi bảng màu nền thì phải xuất lại file. Chỗ
+  nào nền luôn sáng bất kể chế độ (panel đăng nhập) thì truyền `variant="light"`. Tên gói npm
+  `@enghabit/*` giữ nguyên, đó là định danh mã nguồn chứ không phải tên hiển thị.
 - Logo: `mark.svg` (mốc thu gọn) dùng cho favicon và nơi nhỏ dưới 40px; `logo.png` (linh vật đầy đủ)
   dùng cho nơi lớn. Linh vật có chân tay mảnh nên ở cỡ nhỏ chỉ còn là một vệt màu.
   Luôn dùng qua component `Logo`, không tự chèn thẻ `img`.

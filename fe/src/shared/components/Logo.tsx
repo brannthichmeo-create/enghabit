@@ -1,5 +1,7 @@
+import { Wordmark } from './Wordmark';
+
 /**
- * Logo Enghabit — linh vật cầm loa.
+ * Logo ENG//HABIT — linh vật cầm loa + tên hệ thống.
  *
  * Định nghĩa một chỗ để mọi nơi dùng cùng một kích thước, khoảng cách và chữ,
  * tránh mỗi trang tự dựng lại rồi lệch nhau.
@@ -25,12 +27,6 @@ const MARK_SRC: Record<LogoSize, string> = {
   lg: '/logo.png',
 };
 
-const TEXT_SIZES: Record<LogoSize, string> = {
-  sm: 'text-base',
-  md: 'text-lg',
-  lg: 'text-2xl',
-};
-
 export function Logo({
   size = 'md',
   withText = true,
@@ -38,7 +34,7 @@ export function Logo({
 }: {
   size?: LogoSize;
   withText?: boolean;
-  /** Đặt trên nền tối thì chữ đổi sang màu trắng. */
+  /** Đặt trên nền ảnh/nền tối thì tên chuyển sang trắng thay vì navy. */
   onDark?: boolean;
 }): JSX.Element {
   return (
@@ -52,13 +48,8 @@ export function Logo({
         loading="eager"
         decoding="async"
       />
-      {withText && (
-        <span
-          className={`font-bold tracking-tight ${TEXT_SIZES[size]} ${onDark ? 'text-white' : 'text-content'}`}
-        >
-          Enghabit
-        </span>
-      )}
+      {/* Nền ảnh/nền màu luôn sáng thì ép bản navy, đừng để nó đổi sang bản sáng màu */}
+      {withText && <Wordmark size={size} variant={onDark ? 'light' : 'auto'} />}
     </span>
   );
 }
