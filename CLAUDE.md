@@ -19,7 +19,7 @@ Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có 
 - Học từ vựng theo chủ đề, ôn tập bằng flashcard (spaced repetition)
 - Làm quiz kiểm tra kiến thức
 - Xem chuỗi ngày học liên tiếp (streak), tỷ lệ hoàn thành thói quen, thống kê theo ngày/tuần/tháng
-- Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user)
+- Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user), cảnh báo chuỗi sắp đứt, chúc mừng đạt mục tiêu — xem trong chuông thông báo và trang `/notifications`
 
 ### Chức năng cho quản trị viên
 
@@ -155,6 +155,10 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 - Logic tính streak là **domain logic, không phải utility** — chỉ định nghĩa một lần trong `shared/streak/`, `be` dùng để tính chính thức, `fe`/`mobile` dùng để hiển thị/preview. Không đặt trong `common/utils/` và không viết lại ở nơi khác.
 - Thuật toán SRS (SM-2) chỉ định nghĩa một lần trong `shared/srs`, cả `be` (chấm điểm review) và `fe`/`mobile` (preview lịch ôn) cùng import.
 - **Lịch gửi thông báo chỉ do `be/src/jobs` quyết định.** OneSignal chỉ đóng vai trò kênh gửi — không dùng tính năng tự lên lịch của OneSignal. Có hai nơi cùng lên lịch sẽ khiến user nhận trùng thông báo và rất khó truy nguyên.
+- **Thông báo luôn lưu vào bảng `notifications` trước, push chỉ là kênh báo thêm.** Push có thể bị chặn hoặc bỏ lỡ; mở app lên vẫn phải thấy việc cần làm. Job gọi `notification.service.createNotification()` chứ không tự ghi bảng — chỉ một chỗ sinh thông báo.
+- **Mọi thông báo tự động phải có `dedupeKey`** dạng `<TYPE>:<local_date>` (mục tiêu thì thêm `goalId`). Cron chạy lại 15 phút một lần, không có khoá này thì user nhận cùng một lời nhắc nhiều lần trong ngày.
+- **Không nhắc người đã học hôm nay.** Job kiểm tra `ActivityLog` theo `local_date` trước khi tạo thông báo — nhắc người đang học đều là cách nhanh nhất khiến họ tắt thông báo.
+- Query param kiểu boolean **không dùng `z.coerce.boolean()`**: query string luôn là chuỗi và `Boolean('false') === true`, nên bộ lọc sẽ luôn bật. Dùng `z.preprocess` so khớp `'true'`/`'1'` (xem `notificationQuerySchema`).
 - Mọi route `/admin/*` bắt buộc đi qua role-guard middleware.
 - Thay đổi schema DB luôn qua `prisma migrate dev`, không sửa tay trực tiếp trên MySQL.
 
@@ -172,7 +176,8 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 - Bug liên quan tới ngày/streak: luôn kiểm tra `User.timezone` và cột `local_date` trước khi nghi ngờ logic tính toán — phần lớn lỗi loại này đến từ sai timezone, không phải sai thuật toán.
 - Test đặt cạnh file nguồn trong cùng thư mục module (`*.test.ts`), không gom vào thư mục `tests/` tách biệt.
 - FE: mỗi feature lớn (`flashcards`, `quizzes`...) có Error Boundary cục bộ, tránh lỗi 1 feature làm crash toàn app.
-- Debug cron/notification: xem log riêng của `be/src/jobs`, không lẫn với log của module `notifications` (module này chỉ chứa cấu hình, không chứa lịch trình gửi).
+- Debug cron/notification: xem log riêng của `be/src/jobs`, không lẫn với log của module `notifications` (module này giữ **nội dung và lưu trữ** thông báo + cấu hình nhắc nhở, nhưng **không chứa lịch trình gửi**).
+- Không nhận được nhắc nhở: kiểm tra theo thứ tự (1) `notification_settings.is_enabled` và `days_of_week` có chứa thứ hôm nay không; (2) `User.timezone` — giờ nhắc tính theo giờ user, không phải giờ máy chủ; (3) hôm đó user đã có `ActivityLog` chưa (đã học thì hệ thống cố ý im lặng); (4) bảng `notifications` xem `dedupe_key` của ngày đó đã tồn tại chưa.
 
 ## Quy tắc commit Git
 

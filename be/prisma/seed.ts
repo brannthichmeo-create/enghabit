@@ -48,6 +48,7 @@ async function main(): Promise<void> {
   const vocabByTopic = await seedContent(admin.id);
   await seedLearnerData(learner.id, vocabByTopic);
   await seedLoginHistory([admin.id, learner.id]);
+  await seedNotifications(learner.id);
 
   await printSummary();
 }
@@ -208,6 +209,57 @@ async function seedLoginHistory(userIds: number[]): Promise<void> {
   }
 
   console.log(`  Đã tạo ${events.length} lượt đăng nhập mẫu`);
+}
+
+/**
+ * Vài thông báo mẫu cho người học demo, để mở app là thấy ngay chuông có nội dung
+ * mà không phải chờ cron chạy tới giờ nhắc.
+ */
+async function seedNotifications(userId: number): Promise<void> {
+  const existing = await prisma.notification.count({ where: { userId } });
+  if (existing > 0) {
+    console.log(`  (user demo đã có ${existing} thông báo — bỏ qua)`);
+    return;
+  }
+
+  const yesterday = dateAtOffsetLocal(1);
+  const twoDaysAgo = dateAtOffsetLocal(2);
+
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId,
+        type: 'DAILY_REMINDER',
+        title: 'Đến giờ học tiếng Anh rồi!',
+        body: 'Bạn đang có chuỗi 10 ngày. Học vài phút hôm nay để giữ chuỗi.',
+        link: '/learn',
+        dedupeKey: `DAILY_REMINDER:${yesterday}`,
+        createdAt: instantAtOffset(1, 20),
+      },
+      {
+        userId,
+        type: 'GOAL_ACHIEVED',
+        title: 'Đã đạt mục tiêu!',
+        body: 'Số từ vựng mỗi ngày: 10/10 — hoàn thành hôm nay.',
+        link: '/goals',
+        readAt: instantAtOffset(1, 21),
+        dedupeKey: `GOAL_ACHIEVED:1:${yesterday}`,
+        createdAt: instantAtOffset(1, 20),
+      },
+      {
+        userId,
+        type: 'ANNOUNCEMENT',
+        title: 'Chào mừng bạn đến với Enghabit',
+        body: 'Đặt mục tiêu và bật nhắc nhở để giữ thói quen học đều mỗi ngày.',
+        link: '/notifications',
+        readAt: instantAtOffset(2, 9),
+        dedupeKey: `ANNOUNCEMENT:seed:${twoDaysAgo}`,
+        createdAt: instantAtOffset(2, 8),
+      },
+    ],
+  });
+
+  console.log('  Đã tạo 3 thông báo mẫu');
 }
 
 async function seedHabits(userId: number) {
