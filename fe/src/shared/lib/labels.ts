@@ -1,4 +1,4 @@
-import { GoalPeriod, GoalType, HabitFrequency, VocabLevel } from '@enghabit/shared';
+import { ActivityType, GoalPeriod, GoalType, HabitFrequency, UserStatus, VocabLevel } from '@enghabit/shared';
 
 /**
  * Nhãn tiếng Việt cho các enum nghiệp vụ.
@@ -29,6 +29,25 @@ export const VOCAB_LEVEL_LABELS: Record<VocabLevel, string> = {
   [VocabLevel.BEGINNER]: 'Cơ bản',
   [VocabLevel.INTERMEDIATE]: 'Trung cấp',
   [VocabLevel.ADVANCED]: 'Nâng cao',
+};
+
+export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
+  [ActivityType.VOCAB_LEARNED]: 'Học từ vựng',
+  [ActivityType.FLASHCARD_REVIEWED]: 'Ôn flashcard',
+  [ActivityType.QUIZ_COMPLETED]: 'Làm quiz',
+  [ActivityType.HABIT_CHECKIN]: 'Check-in thói quen',
+};
+
+export const USER_STATUS_LABELS: Record<UserStatus, string> = {
+  [UserStatus.ACTIVE]: 'Đang hoạt động',
+  [UserStatus.LOCKED]: 'Đã khoá',
+};
+
+/** Lý do một lượt đăng nhập thất bại (LoginEvent.reason). */
+export const LOGIN_FAIL_LABELS: Record<string, string> = {
+  NO_ACCOUNT: 'Email không tồn tại',
+  WRONG_PASSWORD: 'Sai mật khẩu',
+  LOCKED: 'Tài khoản bị khoá',
 };
 
 /** Nhãn thứ trong tuần theo ISO: index 0 = Thứ Hai. */

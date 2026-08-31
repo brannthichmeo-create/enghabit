@@ -24,8 +24,8 @@ export function useStatsSummary(range: StatsRangeInput['range']): UseQueryResult
   });
 }
 
-export function useStreak(): UseQueryResult<StreakSummary> {
-  return useQuery({ queryKey: statisticsKeys.streak(), queryFn: statisticsApi.getStreak });
+export function useStreak(enabled = true): UseQueryResult<StreakSummary> {
+  return useQuery({ queryKey: statisticsKeys.streak(), queryFn: statisticsApi.getStreak, enabled });
 }
 
 export function useActivityCalendar(months = 12): UseQueryResult<ActivityCalendar> {
@@ -36,6 +36,6 @@ export function useActivityCalendar(months = 12): UseQueryResult<ActivityCalenda
 }
 
 /** Cấp độ dùng ở sidebar và trang cá nhân — tách riêng để không phải tải cả thống kê. */
-export function useLevel(): UseQueryResult<LevelSummary> {
-  return useQuery({ queryKey: statisticsKeys.level(), queryFn: statisticsApi.getLevel });
+export function useLevel(enabled = true): UseQueryResult<LevelSummary> {
+  return useQuery({ queryKey: statisticsKeys.level(), queryFn: statisticsApi.getLevel, enabled });
 }

@@ -15,8 +15,8 @@ export function useDueCards(): UseQueryResult<DueCard[]> {
   return useQuery({ queryKey: flashcardKeys.due(), queryFn: flashcardApi.getDueCards });
 }
 
-export function useDueCount(): UseQueryResult<number> {
-  return useQuery({ queryKey: flashcardKeys.dueCount(), queryFn: flashcardApi.getDueCount });
+export function useDueCount(enabled = true): UseQueryResult<number> {
+  return useQuery({ queryKey: flashcardKeys.dueCount(), queryFn: flashcardApi.getDueCount, enabled });
 }
 
 /** Ôn tập ghi ActivityLog nên phải làm mới cả thống kê/streak. */

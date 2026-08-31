@@ -41,8 +41,8 @@ export function useMistakes(limit = 10): UseQueryResult<MistakeItem[]> {
   return useQuery({ queryKey: lessonKeys.mistakes(), queryFn: () => lessonApi.getMistakes(limit) });
 }
 
-export function useMistakeCount(): UseQueryResult<number> {
-  return useQuery({ queryKey: lessonKeys.mistakeCount(), queryFn: lessonApi.getMistakeCount });
+export function useMistakeCount(enabled = true): UseQueryResult<number> {
+  return useQuery({ queryKey: lessonKeys.mistakeCount(), queryFn: lessonApi.getMistakeCount, enabled });
 }
 
 export function useMistakePractice(enabled: boolean, limit = 10): UseQueryResult<LessonDetail> {

@@ -1,4 +1,5 @@
 import {
+  Activity,
   BookOpen,
   ChevronLeft,
   GraduationCap,
@@ -8,6 +9,7 @@ import {
   LogOut,
   Shield,
   Target,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
@@ -48,9 +50,14 @@ export function Sidebar({
 }): JSX.Element {
   const user = useCurrentUser();
   const logout = useLogout();
-  const dueCount = useDueCount();
-  const mistakeCount = useMistakeCount();
-  const level = useLevel();
+  // Quản trị viên không học nên không gọi các API của người học — gọi rồi bỏ đi chỉ
+  // tốn request và làm log server nhiễu.
+  const isLearner = user?.role !== UserRole.ADMIN;
+  const dueCount = useDueCount(isLearner);
+  const mistakeCount = useMistakeCount(isLearner);
+  const level = useLevel(isLearner);
+
+  const isAdmin = !isLearner;
 
   const mainItems: NavItem[] = [
     { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
@@ -65,6 +72,14 @@ export function Sidebar({
     { to: '/goals', label: 'Mục tiêu', icon: Target },
   ];
 
+  /** Quản trị viên vận hành hệ thống, không đi học — nên thấy đúng bộ mục của mình. */
+  const adminItems: NavItem[] = [
+    { to: '/admin', label: 'Tổng quan hệ thống', icon: LayoutDashboard },
+    { to: '/admin/users', label: 'Tài khoản', icon: Users },
+    { to: '/admin/access', label: 'Lượt truy cập', icon: Activity },
+    { to: '/admin/content', label: 'Nội dung học tập', icon: BookOpen },
+  ];
+
   return (
     /* Nền hệ thống, không phải nền thẻ — sidebar là một phần của khung app */
     <div className="flex h-full flex-col bg-page">
@@ -75,34 +90,34 @@ export function Sidebar({
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2.5 pb-2">
-        <ul className="space-y-0.5">
-          {mainItems.map((item) => (
-            <li key={item.to}>
-              <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
-            </li>
-          ))}
-        </ul>
-
-        <GroupLabel collapsed={collapsed}>Duy trì</GroupLabel>
-        <ul className="space-y-0.5">
-          {habitItems.map((item) => (
-            <li key={item.to}>
-              <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
-            </li>
-          ))}
-        </ul>
-
-        {user?.role === UserRole.ADMIN && (
+        {isAdmin ? (
           <>
-            <GroupLabel collapsed={collapsed}>Hệ thống</GroupLabel>
-            <ul>
-              <li>
-                <Item
-                  item={{ to: '/admin', label: 'Quản trị', icon: Shield }}
-                  collapsed={collapsed}
-                  onNavigate={onNavigate}
-                />
-              </li>
+            <GroupLabel collapsed={collapsed}>Quản trị</GroupLabel>
+            <ul className="space-y-0.5">
+              {adminItems.map((item) => (
+                <li key={item.to}>
+                  <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <>
+            <ul className="space-y-0.5">
+              {mainItems.map((item) => (
+                <li key={item.to}>
+                  <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
+                </li>
+              ))}
+            </ul>
+
+            <GroupLabel collapsed={collapsed}>Duy trì</GroupLabel>
+            <ul className="space-y-0.5">
+              {habitItems.map((item) => (
+                <li key={item.to}>
+                  <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
+                </li>
+              ))}
             </ul>
           </>
         )}
@@ -118,7 +133,7 @@ export function Sidebar({
           }`}
           title={collapsed ? user?.name : undefined}
         >
-          <Avatar name={user?.name ?? '?'} level={level.data?.level} />
+          <Avatar name={user?.name ?? '?'} level={isAdmin ? undefined : level.data?.level} />
           {!collapsed && (
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-content">{user?.name}</span>
@@ -163,10 +178,13 @@ function Item({
 }): JSX.Element {
   const Icon = item.icon;
 
+  // `end`: mục gốc của mỗi khu ("/" và "/admin") phải khớp chính xác, nếu không nó
+  // vẫn sáng khi người dùng đang ở trang con.
+
   return (
     <NavLink
       to={item.to}
-      end={item.to === '/'}
+      end={item.to === '/' || item.to === '/admin'}
       onClick={onNavigate}
       title={collapsed ? item.label : undefined}
       className={({ isActive }) =>

@@ -1,37 +1,74 @@
 import type {
+  AccessLogQueryInput,
+  AccessOverview,
+  AdminUserDetail,
+  AdminUserQueryInput,
+  AdminUserRow,
   CreateQuizInput,
   CreateQuizQuestionInput,
   CreateTopicInput,
   CreateVocabularyInput,
-  PaginationInput,
+  LoginEventRow,
   Paginated,
-  PublicUser,
+  SystemOverview,
+  UserRole,
+  UserStatus,
 } from '@enghabit/shared';
 import { apiClient } from '../../shared/lib/api-client';
 import type { Topic, Vocabulary } from '../vocabulary/vocabulary.api';
 
-export interface SystemStats {
-  userCount: number;
-  topicCount: number;
-  vocabularyCount: number;
-  quizCount: number;
-  activityCount: number;
-  activeLast7Days: number;
-}
+/** Lời gọi API của khu quản trị. Mọi endpoint đều nằm sau role-guard ADMIN ở backend. */
 
-export async function getSystemStats(): Promise<SystemStats> {
-  const { data } = await apiClient.get<SystemStats>('/admin/stats');
+export async function getSystemOverview(): Promise<SystemOverview> {
+  const { data } = await apiClient.get<SystemOverview>('/admin/overview');
   return data;
 }
 
-export async function listUsers(pagination: Partial<PaginationInput> = {}): Promise<Paginated<PublicUser>> {
-  const { data } = await apiClient.get<Paginated<PublicUser>>('/admin/users', { params: pagination });
+// --- Người dùng ---
+
+export async function listUsers(query: Partial<AdminUserQueryInput> = {}): Promise<Paginated<AdminUserRow>> {
+  const { data } = await apiClient.get<Paginated<AdminUserRow>>('/admin/users', { params: query });
   return data;
+}
+
+export async function getUserDetail(id: number): Promise<AdminUserDetail> {
+  const { data } = await apiClient.get<AdminUserDetail>(`/admin/users/${id}`);
+  return data;
+}
+
+export async function updateUserRole(id: number, role: UserRole): Promise<AdminUserRow> {
+  const { data } = await apiClient.patch<AdminUserRow>(`/admin/users/${id}/role`, { role });
+  return data;
+}
+
+export async function updateUserStatus(id: number, status: UserStatus): Promise<AdminUserRow> {
+  const { data } = await apiClient.patch<AdminUserRow>(`/admin/users/${id}/status`, { status });
+  return data;
+}
+
+export async function resetUserPassword(id: number, newPassword: string): Promise<void> {
+  await apiClient.post(`/admin/users/${id}/reset-password`, { newPassword });
 }
 
 export async function deleteUser(id: number): Promise<void> {
   await apiClient.delete(`/admin/users/${id}`);
 }
+
+// --- Lượt truy cập ---
+
+export async function getAccessOverview(days: number): Promise<AccessOverview> {
+  const { data } = await apiClient.get<AccessOverview>('/admin/access/overview', { params: { days } });
+  return data;
+}
+
+export async function listLoginEvents(
+  query: Partial<AccessLogQueryInput> = {},
+): Promise<Paginated<LoginEventRow>> {
+  const { data } = await apiClient.get<Paginated<LoginEventRow>>('/admin/access/logs', { params: query });
+  return data;
+}
+
+// --- Nội dung học tập ---
 
 export async function createTopic(input: CreateTopicInput): Promise<Topic> {
   const { data } = await apiClient.post<Topic>('/admin/topics', input);
