@@ -51,7 +51,7 @@ export function NotificationBell(): JSX.Element {
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative inline-flex h-8 w-8 items-center justify-center rounded-lg text-content-muted transition-colors hover:bg-hover hover:text-content"
+        className="relative inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-page-muted transition-colors hover:bg-hover hover:text-on-page"
         aria-label={count > 0 ? `Thông báo, ${count} chưa đọc` : 'Thông báo'}
         aria-haspopup="menu"
         aria-expanded={open}

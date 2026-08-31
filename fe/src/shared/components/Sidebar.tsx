@@ -130,7 +130,7 @@ export function Sidebar({
       </nav>
 
       {/* Khối người dùng — bấm vào tên để mở trang cá nhân */}
-      <div className="border-t border-line p-2.5">
+      <div className="border-t border-line-page p-2.5">
         <Link
           to="/profile"
           onClick={onNavigate}
@@ -142,15 +142,15 @@ export function Sidebar({
           <Avatar name={user?.name ?? '?'} level={isAdmin ? undefined : level.data?.level} />
           {!collapsed && (
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-content">{user?.name}</span>
-              <span className="block text-xs text-content-muted">Trang cá nhân</span>
+              <span className="block truncate text-sm font-medium text-on-page">{user?.name}</span>
+              <span className="block text-xs text-on-page-muted">Trang cá nhân</span>
             </span>
           )}
         </Link>
 
         <button
           onClick={() => logout.mutate()}
-          className={`mt-0.5 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-content-muted transition-colors hover:bg-hover hover:text-content ${
+          className={`mt-0.5 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-on-page-muted transition-colors hover:bg-hover hover:text-on-page ${
             collapsed ? 'justify-center' : ''
           }`}
           title={collapsed ? 'Đăng xuất' : undefined}
@@ -163,7 +163,7 @@ export function Sidebar({
       {/* Nút thu gọn chỉ có nghĩa trên màn hình rộng, nơi sidebar luôn hiện */}
       <button
         onClick={onToggleCollapse}
-        className="hidden items-center gap-2 border-t border-line px-4 py-2.5 text-xs text-content-muted transition-colors hover:bg-hover hover:text-content lg:flex"
+        className="hidden items-center gap-2 border-t border-line-page px-4 py-2.5 text-xs text-on-page-muted transition-colors hover:bg-hover hover:text-on-page lg:flex"
         aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
       >
         <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} aria-hidden />
@@ -197,7 +197,7 @@ function Item({
         `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
           isActive
             ? 'bg-brand-soft text-brand-strong'
-            : 'text-content-soft hover:bg-hover hover:text-content'
+            : 'text-on-page-soft hover:bg-hover hover:text-on-page'
         } ${collapsed ? 'justify-center px-2' : ''}`
       }
     >
@@ -221,10 +221,10 @@ function Item({
 }
 
 function GroupLabel({ children, collapsed }: { children: string; collapsed: boolean }): JSX.Element {
-  if (collapsed) return <div className="my-2 border-t border-line" />;
+  if (collapsed) return <div className="my-2 border-t border-line-page" />;
 
   return (
-    <p className="mb-1 mt-4 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-content-muted">
+    <p className="mb-1 mt-4 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-on-page-muted">
       {children}
     </p>
   );

@@ -21,11 +21,21 @@ export default {
           DEFAULT: 'rgb(var(--line) / <alpha-value>)',
           strong: 'rgb(var(--line-strong) / <alpha-value>)',
           control: 'rgb(var(--line-control) / <alpha-value>)',
+          // Viền của khung app, nằm trên nền hệ thống chứ không trên thẻ
+          page: 'rgb(var(--line-on-page) / <alpha-value>)',
         },
+        // Chữ TRONG THẺ (nền sáng ở chế độ sáng)
         content: {
           DEFAULT: 'rgb(var(--text) / <alpha-value>)',
           soft: 'rgb(var(--text-soft) / <alpha-value>)',
           muted: 'rgb(var(--text-muted) / <alpha-value>)',
+        },
+        // Chữ TRÊN NỀN HỆ THỐNG — nền mận tối nên bộ này sáng, ngược với content
+        'on-page': {
+          DEFAULT: 'rgb(var(--on-page) / <alpha-value>)',
+          soft: 'rgb(var(--on-page-soft) / <alpha-value>)',
+          muted: 'rgb(var(--on-page-muted) / <alpha-value>)',
+          link: 'rgb(var(--on-page-link) / <alpha-value>)',
         },
         brand: {
           DEFAULT: 'rgb(var(--brand) / <alpha-value>)',

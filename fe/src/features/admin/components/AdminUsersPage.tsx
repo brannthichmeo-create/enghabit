@@ -466,7 +466,7 @@ export function Pagination({
       <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => onChange(page - 1)}>
         Trước
       </Button>
-      <span className="text-sm tabular-nums text-content-muted">
+      <span className="text-sm tabular-nums text-on-page-muted">
         Trang {page} / {totalPages} · {total.toLocaleString('vi-VN')} bản ghi
       </span>
       <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>

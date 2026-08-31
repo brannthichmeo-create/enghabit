@@ -25,7 +25,7 @@ export function ContentManager(): JSX.Element {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section>
-        <h2 className="mb-3 font-semibold text-content">Chủ đề</h2>
+        <h2 className="mb-3 font-semibold text-on-page">Chủ đề</h2>
 
         <div className="mb-4">
           <TopicForm />
@@ -65,7 +65,7 @@ export function ContentManager(): JSX.Element {
       </section>
 
       <section>
-        <h2 className="mb-3 font-semibold text-content">Từ vựng</h2>
+        <h2 className="mb-3 font-semibold text-on-page">Từ vựng</h2>
         {selectedTopicId === null ? (
           <EmptyState title="Chọn một chủ đề" description="Chọn chủ đề bên trái để quản lý từ vựng" />
         ) : (

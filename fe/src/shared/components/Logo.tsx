@@ -30,12 +30,12 @@ const MARK_SRC: Record<LogoSize, string> = {
 export function Logo({
   size = 'md',
   withText = true,
-  onDark = false,
+  onLight = false,
 }: {
   size?: LogoSize;
   withText?: boolean;
-  /** Đặt trên nền ảnh/nền tối thì tên chuyển sang trắng thay vì navy. */
-  onDark?: boolean;
+  /** Đặt trên nền SÁNG (panel đăng nhập) thì dùng bản navy thay vì bản sáng màu. */
+  onLight?: boolean;
 }): JSX.Element {
   return (
     <span className="inline-flex items-center gap-2">
@@ -48,8 +48,7 @@ export function Logo({
         loading="eager"
         decoding="async"
       />
-      {/* Nền ảnh/nền màu luôn sáng thì ép bản navy, đừng để nó đổi sang bản sáng màu */}
-      {withText && <Wordmark size={size} variant={onDark ? 'light' : 'auto'} />}
+      {withText && <Wordmark size={size} on={onLight ? 'light' : 'dark'} />}
     </span>
   );
 }

@@ -137,7 +137,7 @@ export function AdminOverviewPage(): JSX.Element {
         </section>
       </div>
 
-      <p className="mt-6 text-xs text-content-muted">
+      <p className="mt-6 text-xs text-on-page-muted">
         Số liệu cập nhật lúc{' '}
         {new Date(data.system.generatedAt).toLocaleTimeString('vi-VN')} · tự làm mới mỗi phút · Node{' '}
         {data.system.nodeVersion} · môi trường {data.system.environment} · API đã chạy{' '}

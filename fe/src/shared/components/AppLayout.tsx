@@ -55,7 +55,7 @@ export function AppLayout(): JSX.Element {
     <div className="min-h-screen">
       {/* Sidebar cố định trên màn hình rộng */}
       <aside
-        className={`fixed inset-y-0 left-0 z-30 hidden border-r border-line transition-[width] duration-200 lg:block ${
+        className={`fixed inset-y-0 left-0 z-30 hidden border-r border-line-page transition-[width] duration-200 lg:block ${
           collapsed ? 'w-[68px]' : 'w-60'
         }`}
       >
@@ -70,10 +70,10 @@ export function AppLayout(): JSX.Element {
             onClick={() => setDrawerOpen(false)}
             aria-hidden
           />
-          <aside className="fixed inset-y-0 left-0 z-50 w-60 border-r border-line shadow-xl lg:hidden">
+          <aside className="fixed inset-y-0 left-0 z-50 w-60 border-r border-line-page shadow-xl lg:hidden">
             <button
               onClick={() => setDrawerOpen(false)}
-              className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-content-muted hover:bg-hover hover:text-content"
+              className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-on-page-muted hover:bg-hover hover:text-on-page"
               aria-label="Đóng menu"
             >
               <X className="h-4 w-4" />
@@ -88,11 +88,11 @@ export function AppLayout(): JSX.Element {
       )}
 
       <div className={`transition-[padding] duration-200 ${collapsed ? 'lg:pl-[68px]' : 'lg:pl-60'}`}>
-        <header className="sticky top-0 z-20 border-b border-line bg-page/90 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b border-line-page bg-page/90 backdrop-blur">
           <div className="flex items-center gap-3 px-4 py-2.5">
             <button
               onClick={() => setDrawerOpen(true)}
-              className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-hover hover:text-content lg:hidden"
+              className="rounded-lg p-1.5 text-on-page-muted transition-colors hover:bg-hover hover:text-on-page lg:hidden"
               aria-label="Mở menu"
             >
               <Menu className="h-5 w-5" />
@@ -132,18 +132,18 @@ function QuickStats(): JSX.Element | null {
   return (
     <div className="flex items-center gap-1.5">
       <span
-        className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-1 text-xs font-medium tabular-nums text-content-soft"
+        className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft"
         title={`Chuỗi ngày học${streak.data?.isAlive === false ? ' — đã đứt' : ''}`}
       >
         <Flame
-          className={`h-3.5 w-3.5 ${streak.data?.isAlive ? 'text-accent' : 'text-content-muted'}`}
+          className={`h-3.5 w-3.5 ${streak.data?.isAlive ? 'text-accent' : 'text-on-page-muted'}`}
           aria-hidden
         />
         {streak.data?.currentStreak ?? 0}
       </span>
 
       <span
-        className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-1 text-xs font-medium tabular-nums text-content-soft"
+        className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft"
         title={`Cấp ${level.data?.level ?? 1} · ${level.data?.xp ?? 0} XP`}
       >
         <Sparkles className="h-3.5 w-3.5 text-brand" aria-hidden />

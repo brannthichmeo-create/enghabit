@@ -87,8 +87,8 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-content">{title}</h1>
-        {description && <p className="mt-1 text-sm text-content-muted">{description}</p>}
+        <h1 className="text-2xl font-bold tracking-tight text-on-page">{title}</h1>
+        {description && <p className="mt-1 text-sm text-on-page-muted">{description}</p>}
       </div>
       {action}
     </div>
@@ -98,7 +98,7 @@ export function PageHeader({
 export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }): JSX.Element {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">{children}</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-on-page-muted">{children}</h2>
       {action}
     </div>
   );
@@ -154,7 +154,7 @@ export function EmptyState({
   action?: ReactNode;
 }): JSX.Element {
   return (
-    <div className="rounded-xl border border-dashed border-line-strong bg-surface/50 px-6 py-14 text-center">
+    <div className="rounded-xl border border-dashed border-line bg-surface px-6 py-14 text-center">
       {Icon && (
         <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-sunken">
           <Icon className="h-5 w-5 text-content-muted" aria-hidden />

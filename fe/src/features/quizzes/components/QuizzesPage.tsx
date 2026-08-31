@@ -44,7 +44,7 @@ export function QuizzesPage(): JSX.Element {
 
       {attempts.data && attempts.data.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-3 font-semibold text-content">Lịch sử làm bài</h2>
+          <h2 className="mb-3 font-semibold text-on-page">Lịch sử làm bài</h2>
           <Card>
             <ul className="divide-y divide-line">
               {attempts.data.slice(0, 10).map((attempt) => (

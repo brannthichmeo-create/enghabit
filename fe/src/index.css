@@ -19,43 +19,55 @@
   color-scheme: light;
 
   /*
-   * Nền trang là olive nhạt #B5B777 — làm nền màu cho các thẻ trắng nổi lên.
+   * Nền hệ thống là mận #5A495C — màu TỐI, khác hẳn nền sáng thông thường.
    *
-   * Nền này sáng vừa (L=59%) chứ không phải gần trắng, nên MỌI chữ đặt trực tiếp
-   * lên nó phải đậm hơn bình thường mới đạt 4.5:1. Xem --text-soft/--text-muted
-   * bên dưới: hai bậc này đã bị kéo đậm để dùng được trên cả nền trang lẫn thẻ trắng.
+   * Hệ quả quan trọng: chữ đặt trực tiếp lên nền này phải SÁNG (xem --on-page*),
+   * còn chữ trong thẻ trắng vẫn tối như cũ (--text*). Hai nền ngược nhau nên bắt
+   * buộc phải là hai bộ token riêng — dùng chung một bộ thì một trong hai chỗ sẽ
+   * không đọc được.
    */
-  --page: 181 183 119; /* #b5b777 */
+  --page: 90 73 92; /* #5a495c */
   --surface: 255 255 255;
   --surface-raised: 255 255 255;
   /* Vùng chìm BÊN TRONG thẻ trắng (dải nút, nền biểu đồ, khung chờ tải) */
-  --sunken: 242 241 231;
+  --sunken: 243 240 244;
 
   /*
    * Trạng thái di chuột trên NỀN HỆ THỐNG (sidebar, thanh trên cùng).
-   * Tách khỏi --sunken vì hai chỗ này nằm trên hai nền khác nhau: nền hệ thống
-   * có màu nên hover phải đậm hơn nó, còn trong thẻ trắng thì hover phải nhạt.
+   * Tách khỏi --sunken vì hai chỗ này nằm trên hai nền ngược nhau: nền hệ thống
+   * tối nên hover phải sáng hơn nó, còn trong thẻ trắng thì hover phải tối hơn.
    */
-  --hover: 166 168 101;
-  /* Nền trang có màu nên viền nhạt sẽ chìm; dùng bậc đậm hơn để thẻ tách ra rõ */
-  --line: 213 214 178;
-  --line-strong: 168 169 142;
+  --hover: 109 90 112; /* #6d5a70 */
+
+  /* Viền trong thẻ trắng và giữa các dòng bảng */
+  --line: 224 218 226;
+  --line-strong: 186 176 189;
   /*
    * Viền ô nhập là ranh giới DUY NHẤT của control nên phải đạt 3:1 (xem
-   * docs/color-rules.md R6). --line-strong chỉ 1.59:1, dùng cho viền trang trí.
+   * docs/color-rules.md R6). --line-strong chỉ dùng cho viền trang trí.
    */
-  --line-control: 146 147 118; /* #929376 — đạt 3.15:1 trên nền thẻ */
+  --line-control: 143 130 146; /* #8f8292 — đạt 3.64:1 trên nền thẻ */
+  /* Viền của khung app (mép sidebar, đáy thanh trên cùng) — nằm trên nền mận */
+  --line-on-page: 123 106 125; /* #7b6a7d */
 
   /*
-   * Chữ ngả olive thay vì đen thuần, giảm độ gắt khi đọc lâu.
-   *
-   * text-soft và text-muted phải đạt 4.5:1 trên CẢ nền trang #B5B777 lẫn thẻ
-   * trắng. Ràng buộc chặt hơn là nền trang, nên hai bậc này đậm hơn thông thường
-   * và chênh lệch với text chính không nhiều — đây là cái giá của nền màu đậm.
+   * Chữ TRONG THẺ. Ngả tím nhẹ thay vì đen thuần để cùng hệ với nền mận.
+   * Nền thẻ là trắng nên ba bậc tách nhau rõ — khác thời nền trang màu olive,
+   * lúc đó soft và muted buộc phải dùng chung một bậc.
    */
-  --text: 34 35 26; /* #22231a — trên nền trang 7.56:1 */
-  --text-soft: 67 68 47; /* #43442f — nền trang 4.75:1, thẻ trắng 9.97:1 */
-  --text-muted: 67 68 47; /* dùng chung bậc với text-soft vì không còn dư địa */
+  --text: 34 30 36; /* #221e24 — 16.42:1 trên thẻ */
+  --text-soft: 74 66 77; /* #4a424d — 9.64:1 */
+  --text-muted: 108 98 111; /* #6c626f — 5.81:1 */
+
+  /*
+   * Chữ TRÊN NỀN HỆ THỐNG (sidebar, thanh trên cùng, tiêu đề trang, chữ ngoài thẻ).
+   * Nền mận tối nên bộ này sáng, ngược hẳn với --text*.
+   */
+  --on-page: 239 233 240; /* #efe9f0 — 6.92:1 trên nền mận */
+  --on-page-soft: 216 205 218; /* #d8cdda — 5.37:1 */
+  --on-page-muted: 205 194 207; /* #cdc2cf — 4.80:1 */
+  /* Liên kết đặt trên nền hệ thống: bậc olive SÁNG, vì --brand đậm chỉ đạt 2.47:1 ở đây */
+  --on-page-link: 195 199 110; /* #c3c76e — 4.61:1 trên nền mận */
 
   /*
    * Màu thương hiệu #8E9141 — dùng ĐÚNG mã màu đã chọn làm nền nút.
@@ -63,7 +75,7 @@
    * xem --on-brand. Bậc đậm hơn dùng khi olive làm CHỮ trên nền sáng.
    */
   --brand: 142 145 65; /* #8e9141 */
-  --brand-strong: 69 70 32; /* #454620 — làm chữ/link; trên nền trang đạt 4.65:1 */
+  --brand-strong: 69 70 32; /* #454620 — làm chữ/link trên nền sáng, 8.56:1 trên brand-soft */
   --brand-soft: 240 241 228;
   --brand-vivid: 195 199 110;
 
@@ -92,7 +104,7 @@
   --series-habit: #eda100;
 
   /* Thang lịch hoạt động, độ sáng giảm dần đơn điệu */
-  --cal-0: #ebeade;
+  --cal-0: #eeeaef;
   --cal-1: #dfe0b8;
   --cal-2: #c3c67f;
   --cal-3: #9b9e47;
@@ -109,21 +121,26 @@
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    /* Nền tối cũng ngả olive, không dùng đen thuần — dịu mắt hơn khi dùng lâu */
-    --page: 21 22 15;
-    --surface: 30 32 22;
-    --surface-raised: 38 40 25;
-    --sunken: 25 26 18;
-  --hover: 42 45 32;
-    --hover: 42 45 32;
-    --line: 51 53 42;
-    --line-strong: 74 77 60;
-  --line-control: 113 114 90; /* #71725a — đạt 3.34:1 trên nền thẻ */
-    --line-control: 113 114 90; /* #71725a — đạt 3.34:1 trên nền thẻ */
+    /* Nền tối là mận sẫm, cùng sắc với nền chế độ sáng, không dùng đen thuần */
+    --page: 36 30 38;
+    --surface: 47 40 49;
+    --surface-raised: 58 49 60;
+    --sunken: 42 35 44;
+    --hover: 59 50 62;
+    --line: 62 53 65;
+    --line-strong: 86 74 89;
+    --line-control: 132 118 135; /* #847687 — đạt 3.35:1 trên nền thẻ */
+    --line-on-page: 62 53 65;
 
-    --text: 233 233 223;
-    --text-soft: 185 187 166;
-    --text-muted: 142 144 125;
+    --text: 233 230 234;
+    --text-soft: 192 182 194;
+    --text-muted: 157 146 160;
+
+    /* Nền và thẻ đều tối nên chữ trên nền hệ thống dùng chung bậc với chữ trong thẻ */
+    --on-page: 233 230 234;
+    --on-page-soft: 192 182 194;
+    --on-page-muted: 157 146 160;
+    --on-page-link: 217 220 146;
 
     /* Nền tối phải dùng bậc SÁNG của olive, không phải bậc đậm của chế độ sáng */
     --brand: 195 199 110;
@@ -144,14 +161,14 @@
     --danger: 230 122 110;
     --danger-soft: 48 26 23;
 
-    --on-fill: 21 22 15;
+    --on-fill: 36 30 38;
 
     --series-vocab: #4d95e8;
     --series-flashcard: #f07a4a;
     --series-quiz: #2ecb95;
     --series-habit: #f0b62e;
 
-    --cal-0: #22241a;
+    --cal-0: #2a232c;
     --cal-1: #3d4020;
     --cal-2: #5c5f2c;
     --cal-3: #8b8e3c;
@@ -163,18 +180,26 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  /* Nền tối cũng ngả olive, không dùng đen thuần — dịu mắt hơn khi dùng lâu */
-  --page: 21 22 15;
-  --surface: 30 32 22;
-  --surface-raised: 38 40 25;
-  --sunken: 25 26 18;
-  --hover: 42 45 32;
-  --line: 51 53 42;
-  --line-strong: 74 77 60;
+  /* Nền tối là mận sẫm, cùng sắc với nền chế độ sáng, không dùng đen thuần */
+  --page: 36 30 38;
+  --surface: 47 40 49;
+  --surface-raised: 58 49 60;
+  --sunken: 42 35 44;
+  --hover: 59 50 62;
+  --line: 62 53 65;
+  --line-strong: 86 74 89;
+  --line-control: 132 118 135; /* #847687 — đạt 3.35:1 trên nền thẻ */
+  --line-on-page: 62 53 65;
 
-  --text: 233 233 223;
-  --text-soft: 185 187 166;
-  --text-muted: 142 144 125;
+  --text: 233 230 234;
+  --text-soft: 192 182 194;
+  --text-muted: 157 146 160;
+
+  /* Nền và thẻ đều tối nên chữ trên nền hệ thống dùng chung bậc với chữ trong thẻ */
+  --on-page: 233 230 234;
+  --on-page-soft: 192 182 194;
+  --on-page-muted: 157 146 160;
+  --on-page-link: 217 220 146;
 
   /* Nền tối phải dùng bậc SÁNG của olive, không phải bậc đậm của chế độ sáng */
   --brand: 195 199 110;
@@ -195,14 +220,14 @@
   --danger: 230 122 110;
   --danger-soft: 48 26 23;
 
-  --on-fill: 21 22 15;
+  --on-fill: 36 30 38;
 
   --series-vocab: #4d95e8;
   --series-flashcard: #f07a4a;
   --series-quiz: #2ecb95;
   --series-habit: #f0b62e;
 
-  --cal-0: #22241a;
+  --cal-0: #2a232c;
   --cal-1: #3d4020;
   --cal-2: #5c5f2c;
   --cal-3: #8b8e3c;
@@ -246,33 +271,6 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-}
-
-/**
- * Đổi ảnh tên hệ thống theo chế độ giao diện.
- *
- * Ảnh không nhận token màu như chữ, nên phải render sẵn hai file rồi ẩn/hiện. Dùng
- * đúng bộ ba selector như các token màu khác: media query lo trạng thái "theo hệ
- * thống", `data-theme` lo lựa chọn tay và phải thắng được media query cả hai chiều.
- */
-.wordmark-dark {
-  display: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .wordmark-light {
-    display: none;
-  }
-  :root:not([data-theme='light']) .wordmark-dark {
-    display: inline-block;
-  }
-}
-
-:root[data-theme='dark'] .wordmark-light {
-  display: none;
-}
-:root[data-theme='dark'] .wordmark-dark {
-  display: inline-block;
 }
 
 /**

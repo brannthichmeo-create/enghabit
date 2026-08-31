@@ -36,10 +36,10 @@ export function DashboardPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-content">
+        <h1 className="text-2xl font-bold tracking-tight text-on-page">
           Xin chào, {user?.name ?? 'bạn'}
         </h1>
-        <p className="mt-1 text-sm text-content-muted">Cùng xem tiến độ học tập của bạn hôm nay</p>
+        <p className="mt-1 text-sm text-on-page-muted">Cùng xem tiến độ học tập của bạn hôm nay</p>
       </div>
 
       <HeroCard
@@ -114,7 +114,7 @@ export function DashboardPage(): JSX.Element {
             action={
               <Link
                 to="/goals"
-                className="inline-flex items-center gap-0.5 text-xs font-medium text-brand hover:underline"
+                className="inline-flex items-center gap-0.5 text-xs font-medium text-on-page-link hover:underline"
               >
                 Quản lý <ChevronRight className="h-3 w-3" />
               </Link>

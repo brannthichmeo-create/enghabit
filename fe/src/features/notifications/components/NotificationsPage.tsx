@@ -137,7 +137,7 @@ export function NotificationsPage(): JSX.Element {
           <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
             Trước
           </Button>
-          <span className="text-sm tabular-nums text-content-muted">
+          <span className="text-sm tabular-nums text-on-page-muted">
             Trang {page} / {totalPages}
           </span>
           <Button
