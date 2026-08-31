@@ -15,7 +15,8 @@ services:
       - key: NODE_ENV
         value: production
       # Các biến còn lại đặt trong bảng điều khiển Render, KHÔNG ghi vào file này:
-      #   DATABASE_URL      chuỗi kết nối Aiven, nhớ kèm ?connection_limit=5&sslaccept=strict
+      #   DATABASE_URL      chuỗi kết nối Aiven, kèm ?connection_limit=5&connect_timeout=15
+      #                     (xem docs/aiven-setup.md — đừng thêm sslaccept=strict nếu thiếu ca.pem)
       #   CORS_ORIGIN       tên miền Vercel, ví dụ https://enghabit.vercel.app
       #   JWT_ACCESS_SECRET, JWT_REFRESH_SECRET   chuỗi ngẫu nhiên dài, mỗi cái một giá trị
       #   ENABLE_REMINDER_JOB=false   gói free bị ngủ khi không có request nên cron không đáng tin

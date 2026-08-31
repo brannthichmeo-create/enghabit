@@ -104,7 +104,7 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 - **Toàn bộ kết nối tới MySQL đi qua Prisma** (`be/prisma/schema.prisma` + Prisma Client) — không mở kết nối MySQL trực tiếp bằng driver khác trong code (`mysql2`, raw connection...) trừ trường hợp bất khả kháng phải ghi rõ lý do bằng comment.
 - **Connection string** đặt trong biến môi trường `DATABASE_URL` (`.env` ở `be/`), theo format `mysql://<user>:<password>@<host>:<port>/<database>`. Không hardcode host/user/password trong code.
 - **Bắt buộc khai báo `connection_limit`** trong `DATABASE_URL`, vd `?connection_limit=5`. MySQL trên free tier thường chỉ cho phép rất ít kết nối đồng thời (Clever Cloud ~5); để Prisma dùng pool mặc định sẽ làm hết connection và app chết với thông báo lỗi khó hiểu.
-- **DB hosted phải bật SSL** theo tham số provider yêu cầu (vd `?sslaccept=strict`), nối cùng chuỗi query với `connection_limit`. Local không cần.
+- **DB hosted phải bật SSL.** Với Aiven, kết nối đã luôn mã hoá vì server bắt buộc TLS nên không cần thêm tham số nào. **Không ghi `sslaccept=strict` mà thiếu `sslcert=ca.pem`** — chứng chỉ Aiven do CA riêng của project ký, không có trong kho chứng chỉ hệ điều hành, nên `strict` sẽ ném lỗi `unknown Cert Authority`. Chi tiết: `docs/aiven-setup.md`.
 - **Database và toàn bộ bảng dùng charset `utf8mb4`** (collation `utf8mb4_unicode_ci`). Bắt buộc, vì dữ liệu có tiếng Việt có dấu và có thể có emoji — phát hiện muộn sẽ phải migrate lại toàn bộ dữ liệu.
 - Repo chỉ commit `be/.env.example` (giá trị mẫu, không có secret thật). File `.env` thật nằm trong `.gitignore`, tuyệt đối không commit.
 - Mỗi môi trường một connection string riêng, không dùng chung DB giữa các môi trường:

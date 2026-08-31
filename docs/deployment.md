@@ -6,20 +6,23 @@ Ba thành phần nằm ở ba tên miền khác nhau nên có vài điểm dễ 
 
 ## 1. Database — Aiven for MySQL
 
-Aiven có gói miễn phí vĩnh viễn (1 GB RAM, 1 GB dung lượng), không cần thẻ tín dụng, và là MySQL thật chứ không phải bản "tương thích MySQL".
+**Hướng dẫn đầy đủ từng bước: [aiven-setup.md](aiven-setup.md)** — gồm cả cách xử lý SSL,
+kiểm tra utf8mb4, chạy migration và bảng lỗi thường gặp. Tóm tắt:
 
-1. Tạo tài khoản tại [aiven.io](https://aiven.io), chọn **Free plan**
-2. Tạo service **MySQL**, đặt tên `enghabit-db`
-3. Chọn vùng gần Việt Nam nhất (Singapore) để giảm độ trễ
-4. Copy **Service URI**, dạng `mysql://avnadmin:...@...aivencloud.com:PORT/defaultdb?ssl-mode=REQUIRED`
-
-Đổi phần đuôi cho phù hợp Prisma:
+1. Tạo tài khoản tại [aiven.io](https://aiven.io) (không cần thẻ tín dụng)
+2. **Services → Create service → MySQL**, chọn gói **Free**, vùng Singapore, tên `enghabit-db`
+3. Chờ trạng thái chuyển sang **Running**, lấy host/port/user/password ở trang **Overview**
+4. Ghép thành `DATABASE_URL` cho Prisma:
 
 ```
-mysql://avnadmin:MẬT_KHẨU@HOST:PORT/defaultdb?connection_limit=5&sslaccept=strict
+mysql://avnadmin:MẬT_KHẨU@HOST:PORT/defaultdb?connection_limit=5&connect_timeout=15
 ```
 
-`connection_limit=5` là **bắt buộc** — gói free chỉ cho vài kết nối đồng thời, để Prisma dùng pool mặc định sẽ làm hết connection và app chết với lỗi khó hiểu.
+Bỏ `ssl-mode=REQUIRED` trong chuỗi Aiven cho sẵn — đó là tham số của MySQL CLI, Prisma
+không hiểu. Kết nối vẫn được mã hoá vì Aiven bắt buộc TLS.
+
+`connection_limit=5` là **bắt buộc**: Prisma mặc định mở `số_CPU × 2 + 1` kết nối mỗi tiến
+trình, cộng thêm lần `migrate deploy` lúc khởi động là đủ chạm trần 76 kết nối của gói free.
 
 ## 2. Backend — Render
 
