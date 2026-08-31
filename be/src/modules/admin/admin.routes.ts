@@ -1,18 +1,25 @@
 import { Router } from 'express';
 import {
   UserRole,
+  accessLogQuerySchema,
+  adminUserQuerySchema,
   createQuizQuestionSchema,
   createQuizSchema,
   createTopicSchema,
   createVocabularySchema,
-  paginationSchema,
+  resetUserPasswordSchema,
   updateTopicSchema,
+  updateUserRoleSchema,
+  updateUserStatusSchema,
   updateVocabularySchema,
   type CreateQuizInput,
   type CreateQuizQuestionInput,
   type CreateTopicInput,
   type CreateVocabularyInput,
+  type ResetUserPasswordInput,
   type UpdateTopicInput,
+  type UpdateUserRoleInput,
+  type UpdateUserStatusInput,
   type UpdateVocabularyInput,
 } from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
@@ -27,20 +34,81 @@ export const adminRoutes: Router = Router();
 // Mọi route /admin/* bắt buộc qua role-guard (xem CLAUDE.md).
 adminRoutes.use(requireAuth, requireRole(UserRole.ADMIN));
 
+// --- Tổng quan hệ thống ---
+adminRoutes.get(
+  '/overview',
+  asyncHandler(async (_req, res) => {
+    res.json(await adminService.getSystemOverview());
+  }),
+);
+
 // --- Người dùng ---
 adminRoutes.get(
   '/users',
-  validateQuery(paginationSchema),
+  validateQuery(adminUserQuerySchema),
   asyncHandler(async (req, res) => {
-    res.json(await adminService.listUsers(getValidatedQuery(req, paginationSchema)));
+    res.json(await adminService.listUsers(getValidatedQuery(req, adminUserQuerySchema)));
+  }),
+);
+
+adminRoutes.get(
+  '/users/:id',
+  asyncHandler(async (req, res) => {
+    res.json(await adminService.getUserDetail(parseId(req.params.id)));
+  }),
+);
+
+adminRoutes.patch(
+  '/users/:id/role',
+  validateBody(updateUserRoleSchema),
+  asyncHandler(async (req, res) => {
+    const { role } = req.body as UpdateUserRoleInput;
+    res.json(await adminService.updateUserRole(parseId(req.params.id), role, currentUser(req).id));
+  }),
+);
+
+adminRoutes.patch(
+  '/users/:id/status',
+  validateBody(updateUserStatusSchema),
+  asyncHandler(async (req, res) => {
+    const { status } = req.body as UpdateUserStatusInput;
+    res.json(await adminService.updateUserStatus(parseId(req.params.id), status, currentUser(req).id));
+  }),
+);
+
+adminRoutes.post(
+  '/users/:id/reset-password',
+  validateBody(resetUserPasswordSchema),
+  asyncHandler(async (req, res) => {
+    const { newPassword } = req.body as ResetUserPasswordInput;
+    await adminService.resetUserPassword(parseId(req.params.id), newPassword);
+    res.status(204).send();
   }),
 );
 
 adminRoutes.delete(
   '/users/:id',
   asyncHandler(async (req, res) => {
-    await adminService.deleteUser(parseId(req.params.id));
+    await adminService.deleteUser(parseId(req.params.id), currentUser(req).id);
     res.status(204).send();
+  }),
+);
+
+// --- Lượt truy cập ---
+adminRoutes.get(
+  '/access/overview',
+  asyncHandler(async (req, res) => {
+    const days = Number(req.query.days ?? 30);
+    if (!Number.isInteger(days) || days < 1 || days > 90) throw new BadRequestError('Số ngày phải từ 1 đến 90');
+    res.json(await adminService.getAccessOverview(days));
+  }),
+);
+
+adminRoutes.get(
+  '/access/logs',
+  validateQuery(accessLogQuerySchema),
+  asyncHandler(async (req, res) => {
+    res.json(await adminService.listLoginEvents(getValidatedQuery(req, accessLogQuerySchema)));
   }),
 );
 
@@ -118,14 +186,6 @@ adminRoutes.delete(
   asyncHandler(async (req, res) => {
     await adminService.deleteQuizQuestion(parseId(req.params.id));
     res.status(204).send();
-  }),
-);
-
-// --- Thống kê hệ thống ---
-adminRoutes.get(
-  '/stats',
-  asyncHandler(async (_req, res) => {
-    res.json(await adminService.getSystemStats());
   }),
 );
 
