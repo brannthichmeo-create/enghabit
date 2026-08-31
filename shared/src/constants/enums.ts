@@ -73,6 +73,20 @@ export const ActivityType = {
 } as const;
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType];
 
+/**
+ * Loại thông báo trong ứng dụng. Phải khớp enum NotificationType trong schema.prisma.
+ * Nội dung thông báo do backend sinh; FE chỉ dùng loại để chọn biểu tượng và nhóm lọc.
+ */
+export const NotificationType = {
+  DAILY_REMINDER: 'DAILY_REMINDER',
+  STREAK_AT_RISK: 'STREAK_AT_RISK',
+  REVIEW_DUE: 'REVIEW_DUE',
+  MISTAKES_PENDING: 'MISTAKES_PENDING',
+  GOAL_ACHIEVED: 'GOAL_ACHIEVED',
+  ANNOUNCEMENT: 'ANNOUNCEMENT',
+} as const;
+export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
+
 export const VocabLevel = {
   BEGINNER: 'BEGINNER',
   INTERMEDIATE: 'INTERMEDIATE',

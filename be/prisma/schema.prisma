@@ -78,6 +78,22 @@ enum ExerciseType {
   LISTEN_CHOOSE
 }
 
+/// Loại thông báo trong ứng dụng. Thêm loại mới phải thêm cả ở shared/constants/enums.ts.
+enum NotificationType {
+  /// Nhắc học hằng ngày theo giờ user đặt
+  DAILY_REMINDER
+  /// Sắp hết ngày mà chưa học, chuỗi đang có nguy cơ đứt
+  STREAK_AT_RISK
+  /// Có thẻ flashcard tới hạn ôn
+  REVIEW_DUE
+  /// Còn từ sai chưa luyện lại
+  MISTAKES_PENDING
+  /// Đạt mục tiêu đã đặt
+  GOAL_ACHIEVED
+  /// Quản trị viên gửi tới người dùng
+  ANNOUNCEMENT
+}
+
 enum DevicePlatform {
   web
   ios
@@ -119,6 +135,7 @@ model User {
   devices             UserDevice[]
   refreshTokens       RefreshToken[]
   loginEvents         LoginEvent[]
+  notifications       Notification[]
   createdTopics       Topic[]              @relation("TopicCreatedBy")
 
   @@map("users")
@@ -467,6 +484,12 @@ model NotificationSetting {
   /// Mảng thứ trong tuần 1-7 (ISO), lưu JSON.
   daysOfWeek Json @map("days_of_week")
 
+  /// Cảnh báo khi sắp hết ngày mà chuỗi đang có nguy cơ đứt.
+  remindStreakAtRisk Boolean @default(true) @map("remind_streak_at_risk")
+
+  /// Nhắc khi có thẻ flashcard tới hạn ôn.
+  remindReviewDue Boolean @default(true) @map("remind_review_due")
+
   /// Ngày (local) đã gửi nhắc nhở gần nhất — chặn gửi trùng khi cron chạy lại.
   lastSentDate DateTime? @map("last_sent_date") @db.Date
 
@@ -475,6 +498,34 @@ model NotificationSetting {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_settings")
+}
+
+/// Thông báo hiện trong ứng dụng.
+///
+/// Lưu lại thay vì chỉ bắn push, vì push có thể bị chặn hoặc bỏ lỡ — người dùng mở
+/// app sau đó vẫn phải thấy được việc cần làm. Push chỉ là kênh báo thêm.
+model Notification {
+  id     Int              @id @default(autoincrement())
+  userId Int              @map("user_id")
+  type   NotificationType
+  title  String           @db.VarChar(150)
+  body   String           @db.VarChar(500)
+
+  /// Đường dẫn trong app để bấm vào là tới thẳng việc cần làm, vd "/flashcards".
+  link String? @db.VarChar(120)
+
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  /// Khoá chống trùng, dạng "<TYPE>:<local_date>" hoặc "ANNOUNCEMENT:<id>".
+  /// Cron chạy lại trong ngày sẽ không tạo thêm bản ghi giống hệt.
+  dedupeKey String @map("dedupe_key") @db.VarChar(120)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt])
+  @@map("notifications")
 }
 
 /// Thiết bị nhận push. playerId do OneSignal SDK cấp phía client.
