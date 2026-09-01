@@ -262,7 +262,8 @@ Taillieu_Docs-Claude_QuyTacCommit_Bổ sung quy tắc commit git
 Nguyên tắc bổ sung:
 
 - Mỗi commit chỉ nên gói gọn trong **một tính năng**; nếu thay đổi không liên quan nhau, tách thành nhiều commit riêng.
-- Không commit trực tiếp lên `main`; tạo nhánh cùng quy tắc đặt tên (vd `them/be-habits-checkin`) rồi mở PR.
+- **Dự án chỉ có một nhánh `main`** — commit thẳng lên `main`, không tạo nhánh phụ và không mở PR. Đây là dự án một người làm, thêm nhánh chỉ tốn thêm thao tác merge mà không có ai review.
+- Bù lại cho việc không có PR: mỗi commit phải tự nó **biên dịch và chạy được**. Khi một thay đổi trải trên nhiều commit, đừng để commit ở giữa gọi tới thứ chưa tồn tại — người sau `git checkout` vào đúng commit đó sẽ thấy code hỏng mà không hiểu vì sao.
 - Trước khi commit, đảm bảo lint/test của đúng module đó đã pass (xem "Lệnh thường dùng" khi có).
 
 ## Lệnh thường dùng
