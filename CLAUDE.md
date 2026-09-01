@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Trạng thái dự án
 
-Đã scaffold xong nền tảng: `shared` (enum, Zod schema, SM-2, streak — có test), `be` (Express + Prisma + đầy đủ module auth/goals/habits/topics/flashcards/quizzes/statistics/notifications/admin, cron nhắc nhở), `fe` (React + Vite + Tailwind, auth + dashboard thống kê). `mobile` chưa scaffold.
+Đã scaffold xong nền tảng: `shared` (enum, Zod schema, SM-2, streak, phần thưởng — có test), `be` (Express + Prisma + đầy đủ module auth/goals/habits/topics/flashcards/lessons/quizzes/statistics/notifications/rewards/admin, cron nhắc nhở + cron vật phẩm giữ chuỗi), `fe` (React + Vite + Tailwind, auth + dashboard thống kê). `mobile` chưa scaffold.
 
 Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có sẵn API backend và khuôn mẫu ở `fe/src/features/auth` + `fe/src/features/statistics` để làm theo.
 
@@ -19,6 +19,7 @@ Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có 
 - Học từ vựng theo chủ đề, ôn tập bằng flashcard (spaced repetition)
 - Làm quiz kiểm tra kiến thức
 - Xem chuỗi ngày học liên tiếp (streak), tỷ lệ hoàn thành thói quen, thống kê theo ngày/tuần/tháng
+- Điểm danh mỗi ngày nhận xu, làm ba nhiệm vụ ngày, mua vật phẩm giữ chuỗi để không mất streak khi lỡ nghỉ một hôm
 - Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user), cảnh báo chuỗi sắp đứt, chúc mừng đạt mục tiêu — xem trong chuông thông báo và trang `/notifications`
 
 ### Chức năng cho quản trị viên
@@ -66,7 +67,7 @@ enghabit/
 Bên trong `be/src/modules/<feature>/`: `routes.ts → controller.ts → service.ts → schema.ts`.
 Bên trong `fe/src/features/<feature>/`: `components/`, `hooks/`, `api.ts`, `types.ts`.
 
-Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `quizzes`, `statistics`, `notifications`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
+Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `lessons`, `quizzes`, `statistics`, `notifications`, `rewards`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
 
 **Hai quy ước bắt buộc khi scaffold:**
 
@@ -84,11 +85,38 @@ chỉ là bản sao cho nhanh, luôn tái tạo được từ bảng này — kh
 theo **ngày giờ máy chủ**, không theo `local_date`: đây là sự kiện kỹ thuật của hệ
 thống, không gắn với "một ngày học" của riêng người dùng nào.
 
-**`UserStreak` là dữ liệu dẫn xuất (cache), không phải nguồn sự thật.** Bảng này lưu sẵn `current_streak`/`longest_streak` chỉ để đọc nhanh, và luôn phải tái tạo được 100% từ `ActivityLog`. Vì vậy:
+**`UserStreak` là dữ liệu dẫn xuất (cache), không phải nguồn sự thật.** Bảng này lưu sẵn `current_streak`/`longest_streak` chỉ để đọc nhanh, và luôn phải tái tạo được 100% từ `ActivityLog` **cộng với các ngày đã được bù trong `streak_freezes`** (vật phẩm giữ chuỗi — xem mục dưới). Vì vậy:
 
 - Bắt buộc có script `be/prisma/scripts/recompute-streak.ts` tính lại `UserStreak` từ `ActivityLog` (chạy được cho 1 user hoặc toàn bộ user).
 - Khi phát hiện streak sai: chạy lại script này, **không sửa tay** giá trị trong bảng.
 - Thống kê ngày/tuần/tháng **tính trực tiếp từ `ActivityLog`** (query on-the-fly), không tạo bảng tổng hợp riêng — ở quy mô vài trăm user, thêm bảng tổng hợp chỉ làm tăng nguy cơ lệch số liệu mà không có lợi ích thực tế.
+
+### Phần thưởng động viên (module `rewards`)
+
+Điểm danh hằng ngày, ba nhiệm vụ ngày và vật phẩm giữ chuỗi. Bốn quy tắc bắt buộc:
+
+- **Không ghi `ActivityLog`.** Điểm danh và nhận thưởng KHÔNG phải hoạt động học. Ghi vào
+  đó thì bấm một nút là đủ giữ streak, và mọi thống kê học tập sẽ nói dối.
+- **Thưởng bằng xu, không bằng XP.** XP suy ra từ `ActivityLog` nên không thể tặng thêm.
+  Xu có sổ cái riêng `coin_transactions`; **số dư = `SUM(amount)`**, không có cột số dư —
+  cùng lý do với thống kê tính thẳng từ `ActivityLog`.
+- **Chống nhận trùng bằng ràng buộc `@@unique([userId, dedupeKey])` của DB**, không bằng
+  đọc-rồi-ghi: hai request bấm cùng lúc đều đọc thấy "chưa nhận" và sẽ cùng ghi. Khoá dạng
+  `DAILY_CHECKIN:<local_date>` và `MISSION:<id>:<local_date>` (sinh bởi `shared/rewards`).
+- **Tiến độ nhiệm vụ không lưu ở đâu cả** — chấm lại từ `ActivityLog` của ngày local đó
+  mỗi lần đọc, và chấm lại lần nữa ở BE khi nhận thưởng (không tin số FE gửi lên).
+
+Vật phẩm giữ chuỗi (`streak_freezes`) là ngoại lệ duy nhất được phép tác động vào
+`UserStreak` ngoài hoạt động học:
+
+- Mỗi dòng là một vật phẩm; `used_on_date` null = còn trong kho. `@@unique([userId, usedOnDate])`
+  chặn bù hai vật phẩm cho cùng một ngày (MySQL cho phép nhiều NULL trong unique index).
+- Ngày được bù **nối lại mạch nhưng không cộng thêm ngày** vào chuỗi — logic ở
+  `shared/streak/applyFrozenDay`, không viết lại ở nơi khác.
+- Việc tiêu vật phẩm do **job `be/src/jobs/streak-freeze.job.ts`** làm tự động, không phải
+  nút bấm: hôm người dùng quên học cũng là hôm họ không mở app, để họ tự bấm thì vật phẩm vô dụng.
+- `recompute-streak` **phải đọc cả `streak_freezes`**, nếu không mỗi lần chạy script là một
+  lần xoá sạch công dụng của vật phẩm người dùng đã mua.
 
 ### Quy ước thời gian & định nghĩa "một ngày học"
 
@@ -202,6 +230,8 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 - Mọi request BE có request-id (structured logger, ví dụ `pino`) để trace xuyên suốt `routes → controller → service`.
 - Khi số liệu streak/thống kê sai, theo đúng thứ tự: (1) soi `ActivityLog` — bản ghi có được tạo không, `local_date` có đúng timezone user không; (2) nếu `ActivityLog` đúng mà `UserStreak` sai thì chạy `recompute-streak`; (3) tuyệt đối không sửa tay giá trị trong `UserStreak`.
 - Bug liên quan tới ngày/streak: luôn kiểm tra `User.timezone` và cột `local_date` trước khi nghi ngờ logic tính toán — phần lớn lỗi loại này đến từ sai timezone, không phải sai thuật toán.
+- Streak "tự nhiên còn" dù có ngày nghỉ: xem `streak_freezes` — rất có thể một vật phẩm đã bù ngày đó (job chạy 30 phút một lượt). Đây là hành vi đúng, không phải bug.
+- Không nhận được xu: kiểm tra `coin_transactions` theo `dedupe_key` của ngày đó. Trùng khoá nghĩa là đã nhận rồi, API trả lỗi 409 chứ không cộng thêm lần nữa.
 - Test đặt cạnh file nguồn trong cùng thư mục module (`*.test.ts`), không gom vào thư mục `tests/` tách biệt.
 - FE: mỗi feature lớn (`flashcards`, `quizzes`...) có Error Boundary cục bộ, tránh lỗi 1 feature làm crash toàn app.
 - Debug cron/notification: xem log riêng của `be/src/jobs`, không lẫn với log của module `notifications` (module này giữ **nội dung và lưu trữ** thông báo + cấu hình nhắc nhở, nhưng **không chứa lịch trình gửi**).

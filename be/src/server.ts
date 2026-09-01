@@ -3,6 +3,7 @@ import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { assertDatabaseConnection, disconnectPrisma } from './lib/prisma.js';
 import { startReminderJob } from './jobs/reminder.job.js';
+import { startStreakFreezeJob } from './jobs/streak-freeze.job.js';
 
 async function main(): Promise<void> {
   // Kiểm tra DB trước khi mở cổng — fail sớm với thông báo rõ ràng.
@@ -15,6 +16,10 @@ async function main(): Promise<void> {
   });
 
   if (env.ENABLE_REMINDER_JOB) startReminderJob();
+
+  // Đi chung công tắc với job nhắc nhở: cả hai đều là cron nền, môi trường nào tắt
+  // cron thì phải tắt cả hai, nếu không sẽ có nơi chạy nửa vời.
+  if (env.ENABLE_REMINDER_JOB) startStreakFreezeJob();
 
   const shutdown = (signal: string): void => {
     logger.info({ signal }, 'Đang tắt server...');

@@ -94,6 +94,35 @@ export const VocabLevel = {
 } as const;
 export type VocabLevel = (typeof VocabLevel)[keyof typeof VocabLevel];
 
+/**
+ * Lý do một dòng trong sổ cái xu. Phải khớp enum CoinReason trong schema.prisma.
+ *
+ * Xu là phần thưởng động viên, KHÔNG phải XP: XP suy ra từ ActivityLog nên không
+ * thể cộng thêm bằng việc bấm nút. Xu có sổ cái riêng nên tặng bao nhiêu cũng
+ * không làm sai lệch cấp độ hay thống kê học tập.
+ */
+export const CoinReason = {
+  /** Điểm danh hằng ngày */
+  DAILY_CHECKIN: 'DAILY_CHECKIN',
+  /** Nhận thưởng một nhiệm vụ ngày */
+  MISSION_CLAIM: 'MISSION_CLAIM',
+  /** Mua một vật phẩm giữ chuỗi (số âm) */
+  STREAK_FREEZE_PURCHASE: 'STREAK_FREEZE_PURCHASE',
+} as const;
+export type CoinReason = (typeof CoinReason)[keyof typeof CoinReason];
+
+/**
+ * Nhiệm vụ ngày. Cố ý là hằng số trong code chứ không phải bảng trong DB:
+ * tiến độ nhiệm vụ suy ra từ ActivityLog của hôm đó, nên không cần lưu gì thêm —
+ * thêm bảng tiến độ chỉ tạo thêm một nguồn số liệu có thể lệch.
+ */
+export const MissionId = {
+  LEARN_VOCAB: 'LEARN_VOCAB',
+  REVIEW_FLASHCARDS: 'REVIEW_FLASHCARDS',
+  DO_HABIT: 'DO_HABIT',
+} as const;
+export type MissionId = (typeof MissionId)[keyof typeof MissionId];
+
 /** Chất lượng nhớ khi ôn flashcard, đầu vào của thuật toán SM-2 (0-5). */
 export const ReviewQuality = {
   /** Quên hoàn toàn */

@@ -1,9 +1,10 @@
-import { Flame, Menu, Sparkles, X } from 'lucide-react';
+import { Coins, Flame, Menu, Sparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLevel, useStreak } from '../../features/statistics/statistics.hooks';
+import { useRewards } from '../../features/rewards/rewards.hooks';
 import { NotificationBell } from '../../features/notifications/components/NotificationBell';
 import { Breadcrumb, BreadcrumbProvider } from './Breadcrumb';
 import { Sidebar } from './Sidebar';
@@ -130,8 +131,8 @@ function AppShell(): JSX.Element {
 }
 
 /**
- * Chuỗi ngày và cấp độ ngay trên thanh trên cùng.
- * Đây là hai chỉ số người học liếc nhìn thường xuyên nhất, để ở đây thì không
+ * Xu, chuỗi ngày và cấp độ ngay trên thanh trên cùng.
+ * Đây là những chỉ số người học liếc nhìn thường xuyên nhất, để ở đây thì không
  * phải quay về trang Tổng quan mới xem được.
  *
  * Quản trị viên không có hai chỉ số này — họ vận hành hệ thống chứ không đi học.
@@ -141,11 +142,21 @@ function QuickStats(): JSX.Element | null {
   const isLearner = user?.role !== UserRole.ADMIN;
   const streak = useStreak(isLearner);
   const level = useLevel(isLearner);
+  const rewards = useRewards(isLearner);
 
   if (!isLearner) return null;
 
   return (
     <div className="flex items-center gap-1.5">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft transition-colors hover:border-on-page-muted"
+        title="Xu — bấm để tới khu phần thưởng"
+      >
+        <Coins className="h-3.5 w-3.5 text-accent" aria-hidden />
+        {rewards.data?.coins ?? 0}
+      </Link>
+
       <span
         className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft"
         title={`Chuỗi ngày học${streak.data?.isAlive === false ? ' — đã đứt' : ''}`}

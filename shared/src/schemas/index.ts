@@ -8,3 +8,4 @@ export * from './statistics.schema.js';
 export * from './lesson.schema.js';
 export * from './notification.schema.js';
 export * from './admin.schema.js';
+export * from './rewards.schema.js';

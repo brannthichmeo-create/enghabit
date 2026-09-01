@@ -4,6 +4,7 @@ import { BookOpen, Brain, ChevronRight, Layers, Target } from 'lucide-react';
 import type { StatsRangeInput } from '@enghabit/shared';
 import { ActivityChart } from '../../../shared/components/ActivityChart';
 import { HeroCard } from './HeroCard';
+import { RewardsBar } from '../../rewards/components/RewardsBar';
 import { useMistakeCount } from '../../lessons/lesson.hooks';
 import { ActivityCalendarChart } from '../../../shared/components/ActivityCalendar';
 import { Card, SectionTitle, ProgressBar, Skeleton } from '../../../shared/components/ui';
@@ -61,7 +62,9 @@ export function DashboardPage(): JSX.Element {
         totalActivities={totalActivities}
         rangeLabel={RANGE_LABELS[range]}
         loading={streak.isLoading || summary.isLoading}
-      />
+      >
+        <RewardsBar />
+      </HeroCard>
 
       <QuickReviewCard dueCount={dueCount.data} mistakeCount={mistakeCount.data} />
 

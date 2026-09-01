@@ -100,14 +100,24 @@ enum DevicePlatform {
   android
 }
 
+/// Lý do một dòng trong sổ cái xu. Thêm loại mới phải thêm cả ở shared/constants/enums.ts.
+enum CoinReason {
+  /// Điểm danh hằng ngày
+  DAILY_CHECKIN
+  /// Nhận thưởng một nhiệm vụ ngày
+  MISSION_CLAIM
+  /// Mua vật phẩm giữ chuỗi (amount âm)
+  STREAK_FREEZE_PURCHASE
+}
+
 // ---------------------------------------------------------------------------
 // Người dùng & xác thực
 // ---------------------------------------------------------------------------
 
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String   @db.VarChar(100)
-  email        String   @unique @db.VarChar(190) // 190 để vừa giới hạn index utf8mb4
+  id           Int        @id @default(autoincrement())
+  name         String     @db.VarChar(100)
+  email        String     @unique @db.VarChar(190) // 190 để vừa giới hạn index utf8mb4
   passwordHash String     @map("password_hash") @db.VarChar(255)
   role         UserRole   @default(USER)
   status       UserStatus @default(ACTIVE)
@@ -136,6 +146,8 @@ model User {
   refreshTokens       RefreshToken[]
   loginEvents         LoginEvent[]
   notifications       Notification[]
+  coinTransactions    CoinTransaction[]
+  streakFreezes       StreakFreeze[]
   createdTopics       Topic[]              @relation("TopicCreatedBy")
 
   @@map("users")
@@ -167,12 +179,12 @@ model LoginEvent {
 
 /// Refresh token được lưu dạng hash để nếu DB lộ thì token cũng không dùng lại được.
 model RefreshToken {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @map("user_id")
-  tokenHash String   @unique @map("token_hash") @db.VarChar(255)
-  expiresAt DateTime @map("expires_at")
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  tokenHash String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at")
   revokedAt DateTime? @map("revoked_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -228,9 +240,9 @@ model Habit {
 }
 
 model HabitCheckIn {
-  id      Int    @id @default(autoincrement())
-  habitId Int    @map("habit_id")
-  userId  Int    @map("user_id")
+  id      Int @id @default(autoincrement())
+  habitId Int @map("habit_id")
+  userId  Int @map("user_id")
 
   /// Ngày check-in theo timezone user. Unique cùng habitId để mỗi ngày chỉ check-in một lần.
   localDate DateTime @map("local_date") @db.Date
@@ -260,7 +272,7 @@ model Topic {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  createdBy    User?        @relation("TopicCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy      User?            @relation("TopicCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   vocabularies   Vocabulary[]
   quizzes        Quiz[]
   lessonProgress LessonProgress[]
@@ -295,10 +307,10 @@ model UserVocabProgress {
   userId       Int @map("user_id")
   vocabularyId Int @map("vocabulary_id")
 
-  repetitions    Int      @default(0)
-  intervalDays   Int      @default(0) @map("interval_days")
-  easeFactor     Float    @default(2.5) @map("ease_factor")
-  nextReviewDate DateTime @map("next_review_date") @db.Date
+  repetitions    Int       @default(0)
+  intervalDays   Int       @default(0) @map("interval_days")
+  easeFactor     Float     @default(2.5) @map("ease_factor")
+  nextReviewDate DateTime  @map("next_review_date") @db.Date
   lastReviewedAt DateTime? @map("last_reviewed_at")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -540,4 +552,61 @@ model UserDevice {
 
   @@index([userId])
   @@map("user_devices")
+}
+
+// ---------------------------------------------------------------------------
+// Phần thưởng động viên (điểm danh, nhiệm vụ ngày, vật phẩm giữ chuỗi)
+// ---------------------------------------------------------------------------
+
+/// Sổ cái xu — NGUỒN SỰ THẬT của số dư.
+///
+/// Không có bảng lưu số dư: số dư = SUM(amount) tính lúc đọc. Ở quy mô vài trăm user,
+/// thêm cột số dư chỉ tạo thêm một chỗ có thể lệch với sổ cái mà không nhanh hơn đáng kể
+/// (cùng lý do với thống kê tính thẳng từ ActivityLog — xem CLAUDE.md).
+///
+/// Xu KHÔNG phải XP: XP suy ra từ ActivityLog nên không thể tặng thêm. Nhờ tách hẳn
+/// hai thứ, thưởng xu bao nhiêu cũng không làm sai cấp độ hay số liệu học tập.
+model CoinTransaction {
+  id     Int        @id @default(autoincrement())
+  userId Int        @map("user_id")
+  /// Dương là nhận, âm là tiêu.
+  amount Int
+  reason CoinReason
+
+  /// Khoá chống trùng: "DAILY_CHECKIN:<local_date>", "MISSION:<id>:<local_date>".
+  /// Ràng buộc unique bên dưới là thứ duy nhất đảm bảo bấm hai lần không nhận hai lần —
+  /// kiểm tra bằng câu lệnh đọc trước khi ghi vẫn có thể lọt khi hai request về cùng lúc.
+  dedupeKey String @map("dedupe_key") @db.VarChar(120)
+
+  /// Ngày local của user lúc phát sinh — mọi thống kê xu group theo cột này.
+  localDate DateTime @map("local_date") @db.Date
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, localDate])
+  @@map("coin_transactions")
+}
+
+/// Một vật phẩm giữ chuỗi. Mỗi dòng là một cái đã mua.
+///
+/// `usedOnDate` null nghĩa là còn trong kho; có giá trị nghĩa là đã dùng để bù cho
+/// đúng ngày đó. Ràng buộc unique (user, usedOnDate) chặn việc bù hai vật phẩm cho
+/// cùng một ngày — MySQL cho phép nhiều dòng NULL trong unique index, nên các vật
+/// phẩm chưa dùng vẫn nằm chung được.
+///
+/// Bảng này cùng với ActivityLog là toàn bộ dữ liệu để dựng lại UserStreak
+/// (xem shared/streak/computeStreak) — quy tắc "không sửa tay user_streaks" giữ nguyên.
+model StreakFreeze {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  purchasedAt DateTime  @default(now()) @map("purchased_at")
+  usedOnDate  DateTime? @map("used_on_date") @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, usedOnDate])
+  @@index([userId])
+  @@map("streak_freezes")
 }

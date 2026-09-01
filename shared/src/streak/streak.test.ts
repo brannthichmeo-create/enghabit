@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { applyActivity, computeStreak, displayStreak, EMPTY_STREAK, streakDeadline } from './streak.js';
+import {
+  applyActivity,
+  applyFrozenDay,
+  computeStreak,
+  displayStreak,
+  EMPTY_STREAK,
+  freezableDate,
+  streakDeadline,
+} from './streak.js';
 
 describe('applyActivity', () => {
   it('bắt đầu streak từ trạng thái rỗng', () => {
@@ -77,5 +85,64 @@ describe('streakDeadline', () => {
 
   it('trả về null khi chưa có hoạt động nào', () => {
     expect(streakDeadline(EMPTY_STREAK)).toBeNull();
+  });
+});
+
+describe('vật phẩm giữ chuỗi', () => {
+  const state = { currentStreak: 5, longestStreak: 9, lastActiveDate: '2026-03-10' };
+
+  it('ngày được bù nối lại mạch nhưng KHÔNG cộng thêm ngày vào chuỗi', () => {
+    const next = applyFrozenDay(state, '2026-03-11');
+    expect(next.currentStreak).toBe(5);
+    expect(next.lastActiveDate).toBe('2026-03-11');
+  });
+
+  it('nhờ được bù, học lại hôm sau vẫn tính là liên tiếp', () => {
+    const frozen = applyFrozenDay(state, '2026-03-11');
+    expect(applyActivity(frozen, '2026-03-12').currentStreak).toBe(6);
+  });
+
+  it('không bù được ngày cách xa ngày hoạt động cuối', () => {
+    expect(applyFrozenDay(state, '2026-03-13')).toEqual(state);
+  });
+
+  it('không bù được khi chưa từng học', () => {
+    expect(applyFrozenDay(EMPTY_STREAK, '2026-03-11')).toEqual(EMPTY_STREAK);
+  });
+
+  it('computeStreak dựng lại được chuỗi có ngày nghỉ đã bù', () => {
+    const state = computeStreak(['2026-03-01', '2026-03-02', '2026-03-04'], ['2026-03-03']);
+    expect(state.currentStreak).toBe(3);
+    expect(state.lastActiveDate).toBe('2026-03-04');
+  });
+
+  it('không có vật phẩm bù thì đúng chuỗi đó bị đứt', () => {
+    expect(computeStreak(['2026-03-01', '2026-03-02', '2026-03-04']).currentStreak).toBe(1);
+  });
+
+  it('ngày vừa học vừa được bù vẫn tính là ngày học (+1)', () => {
+    const state = computeStreak(['2026-03-01', '2026-03-02'], ['2026-03-02']);
+    expect(state.currentStreak).toBe(2);
+  });
+});
+
+describe('freezableDate', () => {
+  const state = { currentStreak: 3, longestStreak: 3, lastActiveDate: '2026-03-10' };
+
+  it('nghỉ đúng một ngày thì trả về ngày cần bù', () => {
+    expect(freezableDate(state, '2026-03-12')).toBe('2026-03-11');
+  });
+
+  it('học hôm qua hoặc hôm nay thì không có gì để bù', () => {
+    expect(freezableDate(state, '2026-03-11')).toBeNull();
+    expect(freezableDate(state, '2026-03-10')).toBeNull();
+  });
+
+  it('nghỉ từ hai ngày trở lên thì đã đứt, vật phẩm không cứu được', () => {
+    expect(freezableDate(state, '2026-03-13')).toBeNull();
+  });
+
+  it('chưa từng học thì không cứu gì cả', () => {
+    expect(freezableDate(EMPTY_STREAK, '2026-03-12')).toBeNull();
   });
 });

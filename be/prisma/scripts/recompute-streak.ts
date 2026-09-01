@@ -9,17 +9,30 @@ import { fromDbDate, toDbDate } from '../../src/common/utils/db-date.js';
  *
  *   pnpm --filter @enghabit/be db:recompute-streak          # tất cả user
  *   pnpm --filter @enghabit/be db:recompute-streak -- 42    # chỉ user id 42
+ *
+ * Ngoài ActivityLog còn phải đọc streak_freezes: những ngày đã được bù bằng vật phẩm
+ * giữ chuỗi cũng nối mạch. Bỏ qua bảng này thì mỗi lần chạy script là một lần xoá
+ * sạch công dụng của vật phẩm người dùng đã mua.
  */
 
 async function recomputeForUser(userId: number): Promise<void> {
-  const rows = await prisma.activityLog.findMany({
-    where: { userId },
-    select: { localDate: true },
-    distinct: ['localDate'],
-    orderBy: { localDate: 'asc' },
-  });
+  const [rows, freezes] = await Promise.all([
+    prisma.activityLog.findMany({
+      where: { userId },
+      select: { localDate: true },
+      distinct: ['localDate'],
+      orderBy: { localDate: 'asc' },
+    }),
+    prisma.streakFreeze.findMany({
+      where: { userId, usedOnDate: { not: null } },
+      select: { usedOnDate: true },
+    }),
+  ]);
 
-  const state = computeStreak(rows.map((r) => fromDbDate(r.localDate)));
+  const state = computeStreak(
+    rows.map((r) => fromDbDate(r.localDate)),
+    freezes.flatMap((f) => (f.usedOnDate ? [fromDbDate(f.usedOnDate)] : [])),
+  );
 
   await prisma.userStreak.upsert({
     where: { userId },
