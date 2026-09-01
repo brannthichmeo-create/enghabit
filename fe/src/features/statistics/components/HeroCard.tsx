@@ -1,25 +1,44 @@
-import { Flame, Snowflake, Sparkles, Target } from 'lucide-react';
+import { CalendarCheck, Flame, Layers, Snowflake, Sparkles, Target } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { LevelSummary, StreakSummary } from '@enghabit/shared';
 import { Skeleton } from '../../../shared/components/ui';
 
 /**
- * Thẻ tổng hợp đầu trang: chuỗi ngày, cấp độ và việc cần làm hôm nay.
+ * Thẻ tổng hợp đầu trang: chuỗi ngày, cấp độ, vài con số theo dõi và việc cần làm hôm nay.
  *
- * Gộp ba thứ vào một thẻ thay vì bốn ô số rời rạc, vì chúng trả lời cùng một câu
+ * Gộp hết vào một thẻ thay vì rải thành nhiều ô rời rạc, vì chúng trả lời cùng một câu
  * hỏi: "tôi đang ở đâu và hôm nay phải làm gì". Đặt hành động ngay cạnh số liệu
  * để người học không phải đi tìm nút bắt đầu.
+ *
+ * Ba con số theo dõi nằm thành một dải mảnh giữa thẻ (trước đây là ba thẻ riêng chiếm
+ * trọn một hàng): chúng là số để liếc nhìn, không phải thứ cần nhấn mạnh bằng ba khung.
  */
 export function HeroCard({
   streak,
   level,
   dueCount,
+  activeDayRate,
+  totalActivities,
+  rangeLabel,
   loading,
+  children,
 }: {
   streak?: StreakSummary;
   level?: LevelSummary;
   dueCount?: number;
+  /** Tỷ lệ ngày có học trong khoảng đang chọn ở biểu đồ bên dưới (%). */
+  activeDayRate?: number;
+  totalActivities?: number | null;
+  /**
+   * Nhãn khoảng thời gian của hai số trên ("7 ngày", "Tuần này"...).
+   * Bắt buộc hiển thị: hai số đó đổi theo tab ở biểu đồ phía dưới, không ghi rõ
+   * khoảng thì người đọc tưởng là số của cả hành trình.
+   */
+  rangeLabel?: string;
   loading: boolean;
+  /** Hàng phần thưởng (điểm danh, nhiệm vụ, streak freeze) — chèn phía trên hai nút chính. */
+  children?: ReactNode;
 }): JSX.Element {
   if (loading || !streak || !level) return <Skeleton className="h-[188px] w-full" />;
 
@@ -48,7 +67,7 @@ export function HeroCard({
               <span className="ml-1.5 text-base font-medium text-content-muted">ngày</span>
             </p>
             <p className="mt-0.5 text-xs text-content-muted">
-              {alive ? `Kỷ lục ${streak.longestStreak} ngày` : 'Học hôm nay để bắt đầu lại'}
+              {alive ? 'Học hôm nay để giữ chuỗi' : 'Học hôm nay để bắt đầu lại'}
             </p>
           </div>
         </div>
@@ -82,29 +101,78 @@ export function HeroCard({
         </div>
       </div>
 
-      {/* Hàng hành động — đặt trên nền chìm để tách khỏi phần số liệu */}
-      <div className="flex flex-wrap gap-2 border-t border-line bg-sunken p-4">
-        <Link
-          to="/learn"
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-strong"
-        >
-          <Target className="h-4 w-4" aria-hidden />
-          HỌC NGAY HÔM NAY
-        </Link>
+      {/* Dải ba con số theo dõi — chỉ để liếc, nên mảnh và không có khung riêng */}
+      <div className="grid grid-cols-3 divide-x divide-line border-t border-line">
+        <MiniStat
+          icon={CalendarCheck}
+          label="Ngày có học"
+          hint={rangeLabel}
+          value={activeDayRate === undefined ? null : `${activeDayRate}%`}
+        />
+        <MiniStat
+          icon={Layers}
+          label="Tổng hoạt động"
+          hint={rangeLabel}
+          value={totalActivities === undefined || totalActivities === null ? null : `${totalActivities}`}
+        />
+        <MiniStat icon={Target} label="Kỷ lục chuỗi" hint="Từ trước tới nay" value={`${streak.longestStreak} ngày`} />
+      </div>
 
-        <Link
-          to="/flashcards"
-          className="flex items-center justify-center gap-2 rounded-xl border-2 border-accent/50 px-4 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/10"
-        >
-          <Snowflake className="h-4 w-4" aria-hidden />
-          ÔN TẬP
-          {dueCount !== undefined && dueCount > 0 && (
-            <span className="rounded-full bg-accent px-1.5 py-0.5 text-[11px] leading-none text-on-brand">
-              {dueCount}
-            </span>
-          )}
-        </Link>
+      {/* Hàng hành động — đặt trên nền chìm để tách khỏi phần số liệu */}
+      <div className="space-y-2 border-t border-line bg-sunken p-4">
+        {children}
+
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/learn"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-strong"
+          >
+            <Target className="h-4 w-4" aria-hidden />
+            HỌC NGAY HÔM NAY
+          </Link>
+
+          <Link
+            to="/flashcards"
+            className="flex items-center justify-center gap-2 rounded-xl border-2 border-accent/50 px-4 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/10"
+          >
+            <Snowflake className="h-4 w-4" aria-hidden />
+            ÔN TẬP
+            {dueCount !== undefined && dueCount > 0 && (
+              <span className="rounded-full bg-accent px-1.5 py-0.5 text-[11px] leading-none text-on-brand">
+                {dueCount}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
     </section>
+  );
+}
+
+/** Một ô trong dải số liệu. `value === null` nghĩa là đang tải. */
+function MiniStat({
+  icon: Icon,
+  label,
+  hint,
+  value,
+}: {
+  icon: typeof Target;
+  label: string;
+  hint?: string;
+  value: string | null;
+}): JSX.Element {
+  return (
+    <div className="px-4 py-3">
+      <p className="flex items-center gap-1.5 text-xs text-content-muted">
+        <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span className="truncate">{label}</span>
+      </p>
+      {value === null ? (
+        <Skeleton className="mt-1 h-6 w-16" />
+      ) : (
+        <p className="mt-0.5 text-lg font-bold tabular-nums text-content">{value}</p>
+      )}
+      {hint && <p className="text-[11px] text-content-muted">{hint}</p>}
+    </div>
   );
 }

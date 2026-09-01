@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, CalendarCheck, ChevronRight, Layers, Target } from 'lucide-react';
+import { BookOpen, Brain, ChevronRight, Layers, Target } from 'lucide-react';
 import type { StatsRangeInput } from '@enghabit/shared';
 import { ActivityChart } from '../../../shared/components/ActivityChart';
 import { HeroCard } from './HeroCard';
@@ -19,14 +19,25 @@ const RANGE_LABELS: Record<StatsRangeInput['range'], string> = {
   month: 'Tháng này',
 };
 
+/**
+ * Mặc định 3 tháng chứ không phải cả năm: dải một năm phải cuộn ngang mới xem hết,
+ * mà phần người học quan tâm gần như luôn là quãng gần đây. Ai cần nhìn toàn cảnh
+ * thì đổi sang 12 tháng.
+ */
+const CALENDAR_RANGES = [
+  { months: 3, label: '90 ngày' },
+  { months: 12, label: '12 tháng' },
+] as const;
+
 export function DashboardPage(): JSX.Element {
   const user = useCurrentUser();
   const [range, setRange] = useState<StatsRangeInput['range']>('week');
+  const [calendarMonths, setCalendarMonths] = useState<number>(CALENDAR_RANGES[0].months);
   const summary = useStatsSummary(range);
   const streak = useStreak();
   const goalProgress = useGoalProgress();
   const dueCount = useDueCount();
-  const calendar = useActivityCalendar();
+  const calendar = useActivityCalendar(calendarMonths);
   const mistakeCount = useMistakeCount();
 
   const totalActivities = summary.data
@@ -46,26 +57,13 @@ export function DashboardPage(): JSX.Element {
         streak={streak.data}
         level={summary.data?.level}
         dueCount={dueCount.data}
+        activeDayRate={summary.data?.activeDayRate}
+        totalActivities={totalActivities}
+        rangeLabel={RANGE_LABELS[range]}
         loading={streak.isLoading || summary.isLoading}
       />
 
-      <ContinueSection dueCount={dueCount.data} mistakeCount={mistakeCount.data} />
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard
-          icon={CalendarCheck}
-          label="Tỷ lệ ngày có học"
-          value={summary.data ? `${summary.data.activeDayRate}` : null}
-          unit="%"
-        />
-        <StatCard icon={Layers} label="Tổng hoạt động" value={totalActivities?.toString() ?? null} />
-        <StatCard
-          icon={Target}
-          label="Kỷ lục chuỗi"
-          value={streak.data ? `${streak.data.longestStreak}` : null}
-          unit="ngày"
-        />
-      </div>
+      <QuickReviewCard dueCount={dueCount.data} mistakeCount={mistakeCount.data} />
 
       <Card>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -98,10 +96,34 @@ export function DashboardPage(): JSX.Element {
       </Card>
 
       <Card>
-        <h2 className="mb-1 font-semibold text-content">Lịch học cả năm</h2>
-        <p className="mb-3 text-sm text-content-muted">
-          Nhìn lại toàn bộ hành trình: chuỗi ngày liền mạch và những khoảng bị gián đoạn
-        </p>
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-content">
+              {calendarMonths === 3 ? '90 ngày gần đây' : 'Lịch học cả năm'}
+            </h2>
+            <p className="text-sm text-content-muted">
+              Bấm vào một ngày để xem hôm đó bạn đã học gì. Ô càng đậm là học càng nhiều.
+            </p>
+          </div>
+
+          <div className="flex gap-0.5 rounded-lg bg-sunken p-0.5" role="tablist" aria-label="Phạm vi lịch">
+            {CALENDAR_RANGES.map((option) => (
+              <button
+                key={option.months}
+                role="tab"
+                aria-selected={calendarMonths === option.months}
+                onClick={() => setCalendarMonths(option.months)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                  calendarMonths === option.months
+                    ? 'bg-surface text-content shadow-sm'
+                    : 'text-content-muted hover:text-content-soft'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {calendar.isLoading && <Skeleton className="h-[150px] w-full" />}
         {calendar.isError && <p className="py-6 text-center text-sm text-danger">Không tải được lịch học</p>}
@@ -153,12 +175,13 @@ export function DashboardPage(): JSX.Element {
 }
 
 /**
- * Khối "tiếp tục việc đang dở" — hai lối vào lớn dẫn thẳng tới việc học.
+ * Thẻ "Ôn nhanh" — hai lối vào lớn dẫn thẳng tới việc học.
  *
  * Đặt ngay dưới thẻ tổng hợp vì đây là thứ người học cần bấm, còn biểu đồ phía
- * dưới chỉ để xem lại. Mỗi ô nói rõ còn bao nhiêu việc thay vì chỉ ghi tên mục.
+ * dưới chỉ để xem lại. Mỗi ô LUÔN nói rõ trạng thái, kể cả khi hết việc ("đã xong
+ * hôm nay") — ô không có chữ phụ khiến người dùng phải bấm vào mới biết còn gì không.
  */
-function ContinueSection({
+function QuickReviewCard({
   dueCount,
   mistakeCount,
 }: {
@@ -166,30 +189,37 @@ function ContinueSection({
   mistakeCount?: number;
 }): JSX.Element {
   return (
-    <section>
-      <SectionTitle>Tiếp tục việc đang dở</SectionTitle>
+    <Card>
+      <div className="mb-3 flex items-center gap-2">
+        <Brain className="h-4 w-4 shrink-0 text-brand-strong" aria-hidden />
+        <div>
+          <h2 className="font-semibold leading-tight text-content">Ôn nhanh</h2>
+          <p className="text-sm text-content-muted">Làm tiếp từ chỗ đang dở</p>
+        </div>
+      </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <ContinueTile
+      <div className="space-y-2">
+        <QuickReviewTile
           to="/learn"
           icon={BookOpen}
-          title="Bài học"
-          note={mistakeCount ? `${mistakeCount} từ cần ôn lại` : 'Tiếp tục lộ trình'}
+          title="HỌC BÀI"
+          note={mistakeCount ? `${mistakeCount} từ cần ôn lại` : 'Đã xong phần cần ôn'}
           tone="brand"
         />
-        <ContinueTile
+        <QuickReviewTile
           to="/flashcards"
           icon={Layers}
-          title="Ôn tập flashcard"
+          title="ÔN FLASHCARD"
           note={dueCount ? `${dueCount} từ tới hạn hôm nay` : 'Đã ôn hết hôm nay'}
           tone="accent"
         />
       </div>
-    </section>
+    </Card>
   );
 }
 
-function ContinueTile({
+/** Nút trải ngang: tên việc ở trên, trạng thái ở dưới, mũi tên ở cuối. */
+function QuickReviewTile({
   to,
   icon: Icon,
   title,
@@ -202,52 +232,26 @@ function ContinueTile({
   note: string;
   tone: 'brand' | 'accent';
 }): JSX.Element {
+  // Hai nút cùng cỡ, phân biệt bằng màu nền đặc — đây là hai lối đi ngang hàng nhau,
+  // không cái nào là hành động phụ.
   const styles =
     tone === 'brand'
-      ? 'border-brand/40 bg-brand-soft hover:border-brand'
-      : 'border-accent/40 bg-accent-soft hover:border-accent';
-  const iconStyles = tone === 'brand' ? 'bg-brand text-on-brand' : 'bg-accent text-ink';
+      ? 'bg-brand text-on-brand hover:bg-brand-strong'
+      : 'bg-accent text-ink hover:bg-accent/85';
 
   return (
     <Link
       to={to}
-      className={`flex items-center gap-3 rounded-xl border-2 px-4 py-4 transition-colors ${styles}`}
+      className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-colors ${styles}`}
     >
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconStyles}`}>
-        <Icon className="h-5 w-5" aria-hidden />
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black/15">
+        <Icon className="h-4 w-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-semibold text-content">{title}</span>
-        <span className="block text-sm text-content-muted">{note}</span>
+        <span className="block text-sm font-bold leading-tight">{title}</span>
+        <span className="block text-xs opacity-80">{note}</span>
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-content-muted" aria-hidden />
+      <ChevronRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
     </Link>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  unit,
-}: {
-  icon: typeof Layers;
-  label: string;
-  value: string | null;
-  unit?: string;
-}): JSX.Element {
-  if (value === null) return <Skeleton className="h-[104px] w-full" />;
-
-  return (
-    <Card>
-      <div className="flex items-center gap-1.5">
-        <Icon className="h-4 w-4 text-content-muted" aria-hidden />
-        <span className="text-sm text-content-muted">{label}</span>
-      </div>
-      <p className="mt-1 text-2xl font-bold tabular-nums text-content">
-        {value}
-        {unit && <span className="text-base font-medium text-content-muted"> {unit}</span>}
-      </p>
-    </Card>
   );
 }

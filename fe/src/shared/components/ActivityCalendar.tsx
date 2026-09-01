@@ -38,6 +38,11 @@ interface Week {
 
 export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Element {
   const [hovered, setHovered] = useState<CalendarDay | null>(null);
+  // Ngày được bấm chọn. Cần riêng khỏi `hovered` vì trên màn hình cảm ứng không có
+  // hover — không có cái này thì nửa số người dùng không xem được chi tiết ngày nào.
+  const [pinned, setPinned] = useState<string | null>(null);
+
+  const shown = hovered ?? data.days.find((day) => day.date === pinned) ?? null;
 
   const weeks = useMemo(() => buildWeeks(data.days), [data.days]);
 
@@ -74,17 +79,20 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
                     day === null ? (
                       <div key={dayIndex} style={{ width: CELL, height: CELL }} />
                     ) : (
-                      <div
+                      <button
                         key={dayIndex}
+                        type="button"
                         onMouseEnter={() => setHovered(day)}
                         onMouseLeave={() => setHovered(null)}
                         onFocus={() => setHovered(day)}
                         onBlur={() => setHovered(null)}
-                        tabIndex={day.count > 0 ? 0 : -1}
-                        role="img"
+                        onClick={() => setPinned((current) => (current === day.date ? null : day.date))}
                         aria-label={`${day.date}: ${day.count} hoạt động`}
+                        aria-pressed={pinned === day.date}
                         title={`${formatDate(day.date)} — ${day.count} hoạt động`}
-                        className="rounded-[2px] transition-transform hover:scale-125"
+                        className={`rounded-[2px] transition-transform hover:scale-125 ${
+                          pinned === day.date ? 'ring-2 ring-brand ring-offset-1 ring-offset-surface' : ''
+                        }`}
                         style={{
                           width: CELL,
                           height: CELL,
@@ -103,13 +111,13 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         {/* Chỗ cố định cho chi tiết ngày đang trỏ để không nhảy layout */}
         <p className="min-h-[18px] text-xs text-content-muted">
-          {hovered ? (
+          {shown ? (
             <>
-              <span className="font-medium text-content-soft">{formatDate(hovered.date)}</span>
-              {hovered.count > 0 ? ` — ${hovered.count} hoạt động` : ' — không học'}
+              <span className="font-medium text-content-soft">{formatDate(shown.date)}</span>
+              {shown.count > 0 ? ` — ${shown.count} hoạt động` : ' — không học'}
             </>
           ) : (
-            'Mỗi ô là một ngày, càng đậm là học càng nhiều'
+            'Bấm vào một ô để xem ngày đó'
           )}
         </p>
 
