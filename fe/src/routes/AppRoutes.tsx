@@ -19,6 +19,7 @@ import { NotificationsPage } from '../features/notifications/components/Notifica
 import { AnnouncementPage } from '../features/notifications/components/AnnouncementPage';
 import { FeatureErrorBoundary } from '../shared/components/FeatureErrorBoundary';
 import { AppLayout } from '../shared/components/AppLayout';
+import { NotFoundPage } from '../shared/components/NotFoundPage';
 
 /**
  * Định tuyến + guard theo vai trò.
@@ -59,9 +60,13 @@ export function AppRoutes(): JSX.Element {
           path="/admin/announcements"
           element={<Admin name="Gửi thông báo"><AnnouncementPage /></Admin>}
         />
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+        {/*
+          Địa chỉ lạ hiện trang 404 trong khung app. Người chưa đăng nhập vẫn bị
+          RequireAuth đẩy sang /login trước, nên không lộ khung app cho khách.
+        */}
+        <Route path="*" element={<Feature name="Không tìm thấy trang"><NotFoundPage /></Feature>} />
+      </Route>
     </Routes>
   );
 }
