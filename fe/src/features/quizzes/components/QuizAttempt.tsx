@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { QuizResult } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, Card, ErrorMessage, SkeletonList, PageHeader } from '../../../shared/components/ui';
+import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
 import { useQuiz, useSubmitQuiz } from '../quiz.hooks';
 
 /** Màn làm bài quiz: chọn đáp án từng câu rồi nộp, backend chấm và trả kết quả. */
@@ -10,6 +11,9 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
   const submitQuiz = useSubmitQuiz();
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
+
+  // Màn làm bài không có URL riêng nên phải tự nối cấp cuối vào breadcrumb
+  useBreadcrumbTail(quiz.data?.title ?? null);
 
   if (quiz.isLoading) return <SkeletonList rows={3} />;
   if (quiz.isError) return <ErrorMessage>{getErrorMessage(quiz.error)}</ErrorMessage>;

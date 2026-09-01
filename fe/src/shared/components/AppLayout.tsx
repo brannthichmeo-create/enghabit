@@ -5,6 +5,7 @@ import { UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLevel, useStreak } from '../../features/statistics/statistics.hooks';
 import { NotificationBell } from '../../features/notifications/components/NotificationBell';
+import { Breadcrumb, BreadcrumbProvider } from './Breadcrumb';
 import { Sidebar } from './Sidebar';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -27,6 +28,16 @@ function readCollapsed(): boolean {
 }
 
 export function AppLayout(): JSX.Element {
+  // Provider bọc ngoài khung app: màn hình phụ bên trong `Outlet` cần nối thêm cấp
+  // cuối cho breadcrumb (xem `useBreadcrumbTail`).
+  return (
+    <BreadcrumbProvider>
+      <AppShell />
+    </BreadcrumbProvider>
+  );
+}
+
+function AppShell(): JSX.Element {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
@@ -98,7 +109,11 @@ export function AppLayout(): JSX.Element {
               <Menu className="h-5 w-5" />
             </button>
 
-            <div className="flex-1" />
+            {/* Breadcrumb chiếm khoảng trống bên trái thanh trên cùng — vị trí này luôn
+                cố định nên người dùng biết chỗ tìm, và trang không mất thêm một hàng. */}
+            <div className="min-w-0 flex-1">
+              <Breadcrumb />
+            </div>
 
             <QuickStats />
             <NotificationBell />

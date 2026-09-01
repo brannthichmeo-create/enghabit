@@ -3,6 +3,7 @@ import { ArrowRight, Check, RotateCw, X } from 'lucide-react';
 import { ExerciseType, type Exercise, type LessonDetail, type LessonResult, type SubmitLessonInput } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, Card, ErrorMessage } from '../../../shared/components/ui';
+import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
 import { useSubmitLesson } from '../lesson.hooks';
 import { ExerciseView, type AnswerValue } from './ExerciseView';
 
@@ -26,6 +27,9 @@ export function LessonPlayer({
   const [answers, setAnswers] = useState<SubmitLessonInput['answers']>([]);
   const [current, setCurrent] = useState<AnswerValue | null>(null);
   const [result, setResult] = useState<LessonResult | null>(null);
+
+  // Màn làm bài không có URL riêng nên phải tự nối cấp cuối vào breadcrumb
+  useBreadcrumbTail(lesson.title);
 
   const exercise = lesson.exercises[index];
   const isLast = index === lesson.exercises.length - 1;

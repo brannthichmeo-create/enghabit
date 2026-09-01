@@ -166,6 +166,20 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 
 - Tạo tính năng mới luôn tạo đủ cặp `be/src/modules/<feature>` và `fe/src/features/<feature>` theo đúng khuôn mẫu đã có sẵn — không tự sáng tạo cấu trúc riêng cho 1 feature.
 - Mọi hành động học tập của user phải ghi vào `ActivityLog`; streak/thống kê không được tính từ nguồn khác.
+- **Thêm màn hình mới là phải khai báo breadcrumb.** `AppLayout` vẽ breadcrumb sẵn cho mọi
+  route, nhưng nhãn lấy từ bản đồ `fe/src/shared/lib/breadcrumbs.ts` — quên khai báo thì
+  route mới chỉ hiện mỗi mục gốc, người dùng không biết mình đang ở đâu. Ba việc bắt buộc
+  khi thêm route:
+  1. Thêm một dòng vào `TRAILS` trong `breadcrumbs.ts`, nhãn **giống hệt** nhãn ở `Sidebar`
+     và ở route guard trong `AppRoutes.tsx` — một màn hình chỉ được có một tên.
+  2. Không tự chèn breadcrumb trong trang. Trang chỉ dùng `PageHeader`; breadcrumb là việc
+     của khung app, đặt hai chỗ sẽ ra hai dòng chồng nhau.
+  3. Màn hình phụ nằm **trong** một route (làm quiz, làm bài học, xem chi tiết) không có URL
+     riêng nên không tra được từ bản đồ — gọi `useBreadcrumbTail('Tên màn')` để nối thêm một
+     cấp, hook tự gỡ khi rời màn. Chỉ một component được đặt tail tại một thời điểm; đừng gọi
+     hook này ở cả component cha lẫn con.
+- Breadcrumb nằm trên nền hệ thống nên chữ dùng bộ token `on-page*` và liên kết dùng
+  `on-page-link`, không dùng `content*` (xem `docs/color-rules.md`).
 - Logic tính streak là **domain logic, không phải utility** — chỉ định nghĩa một lần trong `shared/streak/`, `be` dùng để tính chính thức, `fe`/`mobile` dùng để hiển thị/preview. Không đặt trong `common/utils/` và không viết lại ở nơi khác.
 - Thuật toán SRS (SM-2) chỉ định nghĩa một lần trong `shared/srs`, cả `be` (chấm điểm review) và `fe`/`mobile` (preview lịch ôn) cùng import.
 - **Lịch gửi thông báo chỉ do `be/src/jobs` quyết định.** OneSignal chỉ đóng vai trò kênh gửi — không dùng tính năng tự lên lịch của OneSignal. Có hai nơi cùng lên lịch sẽ khiến user nhận trùng thông báo và rất khó truy nguyên.
