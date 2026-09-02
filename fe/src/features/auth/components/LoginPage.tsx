@@ -7,8 +7,10 @@ import { Button } from '../../../shared/components/ui';
 import { useLogin } from '../auth.hooks';
 import { AuthField, PasswordField } from './AuthField';
 import { AuthLayout } from './AuthLayout';
+import { useT } from '../../../shared/i18n/language';
 
 export function LoginPage(): JSX.Element {
+  const t = useT();
   const login = useLogin();
   const [form, setForm] = useState({ email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -33,8 +35,8 @@ export function LoginPage(): JSX.Element {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="animate-enter-up">
-          <h1 className="text-2xl font-bold tracking-tight text-content">Chào mừng trở lại</h1>
-          <p className="mt-1.5 text-sm text-content-muted">Tiếp tục hành trình học tiếng Anh của bạn</p>
+          <h1 className="text-2xl font-bold tracking-tight text-content">{t('Chào mừng trở lại')}</h1>
+          <p className="mt-1.5 text-sm text-content-muted">{t('Tiếp tục hành trình học tiếng Anh của bạn')}</p>
         </div>
 
         {/* Lỗi từ server (sai mật khẩu, mất mạng) hiển thị riêng, không lẫn với lỗi từng ô */}
@@ -64,26 +66,26 @@ export function LoginPage(): JSX.Element {
 
         <div className="animate-enter-up [animation-delay:120ms]">
           <PasswordField
-            label="Mật khẩu"
+            label={t('Mật khẩu')}
             icon={Lock}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             error={fieldErrors.password}
-            placeholder="Nhập mật khẩu"
+            placeholder={t('Nhập mật khẩu')}
             autoComplete="current-password"
           />
         </div>
 
         <div className="animate-enter-up [animation-delay:180ms]">
           <Button type="submit" loading={login.isPending} className="w-full" icon={ArrowRight}>
-            {login.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            {login.isPending ? t('Đang đăng nhập...') : t('Đăng nhập')}
           </Button>
         </div>
 
         <p className="animate-enter-up text-center text-sm text-content-muted [animation-delay:240ms]">
-          Chưa có tài khoản?{' '}
+          {t('Chưa có tài khoản?')}{' '}
           <Link to="/register" className="font-medium text-brand-strong underline-offset-2 transition-colors hover:underline">
-            Đăng ký miễn phí
+            {t('Đăng ký miễn phí')}
           </Link>
         </p>
       </form>

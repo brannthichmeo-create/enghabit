@@ -4,9 +4,11 @@ import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, Card, ErrorMessage, SkeletonList, PageHeader } from '../../../shared/components/ui';
 import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
 import { useQuiz, useSubmitQuiz } from '../quiz.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 /** Màn làm bài quiz: chọn đáp án từng câu rồi nộp, backend chấm và trả kết quả. */
 export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => void }): JSX.Element {
+  const t = useT();
   const quiz = useQuiz(quizId);
   const submitQuiz = useSubmitQuiz();
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -17,7 +19,7 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
 
   if (quiz.isLoading) return <SkeletonList rows={3} />;
   if (quiz.isError) return <ErrorMessage>{getErrorMessage(quiz.error)}</ErrorMessage>;
-  if (!quiz.data) return <ErrorMessage>Không tải được đề bài</ErrorMessage>;
+  if (!quiz.data) return <ErrorMessage>{t('Không tải được đề bài')}</ErrorMessage>;
 
   if (result) {
     return <QuizResultView quiz={quiz.data} result={result} onExit={onExit} />;
@@ -45,10 +47,10 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
     <div>
       <PageHeader
         title={quiz.data.title}
-        description={`Đã trả lời ${answeredCount} / ${quiz.data.questions.length} câu`}
+        description={t('Đã trả lời {answered} / {total} câu', { answered: answeredCount, total: quiz.data.questions.length })}
         action={
           <Button variant="secondary" onClick={onExit}>
-            Thoát
+            {t('Thoát')}
           </Button>
         }
       />
@@ -59,7 +61,7 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
         {quiz.data.questions.map((question, questionIndex) => (
           <Card key={question.id}>
             <p className="font-medium text-content">
-              <span className="text-content-muted">Câu {questionIndex + 1}.</span> {question.questionText}
+              <span className="text-content-muted">{t('Câu {n}.', { n: questionIndex + 1 })}</span> {question.questionText}
             </p>
 
             <div className="mt-3 space-y-2">
@@ -86,10 +88,10 @@ export function QuizAttempt({ quizId, onExit }: { quizId: number; onExit: () => 
 
       <div className="mt-6">
         <Button onClick={handleSubmit} disabled={!allAnswered || submitQuiz.isPending}>
-          {submitQuiz.isPending ? 'Đang nộp bài...' : 'Nộp bài'}
+          {submitQuiz.isPending ? t('Đang nộp bài...') : t('Nộp bài')}
         </Button>
         {!allAnswered && (
-          <p className="mt-2 text-sm text-content-muted">Hãy trả lời tất cả các câu trước khi nộp</p>
+          <p className="mt-2 text-sm text-content-muted">{t('Hãy trả lời tất cả các câu trước khi nộp')}</p>
         )}
       </div>
     </div>
@@ -105,16 +107,17 @@ function QuizResultView({
   result: QuizResult;
   onExit: () => void;
 }): JSX.Element {
+  const t = useT();
   const questionById = new Map(quiz.questions.map((q) => [q.id, q]));
 
   return (
     <div>
       <PageHeader
-        title="Kết quả"
+        title={t('Kết quả')}
         description={quiz.title}
         action={
           <Button variant="secondary" onClick={onExit}>
-            Quay lại
+            {t('Quay lại')}
           </Button>
         }
       />
@@ -123,10 +126,10 @@ function QuizResultView({
         <p className="text-4xl font-bold text-brand">
           {result.score}/{result.total}
         </p>
-        <p className="mt-1 text-sm text-content-muted">Đạt {result.percentage}%</p>
+        <p className="mt-1 text-sm text-content-muted">{t('Đạt {percent}%', { percent: result.percentage })}</p>
       </Card>
 
-      <h2 className="mb-3 font-semibold text-content">Chi tiết đáp án</h2>
+      <h2 className="mb-3 font-semibold text-content">{t('Chi tiết đáp án')}</h2>
       <div className="space-y-3">
         {result.details.map((detail, index) => {
           const question = questionById.get(detail.questionId);
@@ -135,15 +138,15 @@ function QuizResultView({
           return (
             <Card key={detail.questionId}>
               <p className="font-medium text-content">
-                <span className="text-content-muted">Câu {index + 1}.</span> {question.questionText}
+                <span className="text-content-muted">{t('Câu {n}.', { n: index + 1 })}</span> {question.questionText}
               </p>
 
               <div className="mt-2 space-y-1 text-sm">
                 <p className={detail.isCorrect ? 'text-success' : 'text-danger'}>
-                  {detail.isCorrect ? '✓' : '✗'} Bạn chọn: {question.options[detail.selectedIndex]}
+                  {detail.isCorrect ? '✓' : '✗'} {t('Bạn chọn:')} {question.options[detail.selectedIndex]}
                 </p>
                 {!detail.isCorrect && (
-                  <p className="text-success">✓ Đáp án đúng: {question.options[detail.correctIndex]}</p>
+                  <p className="text-success">✓ {t('Đáp án đúng:')} {question.options[detail.correctIndex]}</p>
                 )}
               </div>
             </Card>

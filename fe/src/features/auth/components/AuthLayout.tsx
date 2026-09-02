@@ -2,6 +2,7 @@ import { CalendarCheck, Flame, Layers, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Logo } from '../../../shared/components/Logo';
 import { Wordmark } from '../../../shared/components/Wordmark';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Khung hai cột cho màn hình đăng nhập / đăng ký.
@@ -56,6 +57,7 @@ export function AuthLayout({ children }: { children: ReactNode }): JSX.Element {
  * trên cùng nền đó chỉ đạt 1.59:1, tức là không dùng được.
  */
 function BrandPanel(): JSX.Element {
+  const t = useT();
   return (
     <div className="relative hidden w-[45%] max-w-lg overflow-hidden bg-brand-vivid lg:flex lg:flex-col lg:justify-between">
       {/* Nền động: các khối màu mờ trôi chậm, chỉ dùng transform nên nhẹ với trình duyệt */}
@@ -82,11 +84,10 @@ function BrandPanel(): JSX.Element {
 
       <div className="relative px-10">
         <h2 className="max-w-sm animate-enter-up text-3xl font-bold leading-tight text-on-brand [animation-delay:80ms]">
-          Học tiếng Anh đều đặn, mỗi ngày một chút
+          {t('Học tiếng Anh đều đặn, mỗi ngày một chút')}
         </h2>
         <p className="mt-3 max-w-sm animate-enter-up text-sm leading-relaxed text-on-brand/80 [animation-delay:140ms]">
-          Vấn đề không nằm ở thiếu tài liệu, mà ở việc duy trì. ENG//HABIT giúp bạn biến việc học
-          thành thói quen và thấy rõ mình đang tiến bộ.
+          {t('Vấn đề không nằm ở thiếu tài liệu, mà ở việc duy trì. ENG//HABIT giúp bạn biến việc học thành thói quen và thấy rõ mình đang tiến bộ.')}
         </p>
 
         <ul className="mt-9 space-y-5">
@@ -100,8 +101,8 @@ function BrandPanel(): JSX.Element {
                 <item.icon className="h-4 w-4 text-brand-strong" aria-hidden />
               </div>
               <div>
-                <p className="text-sm font-semibold text-on-brand">{item.title}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-on-brand/75">{item.description}</p>
+                <p className="text-sm font-semibold text-on-brand">{t(item.title)}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-on-brand/75">{t(item.description)}</p>
               </div>
             </li>
           ))}
@@ -110,7 +111,7 @@ function BrandPanel(): JSX.Element {
 
       <div className="relative p-10">
         <p className="animate-enter-up text-xs text-on-brand/70 [animation-delay:520ms]">
-          Ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh
+          {t('Ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh')}
         </p>
       </div>
     </div>

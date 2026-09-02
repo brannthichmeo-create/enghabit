@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ExerciseType, type Exercise } from '@enghabit/shared';
 import { Input } from '../../../shared/components/ui';
 import { AudioButton } from './AudioButton';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Hiển thị một bài tập và thu đáp án của người học.
@@ -55,6 +56,7 @@ function ListenView({
   onAnswer: Props['onAnswer'];
   locked: boolean;
 }): JSX.Element {
+  const t = useT();
   const [selected, setSelected] = useState<string | null>(null);
   const [text, setText] = useState('');
 
@@ -70,7 +72,7 @@ function ListenView({
     <div>
       <div className="flex flex-col items-center gap-3">
         <AudioButton text={exercise.speakText} audioUrl={exercise.audioUrl} autoPlay />
-        <p className="text-xs text-content-muted">Bấm loa để nghe lại</p>
+        <p className="text-xs text-content-muted">{t('Bấm loa để nghe lại')}</p>
       </div>
 
       {isChoose ? (
@@ -98,7 +100,7 @@ function ListenView({
           <Input
             value={text}
             disabled={locked}
-            placeholder="Gõ từ bạn nghe được..."
+            placeholder={t('Gõ từ bạn nghe được...')}
             onChange={(e) => {
               setText(e.target.value);
               onAnswer(e.target.value.trim() ? { value: e.target.value } : null);
@@ -106,7 +108,7 @@ function ListenView({
             className="text-center"
           />
           <p className="mt-2 text-center text-xs text-content-muted">
-            Từ này có {exercise.letterCount} chữ cái
+            {t('Từ này có {n} chữ cái', { n: exercise.letterCount ?? 0 })}
           </p>
         </div>
       )}
@@ -183,6 +185,7 @@ function ArrangeView({
   onAnswer: Props['onAnswer'];
   locked: boolean;
 }): JSX.Element {
+  const t = useT();
   const [picked, setPicked] = useState<number[]>([]);
 
   useEffect(() => {
@@ -214,7 +217,7 @@ function ArrangeView({
             </button>
           ))}
           {picked.length === 0 && (
-            <span className="px-1 py-1.5 text-sm text-content-muted">Chọn từ bên dưới để ghép câu</span>
+            <span className="px-1 py-1.5 text-sm text-content-muted">{t('Chọn từ bên dưới để ghép câu')}</span>
           )}
         </div>
       </div>
@@ -252,6 +255,7 @@ function TypeView({
   onAnswer: Props['onAnswer'];
   locked: boolean;
 }): JSX.Element {
+  const t = useT();
   const [text, setText] = useState('');
 
   useEffect(() => {
@@ -262,14 +266,16 @@ function TypeView({
   return (
     <div className="text-center">
       <p className="text-2xl font-semibold text-content">{exercise.question}</p>
-      <p className="mt-1.5 text-sm text-content-muted">Bắt đầu bằng chữ "{exercise.firstLetter}"</p>
+      <p className="mt-1.5 text-sm text-content-muted">
+          {t('Bắt đầu bằng chữ "{letter}"', { letter: exercise.firstLetter })}
+        </p>
 
       <div className="mx-auto mt-6 max-w-xs">
         <Input
           value={text}
           disabled={locked}
           autoFocus
-          placeholder="Gõ từ tiếng Anh..."
+          placeholder={t('Gõ từ tiếng Anh...')}
           onChange={(e) => {
             setText(e.target.value);
             onAnswer(e.target.value.trim() ? { value: e.target.value } : null);
@@ -291,6 +297,7 @@ function MatchView({
   onAnswer: Props['onAnswer'];
   locked: boolean;
 }): JSX.Element {
+  const t = useT();
   const [activeWord, setActiveWord] = useState<number | null>(null);
   const [pairs, setPairs] = useState<{ wordId: number; meaningId: number }[]>([]);
 
@@ -352,7 +359,7 @@ function MatchView({
       </div>
 
       <p className="mt-3 text-center text-xs text-content-muted">
-        {activeWord === null ? 'Chọn một từ ở cột trái' : 'Giờ chọn nghĩa tương ứng ở cột phải'}
+        {activeWord === null ? t('Chọn một từ ở cột trái') : t('Giờ chọn nghĩa tương ứng ở cột phải')}
       </p>
     </div>
   );

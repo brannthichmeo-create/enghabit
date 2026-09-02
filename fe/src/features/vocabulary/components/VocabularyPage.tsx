@@ -5,8 +5,10 @@ import { Badge, Button, Card, EmptyState, ErrorMessage, SkeletonList, PageHeader
 import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import { useLearnVocabulary } from '../../flashcards/flashcard.hooks';
 import { useTopics, useTopicVocabulary } from '../vocabulary.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 export function VocabularyPage(): JSX.Element {
+  const t = useT();
   const topics = useTopics();
   const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
   const vocabulary = useTopicVocabulary(selectedTopicId);
@@ -21,10 +23,10 @@ export function VocabularyPage(): JSX.Element {
   if (selectedTopicId === null) {
     return (
       <div>
-        <PageHeader title="Từ vựng theo chủ đề" description="Chọn chủ đề để bắt đầu học từ mới" />
+        <PageHeader title={t('Từ vựng theo chủ đề')} description={t('Chọn chủ đề để bắt đầu học từ mới')} />
 
         {topics.data?.length === 0 && (
-          <EmptyState title="Chưa có chủ đề nào" description="Quản trị viên cần thêm nội dung học tập" />
+          <EmptyState title={t('Chưa có chủ đề nào')} description={t('Quản trị viên cần thêm nội dung học tập')} />
         )}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -36,7 +38,7 @@ export function VocabularyPage(): JSX.Element {
                   <Badge>{VOCAB_LEVEL_LABELS[topic.level]}</Badge>
                 </div>
                 {topic.description && <p className="mt-1 text-sm text-content-muted">{topic.description}</p>}
-                <p className="mt-3 text-xs text-content-muted">{topic.vocabularyCount} từ vựng</p>
+                <p className="mt-3 text-xs text-content-muted">{t('{n} từ vựng', { n: topic.vocabularyCount })}</p>
               </Card>
             </button>
           ))}
@@ -49,11 +51,11 @@ export function VocabularyPage(): JSX.Element {
   return (
     <div>
       <PageHeader
-        title={selectedTopic?.name ?? 'Từ vựng'}
+        title={selectedTopic?.name ?? t('Từ vựng')}
         description={selectedTopic?.description ?? undefined}
         action={
           <Button variant="secondary" onClick={() => setSelectedTopicId(null)}>
-            ← Chủ đề khác
+            {t('← Chủ đề khác')}
           </Button>
         }
       />
@@ -62,7 +64,7 @@ export function VocabularyPage(): JSX.Element {
       {vocabulary.isError && <ErrorMessage>{getErrorMessage(vocabulary.error)}</ErrorMessage>}
       {learnVocabulary.isError && <ErrorMessage>{getErrorMessage(learnVocabulary.error)}</ErrorMessage>}
 
-      {vocabulary.data?.length === 0 && <EmptyState title="Chủ đề này chưa có từ vựng" />}
+      {vocabulary.data?.length === 0 && <EmptyState title={t('Chủ đề này chưa có từ vựng')} />}
 
       <div className="space-y-2">
         {vocabulary.data?.map((word) => (
@@ -78,14 +80,14 @@ export function VocabularyPage(): JSX.Element {
               </div>
 
               {word.isLearning ? (
-                <Badge tone="green">Đang học</Badge>
+                <Badge tone="green">{t('Đang học')}</Badge>
               ) : (
                 <Button
                   variant="secondary"
                   onClick={() => learnVocabulary.mutate(word.id)}
                   disabled={learnVocabulary.isPending}
                 >
-                  + Học từ này
+                  {t('+ Học từ này')}
                 </Button>
               )}
             </div>

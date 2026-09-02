@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { crumbsForPath, type Crumb } from '../lib/breadcrumbs';
+import { useT } from '../i18n/language';
 
 /**
  * Breadcrumb của khung app: cho biết đang ở đâu và bấm được để lùi về cấp trên.
@@ -49,12 +50,16 @@ export function useBreadcrumbTail(label: string | null): void {
 }
 
 export function Breadcrumb(): JSX.Element | null {
+  const t = useT();
   const location = useLocation();
   const user = useCurrentUser();
   const tail = useContext(TailContext)?.tail ?? null;
 
-  const crumbs: Crumb[] = crumbsForPath(location.pathname, user?.role === UserRole.ADMIN);
-  const items: Crumb[] = tail ? [...crumbs, { label: tail }] : crumbs;
+  // Mục từ bản đồ route dịch được; cấp cuối do màn hình phụ đặt là dữ liệu động nên giữ nguyên.
+  const items: (Crumb & { dynamic?: boolean })[] = [
+    ...crumbsForPath(location.pathname, user?.role === UserRole.ADMIN),
+    ...(tail ? [{ label: tail, dynamic: true }] : []),
+  ];
 
   // Chỉ có mỗi mục gốc thì breadcrumb không nói thêm điều gì — bỏ hẳn cho gọn.
   if (items.length < 2) return null;
@@ -64,7 +69,7 @@ export function Breadcrumb(): JSX.Element | null {
   return (
     // Nằm trong thanh trên cùng nên không tự đặt lề; khoảng cách do thanh đó quyết định.
     // `min-w-0` + `truncate` ở mục cuối để tên bài dài không đẩy các nút bên phải ra ngoài.
-    <nav aria-label="Đường dẫn" className="min-w-0">
+    <nav aria-label={t('Đường dẫn')} className="min-w-0">
       <ol className="flex items-center gap-1 text-xs">
         {items.map((crumb, index) => {
           const isLast = index === lastIndex;
@@ -77,7 +82,7 @@ export function Breadcrumb(): JSX.Element | null {
 
               {isLast || !crumb.to ? (
                 <span className="truncate font-medium text-on-page" aria-current="page">
-                  {crumb.label}
+                  {crumb.dynamic ? crumb.label : t(crumb.label)}
                 </span>
               ) : (
                 <Link
@@ -85,7 +90,7 @@ export function Breadcrumb(): JSX.Element | null {
                   className="inline-flex items-center gap-1 rounded text-on-page-muted transition-colors hover:text-on-page-link hover:underline"
                 >
                   {index === 0 && <Home className="h-3.5 w-3.5 shrink-0" aria-hidden />}
-                  {crumb.label}
+                  {t(crumb.label)}
                 </Link>
               )}
             </li>

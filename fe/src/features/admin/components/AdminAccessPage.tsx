@@ -16,6 +16,7 @@ import {
 import { useAccessOverview, useLoginEvents } from '../admin.hooks';
 import { TrendChart } from './TrendChart';
 import { Pagination, formatDateTime } from './AdminUsersPage';
+import { useLocale, useT } from '../../../shared/i18n/language';
 
 /**
  * Theo dõi lượt truy cập hệ thống.
@@ -25,6 +26,7 @@ import { Pagination, formatDateTime } from './AdminUsersPage';
  * (hàng loạt lần sai mật khẩu vào cùng một email) mà không cần công cụ ngoài.
  */
 export function AdminAccessPage(): JSX.Element {
+  const t = useT();
   const [days, setDays] = useState(30);
   const [result, setResult] = useState<'all' | 'success' | 'failed'>('all');
   const [page, setPage] = useState(1);
@@ -35,8 +37,8 @@ export function AdminAccessPage(): JSX.Element {
   return (
     <div>
       <PageHeader
-        title="Lượt truy cập"
-        description="Lịch sử đăng nhập, phiên đang mở và các lần đăng nhập thất bại"
+        title={t('Lượt truy cập')}
+        description={t('Lịch sử đăng nhập, phiên đang mở và các lần đăng nhập thất bại')}
         action={
           <Select
             value={days}
@@ -44,12 +46,12 @@ export function AdminAccessPage(): JSX.Element {
               setDays(Number(e.target.value));
               setPage(1);
             }}
-            aria-label="Khoảng thời gian"
+            aria-label={t('Khoảng thời gian')}
             className="!mt-0 w-auto"
           >
-            <option value={7}>7 ngày qua</option>
-            <option value={30}>30 ngày qua</option>
-            <option value={90}>90 ngày qua</option>
+            <option value={7}>{t('7 ngày qua')}</option>
+            <option value={30}>{t('30 ngày qua')}</option>
+            <option value={90}>{t('90 ngày qua')}</option>
           </Select>
         }
       />
@@ -60,19 +62,19 @@ export function AdminAccessPage(): JSX.Element {
       {overview.data && (
         <>
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Tile icon={KeyRound} label="Lượt đăng nhập" value={overview.data.totalLogins} />
-            <Tile icon={Users} label="Người dùng khác nhau" value={overview.data.uniqueUsers} />
-            <Tile icon={Monitor} label="Phiên đang mở" value={overview.data.activeSessions} />
+            <Tile icon={KeyRound} label={t('Lượt đăng nhập')} value={overview.data.totalLogins} />
+            <Tile icon={Users} label={t('Người dùng khác nhau')} value={overview.data.uniqueUsers} />
+            <Tile icon={Monitor} label={t('Phiên đang mở')} value={overview.data.activeSessions} />
             <Tile
               icon={ShieldAlert}
-              label="Đăng nhập thất bại"
+              label={t('Đăng nhập thất bại')}
               value={overview.data.totalFailed}
               warn={overview.data.totalFailed > 0}
             />
           </div>
 
           <section className="mb-6">
-            <SectionTitle>Lượt đăng nhập theo ngày</SectionTitle>
+            <SectionTitle>{t('Lượt đăng nhập theo ngày')}</SectionTitle>
             <Card>
               <TrendChart
                 points={overview.data.points.map((p) => ({
@@ -80,8 +82,8 @@ export function AdminAccessPage(): JSX.Element {
                   primary: p.logins,
                   secondary: p.uniqueUsers,
                 }))}
-                primaryLabel="Lượt đăng nhập"
-                secondaryLabel="Người dùng khác nhau"
+                primaryLabel={t('Lượt đăng nhập')}
+                secondaryLabel={t('Người dùng khác nhau')}
               />
             </Card>
           </section>
@@ -97,16 +99,16 @@ export function AdminAccessPage(): JSX.Element {
                 setResult(e.target.value as typeof result);
                 setPage(1);
               }}
-              aria-label="Lọc theo kết quả"
+              aria-label={t('Lọc theo kết quả')}
               className="!mt-0 w-auto"
             >
-              <option value="all">Tất cả</option>
-              <option value="success">Chỉ thành công</option>
-              <option value="failed">Chỉ thất bại</option>
+              <option value="all">{t('Tất cả')}</option>
+              <option value="success">{t('Chỉ thành công')}</option>
+              <option value="failed">{t('Chỉ thất bại')}</option>
             </Select>
           }
         >
-          Nhật ký đăng nhập
+          {t('Nhật ký đăng nhập')}
         </SectionTitle>
 
         {logs.isLoading && <SkeletonList rows={5} />}
@@ -115,8 +117,8 @@ export function AdminAccessPage(): JSX.Element {
         {logs.data && logs.data.items.length === 0 && (
           <EmptyState
             icon={KeyRound}
-            title="Chưa có lượt truy cập nào"
-            description="Nhật ký bắt đầu được ghi từ lần đăng nhập tiếp theo."
+            title={t('Chưa có lượt truy cập nào')}
+            description={t('Nhật ký bắt đầu được ghi từ lần đăng nhập tiếp theo.')}
           />
         )}
 
@@ -126,11 +128,11 @@ export function AdminAccessPage(): JSX.Element {
               <table className="w-full min-w-[680px] text-sm">
                 <thead>
                   <tr className="border-b border-line text-left text-content-muted">
-                    <th className="pb-2 font-medium">Thời điểm</th>
-                    <th className="pb-2 font-medium">Tài khoản</th>
-                    <th className="pb-2 font-medium">Kết quả</th>
-                    <th className="pb-2 font-medium">Địa chỉ IP</th>
-                    <th className="pb-2 font-medium">Thiết bị</th>
+                    <th className="pb-2 font-medium">{t('Thời điểm')}</th>
+                    <th className="pb-2 font-medium">{t('Tài khoản')}</th>
+                    <th className="pb-2 font-medium">{t('Kết quả')}</th>
+                    <th className="pb-2 font-medium">{t('Địa chỉ IP')}</th>
+                    <th className="pb-2 font-medium">{t('Thiết bị')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -155,10 +157,12 @@ export function AdminAccessPage(): JSX.Element {
 }
 
 function EventRow({ event }: { event: LoginEventRow }): JSX.Element {
+  const locale = useLocale();
+  const t = useT();
   return (
     <tr>
       <td className="whitespace-nowrap py-2.5 tabular-nums text-content-soft">
-        {formatDateTime(event.createdAt)}
+        {formatDateTime(event.createdAt, t, locale)}
       </td>
       <td className="py-2.5">
         <span className="block font-medium text-content">{event.userName ?? '—'}</span>
@@ -166,7 +170,7 @@ function EventRow({ event }: { event: LoginEventRow }): JSX.Element {
       </td>
       <td className="py-2.5">
         <Badge tone={event.success ? 'green' : 'amber'}>
-          {event.success ? 'Thành công' : (LOGIN_FAIL_LABELS[event.reason ?? ''] ?? 'Thất bại')}
+          {event.success ? t('Thành công') : t(LOGIN_FAIL_LABELS[event.reason ?? ''] ?? 'Thất bại')}
         </Badge>
       </td>
       <td className="py-2.5 tabular-nums text-content-muted">{event.ipAddress ?? '—'}</td>
@@ -188,13 +192,14 @@ function Tile({
   value: number;
   warn?: boolean;
 }): JSX.Element {
+  const locale = useLocale();
   return (
     <Card>
       <div className="flex items-center gap-2">
         <Icon className={`h-4 w-4 ${warn ? 'text-danger' : 'text-brand'}`} aria-hidden />
         <p className="text-sm text-content-muted">{label}</p>
       </div>
-      <p className="mt-2 text-3xl font-bold tabular-nums text-content">{value.toLocaleString('vi-VN')}</p>
+      <p className="mt-2 text-3xl font-bold tabular-nums text-content">{value.toLocaleString(locale)}</p>
     </Card>
   );
 }

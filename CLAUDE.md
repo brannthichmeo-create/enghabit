@@ -208,6 +208,21 @@ Vật phẩm giữ chuỗi (`streak_freezes`) là ngoại lệ duy nhất đư�
      hook này ở cả component cha lẫn con.
 - Breadcrumb nằm trên nền hệ thống nên chữ dùng bộ token `on-page*` và liên kết dùng
   `on-page-link`, không dùng `content*` (xem `docs/color-rules.md`).
+- **Mọi chữ hiện trên giao diện phải đi qua `t()`** (`fe/src/shared/i18n/language.tsx`).
+  Khoá dịch chính là **câu tiếng Việt**, không phải mã kiểu `common.logout`: đọc code thấy
+  ngay chữ trên màn hình, và quên dịch thì câu đó hiện tiếng Việt chứ không hiện mã.
+  - **Không nối chuỗi.** Chèn biến bằng chỗ trống: `t('Còn {n} XP nữa', { n: 20 })`. Câu ghép
+    bằng `+` hoặc template literal thì không dịch được vì trật tự từ hai ngôn ngữ khác nhau.
+  - **Câu trải nhiều dòng JSX vẫn là một khoá duy nhất** — đừng tách thành hai `t()`.
+  - Nhãn nằm trong **bảng dữ liệu** (`labels.ts`, mục sidebar, bản đồ breadcrumb, mảng
+    hằng số) giữ nguyên tiếng Việt tại chỗ khai báo và dịch ở **chỗ hiển thị**: `{t(item.label)}`.
+    Thêm nhãn mới vào các bảng đó thì phải tự thêm bản dịch — script kiểm tra không quét được nhóm này.
+  - Hàm thường (không phải component) không gọi hook được: **nhận `t` và `locale` qua tham số**
+    (xem `timeAgo`, `formatDateTime`).
+  - Định dạng ngày/số dùng `useLocale()`, **không hardcode `'vi-VN'`** — nếu không, giao diện
+    tiếng Anh vẫn hiện ngày kiểu Việt.
+  - Sau khi thêm chữ mới: `node fe/scripts/check-translations.mjs` (báo câu còn thiếu bản dịch).
+  - Dữ liệu động (tên bài học, tên chủ đề, nội dung thông báo do BE sinh) **không** đưa qua `t()`.
 - Logic tính streak là **domain logic, không phải utility** — chỉ định nghĩa một lần trong `shared/streak/`, `be` dùng để tính chính thức, `fe`/`mobile` dùng để hiển thị/preview. Không đặt trong `common/utils/` và không viết lại ở nơi khác.
 - Thuật toán SRS (SM-2) chỉ định nghĩa một lần trong `shared/srs`, cả `be` (chấm điểm review) và `fe`/`mobile` (preview lịch ôn) cùng import.
 - **Lịch gửi thông báo chỉ do `be/src/jobs` quyết định.** OneSignal chỉ đóng vai trò kênh gửi — không dùng tính năng tự lên lịch của OneSignal. Có hai nơi cùng lên lịch sẽ khiến user nhận trùng thông báo và rất khó truy nguyên.

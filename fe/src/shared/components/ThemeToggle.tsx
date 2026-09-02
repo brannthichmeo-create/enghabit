@@ -1,5 +1,6 @@
 import { Check, Monitor, Moon, Sun } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useT } from '../i18n/language';
 
 /**
  * Chọn chế độ giao diện: Sáng / Tối / Theo hệ thống.
@@ -36,6 +37,7 @@ export function applyTheme(choice: ThemeChoice): void {
 }
 
 export function ThemeToggle(): JSX.Element {
+  const t = useT();
   const [choice, setChoice] = useState<ThemeChoice>(readStored);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,7 +79,7 @@ export function ThemeToggle(): JSX.Element {
       <button
         onClick={() => setOpen((v) => !v)}
         className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-page-muted transition-colors hover:bg-hover hover:text-on-page"
-        aria-label="Chọn chế độ giao diện"
+        aria-label={t('Chọn chế độ giao diện')}
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -107,7 +109,7 @@ export function ThemeToggle(): JSX.Element {
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                <span className="flex-1 text-left">{option.label}</span>
+                <span className="flex-1 text-left">{t(option.label)}</span>
                 {selected && <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />}
               </button>
             );

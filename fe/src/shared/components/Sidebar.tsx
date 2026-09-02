@@ -22,6 +22,7 @@ import { useDueCount } from '../../features/flashcards/flashcard.hooks';
 import { useMistakeCount } from '../../features/lessons/lesson.hooks';
 import { useLevel } from '../../features/statistics/statistics.hooks';
 import { useUnreadCount } from '../../features/notifications/notification.hooks';
+import { useT } from '../i18n/language';
 import { Logo } from './Logo';
 
 /**
@@ -51,6 +52,7 @@ export function Sidebar({
   /** Gọi khi chọn một mục — dùng để đóng ngăn kéo trên màn hình hẹp. */
   onNavigate?: () => void;
 }): JSX.Element {
+  const t = useT();
   const user = useCurrentUser();
   const logout = useLogout();
   // Quản trị viên không học nên không gọi các API của người học — gọi rồi bỏ đi chỉ
@@ -98,7 +100,7 @@ export function Sidebar({
       <nav className="flex-1 overflow-y-auto px-2.5 pb-2">
         {isAdmin ? (
           <>
-            <GroupLabel collapsed={collapsed}>Quản trị</GroupLabel>
+            <GroupLabel collapsed={collapsed}>{t('Quản trị')}</GroupLabel>
             <ul className="space-y-0.5">
               {adminItems.map((item) => (
                 <li key={item.to}>
@@ -117,7 +119,7 @@ export function Sidebar({
               ))}
             </ul>
 
-            <GroupLabel collapsed={collapsed}>Duy trì</GroupLabel>
+            <GroupLabel collapsed={collapsed}>{t('Duy trì')}</GroupLabel>
             <ul className="space-y-0.5">
               {habitItems.map((item) => (
                 <li key={item.to}>
@@ -143,7 +145,7 @@ export function Sidebar({
           {!collapsed && (
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-on-page">{user?.name}</span>
-              <span className="block text-xs text-on-page-muted">Trang cá nhân</span>
+              <span className="block text-xs text-on-page-muted">{t('Trang cá nhân')}</span>
             </span>
           )}
         </Link>
@@ -153,10 +155,10 @@ export function Sidebar({
           className={`mt-0.5 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-on-page-muted transition-colors hover:bg-hover hover:text-on-page ${
             collapsed ? 'justify-center' : ''
           }`}
-          title={collapsed ? 'Đăng xuất' : undefined}
+          title={collapsed ? t('Đăng xuất') : undefined}
         >
           <LogOut className="h-4 w-4 shrink-0" aria-hidden />
-          {!collapsed && 'Đăng xuất'}
+          {!collapsed && t('Đăng xuất')}
         </button>
       </div>
 
@@ -164,10 +166,10 @@ export function Sidebar({
       <button
         onClick={onToggleCollapse}
         className="hidden items-center gap-2 border-t border-line-page px-4 py-2.5 text-xs text-on-page-muted transition-colors hover:bg-hover hover:text-on-page lg:flex"
-        aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
+        aria-label={collapsed ? t('Mở rộng thanh điều hướng') : t('Thu gọn thanh điều hướng')}
       >
         <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} aria-hidden />
-        {!collapsed && 'Thu gọn'}
+        {!collapsed && t('Thu gọn')}
       </button>
     </div>
   );
@@ -182,6 +184,7 @@ function Item({
   collapsed: boolean;
   onNavigate?: () => void;
 }): JSX.Element {
+  const t = useT();
   const Icon = item.icon;
 
   // `end`: mục gốc của mỗi khu ("/" và "/admin") phải khớp chính xác, nếu không nó
@@ -192,7 +195,7 @@ function Item({
       to={item.to}
       end={item.to === '/' || item.to === '/admin'}
       onClick={onNavigate}
-      title={collapsed ? item.label : undefined}
+      title={collapsed ? t(item.label) : undefined}
       className={({ isActive }) =>
         `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
           isActive
@@ -204,7 +207,7 @@ function Item({
       <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
       {!collapsed && (
         <>
-          <span className="flex-1 truncate">{item.label}</span>
+          <span className="flex-1 truncate">{t(item.label)}</span>
           {item.badge !== undefined && item.badge > 0 && (
             <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold leading-none text-on-brand">
               {item.badge}
@@ -221,11 +224,13 @@ function Item({
 }
 
 function GroupLabel({ children, collapsed }: { children: string; collapsed: boolean }): JSX.Element {
+  const t = useT();
+
   if (collapsed) return <div className="my-2 border-t border-line-page" />;
 
   return (
     <p className="mb-1 mt-4 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-on-page-muted">
-      {children}
+      {t(children)}
     </p>
   );
 }

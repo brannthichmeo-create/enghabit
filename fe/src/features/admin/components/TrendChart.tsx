@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocale, useT } from '../../../shared/i18n/language';
 
 /**
  * Biểu đồ cột theo ngày cho các số liệu vận hành.
@@ -28,6 +29,8 @@ export function TrendChart({
   secondaryLabel: string;
   tone?: 'brand' | 'danger';
 }): JSX.Element {
+  const locale = useLocale();
+  const t = useT();
   const [hovered, setHovered] = useState<string | null>(null);
 
   const max = Math.max(1, ...points.map((p) => p.primary));
@@ -90,7 +93,7 @@ export function TrendChart({
       <div className="mt-3 flex min-h-[20px] flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-xs">
         {active && (
           <>
-            <span className="font-medium text-content-soft">{formatDate(active.date)}</span>
+            <span className="font-medium text-content-soft">{formatDate(active.date, locale)}</span>
             <span className="text-content-muted">
               {primaryLabel}: <span className="font-medium tabular-nums text-content">{active.primary}</span>
             </span>
@@ -98,7 +101,7 @@ export function TrendChart({
               {secondaryLabel}: <span className="font-medium tabular-nums text-content">{active.secondary}</span>
             </span>
             <span className="text-content-muted">
-              {hovered === null ? '(ngày gần nhất — rê chuột để xem ngày khác)' : ''}
+              {hovered === null ? t('(ngày gần nhất — rê chuột để xem ngày khác)') : ''}
             </span>
           </>
         )}
@@ -107,8 +110,8 @@ export function TrendChart({
   );
 }
 
-function formatDate(date: string): string {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString('vi-VN', {
+function formatDate(date: string, locale: string): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'numeric',

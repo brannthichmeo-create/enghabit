@@ -23,8 +23,10 @@ import {
 import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useCreateGoal, useDeleteGoal, useGoalProgress, useGoals } from '../goal.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 export function GoalsPage(): JSX.Element {
+  const t = useT();
   const goals = useGoals();
   const progress = useGoalProgress();
   const deleteGoal = useDeleteGoal();
@@ -35,9 +37,9 @@ export function GoalsPage(): JSX.Element {
   return (
     <div>
       <PageHeader
-        title="Mục tiêu học tập"
-        description="Đặt mục tiêu cụ thể để theo dõi tiến độ mỗi ngày"
-        action={<Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Đóng' : '+ Thêm mục tiêu'}</Button>}
+        title={t('Mục tiêu học tập')}
+        description={t('Đặt mục tiêu cụ thể để theo dõi tiến độ mỗi ngày')}
+        action={<Button onClick={() => setShowForm((v) => !v)}>{showForm ? t('Đóng') : t('+ Thêm mục tiêu')}</Button>}
       />
 
       {showForm && (
@@ -50,7 +52,7 @@ export function GoalsPage(): JSX.Element {
       {goals.isError && <ErrorMessage>{getErrorMessage(goals.error)}</ErrorMessage>}
 
       {goals.data?.length === 0 && (
-        <EmptyState title="Chưa có mục tiêu nào" description="Ví dụ: học 20 từ vựng mỗi ngày" />
+        <EmptyState title={t('Chưa có mục tiêu nào')} description={t('Ví dụ: học 20 từ vựng mỗi ngày')} />
       )}
 
       <div className="space-y-3">
@@ -61,7 +63,7 @@ export function GoalsPage(): JSX.Element {
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold text-content">{GOAL_TYPE_LABELS[goal.type]}</h3>
                   <Badge tone={goal.status === GoalStatus.ACTIVE ? 'brand' : 'slate'}>
-                    {goal.period === GoalPeriod.DAILY ? 'Mỗi ngày' : 'Mỗi tuần'}
+                    {goal.period === GoalPeriod.DAILY ? t('Mỗi ngày') : t('Mỗi tuần')}
                   </Badge>
                 </div>
 
@@ -71,10 +73,10 @@ export function GoalsPage(): JSX.Element {
               <Button
                 variant="ghost"
                 onClick={() => {
-                  if (confirm('Xoá mục tiêu này?')) deleteGoal.mutate(goal.id);
+                  if (confirm(t('Xoá mục tiêu này?'))) deleteGoal.mutate(goal.id);
                 }}
               >
-                Xoá
+                {t('Xoá')}
               </Button>
             </div>
           </Card>
@@ -85,6 +87,7 @@ export function GoalsPage(): JSX.Element {
 }
 
 function ProgressBar({ target, progress }: { target: number; progress?: GoalProgress }): JSX.Element {
+  const t = useT();
   const current = progress?.currentValue ?? 0;
   const rate = progress?.completionRate ?? 0;
 
@@ -95,7 +98,7 @@ function ProgressBar({ target, progress }: { target: number; progress?: GoalProg
           {current} / {target}
         </span>
         <span className={progress?.isCompleted ? 'font-medium text-success' : 'text-content-muted'}>
-          {progress?.isCompleted ? '✓ Hoàn thành' : `${rate}%`}
+          {progress?.isCompleted ? t('✓ Hoàn thành') : `${rate}%`}
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-sunken">
@@ -109,6 +112,7 @@ function ProgressBar({ target, progress }: { target: number; progress?: GoalProg
 }
 
 function GoalForm({ onCreated }: { onCreated: () => void }): JSX.Element {
+  const t = useT();
   const user = useCurrentUser();
   const createGoal = useCreateGoal();
   const [type, setType] = useState<GoalType>(GoalType.VOCAB_PER_DAY);
@@ -128,7 +132,7 @@ function GoalForm({ onCreated }: { onCreated: () => void }): JSX.Element {
     });
 
     if (!parsed.success) {
-      setValidationError(parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ');
+      setValidationError(parsed.error.issues[0]?.message ?? t('Dữ liệu không hợp lệ'));
       return;
     }
 
@@ -142,7 +146,7 @@ function GoalForm({ onCreated }: { onCreated: () => void }): JSX.Element {
       <form onSubmit={handleSubmit} className="space-y-4">
         <ErrorMessage>{errorMessage}</ErrorMessage>
 
-        <Field label="Loại mục tiêu">
+        <Field label={t('Loại mục tiêu')}>
           <Select value={type} onChange={(e) => setType(e.target.value as GoalType)}>
             {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -153,7 +157,7 @@ function GoalForm({ onCreated }: { onCreated: () => void }): JSX.Element {
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Chỉ tiêu">
+          <Field label={t('Chỉ tiêu')}>
             <Input
               type="number"
               min={1}
@@ -162,16 +166,16 @@ function GoalForm({ onCreated }: { onCreated: () => void }): JSX.Element {
             />
           </Field>
 
-          <Field label="Chu kỳ">
+          <Field label={t('Chu kỳ')}>
             <Select value={period} onChange={(e) => setPeriod(e.target.value as GoalPeriod)}>
-              <option value={GoalPeriod.DAILY}>Mỗi ngày</option>
-              <option value={GoalPeriod.WEEKLY}>Mỗi tuần</option>
+              <option value={GoalPeriod.DAILY}>{t('Mỗi ngày')}</option>
+              <option value={GoalPeriod.WEEKLY}>{t('Mỗi tuần')}</option>
             </Select>
           </Field>
         </div>
 
         <Button type="submit" disabled={createGoal.isPending}>
-          {createGoal.isPending ? 'Đang tạo...' : 'Tạo mục tiêu'}
+          {createGoal.isPending ? t('Đang tạo...') : t('Tạo mục tiêu')}
         </Button>
       </form>
     </Card>

@@ -7,8 +7,10 @@ import { Button } from '../../../shared/components/ui';
 import { useRegister } from '../auth.hooks';
 import { AuthField, PasswordField, PasswordStrength } from './AuthField';
 import { AuthLayout } from './AuthLayout';
+import { useT } from '../../../shared/i18n/language';
 
 export function RegisterPage(): JSX.Element {
+  const t = useT();
   const register = useRegister();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -37,8 +39,8 @@ export function RegisterPage(): JSX.Element {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="animate-enter-up">
-          <h1 className="text-2xl font-bold tracking-tight text-content">Tạo tài khoản</h1>
-          <p className="mt-1.5 text-sm text-content-muted">Bắt đầu xây dựng thói quen học mỗi ngày</p>
+          <h1 className="text-2xl font-bold tracking-tight text-content">{t('Tạo tài khoản')}</h1>
+          <p className="mt-1.5 text-sm text-content-muted">{t('Bắt đầu xây dựng thói quen học mỗi ngày')}</p>
         </div>
 
         {register.isError && (
@@ -53,12 +55,12 @@ export function RegisterPage(): JSX.Element {
 
         <div className="animate-enter-up [animation-delay:60ms]">
           <AuthField
-            label="Họ tên"
+            label={t('Họ tên')}
             icon={User}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             error={fieldErrors.name}
-            placeholder="Nguyễn Văn A"
+            placeholder={t('Nguyễn Văn A')}
             autoComplete="name"
             autoFocus
           />
@@ -79,13 +81,13 @@ export function RegisterPage(): JSX.Element {
 
         <div className="animate-enter-up [animation-delay:180ms]">
           <PasswordField
-            label="Mật khẩu"
+            label={t('Mật khẩu')}
             icon={Lock}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             error={fieldErrors.password}
-            hint="Ít nhất 8 ký tự, gồm cả chữ và số"
-            placeholder="Tạo mật khẩu"
+            hint={t('Ít nhất 8 ký tự, gồm cả chữ và số')}
+            placeholder={t('Tạo mật khẩu')}
             autoComplete="new-password"
           />
           <PasswordStrength password={form.password} />
@@ -93,14 +95,14 @@ export function RegisterPage(): JSX.Element {
 
         <div className="animate-enter-up [animation-delay:240ms]">
           <Button type="submit" loading={register.isPending} className="w-full" icon={ArrowRight}>
-            {register.isPending ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
+            {register.isPending ? t('Đang tạo tài khoản...') : t('Tạo tài khoản')}
           </Button>
         </div>
 
         <p className="animate-enter-up text-center text-sm text-content-muted [animation-delay:300ms]">
-          Đã có tài khoản?{' '}
+          {t('Đã có tài khoản?')}{' '}
           <Link to="/login" className="font-medium text-brand-strong underline-offset-2 transition-colors hover:underline">
-            Đăng nhập
+            {t('Đăng nhập')}
           </Link>
         </p>
       </form>

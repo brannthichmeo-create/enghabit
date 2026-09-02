@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useT } from '../i18n/language';
 
 /**
  * Thông báo nổi cho các thao tác đã thực hiện.
@@ -24,6 +25,7 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 const AUTO_DISMISS_MS = 3500;
 
 export function ToastProvider({ children }: { children: ReactNode }): JSX.Element {
+  const t = useT();
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const dismiss = useCallback((id: number) => {
@@ -75,7 +77,7 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
             <button
               onClick={() => dismiss(toast.id)}
               className="shrink-0 rounded text-content-muted hover:text-content-soft"
-              aria-label="Đóng thông báo"
+              aria-label={t('Đóng thông báo')}
             >
               <X className="h-4 w-4" />
             </button>

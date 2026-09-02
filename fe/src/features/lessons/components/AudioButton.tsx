@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Nút phát âm cho bài nghe.
@@ -29,6 +30,7 @@ export function AudioButton({
   autoPlay?: boolean;
   size?: 'sm' | 'lg';
 }): JSX.Element {
+  const t = useT();
   const [playing, setPlaying] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -81,7 +83,7 @@ export function AudioButton({
         {/* Trình duyệt không đọc được thì hiện chữ, thà mất tính chất bài nghe
             còn hơn để người học kẹt không làm tiếp được */}
         <p className="text-sm text-content-muted">
-          Trình duyệt không phát âm được — từ cần nghe là <strong>{text}</strong>
+          {t('Trình duyệt không phát âm được — từ cần nghe là')}<strong>{text}</strong>
         </p>
       </div>
     );
@@ -93,7 +95,7 @@ export function AudioButton({
     <button
       type="button"
       onClick={play}
-      aria-label="Nghe lại"
+      aria-label={t('Nghe lại')}
       className={`flex items-center justify-center rounded-full bg-brand text-on-brand transition-transform hover:bg-brand-strong active:scale-95 ${
         isLarge ? 'h-16 w-16' : 'h-9 w-9'
       } ${playing ? 'animate-pulse-soft' : ''}`}

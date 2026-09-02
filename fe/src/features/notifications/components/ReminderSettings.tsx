@@ -4,6 +4,7 @@ import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, Card, ErrorMessage, Field, Input, SectionTitle, SkeletonList } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
 import { useNotificationSetting, useUpdateNotificationSetting } from '../notification.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Cài đặt nhắc nhở: bật/tắt, giờ nhắc, thứ trong tuần và các loại cảnh báo.
@@ -12,6 +13,7 @@ import { useNotificationSetting, useUpdateNotificationSetting } from '../notific
  * điều này ngay dưới ô nhập, vì đây là chỗ người dùng dễ hiểu nhầm nhất.
  */
 export function ReminderSettings(): JSX.Element {
+  const t = useT();
   const setting = useNotificationSetting();
   const update = useUpdateNotificationSetting();
   const toast = useToast();
@@ -45,26 +47,26 @@ export function ReminderSettings(): JSX.Element {
     if (days.length === 0) return;
     update.mutate(
       { isEnabled, timeOfDay, daysOfWeek: days, remindStreakAtRisk, remindReviewDue },
-      { onSuccess: () => toast.success('Đã lưu cài đặt nhắc nhở') },
+      { onSuccess: () => toast.success(t('Đã lưu cài đặt nhắc nhở')) },
     );
   };
 
   return (
     <section>
-      <SectionTitle>Cài đặt nhắc nhở</SectionTitle>
+      <SectionTitle>{t('Cài đặt nhắc nhở')}</SectionTitle>
       <Card>
         {update.isError && <ErrorMessage>{getErrorMessage(update.error)}</ErrorMessage>}
 
         <Toggle
           checked={isEnabled}
           onChange={setIsEnabled}
-          label="Bật nhắc nhở học tập"
-          hint="Tắt thì không nhận bất kỳ nhắc nhở tự động nào."
+          label={t('Bật nhắc nhở học tập')}
+          hint={t('Tắt thì không nhận bất kỳ nhắc nhở tự động nào.')}
         />
 
         <div className={isEnabled ? '' : 'pointer-events-none opacity-50'}>
           <div className="mt-4 max-w-[200px]">
-            <Field label="Giờ nhắc" hint="Theo múi giờ trong trang cá nhân của bạn.">
+            <Field label={t('Giờ nhắc')} hint={t('Theo múi giờ trong trang cá nhân của bạn.')}>
               <Input
                 type="time"
                 value={timeOfDay}
@@ -75,7 +77,7 @@ export function ReminderSettings(): JSX.Element {
           </div>
 
           <div className="mt-4">
-            <p className="text-sm font-medium text-content-soft">Ngày trong tuần</p>
+            <p className="text-sm font-medium text-content-soft">{t('Ngày trong tuần')}</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {WEEKDAY_LABELS.map((label, index) => {
                 const day = index + 1;
@@ -99,7 +101,7 @@ export function ReminderSettings(): JSX.Element {
               })}
             </div>
             {days.length === 0 && (
-              <p className="mt-1.5 text-xs text-danger">Chọn ít nhất một ngày, hoặc tắt hẳn nhắc nhở.</p>
+              <p className="mt-1.5 text-xs text-danger">{t('Chọn ít nhất một ngày, hoặc tắt hẳn nhắc nhở.')}</p>
             )}
           </div>
 
@@ -107,24 +109,24 @@ export function ReminderSettings(): JSX.Element {
             <Toggle
               checked={remindStreakAtRisk}
               onChange={setRemindStreakAtRisk}
-              label="Cảnh báo chuỗi sắp đứt"
-              hint="Gửi lúc 21:30 nếu hôm đó bạn chưa học và đang có chuỗi."
+              label={t('Cảnh báo chuỗi sắp đứt')}
+              hint={t('Gửi lúc 21:30 nếu hôm đó bạn chưa học và đang có chuỗi.')}
             />
             <Toggle
               checked={remindReviewDue}
               onChange={setRemindReviewDue}
-              label="Nhắc thẻ tới hạn ôn"
-              hint="Lời nhắc hằng ngày sẽ kèm số thẻ flashcard cần ôn."
+              label={t('Nhắc thẻ tới hạn ôn')}
+              hint={t('Lời nhắc hằng ngày sẽ kèm số thẻ flashcard cần ôn.')}
             />
           </div>
         </div>
 
         <div className="mt-5 flex items-center gap-3 border-t border-line pt-4">
           <Button onClick={save} loading={update.isPending} disabled={isEnabled && days.length === 0}>
-            Lưu cài đặt
+            {t('Lưu cài đặt')}
           </Button>
           <p className="text-xs text-content-muted">
-            Nhắc nhở chỉ gửi khi hôm đó bạn chưa học — học rồi thì hệ thống im lặng.
+            {t('Nhắc nhở chỉ gửi khi hôm đó bạn chưa học — học rồi thì hệ thống im lặng.')}
           </p>
         </div>
       </Card>

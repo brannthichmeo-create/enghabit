@@ -3,8 +3,10 @@ import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Badge, Button, Card, EmptyState, ErrorMessage, SkeletonList, PageHeader } from '../../../shared/components/ui';
 import { useQuizAttempts, useQuizzes } from '../quiz.hooks';
 import { QuizAttempt } from './QuizAttempt';
+import { useT } from '../../../shared/i18n/language';
 
 export function QuizzesPage(): JSX.Element {
+  const t = useT();
   const quizzes = useQuizzes();
   const attempts = useQuizAttempts();
   const [activeQuizId, setActiveQuizId] = useState<number | null>(null);
@@ -16,13 +18,13 @@ export function QuizzesPage(): JSX.Element {
 
   return (
     <div>
-      <PageHeader title="Kiểm tra kiến thức" description="Làm quiz để củng cố những gì đã học" />
+      <PageHeader title={t('Kiểm tra kiến thức')} description={t('Làm quiz để củng cố những gì đã học')} />
 
       {quizzes.isLoading && <SkeletonList rows={3} />}
       {quizzes.isError && <ErrorMessage>{getErrorMessage(quizzes.error)}</ErrorMessage>}
 
       {quizzes.data?.length === 0 && (
-        <EmptyState title="Chưa có bài quiz nào" description="Quản trị viên cần thêm nội dung" />
+        <EmptyState title={t('Chưa có bài quiz nào')} description={t('Quản trị viên cần thêm nội dung')} />
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -34,9 +36,9 @@ export function QuizzesPage(): JSX.Element {
                   <h3 className="font-semibold text-content">{quiz.title}</h3>
                   <Badge>{quiz.topic.name}</Badge>
                 </div>
-                <p className="mt-1 text-xs text-content-muted">{quiz._count.questions} câu hỏi</p>
+                <p className="mt-1 text-xs text-content-muted">{t('{n} câu hỏi', { n: quiz._count.questions })}</p>
               </div>
-              <Button onClick={() => setActiveQuizId(quiz.id)}>Bắt đầu làm</Button>
+              <Button onClick={() => setActiveQuizId(quiz.id)}>{t('Bắt đầu làm')}</Button>
             </div>
           </Card>
         ))}
@@ -44,7 +46,7 @@ export function QuizzesPage(): JSX.Element {
 
       {attempts.data && attempts.data.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-3 font-semibold text-on-page">Lịch sử làm bài</h2>
+          <h2 className="mb-3 font-semibold text-on-page">{t('Lịch sử làm bài')}</h2>
           <Card>
             <ul className="divide-y divide-line">
               {attempts.data.slice(0, 10).map((attempt) => (

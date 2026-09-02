@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityType, type DailyStat } from '@enghabit/shared';
+import { useT } from '../../shared/i18n/language';
 
 /**
  * Biểu đồ cột chồng: mỗi ngày một cột, chia theo loại hoạt động.
@@ -28,6 +29,7 @@ const SERIES: Series[] = [
 const CHART_HEIGHT = 176;
 
 export function ActivityChart({ data }: { data: DailyStat[] }): JSX.Element {
+  const t = useT();
   const [hovered, setHovered] = useState<string | null>(null);
 
   const max = Math.max(1, ...data.map((d) => d.totalActivities));
@@ -102,7 +104,7 @@ export function ActivityChart({ data }: { data: DailyStat[] }): JSX.Element {
         {hoveredDay ? (
           <DayDetail day={hoveredDay} />
         ) : (
-          <p className="text-xs text-content-muted">Chọn một cột để xem chi tiết từng ngày</p>
+          <p className="text-xs text-content-muted">{t('Chọn một cột để xem chi tiết từng ngày')}</p>
         )}
       </div>
     </div>
@@ -122,6 +124,7 @@ function DayColumn({
   dimmed: boolean;
   onHover: (date: string | null) => void;
 }): JSX.Element {
+  const t = useT();
   return (
     <div
       className="group relative flex h-full min-w-[22px] flex-1 cursor-default flex-col justify-end"
@@ -131,7 +134,7 @@ function DayColumn({
       onBlur={() => onHover(null)}
       tabIndex={0}
       role="img"
-      aria-label={`${day.date}: ${day.totalActivities} hoạt động`}
+      aria-label={`${day.date}: ${t('{n} hoạt động', { n: day.totalActivities })}`}
     >
       {day.totalActivities > 0 && (
         <span
@@ -175,6 +178,7 @@ function DayColumn({
 }
 
 function DayDetail({ day }: { day: DailyStat }): JSX.Element {
+  const t = useT();
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
       <span className="text-xs font-medium text-content-soft">
@@ -187,7 +191,7 @@ function DayDetail({ day }: { day: DailyStat }): JSX.Element {
       {SERIES.map((series) => (
         <span key={series.key} className="flex items-center gap-1.5 text-xs text-content-muted">
           <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: series.color }} aria-hidden />
-          {series.label}: <span className="font-medium tabular-nums text-content-soft">{day[series.key]}</span>
+          {t(series.label)}: <span className="font-medium tabular-nums text-content-soft">{day[series.key]}</span>
         </span>
       ))}
     </div>
@@ -196,12 +200,13 @@ function DayDetail({ day }: { day: DailyStat }): JSX.Element {
 
 /** Legend luôn hiện vì có 4 chuỗi — không để màu là cách duy nhất nhận biết. */
 function Legend(): JSX.Element {
+  const t = useT();
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1.5">
       {SERIES.map((series) => (
         <span key={series.key} className="flex items-center gap-1.5 text-xs text-content-muted">
           <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: series.color }} aria-hidden />
-          {series.label}
+          {t(series.label)}
         </span>
       ))}
     </div>

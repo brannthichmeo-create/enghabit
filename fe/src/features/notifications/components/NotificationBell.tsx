@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { NotificationRow } from '@enghabit/shared';
 import { useMarkAllRead, useMarkRead, useNotifications, useUnreadCount } from '../notification.hooks';
 import { displayFor, timeAgo } from './notification-display';
+import { useLocale, useT } from '../../../shared/i18n/language';
 
 /**
  * Chuông thông báo trên thanh trên cùng.
@@ -12,6 +13,8 @@ import { displayFor, timeAgo } from './notification-display';
  * luôn hiện, còn nội dung thì không cần tải sẵn cho một menu chưa ai mở.
  */
 export function NotificationBell(): JSX.Element {
+  const locale = useLocale();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -52,7 +55,7 @@ export function NotificationBell(): JSX.Element {
       <button
         onClick={() => setOpen((v) => !v)}
         className="relative inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-page-muted transition-colors hover:bg-hover hover:text-on-page"
-        aria-label={count > 0 ? `Thông báo, ${count} chưa đọc` : 'Thông báo'}
+        aria-label={count > 0 ? t('Thông báo, {n} chưa đọc', { n: count }) : t('Thông báo')}
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -70,24 +73,24 @@ export function NotificationBell(): JSX.Element {
           className="absolute right-0 z-50 mt-1.5 w-[min(360px,calc(100vw-2rem))] animate-slide-up overflow-hidden rounded-xl border border-line bg-surface-raised shadow-lg"
         >
           <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
-            <span className="text-sm font-semibold text-content">Thông báo</span>
+            <span className="text-sm font-semibold text-content">{t('Thông báo')}</span>
             {count > 0 && (
               <button
                 onClick={() => markAllRead.mutate()}
                 className="inline-flex items-center gap-1 text-xs text-brand-strong hover:underline"
               >
                 <CheckCheck className="h-3.5 w-3.5" aria-hidden />
-                Đánh dấu đã đọc hết
+                {t('Đánh dấu đã đọc hết')}
               </button>
             )}
           </div>
 
           <div className="max-h-[380px] overflow-y-auto">
-            {list.isLoading && <p className="px-3 py-6 text-center text-sm text-content-muted">Đang tải…</p>}
+            {list.isLoading && <p className="px-3 py-6 text-center text-sm text-content-muted">{t('Đang tải…')}</p>}
 
             {list.data?.items.length === 0 && (
               <p className="px-3 py-8 text-center text-sm text-content-muted">
-                Chưa có thông báo nào. Nhắc nhở học sẽ xuất hiện ở đây.
+                {t('Chưa có thông báo nào. Nhắc nhở học sẽ xuất hiện ở đây.')}
               </p>
             )}
 
@@ -111,12 +114,12 @@ export function NotificationBell(): JSX.Element {
                             {notification.title}
                           </span>
                           {isUnread && (
-                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-label="Chưa đọc" />
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-label={t('Chưa đọc')} />
                           )}
                         </span>
                         <span className="mt-0.5 block text-xs text-content-soft">{notification.body}</span>
                         <span className="mt-0.5 block text-[11px] text-content-muted">
-                          {timeAgo(notification.createdAt)}
+                          {timeAgo(notification.createdAt, t, locale)}
                         </span>
                       </span>
                     </button>
@@ -133,7 +136,7 @@ export function NotificationBell(): JSX.Element {
             }}
             className="block w-full border-t border-line px-3 py-2 text-center text-xs text-brand-strong transition-colors hover:bg-sunken"
           >
-            Xem tất cả thông báo
+            {t('Xem tất cả thông báo')}
           </button>
         </div>
       )}

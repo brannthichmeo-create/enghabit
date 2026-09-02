@@ -6,6 +6,7 @@ import { Button, Card, ErrorMessage } from '../../../shared/components/ui';
 import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
 import { useSubmitLesson } from '../lesson.hooks';
 import { ExerciseView, type AnswerValue } from './ExerciseView';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Màn hình làm bài: đi qua từng câu, cuối cùng nộp cả bài để backend chấm.
@@ -22,6 +23,7 @@ export function LessonPlayer({
   onExit: () => void;
   onFinished?: (result: LessonResult) => void;
 }): JSX.Element {
+  const t = useT();
   const submit = useSubmitLesson();
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<SubmitLessonInput['answers']>([]);
@@ -38,7 +40,7 @@ export function LessonPlayer({
     return <ResultView lesson={lesson} result={result} onExit={onExit} />;
   }
 
-  if (!exercise) return <ErrorMessage>Bài học không có câu hỏi nào</ErrorMessage>;
+  if (!exercise) return <ErrorMessage>{t('Bài học không có câu hỏi nào')}</ErrorMessage>;
 
   const handleNext = (): void => {
     if (!current) return;
@@ -79,7 +81,7 @@ export function LessonPlayer({
         <button
           onClick={onExit}
           className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-sunken hover:text-content-soft"
-          aria-label="Thoát bài học"
+          aria-label={t('Thoát bài học')}
         >
           <X className="h-5 w-5" />
         </button>
@@ -115,10 +117,10 @@ export function LessonPlayer({
           icon={isLast ? Check : ArrowRight}
           className="w-full"
         >
-          {isLast ? 'Nộp bài' : 'Câu tiếp theo'}
+          {isLast ? t('Nộp bài') : t('Câu tiếp theo')}
         </Button>
         {!current && (
-          <p className="mt-2 text-center text-xs text-content-muted">Hãy trả lời để tiếp tục</p>
+          <p className="mt-2 text-center text-xs text-content-muted">{t('Hãy trả lời để tiếp tục')}</p>
         )}
       </div>
     </div>
@@ -134,6 +136,7 @@ function ResultView({
   result: LessonResult;
   onExit: () => void;
 }): JSX.Element {
+  const t = useT();
   const wrongIds = new Set(result.details.filter((d) => !d.isCorrect).map((d) => d.exerciseId));
   const wrongExercises = lesson.exercises.filter((e) => wrongIds.has(e.id));
 
@@ -157,13 +160,13 @@ function ResultView({
         </p>
         <p className="mt-1 text-sm text-content-muted">
           {result.passed
-            ? `Đạt ${result.percentage}% — bạn đã qua bài này`
-            : `Đạt ${result.percentage}% — cần đúng từ 70% để qua bài`}
+            ? t('Đạt {percent}% — bạn đã qua bài này', { percent: result.percentage })
+            : t('Đạt {percent}% — cần đúng từ 70% để qua bài', { percent: result.percentage })}
         </p>
 
         <div className="mt-5 flex justify-center gap-2">
           <Button onClick={onExit} variant={result.passed ? 'primary' : 'secondary'}>
-            {result.passed ? 'Về lộ trình' : 'Quay lại'}
+            {result.passed ? t('Về lộ trình') : t('Quay lại')}
           </Button>
         </div>
       </Card>
@@ -171,10 +174,10 @@ function ResultView({
       {wrongExercises.length > 0 && (
         <Card className="mt-4">
           <p className="mb-2 text-sm font-semibold text-content">
-            Những câu cần xem lại ({wrongExercises.length})
+            {t('Những câu cần xem lại ({n})', { n: wrongExercises.length })}
           </p>
           <p className="mb-3 text-xs text-content-muted">
-            Các từ này đã được thêm vào mục "Ôn lại từ sai" để bạn luyện tiếp.
+            {t('Các từ này đã được thêm vào mục "Ôn lại từ sai" để bạn luyện tiếp.')}
           </p>
           <ul className="space-y-1.5">
             {wrongExercises.map((e) => (

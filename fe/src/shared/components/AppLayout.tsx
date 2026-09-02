@@ -6,7 +6,9 @@ import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLevel, useStreak } from '../../features/statistics/statistics.hooks';
 import { useRewards } from '../../features/rewards/rewards.hooks';
 import { NotificationBell } from '../../features/notifications/components/NotificationBell';
+import { useT } from '../i18n/language';
 import { Breadcrumb, BreadcrumbProvider } from './Breadcrumb';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { Sidebar } from './Sidebar';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -42,6 +44,7 @@ function AppShell(): JSX.Element {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
+  const t = useT();
 
   useEffect(() => {
     try {
@@ -86,7 +89,7 @@ function AppShell(): JSX.Element {
             <button
               onClick={() => setDrawerOpen(false)}
               className="absolute right-2 top-3 z-10 rounded-lg p-1.5 text-on-page-muted hover:bg-hover hover:text-on-page"
-              aria-label="Đóng menu"
+              aria-label={t('Đóng menu')}
             >
               <X className="h-4 w-4" />
             </button>
@@ -105,7 +108,7 @@ function AppShell(): JSX.Element {
             <button
               onClick={() => setDrawerOpen(true)}
               className="rounded-lg p-1.5 text-on-page-muted transition-colors hover:bg-hover hover:text-on-page lg:hidden"
-              aria-label="Mở menu"
+              aria-label={t('Mở menu')}
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -118,6 +121,7 @@ function AppShell(): JSX.Element {
 
             <QuickStats />
             <NotificationBell />
+            <LanguageSwitcher />
             <ThemeToggle />
           </div>
         </header>
@@ -138,6 +142,7 @@ function AppShell(): JSX.Element {
  * Quản trị viên không có hai chỉ số này — họ vận hành hệ thống chứ không đi học.
  */
 function QuickStats(): JSX.Element | null {
+  const t = useT();
   const user = useCurrentUser();
   const isLearner = user?.role !== UserRole.ADMIN;
   const streak = useStreak(isLearner);
@@ -151,7 +156,7 @@ function QuickStats(): JSX.Element | null {
       <Link
         to="/"
         className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft transition-colors hover:border-on-page-muted"
-        title="Xu — bấm để tới khu phần thưởng"
+        title={t('Xu — bấm để tới khu phần thưởng')}
       >
         <Coins className="h-3.5 w-3.5 text-accent" aria-hidden />
         {rewards.data?.coins ?? 0}
@@ -159,7 +164,7 @@ function QuickStats(): JSX.Element | null {
 
       <span
         className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft"
-        title={`Chuỗi ngày học${streak.data?.isAlive === false ? ' — đã đứt' : ''}`}
+        title={streak.data?.isAlive === false ? t('Chuỗi ngày học — đã đứt') : t('Chuỗi ngày học')}
       >
         <Flame
           className={`h-3.5 w-3.5 ${streak.data?.isAlive ? 'text-accent' : 'text-on-page-muted'}`}
@@ -170,7 +175,7 @@ function QuickStats(): JSX.Element | null {
 
       <span
         className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft"
-        title={`Cấp ${level.data?.level ?? 1} · ${level.data?.xp ?? 0} XP`}
+        title={t('Cấp {level} · {xp} XP', { level: level.data?.level ?? 1, xp: level.data?.xp ?? 0 })}
       >
         <Sparkles className="h-3.5 w-3.5 text-brand" aria-hidden />
         {level.data?.level ?? 1}

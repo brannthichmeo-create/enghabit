@@ -15,9 +15,11 @@ import {
 import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import { useTopics, useTopicVocabulary } from '../../vocabulary/vocabulary.hooks';
 import { useCreateTopic, useCreateVocabulary, useDeleteTopic } from '../admin.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 /** Quản lý chủ đề và từ vựng. Chọn một chủ đề để thêm/xem từ trong chủ đề đó. */
 export function ContentManager(): JSX.Element {
+  const t = useT();
   const topics = useTopics();
   const deleteTopic = useDeleteTopic();
   const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
@@ -25,7 +27,7 @@ export function ContentManager(): JSX.Element {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section>
-        <h2 className="mb-3 font-semibold text-on-page">Chủ đề</h2>
+        <h2 className="mb-3 font-semibold text-on-page">{t('Chủ đề')}</h2>
 
         <div className="mb-4">
           <TopicForm />
@@ -44,19 +46,19 @@ export function ContentManager(): JSX.Element {
                     <span className="font-medium text-content">{topic.name}</span>
                     <Badge>{VOCAB_LEVEL_LABELS[topic.level]}</Badge>
                   </div>
-                  <p className="mt-0.5 text-xs text-content-muted">{topic.vocabularyCount} từ vựng</p>
+                  <p className="mt-0.5 text-xs text-content-muted">{t('{n} từ vựng', { n: topic.vocabularyCount })}</p>
                 </button>
 
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    if (confirm(`Xoá chủ đề "${topic.name}"? Toàn bộ từ vựng và quiz thuộc chủ đề sẽ mất.`)) {
+                    if (confirm(t('Xoá chủ đề "{name}"? Toàn bộ từ vựng và quiz thuộc chủ đề sẽ mất.', { name: topic.name }))) {
                       deleteTopic.mutate(topic.id);
                       if (selectedTopicId === topic.id) setSelectedTopicId(null);
                     }
                   }}
                 >
-                  Xoá
+                  {t('Xoá')}
                 </Button>
               </div>
             </Card>
@@ -65,9 +67,9 @@ export function ContentManager(): JSX.Element {
       </section>
 
       <section>
-        <h2 className="mb-3 font-semibold text-on-page">Từ vựng</h2>
+        <h2 className="mb-3 font-semibold text-on-page">{t('Từ vựng')}</h2>
         {selectedTopicId === null ? (
-          <EmptyState title="Chọn một chủ đề" description="Chọn chủ đề bên trái để quản lý từ vựng" />
+          <EmptyState title={t('Chọn một chủ đề')} description={t('Chọn chủ đề bên trái để quản lý từ vựng')} />
         ) : (
           <VocabularyManager topicId={selectedTopicId} />
         )}
@@ -77,6 +79,7 @@ export function ContentManager(): JSX.Element {
 }
 
 function TopicForm(): JSX.Element {
+  const t = useT();
   const createTopic = useCreateTopic();
   const [name, setName] = useState('');
   const [level, setLevel] = useState<VocabLevel>(VocabLevel.BEGINNER);
@@ -88,7 +91,7 @@ function TopicForm(): JSX.Element {
 
     const parsed = createTopicSchema.safeParse({ name, level });
     if (!parsed.success) {
-      setValidationError(parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ');
+      setValidationError(parsed.error.issues[0]?.message ?? t('Dữ liệu không hợp lệ'));
       return;
     }
 
@@ -100,11 +103,11 @@ function TopicForm(): JSX.Element {
       <form onSubmit={handleSubmit} className="space-y-3">
         <ErrorMessage>{validationError ?? (createTopic.error ? getErrorMessage(createTopic.error) : null)}</ErrorMessage>
 
-        <Field label="Tên chủ đề mới">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ví dụ: Travel English" />
+        <Field label={t('Tên chủ đề mới')}>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Ví dụ: Travel English')} />
         </Field>
 
-        <Field label="Trình độ">
+        <Field label={t('Trình độ')}>
           <Select value={level} onChange={(e) => setLevel(e.target.value as VocabLevel)}>
             {Object.entries(VOCAB_LEVEL_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -115,7 +118,7 @@ function TopicForm(): JSX.Element {
         </Field>
 
         <Button type="submit" disabled={createTopic.isPending}>
-          {createTopic.isPending ? 'Đang tạo...' : 'Thêm chủ đề'}
+          {createTopic.isPending ? t('Đang tạo...') : t('Thêm chủ đề')}
         </Button>
       </form>
     </Card>
@@ -123,6 +126,7 @@ function TopicForm(): JSX.Element {
 }
 
 function VocabularyManager({ topicId }: { topicId: number }): JSX.Element {
+  const t = useT();
   const vocabulary = useTopicVocabulary(topicId);
   const createVocabulary = useCreateVocabulary();
   const [form, setForm] = useState({ word: '', meaning: '', phonetic: '', example: '' });
@@ -141,7 +145,7 @@ function VocabularyManager({ topicId }: { topicId: number }): JSX.Element {
     });
 
     if (!parsed.success) {
-      setValidationError(parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ');
+      setValidationError(parsed.error.issues[0]?.message ?? t('Dữ liệu không hợp lệ'));
       return;
     }
 
@@ -159,30 +163,30 @@ function VocabularyManager({ topicId }: { topicId: number }): JSX.Element {
           </ErrorMessage>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Từ">
+            <Field label={t('Từ')}>
               <Input value={form.word} onChange={(e) => setForm({ ...form, word: e.target.value })} />
             </Field>
-            <Field label="Phiên âm (tuỳ chọn)">
+            <Field label={t('Phiên âm (tuỳ chọn)')}>
               <Input value={form.phonetic} onChange={(e) => setForm({ ...form, phonetic: e.target.value })} />
             </Field>
           </div>
 
-          <Field label="Nghĩa">
+          <Field label={t('Nghĩa')}>
             <Input value={form.meaning} onChange={(e) => setForm({ ...form, meaning: e.target.value })} />
           </Field>
 
-          <Field label="Câu ví dụ (tuỳ chọn)">
+          <Field label={t('Câu ví dụ (tuỳ chọn)')}>
             <Input value={form.example} onChange={(e) => setForm({ ...form, example: e.target.value })} />
           </Field>
 
           <Button type="submit" disabled={createVocabulary.isPending}>
-            {createVocabulary.isPending ? 'Đang thêm...' : 'Thêm từ vựng'}
+            {createVocabulary.isPending ? t('Đang thêm...') : t('Thêm từ vựng')}
           </Button>
         </form>
       </Card>
 
       {vocabulary.isLoading && <SkeletonList rows={3} />}
-      {vocabulary.data?.length === 0 && <EmptyState title="Chủ đề này chưa có từ nào" />}
+      {vocabulary.data?.length === 0 && <EmptyState title={t('Chủ đề này chưa có từ nào')} />}
 
       <div className="space-y-2">
         {vocabulary.data?.map((word) => (

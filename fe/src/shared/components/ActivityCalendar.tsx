@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { addDays, type ActivityCalendar as CalendarData, type CalendarDay } from '@enghabit/shared';
+import { useT } from '../../shared/i18n/language';
 
 /**
  * Biểu đồ lịch kiểu GitHub: mỗi ô là một ngày, càng đậm là học càng nhiều.
@@ -37,6 +38,7 @@ interface Week {
 }
 
 export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Element {
+  const t = useT();
   const [hovered, setHovered] = useState<CalendarDay | null>(null);
   // Ngày được bấm chọn. Cần riêng khỏi `hovered` vì trên màn hình cảm ứng không có
   // hover — không có cái này thì nửa số người dùng không xem được chi tiết ngày nào.
@@ -59,8 +61,10 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm text-content-soft">
-          <span className="font-semibold tabular-nums text-content">{data.totalActivities}</span> hoạt động
-          trong <span className="font-semibold tabular-nums text-content">{data.activeDays}</span> ngày
+          {t('{activities} hoạt động trong {days} ngày', {
+            activities: data.totalActivities,
+            days: data.activeDays,
+          })}
         </p>
       </div>
 
@@ -87,9 +91,9 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
                         onFocus={() => setHovered(day)}
                         onBlur={() => setHovered(null)}
                         onClick={() => setPinned((current) => (current === day.date ? null : day.date))}
-                        aria-label={`${day.date}: ${day.count} hoạt động`}
+                        aria-label={`${day.date}: ${t('{n} hoạt động', { n: day.count })}`}
                         aria-pressed={pinned === day.date}
-                        title={`${formatDate(day.date)} — ${day.count} hoạt động`}
+                        title={`${formatDate(day.date)} — ${t('{n} hoạt động', { n: day.count })}`}
                         className={`rounded-[2px] transition-transform hover:scale-125 ${
                           pinned === day.date ? 'ring-2 ring-brand ring-offset-1 ring-offset-surface' : ''
                         }`}
@@ -114,10 +118,10 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
           {shown ? (
             <>
               <span className="font-medium text-content-soft">{formatDate(shown.date)}</span>
-              {shown.count > 0 ? ` — ${shown.count} hoạt động` : ' — không học'}
+              {shown.count > 0 ? ` — ${t('{n} hoạt động', { n: shown.count })}` : ` — ${t('không học')}`}
             </>
           ) : (
-            'Bấm vào một ô để xem ngày đó'
+            t('Bấm vào một ô để xem ngày đó')
           )}
         </p>
 
@@ -128,9 +132,10 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
 }
 
 function Legend(): JSX.Element {
+  const t = useT();
   return (
     <div className="flex items-center gap-1.5 text-xs text-content-muted">
-      <span>Ít</span>
+      <span>{t('Ít')}</span>
       {LEVEL_COLORS.map((color, i) => (
         <span
           key={i}
@@ -139,7 +144,7 @@ function Legend(): JSX.Element {
           aria-hidden
         />
       ))}
-      <span>Nhiều</span>
+      <span>{t('Nhiều')}</span>
     </div>
   );
 }

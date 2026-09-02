@@ -13,6 +13,7 @@ import { useCurrentUser } from '../../auth/auth.store';
 import { useGoalProgress } from '../../goals/goal.hooks';
 import { useDueCount } from '../../flashcards/flashcard.hooks';
 import { useActivityCalendar, useStatsSummary, useStreak } from '../statistics.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 const RANGE_LABELS: Record<StatsRangeInput['range'], string> = {
   day: '7 ngày',
@@ -31,6 +32,7 @@ const CALENDAR_RANGES = [
 ] as const;
 
 export function DashboardPage(): JSX.Element {
+  const t = useT();
   const user = useCurrentUser();
   const [range, setRange] = useState<StatsRangeInput['range']>('week');
   const [calendarMonths, setCalendarMonths] = useState<number>(CALENDAR_RANGES[0].months);
@@ -49,9 +51,9 @@ export function DashboardPage(): JSX.Element {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-on-page">
-          Xin chào, {user?.name ?? 'bạn'}
+          {t('Xin chào, {name}', { name: user?.name ?? t('bạn') })}
         </h1>
-        <p className="mt-1 text-sm text-on-page-muted">Cùng xem tiến độ học tập của bạn hôm nay</p>
+        <p className="mt-1 text-sm text-on-page-muted">{t('Cùng xem tiến độ học tập của bạn hôm nay')}</p>
       </div>
 
       <HeroCard
@@ -60,7 +62,7 @@ export function DashboardPage(): JSX.Element {
         dueCount={dueCount.data}
         activeDayRate={summary.data?.activeDayRate}
         totalActivities={totalActivities}
-        rangeLabel={RANGE_LABELS[range]}
+        rangeLabel={t(RANGE_LABELS[range])}
         loading={streak.isLoading || summary.isLoading}
       >
         <RewardsBar />
@@ -70,12 +72,12 @@ export function DashboardPage(): JSX.Element {
 
       <Card>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-semibold text-content">Hoạt động theo ngày</h2>
+          <h2 className="font-semibold text-content">{t('Hoạt động theo ngày')}</h2>
 
           <div
             className="flex gap-0.5 rounded-lg bg-sunken p-0.5"
             role="tablist"
-            aria-label="Khoảng thời gian"
+            aria-label={t('Khoảng thời gian')}
           >
             {(Object.keys(RANGE_LABELS) as StatsRangeInput['range'][]).map((key) => (
               <button
@@ -87,14 +89,14 @@ export function DashboardPage(): JSX.Element {
                   range === key ? 'bg-surface text-content shadow-sm' : 'text-content-muted hover:text-content-soft'
                 }`}
               >
-                {RANGE_LABELS[key]}
+                {t(RANGE_LABELS[key])}
               </button>
             ))}
           </div>
         </div>
 
         {summary.isLoading && <Skeleton className="h-[248px] w-full" />}
-        {summary.isError && <p className="py-8 text-center text-sm text-danger">Không tải được thống kê</p>}
+        {summary.isError && <p className="py-8 text-center text-sm text-danger">{t('Không tải được thống kê')}</p>}
         {summary.data && <ActivityChart data={summary.data.daily} />}
       </Card>
 
@@ -102,14 +104,14 @@ export function DashboardPage(): JSX.Element {
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-semibold text-content">
-              {calendarMonths === 3 ? '90 ngày gần đây' : 'Lịch học cả năm'}
+              {calendarMonths === 3 ? t('90 ngày gần đây') : t('Lịch học cả năm')}
             </h2>
             <p className="text-sm text-content-muted">
-              Bấm vào một ngày để xem hôm đó bạn đã học gì. Ô càng đậm là học càng nhiều.
+              {t('Bấm vào một ngày để xem hôm đó bạn đã học gì. Ô càng đậm là học càng nhiều.')}
             </p>
           </div>
 
-          <div className="flex gap-0.5 rounded-lg bg-sunken p-0.5" role="tablist" aria-label="Phạm vi lịch">
+          <div className="flex gap-0.5 rounded-lg bg-sunken p-0.5" role="tablist" aria-label={t('Phạm vi lịch')}>
             {CALENDAR_RANGES.map((option) => (
               <button
                 key={option.months}
@@ -122,14 +124,14 @@ export function DashboardPage(): JSX.Element {
                     : 'text-content-muted hover:text-content-soft'
                 }`}
               >
-                {option.label}
+                {t(option.label)}
               </button>
             ))}
           </div>
         </div>
 
         {calendar.isLoading && <Skeleton className="h-[150px] w-full" />}
-        {calendar.isError && <p className="py-6 text-center text-sm text-danger">Không tải được lịch học</p>}
+        {calendar.isError && <p className="py-6 text-center text-sm text-danger">{t('Không tải được lịch học')}</p>}
         {calendar.data && <ActivityCalendarChart data={calendar.data} />}
       </Card>
 
@@ -141,11 +143,11 @@ export function DashboardPage(): JSX.Element {
                 to="/goals"
                 className="inline-flex items-center gap-0.5 text-xs font-medium text-on-page-link hover:underline"
               >
-                Quản lý <ChevronRight className="h-3 w-3" />
+                {t('Quản lý')}<ChevronRight className="h-3 w-3" />
               </Link>
             }
           >
-            Tiến độ mục tiêu
+            {t('Tiến độ mục tiêu')}
           </SectionTitle>
 
           <Card>
@@ -191,13 +193,14 @@ function QuickReviewCard({
   dueCount?: number;
   mistakeCount?: number;
 }): JSX.Element {
+  const t = useT();
   return (
     <Card>
       <div className="mb-3 flex items-center gap-2">
         <Brain className="h-4 w-4 shrink-0 text-brand-strong" aria-hidden />
         <div>
-          <h2 className="font-semibold leading-tight text-content">Ôn nhanh</h2>
-          <p className="text-sm text-content-muted">Làm tiếp từ chỗ đang dở</p>
+          <h2 className="font-semibold leading-tight text-content">{t('Ôn nhanh')}</h2>
+          <p className="text-sm text-content-muted">{t('Làm tiếp từ chỗ đang dở')}</p>
         </div>
       </div>
 
@@ -205,15 +208,15 @@ function QuickReviewCard({
         <QuickReviewTile
           to="/learn"
           icon={BookOpen}
-          title="HỌC BÀI"
-          note={mistakeCount ? `${mistakeCount} từ cần ôn lại` : 'Đã xong phần cần ôn'}
+          title={t('HỌC BÀI')}
+          note={mistakeCount ? t('{n} từ cần ôn lại', { n: mistakeCount }) : t('Đã xong phần cần ôn')}
           tone="brand"
         />
         <QuickReviewTile
           to="/flashcards"
           icon={Layers}
-          title="ÔN FLASHCARD"
-          note={dueCount ? `${dueCount} từ tới hạn hôm nay` : 'Đã ôn hết hôm nay'}
+          title={t('ÔN FLASHCARD')}
+          note={dueCount ? t('{n} từ tới hạn hôm nay', { n: dueCount }) : t('Đã ôn hết hôm nay')}
           tone="accent"
         />
       </div>

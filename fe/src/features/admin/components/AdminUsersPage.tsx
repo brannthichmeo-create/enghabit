@@ -16,6 +16,7 @@ import {
 } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
 import { useCurrentUser } from '../../auth/auth.store';
+import { useLocale, useT, type TranslateFn } from '../../../shared/i18n/language';
 import {
   useAdminUser,
   useAdminUsers,
@@ -32,6 +33,7 @@ import {
  * dữ liệu còn nguyên) → xoá (mất hết). Nút xoá vì vậy tách riêng và luôn hỏi lại.
  */
 export function AdminUsersPage(): JSX.Element {
+  const t = useT();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [role, setRole] = useState<'' | UserRole>('');
@@ -60,8 +62,8 @@ export function AdminUsersPage(): JSX.Element {
   return (
     <div>
       <PageHeader
-        title="Quản lý tài khoản"
-        description="Tìm kiếm, phân quyền, khoá và xoá tài khoản người dùng"
+        title={t('Quản lý tài khoản')}
+        description={t('Tìm kiếm, phân quyền, khoá và xoá tài khoản người dùng')}
       />
 
       <Card className="mb-4">
@@ -74,8 +76,8 @@ export function AdminUsersPage(): JSX.Element {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm theo tên hoặc email"
-              aria-label="Tìm người dùng"
+              placeholder={t('Tìm theo tên hoặc email')}
+              aria-label={t('Tìm người dùng')}
               className="pl-9"
             />
           </label>
@@ -86,11 +88,11 @@ export function AdminUsersPage(): JSX.Element {
               setRole(e.target.value as '' | UserRole);
               setPage(1);
             }}
-            aria-label="Lọc theo vai trò"
+            aria-label={t('Lọc theo vai trò')}
           >
-            <option value="">Mọi vai trò</option>
-            <option value={UserRole.USER}>Người học</option>
-            <option value={UserRole.ADMIN}>Quản trị viên</option>
+            <option value="">{t('Mọi vai trò')}</option>
+            <option value={UserRole.USER}>{t('Người học')}</option>
+            <option value={UserRole.ADMIN}>{t('Quản trị viên')}</option>
           </Select>
 
           <Select
@@ -99,22 +101,22 @@ export function AdminUsersPage(): JSX.Element {
               setStatus(e.target.value as '' | UserStatus);
               setPage(1);
             }}
-            aria-label="Lọc theo trạng thái"
+            aria-label={t('Lọc theo trạng thái')}
           >
-            <option value="">Mọi trạng thái</option>
-            <option value={UserStatus.ACTIVE}>Đang hoạt động</option>
-            <option value={UserStatus.LOCKED}>Đã khoá</option>
+            <option value="">{t('Mọi trạng thái')}</option>
+            <option value={UserStatus.ACTIVE}>{t('Đang hoạt động')}</option>
+            <option value={UserStatus.LOCKED}>{t('Đã khoá')}</option>
           </Select>
 
           <Select
             value={sort}
             onChange={(e) => setSort(e.target.value as typeof sort)}
-            aria-label="Sắp xếp"
+            aria-label={t('Sắp xếp')}
           >
-            <option value="newest">Mới đăng ký nhất</option>
-            <option value="oldest">Cũ nhất</option>
-            <option value="lastLogin">Đăng nhập gần đây</option>
-            <option value="mostActive">Học nhiều nhất</option>
+            <option value="newest">{t('Mới đăng ký nhất')}</option>
+            <option value="oldest">{t('Cũ nhất')}</option>
+            <option value="lastLogin">{t('Đăng nhập gần đây')}</option>
+            <option value="mostActive">{t('Học nhiều nhất')}</option>
           </Select>
         </div>
       </Card>
@@ -125,8 +127,8 @@ export function AdminUsersPage(): JSX.Element {
       {users.data && users.data.items.length === 0 && (
         <EmptyState
           icon={Search}
-          title="Không tìm thấy tài khoản nào"
-          description="Thử bỏ bớt bộ lọc hoặc đổi từ khoá tìm kiếm."
+          title={t('Không tìm thấy tài khoản nào')}
+          description={t('Thử bỏ bớt bộ lọc hoặc đổi từ khoá tìm kiếm.')}
         />
       )}
 
@@ -136,11 +138,11 @@ export function AdminUsersPage(): JSX.Element {
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-content-muted">
-                  <th className="pb-2 font-medium">Người dùng</th>
-                  <th className="pb-2 font-medium">Vai trò</th>
-                  <th className="pb-2 font-medium">Trạng thái</th>
-                  <th className="pb-2 pr-6 text-right font-medium">Hoạt động</th>
-                  <th className="pb-2 font-medium">Đăng nhập gần nhất</th>
+                  <th className="pb-2 font-medium">{t('Người dùng')}</th>
+                  <th className="pb-2 font-medium">{t('Vai trò')}</th>
+                  <th className="pb-2 font-medium">{t('Trạng thái')}</th>
+                  <th className="pb-2 pr-6 text-right font-medium">{t('Hoạt động')}</th>
+                  <th className="pb-2 font-medium">{t('Đăng nhập gần nhất')}</th>
                   <th className="pb-2" />
                 </tr>
               </thead>
@@ -167,6 +169,8 @@ export function AdminUsersPage(): JSX.Element {
 }
 
 function UserRowView({ user, onOpen }: { user: AdminUserRow; onOpen: () => void }): JSX.Element {
+  const locale = useLocale();
+  const t = useT();
   const currentUser = useCurrentUser();
   const isSelf = user.id === currentUser?.id;
 
@@ -176,14 +180,14 @@ function UserRowView({ user, onOpen }: { user: AdminUserRow; onOpen: () => void 
         <button onClick={onOpen} className="text-left hover:underline">
           <span className="block font-medium text-content">
             {user.name}
-            {isSelf && <span className="ml-1.5 text-xs font-normal text-content-muted">(bạn)</span>}
+            {isSelf && <span className="ml-1.5 text-xs font-normal text-content-muted">{t('(bạn)')}</span>}
           </span>
           <span className="block text-xs text-content-muted">{user.email}</span>
         </button>
       </td>
       <td className="py-2.5">
         <Badge tone={user.role === UserRole.ADMIN ? 'brand' : 'slate'}>
-          {user.role === UserRole.ADMIN ? 'Quản trị viên' : 'Người học'}
+          {user.role === UserRole.ADMIN ? t('Quản trị viên') : t('Người học')}
         </Badge>
       </td>
       <td className="py-2.5">
@@ -192,12 +196,12 @@ function UserRowView({ user, onOpen }: { user: AdminUserRow; onOpen: () => void 
         </Badge>
       </td>
       <td className="py-2.5 pr-6 text-right tabular-nums text-content-soft">
-        {user.activityCount.toLocaleString('vi-VN')}
+        {user.activityCount.toLocaleString(locale)}
       </td>
-      <td className="whitespace-nowrap py-2.5 text-content-muted">{formatDateTime(user.lastLoginAt)}</td>
+      <td className="whitespace-nowrap py-2.5 text-content-muted">{formatDateTime(user.lastLoginAt, t, locale)}</td>
       <td className="py-2.5 text-right">
         <Button variant="ghost" size="sm" icon={UserCog} onClick={onOpen}>
-          Quản lý
+          {t('Quản lý')}
         </Button>
       </td>
     </tr>
@@ -209,6 +213,8 @@ function UserRowView({ user, onOpen }: { user: AdminUserRow; onOpen: () => void 
  * trên từng dòng bảng — bấm nhầm nút "Xoá" ở dòng bên cạnh là lỗi rất dễ xảy ra.
  */
 function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => void }): JSX.Element {
+  const locale = useLocale();
+  const t = useT();
   const detail = useAdminUser(userId);
   const currentUser = useCurrentUser();
   const toast = useToast();
@@ -239,17 +245,17 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
       <aside
         className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto border-l border-line bg-surface p-5 shadow-xl"
         role="dialog"
-        aria-label="Chi tiết tài khoản"
+        aria-label={t('Chi tiết tài khoản')}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold text-content">{user?.name ?? 'Đang tải…'}</h2>
+            <h2 className="truncate text-lg font-semibold text-content">{user?.name ?? t('Đang tải…')}</h2>
             <p className="truncate text-sm text-content-muted">{user?.email}</p>
           </div>
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-content-muted hover:bg-sunken hover:text-content"
-            aria-label="Đóng"
+            aria-label={t('Đóng')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -261,21 +267,21 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
         {user && (
           <>
             <dl className="mb-5 grid grid-cols-2 gap-3 text-sm">
-              <Stat label="Tổng hoạt động" value={user.activityCount.toLocaleString('vi-VN')} />
-              <Stat label="Chuỗi hiện tại" value={`${user.currentStreak} ngày`} />
-              <Stat label="Chuỗi dài nhất" value={`${user.longestStreak} ngày`} />
-              <Stat label="Từ đã học" value={user.vocabLearned.toLocaleString('vi-VN')} />
-              <Stat label="Thói quen" value={String(user.habitCount)} />
-              <Stat label="Mục tiêu" value={String(user.goalCount)} />
-              <Stat label="Lượt làm quiz" value={String(user.quizAttempts)} />
-              <Stat label="Phiên đang mở" value={String(user.activeSessions)} />
-              <Stat label="Ngày tạo" value={formatDateTime(user.createdAt)} />
-              <Stat label="Học gần nhất" value={formatLocalDate(user.lastActivityDate)} />
-              <Stat label="Múi giờ" value={user.timezone} />
-              <Stat label="Đăng nhập gần nhất" value={formatDateTime(user.lastLoginAt)} />
+              <Stat label={t('Tổng hoạt động')} value={user.activityCount.toLocaleString(locale)} />
+              <Stat label={t('Chuỗi hiện tại')} value={t('{n} ngày', { n: user.currentStreak })} />
+              <Stat label={t('Chuỗi dài nhất')} value={t('{n} ngày', { n: user.longestStreak })} />
+              <Stat label={t('Từ đã học')} value={user.vocabLearned.toLocaleString(locale)} />
+              <Stat label={t('Thói quen')} value={String(user.habitCount)} />
+              <Stat label={t('Mục tiêu')} value={String(user.goalCount)} />
+              <Stat label={t('Lượt làm quiz')} value={String(user.quizAttempts)} />
+              <Stat label={t('Phiên đang mở')} value={String(user.activeSessions)} />
+              <Stat label={t('Ngày tạo')} value={formatDateTime(user.createdAt, t, locale)} />
+              <Stat label={t('Học gần nhất')} value={formatLocalDate(user.lastActivityDate, t, locale)} />
+              <Stat label={t('Múi giờ')} value={user.timezone} />
+              <Stat label={t('Đăng nhập gần nhất')} value={formatDateTime(user.lastLoginAt, t, locale)} />
             </dl>
 
-            <Section title="Vai trò">
+            <Section title={t('Vai trò')}>
               <div className="flex gap-2">
                 <Button
                   variant={user.role === UserRole.ADMIN ? 'primary' : 'secondary'}
@@ -286,11 +292,11 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
                   onClick={() =>
                     updateRole.mutate(
                       { id: user.id, role: UserRole.ADMIN },
-                      { onSuccess: () => toast.success('Đã cấp quyền quản trị') },
+                      { onSuccess: () => toast.success(t('Đã cấp quyền quản trị')) },
                     )
                   }
                 >
-                  Quản trị viên
+                  {t('Quản trị viên')}
                 </Button>
                 <Button
                   variant={user.role === UserRole.USER ? 'primary' : 'secondary'}
@@ -300,16 +306,16 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
                   onClick={() =>
                     updateRole.mutate(
                       { id: user.id, role: UserRole.USER },
-                      { onSuccess: () => toast.success('Đã chuyển thành người học') },
+                      { onSuccess: () => toast.success(t('Đã chuyển thành người học')) },
                     )
                   }
                 >
-                  Người học
+                  {t('Người học')}
                 </Button>
               </div>
             </Section>
 
-            <Section title="Trạng thái tài khoản">
+            <Section title={t('Trạng thái tài khoản')}>
               {user.status === UserStatus.ACTIVE ? (
                 <Button
                   variant="secondary"
@@ -320,11 +326,11 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
                   onClick={() =>
                     updateStatus.mutate(
                       { id: user.id, status: UserStatus.LOCKED },
-                      { onSuccess: () => toast.success('Đã khoá tài khoản và thu hồi phiên đăng nhập') },
+                      { onSuccess: () => toast.success(t('Đã khoá tài khoản và thu hồi phiên đăng nhập')) },
                     )
                   }
                 >
-                  Khoá tài khoản
+                  {t('Khoá tài khoản')}
                 </Button>
               ) : (
                 <Button
@@ -335,24 +341,24 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
                   onClick={() =>
                     updateStatus.mutate(
                       { id: user.id, status: UserStatus.ACTIVE },
-                      { onSuccess: () => toast.success('Đã mở khoá tài khoản') },
+                      { onSuccess: () => toast.success(t('Đã mở khoá tài khoản')) },
                     )
                   }
                 >
-                  Mở khoá
+                  {t('Mở khoá')}
                 </Button>
               )}
               <p className="mt-1.5 text-xs text-content-muted">
-                Khoá không xoá dữ liệu học tập — mở khoá là người dùng vào lại được như cũ.
+                {t('Khoá không xoá dữ liệu học tập — mở khoá là người dùng vào lại được như cũ.')}
               </p>
             </Section>
 
-            <Section title="Đặt lại mật khẩu">
+            <Section title={t('Đặt lại mật khẩu')}>
               <div className="flex gap-2">
                 <Input
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Mật khẩu tạm"
+                  placeholder={t('Mật khẩu tạm')}
                   autoComplete="new-password"
                 />
                 <Button
@@ -366,30 +372,30 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
                       {
                         onSuccess: () => {
                           setNewPassword('');
-                          toast.success('Đã đặt lại mật khẩu, mọi phiên cũ bị thu hồi');
+                          toast.success(t('Đã đặt lại mật khẩu, mọi phiên cũ bị thu hồi'));
                         },
                       },
                     )
                   }
                 >
-                  Đặt lại
+                  {t('Đặt lại')}
                 </Button>
               </div>
               <p className="mt-1.5 text-xs text-content-muted">
-                Ít nhất 8 ký tự, có cả chữ và số. Nhớ báo mật khẩu tạm cho người dùng qua kênh riêng.
+                {t('Ít nhất 8 ký tự, có cả chữ và số. Nhớ báo mật khẩu tạm cho người dùng qua kênh riêng.')}
               </p>
             </Section>
 
-            <Section title="Đăng nhập gần đây">
+            <Section title={t('Đăng nhập gần đây')}>
               {user.recentLogins.length === 0 ? (
-                <p className="text-xs text-content-muted">Chưa có lượt đăng nhập nào được ghi lại.</p>
+                <p className="text-xs text-content-muted">{t('Chưa có lượt đăng nhập nào được ghi lại.')}</p>
               ) : (
                 <ul className="space-y-1.5 text-xs">
                   {user.recentLogins.map((event) => (
                     <li key={event.id} className="flex items-center justify-between gap-2">
-                      <span className="text-content-soft">{formatDateTime(event.createdAt)}</span>
+                      <span className="text-content-soft">{formatDateTime(event.createdAt, t, locale)}</span>
                       <Badge tone={event.success ? 'green' : 'amber'}>
-                        {event.success ? 'Thành công' : 'Thất bại'}
+                        {event.success ? t('Thành công') : t('Thất bại')}
                       </Badge>
                     </li>
                   ))}
@@ -397,7 +403,7 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
               )}
             </Section>
 
-            <Section title="Vùng nguy hiểm">
+            <Section title={t('Vùng nguy hiểm')}>
               <Button
                 variant="danger"
                 size="sm"
@@ -407,19 +413,19 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
                 onClick={() => {
                   if (
                     confirm(
-                      `Xoá vĩnh viễn ${user.email}?\n\nToàn bộ ${user.activityCount} hoạt động, chuỗi ngày và tiến độ học sẽ mất và không khôi phục được. Nếu chỉ muốn chặn đăng nhập, hãy dùng "Khoá tài khoản".`,
+                      t('Xoá vĩnh viễn {email}?\n\nToàn bộ {n} hoạt động, chuỗi ngày và tiến độ học sẽ mất và không khôi phục được. Nếu chỉ muốn chặn đăng nhập, hãy dùng "Khoá tài khoản".', { email: user.email, n: user.activityCount }),
                     )
                   ) {
                     deleteUser.mutate(user.id, {
                       onSuccess: () => {
-                        toast.success('Đã xoá tài khoản');
+                        toast.success(t('Đã xoá tài khoản'));
                         onClose();
                       },
                     });
                   }
                 }}
               >
-                Xoá tài khoản
+                {t('Xoá tài khoản')}
               </Button>
             </Section>
           </>
@@ -458,16 +464,22 @@ export function Pagination({
   pageSize: number;
   onChange: (page: number) => void;
 }): JSX.Element | null {
+  const t = useT();
+  const locale = useLocale();
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
 
   return (
     <div className="mt-4 flex items-center justify-center gap-3">
       <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => onChange(page - 1)}>
-        Trước
+        {t('Trước')}
       </Button>
       <span className="text-sm tabular-nums text-on-page-muted">
-        Trang {page} / {totalPages} · {total.toLocaleString('vi-VN')} bản ghi
+        {t('Trang {page} / {totalPages} · {total} bản ghi', {
+          page,
+          totalPages,
+          total: total.toLocaleString(locale),
+        })}
       </span>
       <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
         Sau
@@ -478,15 +490,15 @@ export function Pagination({
 
 /** LocalDate `YYYY-MM-DD` sang dạng ngày Việt Nam. Không kèm giờ vì bản thân
  * localDate chỉ là nhãn ngày, không phải một mốc thời gian. */
-function formatLocalDate(value: string | null): string {
+function formatLocalDate(value: string | null, t: TranslateFn, locale: string): string {
   if (!value) return '—';
   const [year, month, day] = value.split('-');
   return `${day}/${month}/${year}`;
 }
 
-export function formatDateTime(value: string | null): string {
-  if (!value) return 'Chưa bao giờ';
-  return new Date(value).toLocaleString('vi-VN', {
+export function formatDateTime(value: string | null, t: TranslateFn, locale: string): string {
+  if (!value) return t('Chưa bao giờ');
+  return new Date(value).toLocaleString(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

@@ -2,6 +2,7 @@ import { Compass, Home, RotateCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
+import { useT } from '../i18n/language';
 import { Button, Card } from './ui';
 import { useBreadcrumbTail } from './Breadcrumb';
 
@@ -16,12 +17,13 @@ import { useBreadcrumbTail } from './Breadcrumb';
  * mình bấm hụt, và lỗi gõ sai đường dẫn trong code cũng lặng lẽ trôi qua.
  */
 export function NotFoundPage(): JSX.Element {
+  const t = useT();
   const location = useLocation();
   const navigate = useNavigate();
   const user = useCurrentUser();
 
   // Route này không có đường dẫn cố định nên breadcrumb phải tự nối cấp cuối.
-  useBreadcrumbTail('Không tìm thấy trang');
+  useBreadcrumbTail(t('Không tìm thấy trang'));
 
   const home = user?.role === UserRole.ADMIN ? '/admin' : '/';
 
@@ -32,12 +34,15 @@ export function NotFoundPage(): JSX.Element {
       </div>
 
       <p className="text-4xl font-bold tabular-nums tracking-tight text-content">404</p>
-      <h1 className="mt-1 text-lg font-semibold text-content">Không tìm thấy trang này</h1>
+      <h1 className="mt-1 text-lg font-semibold text-content">{t('Không tìm thấy trang này')}</h1>
 
       <p className="mt-2 text-sm text-content-muted">
-        Đường dẫn <span className="break-all font-medium text-content-soft">{location.pathname}</span>{' '}
-        không tồn tại, hoặc đã được đổi sang chỗ khác.
+        {t('Đường dẫn dưới đây không tồn tại, hoặc đã được đổi sang chỗ khác.')}
       </p>
+
+      {/* Đường dẫn tách khỏi câu văn: nhét biến vào giữa câu thì mỗi ngôn ngữ một
+          trật tự từ, dịch xong sẽ vỡ. */}
+      <p className="mt-1 break-all text-sm font-medium text-content-soft">{location.pathname}</p>
 
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
         {/*
@@ -46,13 +51,13 @@ export function NotFoundPage(): JSX.Element {
           bảng route mới, còn chuyển trang trong app vẫn dùng bản cũ và vẫn 404.
         */}
         <Button icon={RotateCw} onClick={() => window.location.reload()}>
-          Làm mới
+          {t('Làm mới')}
         </Button>
 
         {/* Điều hướng bằng hook thay vì bọc Button trong Link: <button> nằm trong <a>
             là HTML không hợp lệ và trình đọc màn hình đọc thành hai phần tử bấm được. */}
         <Button variant="secondary" icon={Home} onClick={() => navigate(home)}>
-          Về trang chủ
+          {t('Về trang chủ')}
         </Button>
       </div>
     </Card>

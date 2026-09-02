@@ -5,6 +5,7 @@ import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, ProgressBar, Skeleton } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
 import { useBuyStreakFreeze, useCheckIn, useClaimMission, useRewards } from '../rewards.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Hàng phần thưởng trong thẻ tổng hợp: điểm danh, nhiệm vụ ngày, vật phẩm giữ chuỗi.
@@ -65,6 +66,7 @@ export function RewardsBar(): JSX.Element | null {
 }
 
 function CheckInButton({ claimed, reward }: { claimed: boolean; reward: number }): JSX.Element {
+  const t = useT();
   const checkIn = useCheckIn();
   const toast = useToast();
 
@@ -72,7 +74,7 @@ function CheckInButton({ claimed, reward }: { claimed: boolean; reward: number }
     return (
       <span className="flex items-center gap-2 rounded-xl border-2 border-success/40 bg-success-soft px-4 py-3 text-sm font-semibold text-success">
         <Check className="h-4 w-4 shrink-0" aria-hidden />
-        ĐÃ ĐIỂM DANH HÔM NAY
+        {t('ĐÃ ĐIỂM DANH HÔM NAY')}
       </span>
     );
   }
@@ -81,7 +83,7 @@ function CheckInButton({ claimed, reward }: { claimed: boolean; reward: number }
     <button
       onClick={() =>
         checkIn.mutate(undefined, {
-          onSuccess: (result) => toast.success(`Đã nhận ${result.delta} xu`),
+          onSuccess: (result) => toast.success(t('Đã nhận {n} xu', { n: result.delta })),
           onError: (error) => toast.error(getErrorMessage(error)),
         })
       }
@@ -89,7 +91,7 @@ function CheckInButton({ claimed, reward }: { claimed: boolean; reward: number }
       className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-strong disabled:opacity-60"
     >
       <Coins className="h-4 w-4 shrink-0" aria-hidden />
-      ĐIỂM DANH · NHẬN {reward} XU
+      {t('ĐIỂM DANH · NHẬN {n} XU', { n: reward })}
     </button>
   );
 }
@@ -107,23 +109,24 @@ function FreezeControl({
   freeze: RewardsSummary['freeze'];
   coins: number;
 }): JSX.Element {
+  const t = useT();
   const buy = useBuyStreakFreeze();
   const toast = useToast();
 
   const isFull = freeze.available >= freeze.max;
   const isBroke = coins < freeze.price;
   const reason = isFull
-    ? `Kho tối đa ${freeze.max} vật phẩm`
+    ? t('Kho tối đa {n} vật phẩm', { n: freeze.max })
     : isBroke
-      ? `Cần ${freeze.price} xu, bạn có ${coins}`
-      : `Mua 1 vật phẩm với ${freeze.price} xu`;
+      ? t('Cần {price} xu, bạn có {coins}', { price: freeze.price, coins })
+      : t('Mua 1 vật phẩm với {price} xu', { price: freeze.price });
 
   return (
     <div className="flex items-center gap-3 rounded-xl border-2 border-line px-4 py-2">
       <span className="flex items-center gap-2">
         <Snowflake className="h-4 w-4 shrink-0 text-brand-strong" aria-hidden />
         <span>
-          <span className="block text-[11px] leading-tight text-content-muted">Giữ chuỗi</span>
+          <span className="block text-[11px] leading-tight text-content-muted">{t('Giữ chuỗi')}</span>
           <span className="block text-sm font-bold tabular-nums leading-tight text-content">
             {freeze.available}
           </span>
@@ -139,7 +142,7 @@ function FreezeControl({
         loading={buy.isPending}
         onClick={() =>
           buy.mutate(undefined, {
-            onSuccess: () => toast.success('Đã mua 1 vật phẩm giữ chuỗi'),
+            onSuccess: () => toast.success(t('Đã mua 1 vật phẩm giữ chuỗi')),
             onError: (error) => toast.error(getErrorMessage(error)),
           })
         }
@@ -151,6 +154,7 @@ function FreezeControl({
 }
 
 function MissionRow({ mission }: { mission: MissionState }): JSX.Element {
+  const t = useT();
   const claim = useClaimMission();
   const toast = useToast();
 
@@ -174,7 +178,7 @@ function MissionRow({ mission }: { mission: MissionState }): JSX.Element {
       {mission.isClaimed ? (
         <span className="flex w-[86px] shrink-0 items-center justify-center gap-1 text-xs font-medium text-success">
           <Check className="h-3.5 w-3.5" aria-hidden />
-          Đã nhận
+          {t('Đã nhận')}
         </span>
       ) : (
         <span className="w-[86px] shrink-0">
@@ -183,18 +187,22 @@ function MissionRow({ mission }: { mission: MissionState }): JSX.Element {
             className="w-full"
             disabled={!mission.isCompleted}
             loading={claim.isPending && claim.variables?.missionId === mission.id}
-            title={mission.isCompleted ? `Nhận ${mission.reward} xu` : 'Hoàn thành nhiệm vụ để nhận thưởng'}
+            title={
+              mission.isCompleted
+                ? t('Nhận {n} xu', { n: mission.reward })
+                : t('Hoàn thành nhiệm vụ để nhận thưởng')
+            }
             onClick={() =>
               claim.mutate(
                 { missionId: mission.id },
                 {
-                  onSuccess: (result) => toast.success(`Đã nhận ${result.delta} xu`),
+                  onSuccess: (result) => toast.success(t('Đã nhận {n} xu', { n: result.delta })),
                   onError: (error) => toast.error(getErrorMessage(error)),
                 },
               )
             }
           >
-            +{mission.reward} xu
+            {t('+{n} xu', { n: mission.reward })}
           </Button>
         </span>
       )}

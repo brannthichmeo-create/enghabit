@@ -5,6 +5,7 @@ import { ReviewQuality } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, Card, EmptyState, ErrorMessage, PageHeader, Skeleton } from '../../../shared/components/ui';
 import { useDueCards, useSubmitReview } from '../flashcard.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Phiên ôn flashcard.
@@ -22,6 +23,7 @@ const RATINGS = [
 ];
 
 export function FlashcardPage(): JSX.Element {
+  const t = useT();
   const dueCards = useDueCards();
   const submitReview = useSubmitReview();
   const [index, setIndex] = useState(0);
@@ -49,7 +51,7 @@ export function FlashcardPage(): JSX.Element {
   if (dueCards.isLoading) {
     return (
       <div>
-        <PageHeader title="Ôn tập flashcard" />
+        <PageHeader title={t('Ôn tập flashcard')} />
         <Skeleton className="h-[260px] w-full" />
       </div>
     );
@@ -60,15 +62,15 @@ export function FlashcardPage(): JSX.Element {
   if (cards.length === 0) {
     return (
       <div>
-        <PageHeader title="Ôn tập flashcard" />
+        <PageHeader title={t('Ôn tập flashcard')} />
         <EmptyState
           icon={CheckCircle2}
-          title="Bạn đã ôn hết từ cho hôm nay"
-          description="Quay lại vào ngày mai, hoặc thêm từ mới vào danh sách học để ôn tiếp."
+          title={t('Bạn đã ôn hết từ cho hôm nay')}
+          description={t('Quay lại vào ngày mai, hoặc thêm từ mới vào danh sách học để ôn tiếp.')}
           action={
             <Link to="/vocabulary">
               <Button icon={BookOpen} variant="secondary">
-                Thêm từ mới
+                {t('Thêm từ mới')}
               </Button>
             </Link>
           }
@@ -81,13 +83,13 @@ export function FlashcardPage(): JSX.Element {
   if (!card) {
     return (
       <div>
-        <PageHeader title="Ôn tập flashcard" />
+        <PageHeader title={t('Ôn tập flashcard')} />
         <Card className="py-10 text-center">
           {/* Linh vật xuất hiện ở đúng khoảnh khắc đáng ăn mừng — hợp hơn icon chung chung */}
           <img src="/logo.png" alt="" aria-hidden className="mx-auto mb-2 h-24 w-24 object-contain" />
-          <p className="text-lg font-semibold text-content">Hoàn thành phiên ôn tập</p>
+          <p className="text-lg font-semibold text-content">{t('Hoàn thành phiên ôn tập')}</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-content-muted">
-            Bạn đã ôn {reviewedCount} từ. Hoạt động đã được ghi nhận vào chuỗi ngày học.
+            {t('Bạn đã ôn {n} từ. Hoạt động đã được ghi nhận vào chuỗi ngày học.', { n: reviewedCount })}
           </p>
           <div className="mt-5 flex justify-center gap-2">
             <Button
@@ -98,10 +100,10 @@ export function FlashcardPage(): JSX.Element {
                 void dueCards.refetch();
               }}
             >
-              Tải phiên mới
+              {t('Tải phiên mới')}
             </Button>
             <Link to="/">
-              <Button variant="secondary">Xem thống kê</Button>
+              <Button variant="secondary">{t('Xem thống kê')}</Button>
             </Link>
           </div>
         </Card>
@@ -113,7 +115,7 @@ export function FlashcardPage(): JSX.Element {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Ôn tập flashcard" description={`Thẻ ${index + 1} / ${cards.length}`} />
+      <PageHeader title={t('Ôn tập flashcard')} description={t('Thẻ {current} / {total}', { current: index + 1, total: cards.length })} />
 
       {/* Thanh tiến độ phiên — user biết còn bao nhiêu, giảm cảm giác ôn mãi không hết */}
       <div className="mb-4 h-1 overflow-hidden rounded-full bg-line">
@@ -139,14 +141,14 @@ export function FlashcardPage(): JSX.Element {
           </div>
         ) : (
           <Button variant="secondary" className="mt-8" onClick={() => setRevealed(true)}>
-            Hiện nghĩa
+            {t('Hiện nghĩa')}
           </Button>
         )}
       </Card>
 
       {revealed && (
         <div className="animate-slide-up">
-          <p className="mb-2.5 text-center text-sm text-content-muted">Bạn nhớ từ này ở mức nào?</p>
+          <p className="mb-2.5 text-center text-sm text-content-muted">{t('Bạn nhớ từ này ở mức nào?')}</p>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {RATINGS.map((rating) => (
@@ -156,14 +158,14 @@ export function FlashcardPage(): JSX.Element {
                 disabled={submitReview.isPending}
                 className={`flex flex-col items-center rounded-xl px-2 py-3 text-on-fill transition-colors disabled:opacity-50 ${rating.className}`}
               >
-                <span className="text-sm font-medium">{rating.label}</span>
-                <span className="mt-0.5 text-[10px] text-on-fill/75">{rating.hint}</span>
+                <span className="text-sm font-medium">{t(rating.label)}</span>
+                <span className="mt-0.5 text-[10px] text-on-fill/75">{t(rating.hint)}</span>
               </button>
             ))}
           </div>
 
           <p className="mt-3 text-center text-xs text-content-muted">
-            Lựa chọn của bạn quyết định khi nào từ này xuất hiện lại (thuật toán SM-2)
+            {t('Lựa chọn của bạn quyết định khi nào từ này xuất hiện lại (thuật toán SM-2)')}
           </p>
         </div>
       )}

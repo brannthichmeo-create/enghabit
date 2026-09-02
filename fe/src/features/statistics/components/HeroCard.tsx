@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { LevelSummary, StreakSummary } from '@enghabit/shared';
 import { Skeleton } from '../../../shared/components/ui';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Thẻ tổng hợp đầu trang: chuỗi ngày, cấp độ, vài con số theo dõi và việc cần làm hôm nay.
@@ -40,6 +41,7 @@ export function HeroCard({
   /** Hàng phần thưởng (điểm danh, nhiệm vụ, streak freeze) — chèn phía trên hai nút chính. */
   children?: ReactNode;
 }): JSX.Element {
+  const t = useT();
   if (loading || !streak || !level) return <Skeleton className="h-[188px] w-full" />;
 
   const alive = streak.isAlive;
@@ -61,13 +63,13 @@ export function HeroCard({
           </div>
 
           <div className="min-w-0">
-            <p className="text-sm text-content-muted">Chuỗi hiện tại</p>
+            <p className="text-sm text-content-muted">{t('Chuỗi hiện tại')}</p>
             <p className="text-3xl font-bold tabular-nums text-content">
               {streak.currentStreak}
-              <span className="ml-1.5 text-base font-medium text-content-muted">ngày</span>
+              <span className="ml-1.5 text-base font-medium text-content-muted">{t('ngày')}</span>
             </p>
             <p className="mt-0.5 text-xs text-content-muted">
-              {alive ? 'Học hôm nay để giữ chuỗi' : 'Học hôm nay để bắt đầu lại'}
+              {alive ? t('Học hôm nay để giữ chuỗi') : t('Học hôm nay để bắt đầu lại')}
             </p>
           </div>
         </div>
@@ -82,7 +84,7 @@ export function HeroCard({
             <div className="flex items-baseline justify-between gap-2">
               <p className="flex items-center gap-1.5 text-sm text-content-muted">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                Lên cấp {level.level + 1}
+                {t('Lên cấp {n}', { n: level.level + 1 })}
               </p>
               <span className="text-sm font-semibold tabular-nums text-content">{level.xp} XP</span>
             </div>
@@ -95,7 +97,7 @@ export function HeroCard({
             </div>
 
             <p className="mt-1 text-xs text-content-muted">
-              Còn {level.xpToNextLevel} XP nữa
+              {t('Còn {n} XP nữa', { n: level.xpToNextLevel })}
             </p>
           </div>
         </div>
@@ -105,17 +107,17 @@ export function HeroCard({
       <div className="grid grid-cols-3 divide-x divide-line border-t border-line">
         <MiniStat
           icon={CalendarCheck}
-          label="Ngày có học"
+          label={t('Ngày có học')}
           hint={rangeLabel}
           value={activeDayRate === undefined ? null : `${activeDayRate}%`}
         />
         <MiniStat
           icon={Layers}
-          label="Tổng hoạt động"
+          label={t('Tổng hoạt động')}
           hint={rangeLabel}
           value={totalActivities === undefined || totalActivities === null ? null : `${totalActivities}`}
         />
-        <MiniStat icon={Target} label="Kỷ lục chuỗi" hint="Từ trước tới nay" value={`${streak.longestStreak} ngày`} />
+        <MiniStat icon={Target} label={t('Kỷ lục chuỗi')} hint={t('Từ trước tới nay')} value={t('{n} ngày', { n: streak.longestStreak })} />
       </div>
 
       {/* Hàng hành động — đặt trên nền chìm để tách khỏi phần số liệu */}
@@ -128,7 +130,7 @@ export function HeroCard({
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-strong"
           >
             <Target className="h-4 w-4" aria-hidden />
-            HỌC NGAY HÔM NAY
+            {t('HỌC NGAY HÔM NAY')}
           </Link>
 
           <Link
@@ -136,7 +138,7 @@ export function HeroCard({
             className="flex items-center justify-center gap-2 rounded-xl border-2 border-accent/50 px-4 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/10"
           >
             <Snowflake className="h-4 w-4" aria-hidden />
-            ÔN TẬP
+            {t('ÔN TẬP')}
             {dueCount !== undefined && dueCount > 0 && (
               <span className="rounded-full bg-accent px-1.5 py-0.5 text-[11px] leading-none text-on-brand">
                 {dueCount}

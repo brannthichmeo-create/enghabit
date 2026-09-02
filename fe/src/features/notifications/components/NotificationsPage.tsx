@@ -19,10 +19,13 @@ import {
 } from '../notification.hooks';
 import { displayFor, timeAgo } from './notification-display';
 import { ReminderSettings } from './ReminderSettings';
+import { useLocale, useT } from '../../../shared/i18n/language';
 
 /** Danh sách thông báo đầy đủ + cài đặt nhắc nhở, gộp một trang vì cùng một việc:
  * theo dõi và điều chỉnh những gì hệ thống nhắc mình. */
 export function NotificationsPage(): JSX.Element {
+  const locale = useLocale();
+  const t = useT();
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -36,11 +39,11 @@ export function NotificationsPage(): JSX.Element {
   return (
     <div>
       <PageHeader
-        title="Thông báo"
-        description="Nhắc nhở học tập, cảnh báo chuỗi ngày và thông báo từ hệ thống"
+        title={t('Thông báo')}
+        description={t('Nhắc nhở học tập, cảnh báo chuỗi ngày và thông báo từ hệ thống')}
         action={
           <Button variant="secondary" icon={CheckCheck} onClick={() => markAllRead.mutate()}>
-            Đánh dấu đã đọc hết
+            {t('Đánh dấu đã đọc hết')}
           </Button>
         }
       />
@@ -60,7 +63,7 @@ export function NotificationsPage(): JSX.Element {
               unreadOnly === tab.key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
             }`}
           >
-            {tab.label}
+            {t(tab.label)}
           </button>
         ))}
       </div>
@@ -72,8 +75,8 @@ export function NotificationsPage(): JSX.Element {
       {list.data && list.data.items.length === 0 && (
         <EmptyState
           icon={Bell}
-          title={unreadOnly ? 'Không còn thông báo chưa đọc' : 'Chưa có thông báo nào'}
-          description="Nhắc nhở học hằng ngày sẽ xuất hiện ở đây theo giờ bạn đặt bên dưới."
+          title={unreadOnly ? t('Không còn thông báo chưa đọc') : t('Chưa có thông báo nào')}
+          description={t('Nhắc nhở học hằng ngày sẽ xuất hiện ở đây theo giờ bạn đặt bên dưới.')}
         />
       )}
 
@@ -89,10 +92,10 @@ export function NotificationsPage(): JSX.Element {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-content">{notification.title}</span>
                   <Badge tone={isUnread ? 'brand' : 'slate'}>{label}</Badge>
-                  {isUnread && <span className="text-xs text-brand-strong">Chưa đọc</span>}
+                  {isUnread && <span className="text-xs text-brand-strong">{t('Chưa đọc')}</span>}
                 </div>
                 <p className="mt-0.5 text-sm text-content-soft">{notification.body}</p>
-                <p className="mt-1 text-xs text-content-muted">{timeAgo(notification.createdAt)}</p>
+                <p className="mt-1 text-xs text-content-muted">{timeAgo(notification.createdAt, t, locale)}</p>
               </div>
             </>
           );
@@ -115,14 +118,14 @@ export function NotificationsPage(): JSX.Element {
                 <div className="flex shrink-0 gap-1">
                   {isUnread && (
                     <Button variant="ghost" size="sm" onClick={() => markRead.mutate(notification.id)}>
-                      Đã đọc
+                      {t('Đã đọc')}
                     </Button>
                   )}
                   <Button
                     variant="ghost"
                     size="sm"
                     icon={Trash2}
-                    aria-label="Xoá thông báo"
+                    aria-label={t('Xoá thông báo')}
                     onClick={() => remove.mutate(notification.id)}
                   />
                 </div>
@@ -135,7 +138,7 @@ export function NotificationsPage(): JSX.Element {
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-center gap-3">
           <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-            Trước
+            {t('Trước')}
           </Button>
           <span className="text-sm tabular-nums text-on-page-muted">
             Trang {page} / {totalPages}

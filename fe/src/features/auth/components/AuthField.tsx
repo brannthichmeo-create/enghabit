@@ -1,5 +1,6 @@
 import { Eye, EyeOff, type LucideIcon } from 'lucide-react';
 import { useState, type InputHTMLAttributes } from 'react';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Ô nhập cho màn hình đăng nhập/đăng ký: có icon và hiện lỗi ngay dưới đúng ô sai.
@@ -52,6 +53,7 @@ export function PasswordField({
   hint,
   ...props
 }: AuthFieldProps): JSX.Element {
+  const t = useT();
   const [visible, setVisible] = useState(false);
 
   return (
@@ -77,7 +79,7 @@ export function PasswordField({
           type="button"
           onClick={() => setVisible((v) => !v)}
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-content-muted transition-colors hover:text-content-soft"
-          aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+          aria-label={visible ? t('Ẩn mật khẩu') : t('Hiện mật khẩu')}
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
@@ -98,6 +100,7 @@ export function PasswordField({
  * điểm thưởng cho mật khẩu dài và có ký tự đặc biệt.
  */
 export function PasswordStrength({ password }: { password: string }): JSX.Element | null {
+  const t = useT();
   if (password.length === 0) return null;
 
   const score = [
@@ -127,7 +130,9 @@ export function PasswordStrength({ password }: { password: string }): JSX.Elemen
           />
         ))}
       </div>
-      <span className={`mt-1 block text-xs ${level?.text}`}>Độ mạnh: {level?.label}</span>
+      <span className={`mt-1 block text-xs ${level?.text}`}>
+        {t('Độ mạnh: {level}', { level: t(level?.label ?? '') })}
+      </span>
     </div>
   );
 }

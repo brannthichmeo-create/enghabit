@@ -17,19 +17,21 @@ import { useCurrentUser } from '../../auth/auth.store';
 import { useCheckInHabit, useDeleteHabit, useHabits } from '../habit.hooks';
 import type { Habit } from '../habit.api';
 import { HabitForm } from './HabitForm';
+import { useT } from '../../../shared/i18n/language';
 
 export function HabitsPage(): JSX.Element {
+  const t = useT();
   const habits = useHabits();
   const [showForm, setShowForm] = useState(false);
 
   return (
     <div>
       <PageHeader
-        title="Thói quen học tập"
-        description="Check-in mỗi ngày để giữ chuỗi và hình thành thói quen bền vững"
+        title={t('Thói quen học tập')}
+        description={t('Check-in mỗi ngày để giữ chuỗi và hình thành thói quen bền vững')}
         action={
           <Button icon={showForm ? X : Plus} onClick={() => setShowForm((v) => !v)}>
-            {showForm ? 'Đóng' : 'Thêm thói quen'}
+            {showForm ? t('Đóng') : t('Thêm thói quen')}
           </Button>
         }
       />
@@ -46,12 +48,12 @@ export function HabitsPage(): JSX.Element {
       {habits.data?.length === 0 && (
         <EmptyState
           icon={ListChecks}
-          title="Chưa có thói quen nào"
-          description="Bắt đầu với một thói quen nhỏ và cụ thể, ví dụ: học 10 từ vựng mỗi ngày."
+          title={t('Chưa có thói quen nào')}
+          description={t('Bắt đầu với một thói quen nhỏ và cụ thể, ví dụ: học 10 từ vựng mỗi ngày.')}
           action={
             !showForm && (
               <Button icon={Plus} onClick={() => setShowForm(true)}>
-                Tạo thói quen đầu tiên
+                {t('Tạo thói quen đầu tiên')}
               </Button>
             )
           }
@@ -66,6 +68,7 @@ export function HabitsPage(): JSX.Element {
 }
 
 function HabitCard({ habit }: { habit: Habit }): JSX.Element {
+  const t = useT();
   const toast = useToast();
   const checkIn = useCheckInHabit();
   const deleteHabit = useDeleteHabit();
@@ -77,16 +80,16 @@ function HabitCard({ habit }: { habit: Habit }): JSX.Element {
     checkIn.mutate(
       { id: habit.id },
       {
-        onSuccess: () => toast.success(`Đã check-in "${habit.name}"`),
+        onSuccess: () => toast.success(t('Đã check-in "{name}"', { name: habit.name })),
         onError: (error) => toast.error(getErrorMessage(error)),
       },
     );
   };
 
   const handleDelete = (): void => {
-    if (!confirm(`Xoá thói quen "${habit.name}"? Lịch sử check-in cũng sẽ mất.`)) return;
+    if (!confirm(t('Xoá thói quen "{name}"? Lịch sử check-in cũng sẽ mất.', { name: habit.name }))) return;
     deleteHabit.mutate(habit.id, {
-      onSuccess: () => toast.success('Đã xoá thói quen'),
+      onSuccess: () => toast.success(t('Đã xoá thói quen')),
       onError: (error) => toast.error(getErrorMessage(error)),
     });
   };
@@ -100,12 +103,12 @@ function HabitCard({ habit }: { habit: Habit }): JSX.Element {
             <Badge tone={habit.frequency === HabitFrequency.DAILY ? 'brand' : 'slate'}>
               {HABIT_FREQUENCY_LABELS[habit.frequency]}
             </Badge>
-            {!habit.isActive && <Badge>Tạm dừng</Badge>}
+            {!habit.isActive && <Badge>{t('Tạm dừng')}</Badge>}
           </div>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-content-muted">
             {habit.frequency === HabitFrequency.CUSTOM && habit.customDays && (
-              <span>Các ngày: {formatWeekdays(habit.customDays)}</span>
+              <span>{t('Các ngày: {days}', { days: formatWeekdays(habit.customDays) })}</span>
             )}
             {habit.reminderTime && (
               <span className="inline-flex items-center gap-1">
@@ -126,9 +129,9 @@ function HabitCard({ habit }: { habit: Habit }): JSX.Element {
             variant={checkedInToday ? 'secondary' : 'primary'}
             icon={checkedInToday ? Check : undefined}
           >
-            {checkedInToday ? 'Đã xong' : 'Check-in'}
+            {checkedInToday ? t('Đã xong') : 'Check-in'}
           </Button>
-          <Button variant="ghost" size="sm" icon={Trash2} onClick={handleDelete} aria-label="Xoá thói quen" />
+          <Button variant="ghost" size="sm" icon={Trash2} onClick={handleDelete} aria-label={t('Xoá thói quen')} />
         </div>
       </div>
     </Card>
@@ -142,6 +145,7 @@ function HabitCard({ habit }: { habit: Habit }): JSX.Element {
  * user chỉ thấy nút bấm mà không biết mình có đang duy trì đều hay không.
  */
 function WeekStrip({ checkedDates }: { checkedDates: string[] }): JSX.Element {
+  const t = useT();
   const user = useCurrentUser();
   const today = todayLocalDate(user?.timezone ?? 'Asia/Ho_Chi_Minh');
   const done = new Set(checkedDates);
@@ -160,7 +164,7 @@ function WeekStrip({ checkedDates }: { checkedDates: string[] }): JSX.Element {
         return (
           <div key={date} className="flex flex-col items-center gap-1">
             <div
-              title={`${date}${isDone ? ' — đã check-in' : ''}`}
+              title={isDone ? t('{date} — đã check-in', { date }) : date}
               className={`flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-medium ${
                 isDone ? 'bg-brand text-on-brand' : 'bg-sunken text-transparent'
               } ${isToday ? 'ring-2 ring-brand/30 ring-offset-1' : ''}`}
@@ -175,7 +179,7 @@ function WeekStrip({ checkedDates }: { checkedDates: string[] }): JSX.Element {
       })}
 
       <span className="ml-2 text-xs text-content-muted">
-        {done.size}/7 ngày
+        {t('{n}/7 ngày', { n: done.size })}
       </span>
     </div>
   );

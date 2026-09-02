@@ -15,6 +15,7 @@ import {
 import { useToast } from '../../../shared/components/Toast';
 import { useAudienceCount, useSendAnnouncement } from '../notification.hooks';
 import { displayFor, timeAgo } from './notification-display';
+import { useLocale, useT } from '../../../shared/i18n/language';
 
 type Audience = 'all' | 'USER' | 'ADMIN';
 
@@ -25,6 +26,8 @@ type Audience = 'all' | 'USER' | 'ADMIN';
  * thu hồi được, nên phải thấy rõ mình sắp gửi cái gì cho bao nhiêu người.
  */
 export function AnnouncementPage(): JSX.Element {
+  const locale = useLocale();
+  const t = useT();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<Audience>('all');
@@ -48,17 +51,17 @@ export function AnnouncementPage(): JSX.Element {
     });
 
     if (!parsed.success) {
-      setValidationError(parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ');
+      setValidationError(parsed.error.issues[0]?.message ?? t('Dữ liệu không hợp lệ'));
       return;
     }
     setValidationError(null);
 
     const recipients = audienceCount.data ?? 0;
-    if (!confirm(`Gửi thông báo này tới ${recipients} người dùng? Đã gửi thì không thu hồi được.`)) return;
+    if (!confirm(t('Gửi thông báo này tới {n} người dùng? Đã gửi thì không thu hồi được.', { n: recipients }))) return;
 
     send.mutate(parsed.data, {
       onSuccess: (result) => {
-        toast.success(`Đã gửi tới ${result.recipients} người dùng`);
+        toast.success(t('Đã gửi tới {n} người dùng', { n: result.recipients }));
         setTitle('');
         setBody('');
         setLink('');
@@ -71,8 +74,8 @@ export function AnnouncementPage(): JSX.Element {
   return (
     <div>
       <PageHeader
-        title="Gửi thông báo"
-        description="Thông báo thủ công tới người dùng, hiện trong chuông thông báo của họ"
+        title={t('Gửi thông báo')}
+        description={t('Thông báo thủ công tới người dùng, hiện trong chuông thông báo của họ')}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -81,44 +84,44 @@ export function AnnouncementPage(): JSX.Element {
             {validationError && <ErrorMessage>{validationError}</ErrorMessage>}
             {send.isError && <ErrorMessage>{getErrorMessage(send.error)}</ErrorMessage>}
 
-            <Field label="Tiêu đề">
+            <Field label={t('Tiêu đề')}>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ví dụ: Bổ sung 20 từ vựng chủ đề Du lịch"
+                placeholder={t('Ví dụ: Bổ sung 20 từ vựng chủ đề Du lịch')}
                 maxLength={150}
               />
             </Field>
 
             <div className="mt-4">
               <label className="block">
-                <span className="text-sm font-medium text-content-soft">Nội dung</span>
+                <span className="text-sm font-medium text-content-soft">{t('Nội dung')}</span>
                 <textarea
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={4}
                   maxLength={500}
-                  placeholder="Nội dung ngắn gọn, người đọc chỉ liếc qua trong chuông thông báo."
+                  placeholder={t('Nội dung ngắn gọn, người đọc chỉ liếc qua trong chuông thông báo.')}
                   className="mt-1.5 w-full rounded-lg border border-line-control bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10"
                 />
-                <span className="mt-1 block text-xs text-content-muted">{body.length}/500 ký tự</span>
+                <span className="mt-1 block text-xs text-content-muted">{t('{n}/500 ký tự', { n: body.length })}</span>
               </label>
             </div>
 
             <div className="mt-4">
-              <Field label="Gửi cho">
+              <Field label={t('Gửi cho')}>
                 <Select value={audience} onChange={(e) => setAudience(e.target.value as Audience)}>
-                  <option value="all">Tất cả người dùng</option>
-                  <option value={UserRole.USER}>Chỉ người học</option>
-                  <option value={UserRole.ADMIN}>Chỉ quản trị viên</option>
+                  <option value="all">{t('Tất cả người dùng')}</option>
+                  <option value={UserRole.USER}>{t('Chỉ người học')}</option>
+                  <option value={UserRole.ADMIN}>{t('Chỉ quản trị viên')}</option>
                 </Select>
               </Field>
             </div>
 
             <div className="mt-4">
               <Field
-                label="Đường dẫn kèm theo (không bắt buộc)"
-                hint='Đường dẫn trong app, vd "/learn". Bỏ trống thì thông báo không bấm được.'
+                label={t('Đường dẫn kèm theo (không bắt buộc)')}
+                hint={t('Đường dẫn trong app, vd "/learn". Bỏ trống thì thông báo không bấm được.')}
               >
                 <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/learn" />
               </Field>
@@ -126,36 +129,35 @@ export function AnnouncementPage(): JSX.Element {
 
             <div className="mt-5 flex items-center gap-3 border-t border-line pt-4">
               <Button type="submit" icon={Send} loading={send.isPending}>
-                Gửi tới {audienceCount.data ?? '…'} người
+                {t('Gửi tới {n} người', { n: audienceCount.data ?? '…' })}
               </Button>
             </div>
           </Card>
         </form>
 
         <section>
-          <SectionTitle>Xem trước</SectionTitle>
+          <SectionTitle>{t('Xem trước')}</SectionTitle>
           <Card>
             <p className="mb-3 text-xs text-content-muted">
-              Đây là cách thông báo hiện ra trong chuông của người nhận.
+              {t('Đây là cách thông báo hiện ra trong chuông của người nhận.')}
             </p>
             <div className="flex gap-2.5 rounded-lg border border-line bg-brand-soft/50 p-3">
               <PreviewIcon className={`mt-0.5 h-4 w-4 shrink-0 ${tone}`} aria-hidden />
               <div className="min-w-0">
                 <p className="text-sm font-medium text-content">
-                  {title || 'Tiêu đề thông báo'}
+                  {title || t('Tiêu đề thông báo')}
                 </p>
                 <p className="mt-0.5 text-xs text-content-soft">
-                  {body || 'Nội dung thông báo sẽ hiện ở đây.'}
+                  {body || t('Nội dung thông báo sẽ hiện ở đây.')}
                 </p>
-                <p className="mt-0.5 text-[11px] text-content-muted">{timeAgo(new Date().toISOString())}</p>
+                <p className="mt-0.5 text-[11px] text-content-muted">{timeAgo(new Date().toISOString(), t, locale)}</p>
               </div>
             </div>
 
             <div className="mt-4 flex items-start gap-2 border-t border-line pt-4 text-xs text-content-muted">
               <Megaphone className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
               <p>
-                Thông báo thủ công gửi ngay, không phụ thuộc giờ nhắc của người dùng và không bị tắt bởi
-                cài đặt nhắc nhở tự động — vì vậy chỉ dùng cho việc thật sự cần báo.
+                {t('Thông báo thủ công gửi ngay, không phụ thuộc giờ nhắc của người dùng và không bị tắt bởi cài đặt nhắc nhở tự động — vì vậy chỉ dùng cho việc thật sự cần báo.')}
               </p>
             </div>
           </Card>

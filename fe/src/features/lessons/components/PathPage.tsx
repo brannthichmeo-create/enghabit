@@ -7,6 +7,7 @@ import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import type { VocabLevel } from '@enghabit/shared';
 import { useLesson, useMistakeCount, useMistakePractice, usePath } from '../lesson.hooks';
 import { LessonPlayer } from './LessonPlayer';
+import { useT } from '../../../shared/i18n/language';
 
 /**
  * Lộ trình học: mỗi chủ đề là một hàng bài, mở khoá dần theo thứ tự.
@@ -14,6 +15,7 @@ import { LessonPlayer } from './LessonPlayer';
  * Bài học sinh ra từ chính từ vựng của chủ đề nên thêm từ là lộ trình tự dài ra.
  */
 export function PathPage(): JSX.Element {
+  const t = useT();
   const path = usePath();
   const mistakeCount = useMistakeCount();
   const [active, setActive] = useState<{ topicId: number; index: number } | null>(null);
@@ -25,8 +27,8 @@ export function PathPage(): JSX.Element {
   return (
     <div>
       <PageHeader
-        title="Lộ trình học"
-        description="Hoàn thành từng bài để mở khoá bài tiếp theo"
+        title={t('Lộ trình học')}
+        description={t('Hoàn thành từng bài để mở khoá bài tiếp theo')}
       />
 
       {mistakeCount.data !== undefined && mistakeCount.data > 0 && (
@@ -37,9 +39,9 @@ export function PathPage(): JSX.Element {
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-medium text-accent-ink">
-                {mistakeCount.data} từ bạn từng trả lời sai
+                {t('{n} từ bạn từng trả lời sai', { n: mistakeCount.data })}
               </p>
-              <p className="text-sm text-accent-ink">Luyện lại để nhớ chắc hơn</p>
+              <p className="text-sm text-accent-ink">{t('Luyện lại để nhớ chắc hơn')}</p>
             </div>
             <Play className="h-4 w-4 shrink-0 text-accent-ink" aria-hidden />
           </div>
@@ -52,8 +54,8 @@ export function PathPage(): JSX.Element {
       {path.data?.length === 0 && (
         <EmptyState
           icon={Sparkles}
-          title="Chưa có nội dung học"
-          description="Quản trị viên cần thêm chủ đề và từ vựng trước."
+          title={t('Chưa có nội dung học')}
+          description={t('Quản trị viên cần thêm chủ đề và từ vựng trước.')}
         />
       )}
 
@@ -73,6 +75,7 @@ function TopicRow({
   topic: PathTopic;
   onStart: (lesson: { topicId: number; index: number }) => void;
 }): JSX.Element {
+  const t = useT();
   const allDone = topic.completedLessons === topic.lessons.length && topic.lessons.length > 0;
 
   return (
@@ -84,7 +87,7 @@ function TopicRow({
             <Badge>{VOCAB_LEVEL_LABELS[topic.level as VocabLevel]}</Badge>
             {allDone && (
               <Badge tone="green" icon={Check}>
-                Hoàn thành
+                {t('Hoàn thành')}
               </Badge>
             )}
           </div>
@@ -92,7 +95,7 @@ function TopicRow({
         </div>
 
         <span className="shrink-0 text-sm tabular-nums text-content-muted">
-          {topic.completedLessons}/{topic.lessons.length} bài
+          {t('{done}/{total} bài', { done: topic.completedLessons, total: topic.lessons.length })}
         </span>
       </div>
 
@@ -116,11 +119,12 @@ function LessonNode({
   lesson: LessonSummary;
   onStart: (lesson: { topicId: number; index: number }) => void;
 }): JSX.Element {
+  const t = useT();
   if (!lesson.isUnlocked) {
     return (
       <div
         className="flex h-[68px] w-[92px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line text-content-muted"
-        title="Hoàn thành bài trước để mở khoá"
+        title={t('Hoàn thành bài trước để mở khoá')}
       >
         <Lock className="h-4 w-4" aria-hidden />
         <span className="text-xs">{lesson.title}</span>
@@ -153,16 +157,18 @@ function ActiveLesson({
   index: number;
   onExit: () => void;
 }): JSX.Element {
+  const t = useT();
   const lesson = useLesson(topicId, index);
 
   if (lesson.isLoading) return <SkeletonList rows={2} />;
   if (lesson.isError) return <ErrorMessage>{getErrorMessage(lesson.error)}</ErrorMessage>;
-  if (!lesson.data) return <ErrorMessage>Không tải được bài học</ErrorMessage>;
+  if (!lesson.data) return <ErrorMessage>{t('Không tải được bài học')}</ErrorMessage>;
 
   return <LessonPlayer lesson={lesson.data} onExit={onExit} />;
 }
 
 function MistakePractice({ onExit }: { onExit: () => void }): JSX.Element {
+  const t = useT();
   const practice = useMistakePractice(true);
 
   if (practice.isLoading) return <SkeletonList rows={2} />;
@@ -170,14 +176,14 @@ function MistakePractice({ onExit }: { onExit: () => void }): JSX.Element {
   if (practice.isError || !practice.data) {
     return (
       <div>
-        <PageHeader title="Ôn lại từ sai" />
+        <PageHeader title={t('Ôn lại từ sai')} />
         <EmptyState
           icon={Check}
-          title="Bạn không còn từ nào cần ôn lại"
-          description="Trả lời đúng 2 lần liên tiếp là một từ được gỡ khỏi danh sách này."
+          title={t('Bạn không còn từ nào cần ôn lại')}
+          description={t('Trả lời đúng 2 lần liên tiếp là một từ được gỡ khỏi danh sách này.')}
           action={
             <Button variant="secondary" onClick={onExit}>
-              Về lộ trình
+              {t('Về lộ trình')}
             </Button>
           }
         />

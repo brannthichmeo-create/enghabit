@@ -3,6 +3,7 @@ import { HabitFrequency, createHabitSchema } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, Card, ErrorMessage, Field, Input, Select } from '../../../shared/components/ui';
 import { useCreateHabit } from '../habit.hooks';
+import { useT } from '../../../shared/i18n/language';
 
 const WEEKDAYS = [
   { value: 1, label: 'T2' },
@@ -15,6 +16,7 @@ const WEEKDAYS = [
 ];
 
 export function HabitForm({ onCreated }: { onCreated: () => void }): JSX.Element {
+  const t = useT();
   const createHabit = useCreateHabit();
   const [name, setName] = useState('');
   const [frequency, setFrequency] = useState<HabitFrequency>(HabitFrequency.DAILY);
@@ -36,7 +38,7 @@ export function HabitForm({ onCreated }: { onCreated: () => void }): JSX.Element
     });
 
     if (!parsed.success) {
-      setValidationError(parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ');
+      setValidationError(parsed.error.issues[0]?.message ?? t('Dữ liệu không hợp lệ'));
       return;
     }
 
@@ -61,30 +63,30 @@ export function HabitForm({ onCreated }: { onCreated: () => void }): JSX.Element
       <form onSubmit={handleSubmit} className="space-y-4">
         <ErrorMessage>{errorMessage}</ErrorMessage>
 
-        <Field label="Tên thói quen">
+        <Field label={t('Tên thói quen')}>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ví dụ: Học 20 từ vựng"
+            placeholder={t('Ví dụ: Học 20 từ vựng')}
           />
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Tần suất">
+          <Field label={t('Tần suất')}>
             <Select value={frequency} onChange={(e) => setFrequency(e.target.value as HabitFrequency)}>
-              <option value={HabitFrequency.DAILY}>Hằng ngày</option>
-              <option value={HabitFrequency.WEEKLY}>Hằng tuần</option>
-              <option value={HabitFrequency.CUSTOM}>Tuỳ chọn theo thứ</option>
+              <option value={HabitFrequency.DAILY}>{t('Hằng ngày')}</option>
+              <option value={HabitFrequency.WEEKLY}>{t('Hằng tuần')}</option>
+              <option value={HabitFrequency.CUSTOM}>{t('Tuỳ chọn theo thứ')}</option>
             </Select>
           </Field>
 
-          <Field label="Giờ nhắc (tuỳ chọn)" hint="Theo múi giờ của bạn">
+          <Field label={t('Giờ nhắc (tuỳ chọn)')} hint={t('Theo múi giờ của bạn')}>
             <Input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} />
           </Field>
         </div>
 
         {frequency === HabitFrequency.CUSTOM && (
-          <Field label="Chọn các ngày trong tuần">
+          <Field label={t('Chọn các ngày trong tuần')}>
             <div className="mt-1 flex flex-wrap gap-2">
               {WEEKDAYS.map((day) => (
                 <button
@@ -105,7 +107,7 @@ export function HabitForm({ onCreated }: { onCreated: () => void }): JSX.Element
         )}
 
         <Button type="submit" disabled={createHabit.isPending}>
-          {createHabit.isPending ? 'Đang tạo...' : 'Tạo thói quen'}
+          {createHabit.isPending ? t('Đang tạo...') : t('Tạo thói quen')}
         </Button>
       </form>
     </Card>
