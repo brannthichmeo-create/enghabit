@@ -192,6 +192,25 @@ Vật phẩm giữ chuỗi (`streak_freezes`) là ngoại lệ duy nhất đư�
 
 ## Quy tắc xây dựng tính năng mới
 
+### Checklist bắt buộc khi thêm một màn hình mới
+
+Làm đủ 6 việc dưới đây rồi mới coi là xong. Ba việc đầu quên thì không ai thấy lỗi
+ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với phần còn lại của app.
+
+1. **Route + guard** trong `fe/src/routes/AppRoutes.tsx`: bọc `Learner` / `Admin` / `Feature`
+   đúng vai trò, đặt `name` là tên màn hình (dùng cho Error Boundary).
+2. **Breadcrumb**: thêm dòng vào `TRAILS` ở `fe/src/shared/lib/breadcrumbs.ts`. Màn hình phụ
+   không có URL riêng thì gọi `useBreadcrumbTail(...)`.
+3. **Ngôn ngữ**: mọi chữ đi qua `t()`, và **thêm bản dịch tiếng Anh vào `fe/src/shared/i18n/en.ts`**.
+   Đây là bước dễ quên nhất vì thiếu bản dịch không làm vỡ gì cả — câu đó chỉ lặng lẽ hiện
+   tiếng Việt giữa giao diện tiếng Anh.
+4. **Nhãn thống nhất**: tên màn hình ở `Sidebar`, ở `TRAILS` và ở `name` của route phải
+   **giống hệt nhau** — một màn hình chỉ có một tên, và chỉ cần một khoá dịch.
+5. **Màu**: chữ trong thẻ dùng `content*`, chữ trên nền hệ thống dùng `on-page*`
+   (xem `docs/color-rules.md`).
+6. **Chạy kiểm tra**: `pnpm --filter @enghabit/fe check:i18n` và `pnpm --filter @enghabit/fe typecheck`.
+   CI cũng chạy đúng hai lệnh này nên thiếu bản dịch là build đỏ.
+
 - Tạo tính năng mới luôn tạo đủ cặp `be/src/modules/<feature>` và `fe/src/features/<feature>` theo đúng khuôn mẫu đã có sẵn — không tự sáng tạo cấu trúc riêng cho 1 feature.
 - Mọi hành động học tập của user phải ghi vào `ActivityLog`; streak/thống kê không được tính từ nguồn khác.
 - **Thêm màn hình mới là phải khai báo breadcrumb.** `AppLayout` vẽ breadcrumb sẵn cho mọi
@@ -279,7 +298,7 @@ Nguyên tắc bổ sung:
 - Mỗi commit chỉ nên gói gọn trong **một tính năng**; nếu thay đổi không liên quan nhau, tách thành nhiều commit riêng.
 - **Dự án chỉ có một nhánh `main`** — commit thẳng lên `main`, không tạo nhánh phụ và không mở PR. Đây là dự án một người làm, thêm nhánh chỉ tốn thêm thao tác merge mà không có ai review.
 - Bù lại cho việc không có PR: mỗi commit phải tự nó **biên dịch và chạy được**. Khi một thay đổi trải trên nhiều commit, đừng để commit ở giữa gọi tới thứ chưa tồn tại — người sau `git checkout` vào đúng commit đó sẽ thấy code hỏng mà không hiểu vì sao.
-- Trước khi commit, đảm bảo lint/test của đúng module đó đã pass (xem "Lệnh thường dùng" khi có).
+- Trước khi commit, đảm bảo lint/test của đúng module đó đã pass (xem "Lệnh thường dùng" khi có). Commit có đụng chữ trên giao diện thì chạy thêm `pnpm --filter @enghabit/fe check:i18n`.
 
 ## Lệnh thường dùng
 
@@ -294,6 +313,7 @@ Chạy từ thư mục gốc:
 | `pnpm test` | Test toàn workspace |
 | `pnpm --filter @enghabit/shared test` | Chỉ test `shared` (streak, SM-2) |
 | `pnpm --filter @enghabit/be typecheck` | Typecheck backend |
+| `pnpm --filter @enghabit/fe check:i18n` | **Soát câu chưa có bản dịch tiếng Anh** — chạy sau mỗi lần thêm chữ mới lên giao diện (CI cũng chạy lệnh này) |
 | `pnpm db:migrate` | `prisma migrate dev` — tạo & áp migration |
 | `pnpm db:seed` | Nạp dữ liệu mẫu (idempotent) |
 | `pnpm db:studio` | Prisma Studio xem/sửa dữ liệu |

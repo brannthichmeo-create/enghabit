@@ -34,6 +34,11 @@ jobs:
           pnpm --filter @enghabit/be typecheck
           pnpm --filter @enghabit/fe typecheck
 
+      # Thiếu bản dịch không làm vỡ giao diện (câu đó hiện tiếng Việt) nên nếu không
+      # chặn ở đây thì sẽ không bao giờ có ai phát hiện ra.
+      - name: Kiểm tra bản dịch
+        run: pnpm --filter @enghabit/fe check:i18n
+
       - name: Test
         run: pnpm test
 
