@@ -142,6 +142,7 @@ model User {
   mistakes            Mistake[]
   streak              UserStreak?
   notificationSetting NotificationSetting?
+  reminders           Reminder[]
   devices             UserDevice[]
   refreshTokens       RefreshToken[]
   loginEvents         LoginEvent[]
@@ -485,16 +486,14 @@ model Mistake {
 // Thông báo
 // ---------------------------------------------------------------------------
 
+/// Cài đặt nhắc nhở CHUNG của một người dùng.
+///
+/// Giờ nhắc nằm ở bảng `reminders` (nhiều mốc mỗi người), không nằm ở đây. Công tắc
+/// `isEnabled` là công tắc tổng: tắt thì im lặng hết, không cần xoá từng mốc.
 model NotificationSetting {
   id        Int     @id @default(autoincrement())
   userId    Int     @unique @map("user_id")
   isEnabled Boolean @default(true) @map("is_enabled")
-
-  /// Giờ nhắc "HH:mm" theo timezone user.
-  timeOfDay String @default("20:00") @map("time_of_day") @db.VarChar(5)
-
-  /// Mảng thứ trong tuần 1-7 (ISO), lưu JSON.
-  daysOfWeek Json @map("days_of_week")
 
   /// Cảnh báo khi sắp hết ngày mà chuỗi đang có nguy cơ đứt.
   remindStreakAtRisk Boolean @default(true) @map("remind_streak_at_risk")
@@ -510,6 +509,37 @@ model NotificationSetting {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_settings")
+}
+
+/// Một mốc nhắc nhở trong ngày. Mỗi người đặt được nhiều mốc (sáng, tối...).
+///
+/// `@@unique([userId, timeOfDay])` chặn đặt hai mốc trùng giờ — hai mốc cùng 20:00 sẽ
+/// bắn hai thông báo giống hệt nhau trong cùng một phút, người dùng chỉ thấy đó là lỗi.
+/// Số mốc tối đa mỗi người kiểm ở service (MAX_REMINDERS_PER_USER trong shared).
+model Reminder {
+  id     Int @id @default(autoincrement())
+  userId Int @map("user_id")
+
+  /// Tên gợi nhớ do người dùng đặt, vd "Trước khi đi làm". Null thì hiển thị theo giờ.
+  label String? @db.VarChar(60)
+
+  /// Giờ nhắc "HH:mm" theo timezone user.
+  timeOfDay String @map("time_of_day") @db.VarChar(5)
+
+  /// Mảng thứ trong tuần 1-7 (ISO), lưu JSON. Riêng cho từng mốc.
+  daysOfWeek Json @map("days_of_week")
+
+  /// Tắt riêng một mốc mà không xoá nó — dùng khi chỉ muốn nghỉ nhắc tạm thời.
+  isEnabled Boolean @default(true) @map("is_enabled")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, timeOfDay])
+  @@index([userId])
+  @@map("reminders")
 }
 
 /// Thông báo hiện trong ứng dụng.

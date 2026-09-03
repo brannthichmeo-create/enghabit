@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import {
   UserRole,
+  createReminderSchema,
   notificationQuerySchema,
   registerDeviceSchema,
   updateNotificationSettingSchema,
+  updateReminderSchema,
+  type CreateReminderInput,
   type RegisterDeviceInput,
+  type UpdateReminderInput,
   type UpdateNotificationSettingInput,
 } from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
@@ -89,6 +93,53 @@ notificationRoutes.put(
         req.body as UpdateNotificationSettingInput,
       ),
     );
+  }),
+);
+
+// --- Các mốc nhắc nhở ---
+//
+// Cùng lý do với /settings: chỉ người học mới có nhắc nhở học tập.
+
+notificationRoutes.get(
+  '/reminders',
+  requireRole(UserRole.USER),
+  asyncHandler(async (req, res) => {
+    res.json(await notificationService.listReminders(currentUser(req).id));
+  }),
+);
+
+notificationRoutes.post(
+  '/reminders',
+  requireRole(UserRole.USER),
+  validateBody(createReminderSchema),
+  asyncHandler(async (req, res) => {
+    res
+      .status(201)
+      .json(await notificationService.createReminder(currentUser(req).id, req.body as CreateReminderInput));
+  }),
+);
+
+notificationRoutes.patch(
+  '/reminders/:id',
+  requireRole(UserRole.USER),
+  validateBody(updateReminderSchema),
+  asyncHandler(async (req, res) => {
+    res.json(
+      await notificationService.updateReminder(
+        currentUser(req).id,
+        parseId(req.params.id),
+        req.body as UpdateReminderInput,
+      ),
+    );
+  }),
+);
+
+notificationRoutes.delete(
+  '/reminders/:id',
+  requireRole(UserRole.USER),
+  asyncHandler(async (req, res) => {
+    await notificationService.deleteReminder(currentUser(req).id, parseId(req.params.id));
+    res.status(204).send();
   }),
 );
 

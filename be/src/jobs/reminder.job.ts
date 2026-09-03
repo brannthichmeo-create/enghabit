@@ -48,14 +48,79 @@ export interface ReminderTickResult {
   skipped: number;
 }
 
-/** Tách riêng khỏi cron để test được và chạy tay khi cần debug. */
+/**
+ * Tách riêng khỏi cron để test được và chạy tay khi cần debug.
+ *
+ * Hai lượt quét riêng vì hai loại thông báo có nguồn dữ liệu khác nhau: lời nhắc học
+ * đi theo TỪNG MỐC người dùng đặt (mỗi người có thể nhiều mốc), còn cảnh báo chuỗi
+ * sắp đứt là một mốc cố định 21:30 của cả hệ thống, đọc từ cấu hình chung.
+ *
+ * Người dùng lọc theo vai trò USER ở cả hai lượt: quản trị viên vận hành hệ thống chứ
+ * không đi học (xem CLAUDE.md). Lọc ở job chứ không ở chỗ tạo cấu hình, vì một tài
+ * khoản có thể được nâng lên quản trị sau khi đã có sẵn nhắc nhở.
+ */
 export async function runReminderTick(now: Date = new Date()): Promise<ReminderTickResult> {
+  const result: ReminderTickResult = { reminders: 0, streakWarnings: 0, skipped: 0 };
+
+  await sendDueReminders(now, result);
+  await sendDueStreakWarnings(now, result);
+
+  jobLogger.debug(result, 'Kết thúc lượt quét nhắc nhở');
+  return result;
+}
+
+/** Lượt 1: từng mốc nhắc tới giờ. Công tắc tổng tắt thì mọi mốc của người đó im lặng. */
+async function sendDueReminders(now: Date, result: ReminderTickResult): Promise<void> {
+  const reminders = await prisma.reminder.findMany({
+    where: {
+      isEnabled: true,
+      user: {
+        role: UserRole.USER,
+        notificationSetting: { isEnabled: true },
+      },
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          timezone: true,
+          devices: { select: { playerId: true } },
+          streak: { select: { currentStreak: true } },
+          notificationSetting: { select: { remindReviewDue: true } },
+        },
+      },
+    },
+  });
+
+  for (const reminder of reminders) {
+    const { user } = reminder;
+    const minutesNow = localMinutes(user.timezone, now);
+
+    if (!isAllowedWeekday(reminder, user.timezone, now) || !inWindow(minutesNow, reminder.timeOfDay)) {
+      result.skipped += 1;
+      continue;
+    }
+
+    const localDate = toLocalDate(now, user.timezone);
+    if (await hasStudiedToday(user.id, localDate)) {
+      result.skipped += 1;
+      continue;
+    }
+
+    const created = await sendDailyReminder(
+      { ...user, remindReviewDue: user.notificationSetting?.remindReviewDue ?? true },
+      localDate,
+      reminder.id,
+    );
+    if (created) result.reminders += 1;
+    else result.skipped += 1;
+  }
+}
+
+/** Lượt 2: cảnh báo chuỗi sắp đứt lúc 21:30, mỗi người tối đa một lần mỗi ngày. */
+async function sendDueStreakWarnings(now: Date, result: ReminderTickResult): Promise<void> {
   const settings = await prisma.notificationSetting.findMany({
-    // Chỉ nhắc người học. Quản trị viên vận hành hệ thống chứ không đi học, nhắc họ
-    // "đến giờ học tiếng Anh rồi" là gửi nhầm người (xem CLAUDE.md > Chức năng cho
-    // quản trị viên). Lọc ở đây chứ không ở chỗ tạo cấu hình, vì tài khoản có thể
-    // được nâng lên quản trị sau khi đã có sẵn cấu hình nhắc nhở.
-    where: { isEnabled: true, user: { role: UserRole.USER } },
+    where: { isEnabled: true, remindStreakAtRisk: true, user: { role: UserRole.USER } },
     include: {
       user: {
         select: {
@@ -68,49 +133,28 @@ export async function runReminderTick(now: Date = new Date()): Promise<ReminderT
     },
   });
 
-  const result: ReminderTickResult = { reminders: 0, streakWarnings: 0, skipped: 0 };
-
   for (const setting of settings) {
     const { user } = setting;
+
+    if (!inWindow(localMinutes(user.timezone, now), STREAK_WARNING_TIME)) {
+      result.skipped += 1;
+      continue;
+    }
+    if ((user.streak?.currentStreak ?? 0) === 0) {
+      result.skipped += 1;
+      continue;
+    }
+
     const localDate = toLocalDate(now, user.timezone);
-    const minutesNow = localMinutes(user.timezone, now);
-
-    const atReminderTime =
-      isAllowedWeekday(setting, user.timezone, now) && inWindow(minutesNow, setting.timeOfDay);
-    const atStreakWarning = setting.remindStreakAtRisk && inWindow(minutesNow, STREAK_WARNING_TIME);
-
-    if (!atReminderTime && !atStreakWarning) {
+    if (await hasStudiedToday(user.id, localDate)) {
       result.skipped += 1;
       continue;
     }
 
-    // Đã học hôm nay thì không nhắc nữa — cả hai loại.
-    const studiedToday = await hasStudiedToday(user.id, localDate);
-    if (studiedToday) {
-      result.skipped += 1;
-      continue;
-    }
-
-    if (atReminderTime) {
-      const created = await sendDailyReminder(
-        { ...user, remindReviewDue: setting.remindReviewDue },
-        localDate,
-      );
-      if (created) result.reminders += 1;
-      else result.skipped += 1;
-    }
-
-    if (atStreakWarning && (user.streak?.currentStreak ?? 0) > 0) {
-      const created = await sendStreakWarning(user, localDate);
-      if (created) result.streakWarnings += 1;
-      else result.skipped += 1;
-    }
+    const created = await sendStreakWarning(user, localDate);
+    if (created) result.streakWarnings += 1;
+    else result.skipped += 1;
   }
-
-  // lastSentDate không còn dùng để chặn trùng (đã có dedupeKey của Notification),
-  // nhưng vẫn cập nhật để nhìn nhanh trong DB là user được nhắc lần cuối ngày nào.
-  jobLogger.debug({ ...result, total: settings.length }, 'Kết thúc lượt quét nhắc nhở');
-  return result;
 }
 
 interface JobUser {
@@ -124,6 +168,7 @@ interface JobUser {
 async function sendDailyReminder(
   user: JobUser & { remindReviewDue: boolean },
   localDate: string,
+  reminderId: number,
 ): Promise<boolean> {
   const [dueCards, mistakes] = await Promise.all([
     user.remindReviewDue ? flashcardService.countDueCards(user.id, user.timezone) : Promise.resolve(0),
@@ -151,7 +196,10 @@ async function sendDailyReminder(
     title: 'Đến giờ học tiếng Anh rồi!',
     body,
     link,
-    dedupeKey: `${NotificationType.DAILY_REMINDER}:${localDate}`,
+    // Khoá chống trùng gắn thêm id của mốc: một người đặt 8:00 và 20:00 thì đó là hai
+    // lời nhắc cố ý khác nhau trong cùng một ngày. Không có id, mốc thứ hai bị coi là
+    // trùng và im lặng — người dùng đặt mốc mà không bao giờ nhận được.
+    dedupeKey: `${NotificationType.DAILY_REMINDER}:${reminderId}:${localDate}`,
   });
 }
 

@@ -3,15 +3,16 @@ import { NotificationType, UserRole } from '../constants/enums.js';
 import { timeOfDaySchema, weekdaySchema } from './habit.schema.js';
 
 /**
- * Cài đặt nhắc nhở học hàng ngày.
+ * Cài đặt nhắc nhở CHUNG của một người dùng — công tắc tổng và các loại cảnh báo.
+ *
+ * Giờ nhắc KHÔNG nằm ở đây mà ở danh sách `Reminder` bên dưới: một người có thể đặt
+ * nhiều mốc trong ngày (sáng trước khi đi làm, tối trước khi ngủ). Công tắc tổng ở đây
+ * tắt là tắt hết mọi mốc, không phải xoá từng cái.
+ *
  * Lịch gửi do be/src/jobs quyết định; OneSignal chỉ là kênh gửi (xem CLAUDE.md).
  */
 export const updateNotificationSettingSchema = z.object({
   isEnabled: z.boolean(),
-  /** Giờ nhắc theo timezone của user. */
-  timeOfDay: timeOfDaySchema,
-  /** Các thứ trong tuần muốn nhận nhắc nhở; mặc định cả tuần. */
-  daysOfWeek: z.array(weekdaySchema).min(1).max(7).default([1, 2, 3, 4, 5, 6, 7]),
   /** Cảnh báo cuối ngày khi chuỗi đang có nguy cơ đứt. */
   remindStreakAtRisk: z.boolean().default(true),
   /** Nhắc khi có thẻ flashcard tới hạn ôn. */
@@ -21,10 +22,42 @@ export type UpdateNotificationSettingInput = z.infer<typeof updateNotificationSe
 
 export interface NotificationSetting {
   isEnabled: boolean;
-  timeOfDay: string;
-  daysOfWeek: number[];
   remindStreakAtRisk: boolean;
   remindReviewDue: boolean;
+}
+
+// --- Danh sách mốc nhắc nhở ---
+
+/**
+ * Số mốc nhắc tối đa một người được đặt.
+ *
+ * Có trần vì mỗi mốc là một thông báo thật gửi tới người dùng: đặt 20 mốc thì ứng dụng
+ * thành thứ làm phiền, và đó cũng là lúc người ta tắt hẳn thông báo.
+ */
+export const MAX_REMINDERS_PER_USER = 5;
+
+export const createReminderSchema = z.object({
+  /** Tên gợi nhớ do người dùng đặt, vd "Trước khi đi làm". Bỏ trống thì hiển thị theo giờ. */
+  label: z.string().trim().max(60).optional(),
+  /** Giờ nhắc theo timezone của user. */
+  timeOfDay: timeOfDaySchema,
+  /** Các thứ trong tuần áp dụng cho riêng mốc này; mặc định cả tuần. */
+  daysOfWeek: z.array(weekdaySchema).min(1).max(7).default([1, 2, 3, 4, 5, 6, 7]),
+});
+export type CreateReminderInput = z.infer<typeof createReminderSchema>;
+
+/** Sửa một mốc: gửi trường nào sửa trường đó (bật/tắt riêng cũng đi qua đây). */
+export const updateReminderSchema = createReminderSchema
+  .partial()
+  .extend({ isEnabled: z.boolean().optional() });
+export type UpdateReminderInput = z.infer<typeof updateReminderSchema>;
+
+export interface Reminder {
+  id: number;
+  label: string | null;
+  timeOfDay: string;
+  daysOfWeek: number[];
+  isEnabled: boolean;
 }
 
 /** Đăng ký thiết bị nhận push (player id do OneSignal SDK cấp ở client). */

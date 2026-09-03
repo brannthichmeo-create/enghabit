@@ -64,7 +64,14 @@ async function upsertUser(email: string, name: string, password: string, role: U
       role,
       timezone: TIMEZONE,
       streak: { create: {} },
-      notificationSetting: { create: { daysOfWeek: [1, 2, 3, 4, 5, 6, 7], timeOfDay: '20:00' } },
+      notificationSetting: { create: {} },
+      // Hai mốc nhắc mẫu để thấy ngay tính năng "nhiều mốc": sáng trong tuần, tối cả tuần.
+      reminders: {
+        create: [
+          { label: 'Buổi sáng', timeOfDay: '07:30', daysOfWeek: [1, 2, 3, 4, 5] },
+          { label: 'Trước khi ngủ', timeOfDay: '20:00', daysOfWeek: [1, 2, 3, 4, 5, 6, 7] },
+        ],
+      },
     },
   });
 }

@@ -29,7 +29,10 @@ export async function register(input: RegisterInput): Promise<AuthResponse> {
       timezone: input.timezone ?? DEFAULT_TIMEZONE,
       // Khởi tạo sẵn streak và cài đặt nhắc nhở để các module sau không phải kiểm tra null.
       streak: { create: {} },
-      notificationSetting: { create: { daysOfWeek: [1, 2, 3, 4, 5, 6, 7] } },
+      notificationSetting: { create: {} },
+      // Một mốc nhắc mặc định 20:00 cả tuần: người mới chưa biết vào đâu để đặt, mà
+      // không có mốc nào thì tính năng nhắc nhở coi như không tồn tại với họ.
+      reminders: { create: { timeOfDay: '20:00', daysOfWeek: [1, 2, 3, 4, 5, 6, 7] } },
     },
   });
 

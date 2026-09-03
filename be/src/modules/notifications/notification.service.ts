@@ -1,17 +1,21 @@
 import {
+  MAX_REMINDERS_PER_USER,
   NotificationType,
   UserRole,
   type CreateAnnouncementInput,
+  type CreateReminderInput,
   type NotificationQueryInput,
   type NotificationRow,
   type NotificationSetting as NotificationSettingDto,
   type Paginated,
   type RegisterDeviceInput,
+  type Reminder as ReminderDto,
   type UpdateNotificationSettingInput,
+  type UpdateReminderInput,
 } from '@enghabit/shared';
-import type { Notification, NotificationSetting } from '@prisma/client';
+import type { Notification, NotificationSetting, Reminder } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { NotFoundError } from '../../common/errors/app-error.js';
+import { BadRequestError, ConflictError, NotFoundError } from '../../common/errors/app-error.js';
 
 /**
  * Thông báo trong ứng dụng + cấu hình nhắc nhở.
@@ -26,7 +30,7 @@ import { NotFoundError } from '../../common/errors/app-error.js';
 export async function getSetting(userId: number): Promise<NotificationSettingDto> {
   const setting = await prisma.notificationSetting.upsert({
     where: { userId },
-    create: { userId, daysOfWeek: [1, 2, 3, 4, 5, 6, 7] },
+    create: { userId },
     update: {},
   });
   return toSettingDto(setting);
@@ -47,11 +51,96 @@ export async function updateSetting(
 function toSettingDto(setting: NotificationSetting): NotificationSettingDto {
   return {
     isEnabled: setting.isEnabled,
-    timeOfDay: setting.timeOfDay,
-    daysOfWeek: (setting.daysOfWeek as number[] | null) ?? [1, 2, 3, 4, 5, 6, 7],
     remindStreakAtRisk: setting.remindStreakAtRisk,
     remindReviewDue: setting.remindReviewDue,
   };
+}
+
+// --- Các mốc nhắc nhở ---
+//
+// Mỗi người đặt được nhiều mốc trong ngày. Công tắc tổng ở NotificationSetting tắt thì
+// im lặng hết, không cần xoá từng mốc; `isEnabled` của từng mốc dùng để nghỉ tạm một mốc.
+
+export async function listReminders(userId: number): Promise<ReminderDto[]> {
+  const rows = await prisma.reminder.findMany({
+    where: { userId },
+    orderBy: { timeOfDay: 'asc' },
+  });
+  return rows.map(toReminderDto);
+}
+
+export async function createReminder(userId: number, input: CreateReminderInput): Promise<ReminderDto> {
+  const count = await prisma.reminder.count({ where: { userId } });
+  if (count >= MAX_REMINDERS_PER_USER) {
+    throw new BadRequestError(`Mỗi người chỉ đặt được tối đa ${MAX_REMINDERS_PER_USER} mốc nhắc`);
+  }
+
+  try {
+    const created = await prisma.reminder.create({
+      data: {
+        userId,
+        label: input.label?.trim() || null,
+        timeOfDay: input.timeOfDay,
+        daysOfWeek: input.daysOfWeek,
+      },
+    });
+    return toReminderDto(created);
+  } catch (error: unknown) {
+    // Ràng buộc unique (user, time_of_day): hai mốc cùng giờ sẽ bắn hai thông báo
+    // giống hệt nhau trong cùng một phút.
+    if (isUniqueViolation(error)) throw new ConflictError('Bạn đã có một mốc nhắc vào giờ này');
+    throw error;
+  }
+}
+
+export async function updateReminder(
+  userId: number,
+  reminderId: number,
+  input: UpdateReminderInput,
+): Promise<ReminderDto> {
+  // Lọc theo cả userId để người này không sửa được mốc của người khác.
+  const existing = await prisma.reminder.findFirst({ where: { id: reminderId, userId } });
+  if (!existing) throw new NotFoundError('Không tìm thấy mốc nhắc');
+
+  try {
+    const updated = await prisma.reminder.update({
+      where: { id: existing.id },
+      data: {
+        ...(input.label !== undefined && { label: input.label.trim() || null }),
+        ...(input.timeOfDay !== undefined && { timeOfDay: input.timeOfDay }),
+        ...(input.daysOfWeek !== undefined && { daysOfWeek: input.daysOfWeek }),
+        ...(input.isEnabled !== undefined && { isEnabled: input.isEnabled }),
+      },
+    });
+    return toReminderDto(updated);
+  } catch (error: unknown) {
+    if (isUniqueViolation(error)) throw new ConflictError('Bạn đã có một mốc nhắc vào giờ này');
+    throw error;
+  }
+}
+
+export async function deleteReminder(userId: number, reminderId: number): Promise<void> {
+  const result = await prisma.reminder.deleteMany({ where: { id: reminderId, userId } });
+  if (result.count === 0) throw new NotFoundError('Không tìm thấy mốc nhắc');
+}
+
+function toReminderDto(reminder: Reminder): ReminderDto {
+  return {
+    id: reminder.id,
+    label: reminder.label,
+    timeOfDay: reminder.timeOfDay,
+    daysOfWeek: (reminder.daysOfWeek as number[] | null) ?? [1, 2, 3, 4, 5, 6, 7],
+    isEnabled: reminder.isEnabled,
+  };
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'P2002'
+  );
 }
 
 // --- Thiết bị nhận push ---

@@ -4,7 +4,10 @@ import type {
   NotificationRow,
   NotificationSetting,
   Paginated,
+  CreateReminderInput,
+  Reminder,
   UpdateNotificationSettingInput,
+  UpdateReminderInput,
   UserRole,
 } from '@enghabit/shared';
 import { apiClient } from '../../shared/lib/api-client';
@@ -45,6 +48,33 @@ export async function getSetting(): Promise<NotificationSetting> {
 export async function updateSetting(input: UpdateNotificationSettingInput): Promise<NotificationSetting> {
   const { data } = await apiClient.put<NotificationSetting>('/notifications/settings', input);
   return data;
+}
+
+// --- Các mốc nhắc nhở ---
+
+export async function listReminders(): Promise<Reminder[]> {
+  const { data } = await apiClient.get<Reminder[]>('/notifications/reminders');
+  return data;
+}
+
+export async function createReminder(input: CreateReminderInput): Promise<Reminder> {
+  const { data } = await apiClient.post<Reminder>('/notifications/reminders', input);
+  return data;
+}
+
+export async function updateReminder({
+  id,
+  input,
+}: {
+  id: number;
+  input: UpdateReminderInput;
+}): Promise<Reminder> {
+  const { data } = await apiClient.patch<Reminder>(`/notifications/reminders/${id}`, input);
+  return data;
+}
+
+export async function deleteReminder(id: number): Promise<void> {
+  await apiClient.delete(`/notifications/reminders/${id}`);
 }
 
 // --- Dành cho quản trị viên ---

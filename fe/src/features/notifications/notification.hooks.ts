@@ -11,7 +11,10 @@ import type {
   NotificationRow,
   NotificationSetting,
   Paginated,
+  CreateReminderInput,
+  Reminder,
   UpdateNotificationSettingInput,
+  UpdateReminderInput,
   UserRole,
 } from '@enghabit/shared';
 import * as notificationApi from './notification.api';
@@ -21,6 +24,7 @@ export const notificationKeys = {
   list: (query: Partial<NotificationQueryInput>) => ['notifications', 'list', query] as const,
   unreadCount: () => ['notifications', 'unread-count'] as const,
   settings: () => ['notifications', 'settings'] as const,
+  reminders: () => ['notifications', 'reminders'] as const,
   audience: (role?: UserRole) => ['notifications', 'audience', role ?? 'all'] as const,
 };
 
@@ -74,6 +78,28 @@ export function useUpdateNotificationSetting(): UseMutationResult<
   UpdateNotificationSettingInput
 > {
   return useNotificationMutation(notificationApi.updateSetting);
+}
+
+// --- Các mốc nhắc nhở ---
+
+export function useReminders(): UseQueryResult<Reminder[]> {
+  return useQuery({ queryKey: notificationKeys.reminders(), queryFn: notificationApi.listReminders });
+}
+
+export function useCreateReminder(): UseMutationResult<Reminder, Error, CreateReminderInput> {
+  return useNotificationMutation(notificationApi.createReminder);
+}
+
+export function useUpdateReminder(): UseMutationResult<
+  Reminder,
+  Error,
+  { id: number; input: UpdateReminderInput }
+> {
+  return useNotificationMutation(notificationApi.updateReminder);
+}
+
+export function useDeleteReminder(): UseMutationResult<void, Error, number> {
+  return useNotificationMutation(notificationApi.deleteReminder);
 }
 
 // --- Dành cho quản trị viên ---
