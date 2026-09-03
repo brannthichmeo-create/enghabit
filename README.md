@@ -3,169 +3,270 @@
 Ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh — học từ vựng, ôn flashcard,
 làm quiz, theo dõi chuỗi ngày học và thống kê tiến độ.
 
-Hướng dẫn dưới đây viết cho người **chưa từng lập trình**. Cứ làm lần lượt từ Bước 1
-xuống Bước 7, tổng cộng khoảng **15–20 phút**. Chương trình chạy trên máy của bạn.
+Hướng dẫn dưới đây viết cho người **chưa từng lập trình**, trên máy **Windows**. Mỗi bước
+ghi rõ mở phần mềm nào, bấm vào đâu, gõ phím gì. Tổng cộng khoảng **15–20 phút**.
 
 ---
 
-## Bước 1 — Cài 3 phần mềm (chỉ làm một lần)
+## Vài quy ước đọc hướng dẫn
 
-| Phần mềm | Tải ở đâu | Cài thế nào |
-|---|---|---|
-| **Node.js** | [nodejs.org](https://nodejs.org) | Tải bản **LTS**, mở file và bấm Next đến hết |
-| **Git** | [git-scm.com/downloads](https://git-scm.com/downloads) | Mở file và bấm Next đến hết |
-| **XAMPP** | [apachefriends.org](https://www.apachefriends.org) | Mở file và bấm Next đến hết (đây là phần mềm chạy database) |
+**Phím Windows** là phím có hình 4 ô vuông (logo Windows), nằm giữa `Ctrl` và `Alt` ở hàng
+dưới cùng bên trái bàn phím. Trong hướng dẫn viết tắt là **⊞**.
 
-Cài xong **khởi động lại máy** để máy nhận các phần mềm mới.
+**Cách chép lệnh trong tài liệu này vào máy** (khỏi gõ tay, tránh sai chính tả):
+
+1. Bôi đen dòng lệnh bằng chuột
+2. Bấm `Ctrl` + `C` để chép
+3. Sang cửa sổ PowerShell, **bấm chuột phải** một cái — lệnh tự dán vào
+4. Bấm `Enter` để chạy
+
+---
+
+## Bước 1 — Cài 3 phần mềm
+
+> **Làm ở đâu:** trình duyệt web (Chrome, Edge, Cốc Cốc — cái nào cũng được)
+
+### 1.1. Node.js
+
+1. Mở trình duyệt, gõ vào thanh địa chỉ trên cùng: `nodejs.org` rồi bấm `Enter`
+2. Bấm nút màu xanh lá có chữ **Download Node.js (LTS)**
+3. File tải xong nằm trong thư mục **Downloads**. Bấm vào file đó (tên dạng `node-v22...msi`)
+4. Cửa sổ cài đặt hiện ra → bấm **Next**
+5. Tích vào ô **I accept the terms...** → bấm **Next**
+6. Bấm **Next** tiếp 3 lần nữa, không đổi gì cả
+7. Tới màn hình có chữ *Tools for Native Modules* — **không tích ô nào**, bấm **Next**
+8. Bấm **Install** → nếu Windows hỏi *Do you want to allow...* thì bấm **Yes**
+9. Đợi khoảng 1 phút → bấm **Finish**
+
+### 1.2. Git
+
+1. Vào địa chỉ: `git-scm.com/downloads`
+2. Bấm **Download for Windows** → chọn **64-bit Git for Windows Setup**
+3. Mở file vừa tải trong thư mục **Downloads**
+4. Bấm **Next** liên tục cho tới khi nút chuyển thành **Install** (khoảng 10 lần, giữ nguyên mọi lựa chọn có sẵn)
+5. Bấm **Install** → đợi → bỏ tích ô *View Release Notes* → bấm **Finish**
+
+### 1.3. XAMPP — phần mềm chạy database
+
+1. Vào địa chỉ: `apachefriends.org`
+2. Bấm nút **XAMPP for Windows**
+3. Mở file vừa tải (tên dạng `xampp-windows-x64...exe`)
+4. Nếu hiện cảnh báo màu vàng về *User Account Control* → bấm **OK**
+5. Bấm **Next** → **Next** → thư mục cài để nguyên `C:\xampp` → **Next** → **Next** → **Next**
+6. Bấm **Install**, đợi 3–5 phút
+7. Bấm **Finish**
+
+### 1.4. Khởi động lại máy
+
+Bấm **⊞** → biểu tượng nguồn → **Restart**. Bước này bắt buộc; bỏ qua thì máy chưa nhận
+các phần mềm vừa cài.
 
 ---
 
 ## Bước 2 — Mở cửa sổ dòng lệnh
 
-Nhiều bước sau cần gõ lệnh. Cách mở:
+> **Phần mềm dùng:** Windows PowerShell — có sẵn trong Windows, không phải cài
 
-1. Bấm phím **Windows**, gõ `powershell`
-2. Bấm vào **Windows PowerShell**
+1. Bấm phím **⊞**
+2. Gõ: `powershell`
+3. Bấm `Enter`
 
-Một cửa sổ nền xanh/đen hiện ra — đây là nơi bạn gõ lệnh. Mỗi lệnh gõ xong bấm **Enter**.
+Một cửa sổ nền xanh đậm hoặc đen hiện ra, có dòng chữ kết thúc bằng dấu `>` và con trỏ
+nhấp nháy. Đây là nơi gõ lệnh.
 
-Cách biết một lệnh đã chạy xong: cửa sổ hiện lại dòng chữ kết thúc bằng dấu `>` và con
-trỏ nhấp nháy chờ bạn gõ tiếp. Chưa thấy dấu đó thì cứ đợi, đừng gõ chồng lên.
-
-Gõ thử lệnh này để kiểm tra Bước 1 đã xong chưa:
+**Kiểm tra Bước 1 đã xong chưa** — chép lệnh sau vào rồi bấm `Enter`:
 
 ```powershell
 node -v
 ```
 
-Nếu hiện ra số phiên bản (ví dụ `v22.14.0`) là được. Nếu báo *not recognized*, nghĩa là
-Node.js chưa cài xong — quay lại Bước 1.
+- Hiện ra dãy số kiểu `v22.14.0` → **đạt**, đi tiếp
+- Hiện chữ đỏ *not recognized* → Node.js chưa cài xong hoặc chưa khởi động lại máy, quay lại Bước 1
 
-Tiếp theo, cài công cụ `pnpm` bằng lệnh:
+**Cài thêm công cụ `pnpm`** — chép lệnh sau, bấm `Enter`, đợi khoảng 30 giây:
 
 ```powershell
 npm install -g pnpm
 ```
 
+> **Cách biết một lệnh đã chạy xong:** cửa sổ hiện lại dòng kết thúc bằng dấu `>` và con
+> trỏ nhấp nháy chờ bạn. Chưa thấy thì cứ đợi, đừng gõ chồng lệnh khác vào.
+
 ---
 
 ## Bước 3 — Tải mã nguồn về máy
 
-Gõ lần lượt 2 lệnh sau. Lệnh đầu chuyển vào màn hình Desktop, lệnh sau tải dự án về:
+> **Phần mềm dùng:** vẫn cửa sổ PowerShell ở Bước 2
+
+Chép từng lệnh, mỗi lệnh bấm `Enter` rồi đợi chạy xong mới sang lệnh sau.
+
+Lệnh 1 — chuyển vào màn hình Desktop:
 
 ```powershell
 cd $HOME\Desktop
+```
+
+Lệnh 2 — tải dự án về, mất khoảng 1 phút:
+
+```powershell
 git clone https://github.com/brannthichmeo-create/enghabit.git
 ```
 
-Xong sẽ có thư mục **enghabit** trên Desktop. Chuyển vào thư mục đó:
+Lệnh 3 — đi vào thư mục vừa tải:
 
 ```powershell
 cd enghabit
 ```
 
-> Từ đây trở đi, **mọi lệnh đều gõ trong cửa sổ này**, đừng đóng nó lại.
+Sau lệnh này, dòng chữ trong PowerShell kết thúc bằng `...\Desktop\enghabit>`. Nhìn thấy
+chữ `enghabit` ở cuối là đúng.
+
+> **Đừng đóng cửa sổ này** — các bước sau vẫn dùng nó. Lỡ đóng thì mở lại theo Bước 2 rồi
+> gõ `cd $HOME\Desktop\enghabit` để quay về đúng chỗ.
 
 ---
 
-## Bước 4 — Bật database
+## Bước 4 — Bật database và tạo kho dữ liệu
 
-1. Mở **XAMPP Control Panel** (bấm phím Windows, gõ `xampp`)
-2. Bấm nút **Start** ở **cả hai dòng**: **Apache** và **MySQL**
-   *(MySQL là database; Apache chỉ để mở trang quản lý database ở bước tiếp theo)*
-3. Đợi đến khi tên cả hai chuyển sang **nền xanh lá** là xong
+> **Phần mềm dùng:** XAMPP Control Panel, sau đó là trình duyệt web
 
-Tiếp theo tạo một database rỗng cho ứng dụng:
+### 4.1. Bật hai dịch vụ
 
-4. Mở trình duyệt, vào <http://localhost/phpmyadmin>
-5. Bấm **New** (Mới) ở cột bên trái
-6. Ô tên database gõ: `enghabit`
-7. Ô bên cạnh chọn: `utf8mb4_unicode_ci` — **bắt buộc**, nếu chọn sai thì tiếng Việt sẽ hiện thành dấu hỏi
-8. Bấm **Create** (Tạo)
+1. Bấm **⊞**, gõ `xampp`, bấm `Enter` để mở **XAMPP Control Panel**
+2. Cửa sổ hiện bảng có các dòng: **Apache**, **MySQL**, FileZilla, Mercury, Tomcat
+3. Ở dòng **Apache**, bấm nút **Start** (cột *Actions*)
+4. Ở dòng **MySQL**, bấm nút **Start**
+5. Nếu Windows hiện hộp thoại tường lửa → bấm **Allow access**
+6. Đợi vài giây, tên **Apache** và **MySQL** chuyển sang **nền xanh lá** là đã chạy
+
+*MySQL chính là database. Apache chỉ cần để mở trang quản lý ở mục tiếp theo.*
+
+### 4.2. Tạo database rỗng
+
+1. Vẫn trong XAMPP Control Panel, ở dòng **MySQL** bấm nút **Admin** — trình duyệt tự mở
+   trang **phpMyAdmin**
+   *(không tự mở thì vào trình duyệt gõ địa chỉ `localhost/phpmyadmin`)*
+2. Ở **cột bên trái**, bấm chữ **New** (bản tiếng Việt là **Mới**)
+3. Khung giữa hiện ô trống **Database name** → gõ vào: `enghabit`
+4. Ô thả xuống ngay bên phải (nhãn *Collation*) → bấm vào, gõ `utf8mb4_uni` để lọc, rồi
+   chọn dòng **utf8mb4_unicode_ci**
+5. Bấm nút **Create** (**Tạo**)
+6. Tên `enghabit` xuất hiện ở cột trái là xong
+
+> Chọn sai ở mục 4 thì tiếng Việt trong ứng dụng sẽ hiện thành `?????`.
 
 ---
 
 ## Bước 5 — Tạo file cấu hình
 
-Trong cửa sổ PowerShell, gõ:
+> **Phần mềm dùng:** PowerShell (cửa sổ ở Bước 3), sau đó là Notepad
+
+Chép lệnh sau vào PowerShell, bấm `Enter` — lệnh này tạo file cấu hình từ file mẫu:
 
 ```powershell
 Copy-Item be\.env.example be\.env
 ```
 
-Lệnh này tạo file cấu hình từ file mẫu. Tiếp theo mở file đó ra để sửa một dòng:
+Chép tiếp lệnh này, bấm `Enter` — Notepad sẽ mở file vừa tạo:
 
 ```powershell
 notepad be\.env
 ```
 
-Notepad hiện ra. Tìm dòng bắt đầu bằng `DATABASE_URL` và sửa thành đúng như sau:
+Trong cửa sổ **Notepad**:
+
+1. Tìm dòng bắt đầu bằng `DATABASE_URL`, khoảng dòng thứ 9 từ trên xuống
+2. Bôi đen **toàn bộ dòng đó** rồi bấm `Delete` để xoá
+3. Chép dòng dưới đây vào đúng chỗ vừa xoá:
 
 ```ini
 DATABASE_URL="mysql://root:@localhost:3306/enghabit?connection_limit=5"
 ```
 
-Bấm **Ctrl+S** để lưu rồi đóng Notepad. Các dòng khác giữ nguyên.
+4. Bấm `Ctrl` + `S` để lưu
+5. Bấm `Alt` + `F4` để đóng Notepad
+
+Các dòng khác trong file giữ nguyên, không đụng tới.
 
 ---
 
-## Bước 6 — Cài đặt và chuẩn bị dữ liệu
+## Bước 6 — Cài đặt và nạp dữ liệu
 
-Gõ lần lượt **4 lệnh**, chờ lệnh trước chạy xong mới gõ lệnh sau:
+> **Phần mềm dùng:** PowerShell
+
+Chép **từng lệnh một**, bấm `Enter`, đợi thấy dấu `>` quay lại rồi mới sang lệnh tiếp.
+
+Lệnh 1 — tải thư viện, lâu nhất, khoảng 2–3 phút:
 
 ```powershell
 pnpm install
 ```
 
+Lệnh 2 — chuẩn bị phần dùng chung:
+
 ```powershell
 pnpm build:shared
 ```
+
+Lệnh 3 — tạo toàn bộ bảng trong database:
 
 ```powershell
 pnpm db:migrate
 ```
 
+Lệnh 4 — nạp dữ liệu mẫu:
+
 ```powershell
 pnpm db:seed
 ```
 
-Lệnh 1 tải các thư viện cần thiết (lâu nhất, khoảng 2–3 phút). Lệnh 3 tạo toàn bộ bảng
-trong database. Lệnh 4 nạp dữ liệu mẫu: 3 tài khoản, 5 chủ đề, 40 từ vựng, 5 bài quiz và
-45 ngày lịch sử học để bạn có sẵn số liệu mà xem.
+Sau lệnh 4, màn hình hiện dòng *Seed hoàn tất* kèm danh sách tài khoản. Lúc này database
+đã có 3 tài khoản, 5 chủ đề, 40 từ vựng, 5 bài quiz và 45 ngày lịch sử học mẫu.
 
 ---
 
 ## Bước 7 — Chạy chương trình
 
-Cần **hai cửa sổ PowerShell** chạy song song.
+> **Phần mềm dùng:** hai cửa sổ PowerShell và trình duyệt
 
-**Cửa sổ 1** — chính là cửa sổ đang mở, gõ:
+Chương trình gồm hai phần chạy song song nên cần **hai cửa sổ** riêng.
+
+### 7.1. Cửa sổ thứ nhất — phần xử lý dữ liệu
+
+Dùng luôn cửa sổ đang mở, chép lệnh sau rồi bấm `Enter`:
 
 ```powershell
 pnpm dev:be
 ```
 
-Để nguyên, đừng đóng. Đây là phần máy chủ xử lý dữ liệu.
+### 7.2. Cửa sổ thứ hai — phần giao diện
 
-**Cửa sổ 2** — mở thêm một cửa sổ PowerShell nữa (làm lại Bước 2: bấm phím Windows, gõ
-`powershell`, bấm vào **Windows PowerShell**), rồi gõ 2 lệnh:
+1. Bấm **⊞**, gõ `powershell`, bấm `Enter` — cửa sổ mới hiện ra, cửa sổ cũ để yên
+2. Chép lệnh này, bấm `Enter`:
 
 ```powershell
 cd $HOME\Desktop\enghabit
+```
+
+3. Chép lệnh này, bấm `Enter`:
+
+```powershell
 pnpm dev:fe
 ```
 
-Đây là phần giao diện. Cũng để nguyên, đừng đóng.
+> **Lưu ý quan trọng:** sau hai lệnh này, cửa sổ **không** quay lại dấu `>` nữa mà đứng
+> yên. Đó là bình thường — nghĩa là chương trình đang chạy chứ không phải bị treo. Đóng
+> cửa sổ là chương trình tắt. Chuyển qua lại giữa hai cửa sổ bằng `Alt` + `Tab`.
 
-> **Lưu ý quan trọng:** sau hai lệnh này, cửa sổ sẽ **không** quay lại dấu nhắc `>` nữa mà
-> đứng yên. Đó là bình thường — nghĩa là chương trình đang chạy, không phải bị treo. Đóng
-> cửa sổ là chương trình tắt.
+### 7.3. Mở ứng dụng
 
-Cuối cùng mở trình duyệt vào: **<http://localhost:5173>**
+Mở trình duyệt, gõ vào thanh địa chỉ `localhost:5173` rồi bấm `Enter`.
 
 ---
 
 ## Đăng nhập
+
+Trang đăng nhập hiện ra, dùng một trong ba tài khoản sau:
 
 | Vai trò | Email | Mật khẩu |
 |---|---|---|
@@ -173,36 +274,47 @@ Cuối cùng mở trình duyệt vào: **<http://localhost:5173>**
 | Người học (có sẵn dữ liệu) | `user@enghabit.com` | `A1234567` |
 | Tài khoản trắng | `newbie@enghabit.com` | `A1234567` |
 
-Đăng nhập bằng tài khoản **quản trị viên** sẽ vào trang quản lý hệ thống; tài khoản
-**người học** vào màn hình học tập.
+Tài khoản **quản trị viên** vào trang quản lý hệ thống. Tài khoản **người học** vào màn
+hình học tập.
+
+---
+
+## Tắt chương trình
+
+1. Ở **cả hai cửa sổ PowerShell**: bấm `Ctrl` + `C`; nếu được hỏi thì gõ `Y` rồi bấm `Enter`
+2. Mở **XAMPP Control Panel**, bấm **Stop** ở dòng **MySQL** và **Apache**
 
 ---
 
 ## Những lần sau muốn chạy lại
 
-Bước 1–6 chỉ làm một lần. Lần sau chỉ cần 3 việc:
+Bước 1–6 chỉ làm một lần duy nhất. Lần sau còn 3 việc, mất khoảng 1 phút:
 
-1. Mở XAMPP → bấm **Start** ở dòng **MySQL** (lần này không cần Apache, trừ khi bạn muốn mở lại phpMyAdmin)
-2. Mở 2 cửa sổ PowerShell, mỗi cửa sổ gõ `cd $HOME\Desktop\enghabit` rồi lần lượt `pnpm dev:be` và `pnpm dev:fe`
-3. Vào <http://localhost:5173>
-
-**Muốn tắt chương trình:** bấm **Ctrl+C** trong cả hai cửa sổ, rồi bấm **Stop** ở XAMPP.
+1. Mở **XAMPP Control Panel** → bấm **Start** ở dòng **MySQL**
+   *(không cần Apache, trừ khi muốn mở lại phpMyAdmin)*
+2. Mở **hai cửa sổ PowerShell**, ở mỗi cửa sổ gõ `cd $HOME\Desktop\enghabit`, rồi:
+   - Cửa sổ 1 gõ `pnpm dev:be`
+   - Cửa sổ 2 gõ `pnpm dev:fe`
+3. Mở trình duyệt vào `localhost:5173`
 
 ---
 
 ## Gặp lỗi thì xem bảng này
 
-| Hiện tượng | Nguyên nhân | Cách sửa |
+| Màn hình hiện gì | Nguyên nhân | Làm gì |
 |---|---|---|
-| `pnpm : not recognized` | Chưa cài pnpm, hoặc cài xong chưa mở lại cửa sổ | Đóng PowerShell, mở lại rồi gõ `npm install -g pnpm` |
-| `Can't reach database server` | Chưa bật MySQL | Mở XAMPP, bấm **Start** ở dòng MySQL |
-| `Unknown database 'enghabit'` | Chưa tạo database | Làm lại Bước 4, phần phpMyAdmin |
-| `Access denied for user 'root'` | Dòng `DATABASE_URL` sai | Làm lại Bước 5, chép đúng nguyên dòng đó |
-| `Port 4000 is already in use` | Đã có một cửa sổ chạy `pnpm dev:be` rồi | Đóng cửa sổ cũ, hoặc bấm Ctrl+C trong đó |
-| Trang trắng, không hiện gì | Thiếu bước `pnpm build:shared` | Bấm Ctrl+C ở cả 2 cửa sổ, chạy `pnpm build:shared` rồi chạy lại Bước 7 |
-| Tiếng Việt hiện thành `?????` | Database tạo sai bảng mã | Xoá database `enghabit` trong phpMyAdmin, làm lại Bước 4 với `utf8mb4_unicode_ci`, rồi chạy lại `pnpm db:migrate` và `pnpm db:seed` |
+| `pnpm : not recognized` | Chưa cài pnpm, hoặc cài xong chưa mở lại cửa sổ | Đóng PowerShell, mở lại theo Bước 2, gõ `npm install -g pnpm` |
+| `Can't reach database server` | Chưa bật MySQL | Mở XAMPP Control Panel, bấm **Start** ở dòng **MySQL** |
+| `Unknown database 'enghabit'` | Chưa tạo database | Làm lại mục 4.2 |
+| `Access denied for user 'root'` | Dòng `DATABASE_URL` sai | Làm lại Bước 5, chép đúng nguyên dòng |
+| `Port 4000 is already in use` | Đang có một cửa sổ chạy `pnpm dev:be` rồi | Tìm cửa sổ đó, bấm `Ctrl` + `C` |
+| Trình duyệt báo *không thể truy cập trang* | Chưa chạy `pnpm dev:fe`, hoặc đã lỡ đóng cửa sổ | Làm lại mục 7.2 |
+| Trang trắng, không hiện gì | Thiếu bước `pnpm build:shared` | Bấm `Ctrl` + `C` ở cả hai cửa sổ, chạy `pnpm build:shared`, rồi làm lại Bước 7 |
+| Tiếng Việt hiện thành `?????` | Database tạo sai bảng mã | Vào phpMyAdmin, chọn database `enghabit`, bấm tab **Operations** → **Drop**; làm lại mục 4.2 rồi chạy lại lệnh 3 và 4 của Bước 6 |
+| Nút **Start** của MySQL trong XAMPP bật rồi tắt ngay | Máy đã có MySQL khác chiếm cổng 3306 | Tắt phần mềm MySQL kia rồi bấm **Start** lại |
 
-Muốn xem thẳng dữ liệu trong database: gõ `pnpm db:studio`, rồi mở <http://localhost:5555>
+**Muốn xem thẳng dữ liệu bên trong:** mở cửa sổ PowerShell thứ ba, gõ `cd $HOME\Desktop\enghabit`
+rồi `pnpm db:studio`, sau đó vào trình duyệt mở `localhost:5555`.
 
 ---
 
