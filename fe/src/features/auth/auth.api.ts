@@ -38,3 +38,14 @@ export async function updateMe(input: UpdateProfileInput): Promise<PublicUser> {
 export async function changePassword(input: ChangePasswordInput): Promise<void> {
   await apiClient.post('/auth/me/change-password', input);
 }
+
+/** Đổi ảnh đại diện. `dataUrl` là ảnh ĐÃ thu nhỏ ở client (xem shared/avatar). */
+export async function updateAvatar(dataUrl: string): Promise<PublicUser> {
+  const { data } = await apiClient.put<PublicUser>('/auth/me/avatar', { dataUrl });
+  return data;
+}
+
+export async function removeAvatar(): Promise<PublicUser> {
+  const { data } = await apiClient.delete<PublicUser>('/auth/me/avatar');
+  return data;
+}

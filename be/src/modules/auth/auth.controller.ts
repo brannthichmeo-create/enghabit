@@ -3,6 +3,7 @@ import type {
   ChangePasswordInput,
   LoginInput,
   RegisterInput,
+  UpdateAvatarInput,
   UpdateProfileInput,
 } from '@enghabit/shared';
 import { BadRequestError } from '../../common/errors/app-error.js';
@@ -63,6 +64,15 @@ export async function getMe(req: Request, res: Response): Promise<void> {
 
 export async function updateMe(req: Request, res: Response): Promise<void> {
   res.json(await authService.updateProfile(currentUser(req).id, req.body as UpdateProfileInput));
+}
+
+export async function updateAvatar(req: Request, res: Response): Promise<void> {
+  const { dataUrl } = req.body as UpdateAvatarInput;
+  res.json(await authService.setAvatar(currentUser(req).id, dataUrl));
+}
+
+export async function removeAvatar(req: Request, res: Response): Promise<void> {
+  res.json(await authService.removeAvatar(currentUser(req).id));
 }
 
 export async function changePassword(req: Request, res: Response): Promise<void> {

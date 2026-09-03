@@ -23,3 +23,19 @@ export function useUpdateProfile(): UseMutationResult<PublicUser, Error, UpdateP
 export function useChangePassword(): UseMutationResult<void, Error, ChangePasswordInput> {
   return useMutation({ mutationFn: authApi.changePassword });
 }
+
+/**
+ * Đổi ảnh đại diện.
+ *
+ * Ghi thẳng user mới vào store: ảnh hiện ở sidebar và thanh trên cùng, không cập nhật
+ * store thì người dùng đổi ảnh xong vẫn thấy chữ cái đầu như cũ cho tới khi tải lại trang.
+ */
+export function useUpdateAvatar(): UseMutationResult<PublicUser, Error, string> {
+  const setUser = useAuthStore((s) => s.setUser);
+  return useMutation({ mutationFn: authApi.updateAvatar, onSuccess: (user) => setUser(user) });
+}
+
+export function useRemoveAvatar(): UseMutationResult<PublicUser, Error, void> {
+  const setUser = useAuthStore((s) => s.setUser);
+  return useMutation({ mutationFn: authApi.removeAvatar, onSuccess: (user) => setUser(user) });
+}

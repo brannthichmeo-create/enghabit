@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AVATAR_MAX_BYTES } from '../avatar/avatar.js';
 import { UserRole, UserStatus } from '../constants/enums.js';
 
 export const passwordSchema = z
@@ -50,6 +51,14 @@ export interface PublicUser {
   createdAt: string;
   /** ISO datetime lần đăng nhập gần nhất, null nếu chưa từng đăng nhập. */
   lastLoginAt: string | null;
+  /**
+   * Ảnh đại diện dạng data URL, null nếu chưa đặt (FE hiện chữ cái đầu của tên).
+   *
+   * Nhúng thẳng vào phản hồi thay vì trả một đường dẫn ảnh riêng: ảnh đã thu nhỏ chỉ
+   * vài chục KB, mà thẻ <img> thì không gửi kèm được Bearer token nên một endpoint
+   * ảnh riêng sẽ phải mở công khai hoặc phải tải qua JS rồi tạo blob URL.
+   */
+  avatarDataUrl: string | null;
 }
 
 export interface AuthTokens {
@@ -60,3 +69,18 @@ export interface AuthTokens {
 export interface AuthResponse extends AuthTokens {
   user: PublicUser;
 }
+
+/**
+ * Đổi ảnh đại diện. Ảnh gửi lên dạng data URL đã thu nhỏ ở client.
+ *
+ * Zod chỉ chặn được độ dài thô; luật thật (định dạng, dung lượng sau giải mã) nằm ở
+ * `parseImageDataUrl` trong `shared/avatar` và được gọi lại ở service.
+ */
+export const updateAvatarSchema = z.object({
+  dataUrl: z
+    .string()
+    .min(1, 'Chưa chọn ảnh')
+    // 4/3 vì base64 phình 33%, cộng dư một ít cho phần "data:image/...;base64,"
+    .max(Math.ceil((AVATAR_MAX_BYTES * 4) / 3) + 100, 'Ảnh quá lớn'),
+});
+export type UpdateAvatarInput = z.infer<typeof updateAvatarSchema>;

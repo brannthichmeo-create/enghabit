@@ -142,6 +142,7 @@ model User {
   mistakes            Mistake[]
   streak              UserStreak?
   notificationSetting NotificationSetting?
+  avatar              UserAvatar?
   reminders           Reminder[]
   devices             UserDevice[]
   refreshTokens       RefreshToken[]
@@ -152,6 +153,30 @@ model User {
   createdTopics       Topic[]              @relation("TopicCreatedBy")
 
   @@map("users")
+}
+
+/// Ảnh đại diện, lưu thẳng trong DB.
+///
+/// Bảng RIÊNG chứ không phải cột trên `users`: dữ liệu ảnh nặng hơn hẳn phần còn lại
+/// của một dòng user, để chung thì mọi truy vấn `findMany` không chọn cột (danh sách
+/// người dùng của trang quản trị, bảng xếp hạng...) sẽ kéo theo cả đống byte không dùng.
+///
+/// Lưu trong DB thay vì ghi ra thư mục trên máy chủ vì nền tảng deploy free tier có ổ
+/// đĩa tạm — mỗi lần deploy lại là mất sạch ảnh người dùng đã tải lên.
+model UserAvatar {
+  userId Int @id @map("user_id")
+
+  /// Ảnh đã thu nhỏ ở phía client (xem shared/avatar). MEDIUMBLOB đủ cho ngưỡng 200KB.
+  data Bytes @db.MediumBlob
+
+  /// image/jpeg | image/png | image/webp — cần để dựng lại data URL khi trả về.
+  mimeType String @map("mime_type") @db.VarChar(30)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_avatars")
 }
 
 /// Nhật ký đăng nhập — nguồn dữ liệu cho phần "lượt truy cập" của trang quản trị.

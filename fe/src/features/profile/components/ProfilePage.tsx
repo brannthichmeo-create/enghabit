@@ -29,6 +29,7 @@ import {
   Skeleton,
 } from '../../../shared/components/ui';
 import { Avatar } from '../../../shared/components/Sidebar';
+import { AvatarPicker } from './AvatarPicker';
 import { useToast } from '../../../shared/components/Toast';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useChangePassword, useUpdateProfile } from '../profile.hooks';
@@ -78,7 +79,11 @@ export function ProfilePage(): JSX.Element {
 
       <Card className="mb-6">
         <div className="flex flex-wrap items-center gap-4">
-          <Avatar name={user?.name ?? '?'} level={isLearner ? level.data?.level : undefined} size="lg" />
+          {user ? (
+            <AvatarPicker user={user} />
+          ) : (
+            <Avatar name="?" size="lg" />
+          )}
 
           <div className="min-w-0 flex-1">
             <h2 className="flex flex-wrap items-center gap-2 text-xl font-bold text-content">

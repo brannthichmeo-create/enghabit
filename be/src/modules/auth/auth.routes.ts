@@ -3,6 +3,7 @@ import {
   changePasswordSchema,
   loginSchema,
   registerSchema,
+  updateAvatarSchema,
   updateProfileSchema,
 } from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
@@ -19,6 +20,15 @@ authRoutes.post('/logout', asyncHandler(controller.logout));
 
 authRoutes.get('/me', requireAuth, asyncHandler(controller.getMe));
 authRoutes.patch('/me', requireAuth, validateBody(updateProfileSchema), asyncHandler(controller.updateMe));
+// Ảnh đại diện: mọi vai trò đều đổi được ảnh của chính mình.
+authRoutes.put(
+  '/me/avatar',
+  requireAuth,
+  validateBody(updateAvatarSchema),
+  asyncHandler(controller.updateAvatar),
+);
+authRoutes.delete('/me/avatar', requireAuth, asyncHandler(controller.removeAvatar));
+
 authRoutes.post(
   '/me/change-password',
   requireAuth,

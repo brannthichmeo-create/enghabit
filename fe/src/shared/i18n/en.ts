@@ -403,6 +403,18 @@ export const EN: Dictionary = {
   'còn {n} XP': '{n} XP to go',
   'Tiến độ học tập': 'Learning progress',
   'Thông tin cá nhân': 'Personal details',
+  'Tải ảnh lên': 'Upload photo',
+  'Đổi ảnh': 'Change photo',
+  'Gỡ ảnh': 'Remove photo',
+  'Đã đổi ảnh đại diện': 'Profile photo updated',
+  'Đã gỡ ảnh đại diện': 'Profile photo removed',
+  'Ảnh JPG, PNG hoặc WebP. Ảnh sẽ được thu nhỏ và cắt vuông tự động.':
+    'JPG, PNG or WebP. The image is resized and cropped to a square automatically.',
+  'Không đọc được ảnh này. Hãy thử một ảnh khác.': 'Could not read this image. Try another one.',
+  'Chỉ nhận ảnh JPG, PNG hoặc WebP': 'Only JPG, PNG or WebP images are accepted',
+  'Ảnh không đúng định dạng': 'That is not a valid image',
+  'Ảnh rỗng': 'The image is empty',
+  'Ảnh quá lớn (tối đa 200KB)': 'Image is too large (200KB max)',
   'Không đổi được email sau khi đăng ký': 'Email cannot be changed after signing up',
   'Múi giờ': 'Time zone',
   'Quyết định mốc kết thúc một ngày học, ảnh hưởng tới chuỗi ngày và thống kê':

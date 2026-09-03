@@ -143,7 +143,11 @@ export function Sidebar({
           }`}
           title={collapsed ? user?.name : undefined}
         >
-          <Avatar name={user?.name ?? '?'} level={isAdmin ? undefined : level.data?.level} />
+          <Avatar
+            name={user?.name ?? '?'}
+            src={user?.avatarDataUrl}
+            level={isAdmin ? undefined : level.data?.level}
+          />
           {!collapsed && (
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-on-page">{user?.name}</span>
@@ -237,14 +241,22 @@ function GroupLabel({ children, collapsed }: { children: string; collapsed: bool
   );
 }
 
-/** Chữ cái đầu của tên, kèm huy hiệu cấp độ ở góc. */
+/**
+ * Ảnh đại diện, kèm huy hiệu cấp độ ở góc.
+ *
+ * Chưa đặt ảnh thì hiện chữ cái đầu của tên — luôn có gì đó để nhìn, không bao giờ là
+ * một ô trống hay ảnh vỡ.
+ */
 export function Avatar({
   name,
   level,
+  src,
   size = 'md',
 }: {
   name: string;
   level?: number;
+  /** Ảnh dạng data URL lấy từ `PublicUser.avatarDataUrl`. */
+  src?: string | null;
   size?: 'md' | 'lg';
 }): JSX.Element {
   const initials = name
@@ -258,11 +270,21 @@ export function Avatar({
 
   return (
     <span className="relative shrink-0">
-      <span
-        className={`flex items-center justify-center rounded-full bg-brand font-semibold text-on-brand ${box}`}
-      >
-        {initials || '?'}
-      </span>
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          className={`rounded-full object-cover ${box}`}
+          // Ảnh là avatar của chính người đang xem, không mang thông tin gì thêm ngoài
+          // cái tên đã hiện ngay cạnh — để alt rỗng cho trình đọc màn hình bỏ qua.
+        />
+      ) : (
+        <span
+          className={`flex items-center justify-center rounded-full bg-brand font-semibold text-on-brand ${box}`}
+        >
+          {initials || '?'}
+        </span>
+      )}
       {level !== undefined && (
         <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface bg-accent px-1 text-[9px] font-bold leading-[14px] text-on-brand">
           {level}

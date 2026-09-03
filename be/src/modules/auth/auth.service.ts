@@ -3,6 +3,7 @@ import {
   DEFAULT_TIMEZONE,
   LoginFailReason,
   UserStatus,
+  parseImageDataUrl,
   type AuthResponse,
   type LoginInput,
   type PublicUser,
@@ -10,9 +11,15 @@ import {
   type UpdateProfileInput,
   type ChangePasswordInput,
 } from '@enghabit/shared';
-import type { User } from '@prisma/client';
+import type { User, UserAvatar } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../../common/errors/app-error.js';
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../../common/errors/app-error.js';
 import { issueRefreshToken, revokeRefreshToken, rotateRefreshToken, signAccessToken } from './token.service.js';
 
 const BCRYPT_ROUNDS = 10;
@@ -47,7 +54,10 @@ export async function register(input: RegisterInput): Promise<AuthResponse> {
  * của request, do controller lấy từ req rồi truyền xuống (service không đụng tới req).
  */
 export async function login(input: LoginInput, client: LoginClientInfo = {}): Promise<AuthResponse> {
-  const user = await prisma.user.findUnique({ where: { email: input.email } });
+  const user = await prisma.user.findUnique({
+    where: { email: input.email },
+    include: { avatar: true },
+  });
 
   // Cùng một thông báo cho cả hai trường hợp để không lộ email nào đã tồn tại.
   const invalid = new UnauthorizedError('Email hoặc mật khẩu không đúng');
@@ -102,7 +112,10 @@ export async function refresh(refreshToken: string): Promise<AuthResponse> {
   const rotated = await rotateRefreshToken(refreshToken);
   if (!rotated) throw new UnauthorizedError('Refresh token không hợp lệ hoặc đã hết hạn');
 
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: rotated.userId } });
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: rotated.userId },
+    include: { avatar: true },
+  });
 
   // Khoá tài khoản phải cắt được cả phiên đang mở, nếu không người bị khoá vẫn dùng
   // tiếp tới khi refresh token hết hạn (30 ngày).
@@ -122,13 +135,17 @@ export async function logout(refreshToken: string): Promise<void> {
 }
 
 export async function getProfile(userId: number): Promise<PublicUser> {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { avatar: true } });
   if (!user) throw new NotFoundError('Không tìm thấy người dùng');
   return toPublicUser(user);
 }
 
 export async function updateProfile(userId: number, input: UpdateProfileInput): Promise<PublicUser> {
-  const user = await prisma.user.update({ where: { id: userId }, data: input });
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: input,
+    include: { avatar: true },
+  });
   return toPublicUser(user);
 }
 
@@ -159,8 +176,13 @@ async function buildAuthResponse(user: User): Promise<AuthResponse> {
   };
 }
 
-/** Chuyển bản ghi DB sang dạng trả về cho client — luôn loại bỏ passwordHash. */
-export function toPublicUser(user: User): PublicUser {
+/**
+ * Chuyển bản ghi DB sang dạng trả về cho client — luôn loại bỏ passwordHash.
+ *
+ * Ảnh đại diện là quan hệ riêng nên phải `include: { avatar: true }` ở chỗ truy vấn;
+ * không include thì `avatarDataUrl` ra null và người dùng tưởng ảnh vừa tải lên bị mất.
+ */
+export function toPublicUser(user: User & { avatar?: UserAvatar | null }): PublicUser {
   return {
     id: user.id,
     name: user.name,
@@ -170,5 +192,39 @@ export function toPublicUser(user: User): PublicUser {
     timezone: user.timezone,
     createdAt: user.createdAt.toISOString(),
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+    avatarDataUrl: user.avatar ? toDataUrl(user.avatar) : null,
   };
+}
+
+function toDataUrl(avatar: UserAvatar): string {
+  return `data:${avatar.mimeType};base64,${Buffer.from(avatar.data).toString('base64')}`;
+}
+
+// --- Ảnh đại diện ---
+//
+// Mọi vai trò đều đổi được ảnh của chính mình: đây là thông tin cá nhân, không phải
+// tính năng học tập, nên không chặn theo vai trò như các module học.
+
+export async function setAvatar(userId: number, dataUrl: string): Promise<PublicUser> {
+  // Kiểm lại ở server dù FE đã kiểm: FE có thể bị bỏ qua hoàn toàn bằng cách gọi
+  // thẳng API. Luật nằm ở shared nên hai phía không thể lệch ngưỡng.
+  const parsed = parseImageDataUrl(dataUrl);
+  if (!parsed.ok) throw new BadRequestError(parsed.reason);
+
+  const data = Buffer.from(parsed.base64, 'base64');
+
+  await prisma.userAvatar.upsert({
+    where: { userId },
+    create: { userId, data, mimeType: parsed.mimeType },
+    update: { data, mimeType: parsed.mimeType },
+  });
+
+  return getProfile(userId);
+}
+
+export async function removeAvatar(userId: number): Promise<PublicUser> {
+  // deleteMany thay vì delete: xoá ảnh khi chưa từng đặt là không có gì để làm, không
+  // phải lỗi — delete sẽ ném P2025 và biến thao tác vô hại thành lỗi 500.
+  await prisma.userAvatar.deleteMany({ where: { userId } });
+  return getProfile(userId);
 }

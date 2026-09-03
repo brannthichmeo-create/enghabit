@@ -11,4 +11,5 @@ export * from './streak/streak.js';
 export * from './level/level.js';
 export * from './srs/sm2.js';
 export * from './rewards/rewards.js';
+export * from './avatar/avatar.js';
 export * from './schemas/index.js';
