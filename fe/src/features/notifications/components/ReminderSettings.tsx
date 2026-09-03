@@ -52,7 +52,8 @@ export function ReminderSettings(): JSX.Element {
   };
 
   return (
-    <section>
+    // id để trang thông báo trỏ thẳng tới đây bằng /profile#nhac-nho
+    <section id="nhac-nho" className="scroll-mt-20">
       <SectionTitle>{t('Cài đặt nhắc nhở')}</SectionTitle>
       <Card>
         {update.isError && <ErrorMessage>{getErrorMessage(update.error)}</ErrorMessage>}

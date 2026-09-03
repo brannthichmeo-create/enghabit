@@ -342,8 +342,8 @@ export const EN: Dictionary = {
   'Chưa có thông báo nào. Nhắc nhở học sẽ xuất hiện ở đây.':
     'No notifications yet. Study reminders will show up here.',
   'Không còn thông báo chưa đọc': 'No unread notifications',
-  'Nhắc nhở học hằng ngày sẽ xuất hiện ở đây theo giờ bạn đặt bên dưới.':
-    'Daily reminders appear here at the time you set below.',
+  'Nhắc nhở học hằng ngày sẽ xuất hiện ở đây theo giờ bạn đặt trong trang cá nhân.':
+    'Daily reminders appear here at the time you set on your profile page.',
   'Xem tất cả thông báo': 'See all notifications',
   'Xoá thông báo': 'Delete notification',
   'Thông báo, {n} chưa đọc': 'Notifications, {n} unread',

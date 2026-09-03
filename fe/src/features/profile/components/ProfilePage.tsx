@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Award, CalendarDays, Flame, KeyRound, Layers, Save, Sparkles } from 'lucide-react';
 import { changePasswordSchema, updateProfileSchema } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
@@ -18,10 +19,11 @@ import { useToast } from '../../../shared/components/Toast';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useChangePassword, useUpdateProfile } from '../profile.hooks';
 import { useLevel, useStatsSummary, useStreak } from '../../statistics/statistics.hooks';
+import { ReminderSettings } from '../../notifications/components/ReminderSettings';
 import { useLocale, useT } from '../../../shared/i18n/language';
 
 /**
- * Trang cá nhân: thông tin tài khoản, tiến độ học và cài đặt bảo mật.
+ * Trang cá nhân: thông tin tài khoản, tiến độ học, bảo mật và cài đặt nhắc nhở.
  *
  * Gom vào một trang thay vì tách nhiều màn hình, vì người dùng vào đây không
  * thường xuyên và mỗi lần vào thường chỉ sửa một thứ.
@@ -33,6 +35,14 @@ export function ProfilePage(): JSX.Element {
   const level = useLevel();
   const streak = useStreak();
   const summary = useStatsSummary('month');
+  const { hash } = useLocation();
+
+  // Vào bằng liên kết /profile#nhac-nho thì cuộn thẳng tới khối đó — cài đặt nằm cuối
+  // một trang dài, không cuộn thì người dùng tưởng bấm hụt.
+  useEffect(() => {
+    if (!hash) return;
+    document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [hash]);
 
   return (
     <div>
@@ -104,6 +114,15 @@ export function ProfilePage(): JSX.Element {
       <div className="grid gap-4 lg:grid-cols-2">
         <ProfileForm />
         <PasswordForm />
+      </div>
+
+      {/*
+        Cài đặt nhắc nhở đặt ở đây chứ không ở trang Thông báo: giờ nhắc gắn với múi
+        giờ ngay phía trên trong cùng trang này, và đây là chỗ chứa mọi thiết lập của
+        tài khoản. Trang Thông báo chỉ để đọc.
+      */}
+      <div className="mt-6">
+        <ReminderSettings />
       </div>
     </div>
   );

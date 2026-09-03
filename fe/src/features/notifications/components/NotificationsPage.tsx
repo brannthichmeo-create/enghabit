@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, CheckCheck, Settings, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import {
@@ -18,11 +18,16 @@ import {
   useNotifications,
 } from '../notification.hooks';
 import { displayFor, timeAgo } from './notification-display';
-import { ReminderSettings } from './ReminderSettings';
 import { useLocale, useT } from '../../../shared/i18n/language';
 
-/** Danh sách thông báo đầy đủ + cài đặt nhắc nhở, gộp một trang vì cùng một việc:
- * theo dõi và điều chỉnh những gì hệ thống nhắc mình. */
+/**
+ * Danh sách thông báo đã nhận.
+ *
+ * Chỉ có danh sách, không có cài đặt: đây là màn hình để ĐỌC, mở ra nhiều lần mỗi
+ * ngày, còn giờ nhắc thì cả tháng chỉnh một lần. Trộn hai thứ khiến trang dài ra
+ * và người dùng phải cuộn qua một khối cài đặt chỉ để xem thông báo mới.
+ * Cài đặt nhắc nhở nay nằm ở trang cá nhân, cạnh các thiết lập tài khoản khác.
+ */
 export function NotificationsPage(): JSX.Element {
   const locale = useLocale();
   const t = useT();
@@ -42,9 +47,17 @@ export function NotificationsPage(): JSX.Element {
         title={t('Thông báo')}
         description={t('Nhắc nhở học tập, cảnh báo chuỗi ngày và thông báo từ hệ thống')}
         action={
-          <Button variant="secondary" icon={CheckCheck} onClick={() => markAllRead.mutate()}>
-            {t('Đánh dấu đã đọc hết')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {/* Lối đi tới chỗ cài đặt vừa chuyển đi — người quen tìm nó ở đây sẽ không bị lạc */}
+            <Link to="/profile#nhac-nho">
+              <Button variant="secondary" icon={Settings}>
+                {t('Cài đặt nhắc nhở')}
+              </Button>
+            </Link>
+            <Button variant="secondary" icon={CheckCheck} onClick={() => markAllRead.mutate()}>
+              {t('Đánh dấu đã đọc hết')}
+            </Button>
+          </div>
         }
       />
 
@@ -76,7 +89,7 @@ export function NotificationsPage(): JSX.Element {
         <EmptyState
           icon={Bell}
           title={unreadOnly ? t('Không còn thông báo chưa đọc') : t('Chưa có thông báo nào')}
-          description={t('Nhắc nhở học hằng ngày sẽ xuất hiện ở đây theo giờ bạn đặt bên dưới.')}
+          description={t('Nhắc nhở học hằng ngày sẽ xuất hiện ở đây theo giờ bạn đặt trong trang cá nhân.')}
         />
       )}
 
@@ -153,10 +166,6 @@ export function NotificationsPage(): JSX.Element {
           </Button>
         </div>
       )}
-
-      <div className="mt-8">
-        <ReminderSettings />
-      </div>
     </div>
   );
 }
