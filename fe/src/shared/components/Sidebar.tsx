@@ -11,6 +11,7 @@ import {
   LogOut,
   Shield,
   Target,
+  Trophy,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -71,6 +72,7 @@ export function Sidebar({
     { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen },
     { to: '/flashcards', label: 'Ôn tập', icon: Layers, badge: dueCount.data },
     { to: '/quizzes', label: 'Quiz', icon: Shield },
+    { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },
     { to: '/notifications', label: 'Thông báo', icon: Bell, badge: unread.data },
   ];
 

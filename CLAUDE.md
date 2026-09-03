@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Trạng thái dự án
 
-Đã scaffold xong nền tảng: `shared` (enum, Zod schema, SM-2, streak, phần thưởng — có test), `be` (Express + Prisma + đầy đủ module auth/goals/habits/topics/flashcards/lessons/quizzes/statistics/notifications/rewards/admin, cron nhắc nhở + cron vật phẩm giữ chuỗi), `fe` (React + Vite + Tailwind, auth + dashboard thống kê). `mobile` chưa scaffold.
+Đã scaffold xong nền tảng: `shared` (enum, Zod schema, SM-2, streak, phần thưởng — có test), `be` (Express + Prisma + đầy đủ module auth/goals/habits/topics/flashcards/lessons/quizzes/statistics/notifications/rewards/leaderboard/admin, cron nhắc nhở + cron vật phẩm giữ chuỗi), `fe` (React + Vite + Tailwind, auth + dashboard thống kê). `mobile` chưa scaffold.
 
 Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có sẵn API backend và khuôn mẫu ở `fe/src/features/auth` + `fe/src/features/statistics` để làm theo.
 
@@ -20,6 +20,7 @@ Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có 
 - Làm quiz kiểm tra kiến thức
 - Xem chuỗi ngày học liên tiếp (streak), tỷ lệ hoàn thành thói quen, thống kê theo ngày/tuần/tháng
 - Điểm danh mỗi ngày nhận xu, làm ba nhiệm vụ ngày, mua vật phẩm giữ chuỗi để không mất streak khi lỡ nghỉ một hôm
+- Xem bảng xếp hạng theo tuần/tháng/toàn thời gian, biết mình đứng thứ mấy trong số người học
 - Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user), cảnh báo chuỗi sắp đứt, chúc mừng đạt mục tiêu — xem trong chuông thông báo và trang `/notifications`
 
 ### Chức năng cho quản trị viên
@@ -79,7 +80,7 @@ enghabit/
 Bên trong `be/src/modules/<feature>/`: `routes.ts → controller.ts → service.ts → schema.ts`.
 Bên trong `fe/src/features/<feature>/`: `components/`, `hooks/`, `api.ts`, `types.ts`.
 
-Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `lessons`, `quizzes`, `statistics`, `notifications`, `rewards`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
+Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `lessons`, `quizzes`, `statistics`, `notifications`, `rewards`, `leaderboard`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
 
 **Hai quy ước bắt buộc khi scaffold:**
 
@@ -102,6 +103,7 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 - Bắt buộc có script `be/prisma/scripts/recompute-streak.ts` tính lại `UserStreak` từ `ActivityLog` (chạy được cho 1 user hoặc toàn bộ user).
 - Khi phát hiện streak sai: chạy lại script này, **không sửa tay** giá trị trong bảng.
 - Thống kê ngày/tuần/tháng **tính trực tiếp từ `ActivityLog`** (query on-the-fly), không tạo bảng tổng hợp riêng — ở quy mô vài trăm user, thêm bảng tổng hợp chỉ làm tăng nguy cơ lệch số liệu mà không có lợi ích thực tế.
+- **Bảng xếp hạng cũng vậy**: `leaderboard.service` group `ActivityLog` theo user mỗi lần đọc, không có bảng điểm riêng. Điểm xếp hạng dùng lại đúng `xpFromActivityCounts` của `shared/level` — dựng thang điểm riêng cho bảng xếp hạng là tạo ra hai cách tính song song, và người dùng sẽ thấy "cấp độ nói một đằng, thứ hạng nói một nẻo". Chỉ xếp hạng tài khoản `USER` đang `ACTIVE`.
 
 ### Phần thưởng động viên (module `rewards`)
 

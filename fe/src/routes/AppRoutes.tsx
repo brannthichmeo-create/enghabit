@@ -10,6 +10,7 @@ import { PathPage } from '../features/lessons/components/PathPage';
 import { VocabularyPage } from '../features/vocabulary/components/VocabularyPage';
 import { FlashcardPage } from '../features/flashcards/components/FlashcardPage';
 import { QuizzesPage } from '../features/quizzes/components/QuizzesPage';
+import { LeaderboardPage } from '../features/leaderboard/components/LeaderboardPage';
 import { ProfilePage } from '../features/profile/components/ProfilePage';
 import { AdminOverviewPage } from '../features/admin/components/AdminOverviewPage';
 import { AdminUsersPage } from '../features/admin/components/AdminUsersPage';
@@ -46,6 +47,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/vocabulary" element={<Learner name="Từ vựng"><VocabularyPage /></Learner>} />
         <Route path="/flashcards" element={<Learner name="Flashcard"><FlashcardPage /></Learner>} />
         <Route path="/quizzes" element={<Learner name="Quiz"><QuizzesPage /></Learner>} />
+        <Route path="/leaderboard" element={<Learner name="Bảng xếp hạng"><LeaderboardPage /></Learner>} />
 
         {/* Trang cá nhân và thông báo dùng chung cho cả hai vai trò */}
         <Route path="/profile" element={<Feature name="Trang cá nhân"><ProfilePage /></Feature>} />

@@ -27,6 +27,7 @@ const TRAILS: Record<string, Crumb[]> = {
   '/vocabulary': [{ label: 'Từ vựng' }],
   '/flashcards': [{ label: 'Ôn tập' }],
   '/quizzes': [{ label: 'Quiz' }],
+  '/leaderboard': [{ label: 'Bảng xếp hạng' }],
   '/habits': [{ label: 'Thói quen' }],
   '/goals': [{ label: 'Mục tiêu' }],
   '/profile': [{ label: 'Trang cá nhân' }],

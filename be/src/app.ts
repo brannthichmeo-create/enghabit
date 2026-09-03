@@ -18,6 +18,7 @@ import { quizRoutes } from './modules/quizzes/quiz.routes.js';
 import { statisticsRoutes } from './modules/statistics/statistics.routes.js';
 import { notificationRoutes } from './modules/notifications/notification.routes.js';
 import { rewardsRoutes } from './modules/rewards/rewards.routes.js';
+import { leaderboardRoutes } from './modules/leaderboard/leaderboard.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
 
 export function createApp(): Express {
@@ -59,6 +60,7 @@ export function createApp(): Express {
   api.use('/statistics', statisticsRoutes);
   api.use('/notifications', notificationRoutes);
   api.use('/rewards', rewardsRoutes);
+  api.use('/leaderboard', leaderboardRoutes);
   api.use('/admin', adminRoutes);
 
   app.use('/api/v1', api);
