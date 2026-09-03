@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { NotificationType, toLocalDate } from '@enghabit/shared';
+import { NotificationType, UserRole, toLocalDate } from '@enghabit/shared';
 import { prisma } from '../lib/prisma.js';
 import { jobLogger } from '../lib/logger.js';
 import { toDbDate } from '../common/utils/db-date.js';
@@ -51,7 +51,11 @@ export interface ReminderTickResult {
 /** Tách riêng khỏi cron để test được và chạy tay khi cần debug. */
 export async function runReminderTick(now: Date = new Date()): Promise<ReminderTickResult> {
   const settings = await prisma.notificationSetting.findMany({
-    where: { isEnabled: true },
+    // Chỉ nhắc người học. Quản trị viên vận hành hệ thống chứ không đi học, nhắc họ
+    // "đến giờ học tiếng Anh rồi" là gửi nhầm người (xem CLAUDE.md > Chức năng cho
+    // quản trị viên). Lọc ở đây chứ không ở chỗ tạo cấu hình, vì tài khoản có thể
+    // được nâng lên quản trị sau khi đã có sẵn cấu hình nhắc nhở.
+    where: { isEnabled: true, user: { role: UserRole.USER } },
     include: {
       user: {
         select: {

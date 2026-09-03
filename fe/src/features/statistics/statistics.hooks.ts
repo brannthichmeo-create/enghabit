@@ -17,10 +17,14 @@ export const statisticsKeys = {
   calendar: (months: number) => ['statistics', 'calendar', months] as const,
 };
 
-export function useStatsSummary(range: StatsRangeInput['range']): UseQueryResult<StatsSummary> {
+export function useStatsSummary(
+  range: StatsRangeInput['range'],
+  enabled = true,
+): UseQueryResult<StatsSummary> {
   return useQuery({
     queryKey: statisticsKeys.summary(range),
     queryFn: () => statisticsApi.getSummary(range),
+    enabled,
   });
 }
 

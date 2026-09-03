@@ -1,9 +1,23 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Award, CalendarDays, Flame, KeyRound, Layers, Save, Sparkles } from 'lucide-react';
-import { changePasswordSchema, updateProfileSchema } from '@enghabit/shared';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  Activity,
+  Award,
+  BookOpen,
+  CalendarDays,
+  Flame,
+  KeyRound,
+  Layers,
+  LayoutDashboard,
+  Save,
+  Shield,
+  Sparkles,
+  Users,
+} from 'lucide-react';
+import { UserRole, changePasswordSchema, updateProfileSchema } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import {
+  Badge,
   Button,
   Card,
   ErrorMessage,
@@ -27,14 +41,23 @@ import { useLocale, useT } from '../../../shared/i18n/language';
  *
  * Gom vào một trang thay vì tách nhiều màn hình, vì người dùng vào đây không
  * thường xuyên và mỗi lần vào thường chỉ sửa một thứ.
+ *
+ * Đây là trang DÙNG CHUNG cho hai vai trò, nên phải tự lọc: quản trị viên vận hành
+ * hệ thống chứ không đi học, họ không có cấp độ, XP, chuỗi ngày hay nhắc nhở học tập
+ * (xem CLAUDE.md > Chức năng cho quản trị viên). Hiện những số đó cho admin thì lúc
+ * nào cũng là 0 — vừa vô nghĩa vừa làm người xem tưởng hệ thống đếm sai.
  */
 export function ProfilePage(): JSX.Element {
   const locale = useLocale();
   const t = useT();
   const user = useCurrentUser();
-  const level = useLevel();
-  const streak = useStreak();
-  const summary = useStatsSummary('month');
+  const isLearner = user?.role !== UserRole.ADMIN;
+
+  // Không gọi API của người học khi là admin — gọi rồi bỏ đi chỉ tốn request và làm
+  // log server nhiễu (cùng cách làm với Sidebar và QuickStats).
+  const level = useLevel(isLearner);
+  const streak = useStreak(isLearner);
+  const summary = useStatsSummary('month', isLearner);
   const { hash } = useLocation();
 
   // Vào bằng liên kết /profile#nhac-nho thì cuộn thẳng tới khối đó — cài đặt nằm cuối
@@ -46,14 +69,22 @@ export function ProfilePage(): JSX.Element {
 
   return (
     <div>
-      <PageHeader title={t('Trang cá nhân')} description={t('Thông tin tài khoản và tiến độ học tập')} />
+      <PageHeader
+        title={t('Trang cá nhân')}
+        description={
+          isLearner ? t('Thông tin tài khoản và tiến độ học tập') : t('Thông tin tài khoản quản trị')
+        }
+      />
 
       <Card className="mb-6">
         <div className="flex flex-wrap items-center gap-4">
-          <Avatar name={user?.name ?? '?'} level={level.data?.level} size="lg" />
+          <Avatar name={user?.name ?? '?'} level={isLearner ? level.data?.level : undefined} size="lg" />
 
           <div className="min-w-0 flex-1">
-            <h2 className="text-xl font-bold text-content">{user?.name}</h2>
+            <h2 className="flex flex-wrap items-center gap-2 text-xl font-bold text-content">
+              {user?.name}
+              {!isLearner && <Badge tone="brand">{t('Quản trị viên')}</Badge>}
+            </h2>
             <p className="text-sm text-content-muted">{user?.email}</p>
             {user?.createdAt && (
               <p className="mt-1 flex items-center gap-1.5 text-xs text-content-muted">
@@ -64,7 +95,7 @@ export function ProfilePage(): JSX.Element {
           </div>
         </div>
 
-        {level.data && (
+        {isLearner && level.data && (
           <div className="mt-5 border-t border-line pt-4">
             <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
               <span className="flex items-center gap-1.5 text-content-soft">
@@ -80,36 +111,42 @@ export function ProfilePage(): JSX.Element {
         )}
       </Card>
 
-      <SectionTitle>{t('Tiến độ học tập')}</SectionTitle>
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat
-          icon={Sparkles}
-          label={t('Tổng điểm')}
-          value={level.data ? `${level.data.xp}` : null}
-          unit="XP"
-        />
-        <Stat
-          icon={Flame}
-          label={t('Chuỗi hiện tại')}
-          value={streak.data ? `${streak.data.currentStreak}` : null}
-          unit={t('ngày')}
-        />
-        <Stat
-          icon={Award}
-          label={t('Kỷ lục')}
-          value={streak.data ? `${streak.data.longestStreak}` : null}
-          unit={t('ngày')}
-        />
-        <Stat
-          icon={Layers}
-          label={t('Hoạt động tháng này')}
-          value={
-            summary.data
-              ? String(Object.values(summary.data.totals).reduce((sum, n) => sum + n, 0))
-              : null
-          }
-        />
-      </div>
+      {isLearner ? (
+        <>
+          <SectionTitle>{t('Tiến độ học tập')}</SectionTitle>
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat
+              icon={Sparkles}
+              label={t('Tổng điểm')}
+              value={level.data ? `${level.data.xp}` : null}
+              unit="XP"
+            />
+            <Stat
+              icon={Flame}
+              label={t('Chuỗi hiện tại')}
+              value={streak.data ? `${streak.data.currentStreak}` : null}
+              unit={t('ngày')}
+            />
+            <Stat
+              icon={Award}
+              label={t('Kỷ lục')}
+              value={streak.data ? `${streak.data.longestStreak}` : null}
+              unit={t('ngày')}
+            />
+            <Stat
+              icon={Layers}
+              label={t('Hoạt động tháng này')}
+              value={
+                summary.data
+                  ? String(Object.values(summary.data.totals).reduce((sum, n) => sum + n, 0))
+                  : null
+              }
+            />
+          </div>
+        </>
+      ) : (
+        <AdminShortcuts />
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ProfileForm />
@@ -120,11 +157,53 @@ export function ProfilePage(): JSX.Element {
         Cài đặt nhắc nhở đặt ở đây chứ không ở trang Thông báo: giờ nhắc gắn với múi
         giờ ngay phía trên trong cùng trang này, và đây là chỗ chứa mọi thiết lập của
         tài khoản. Trang Thông báo chỉ để đọc.
+
+        Chỉ người học mới có: nội dung nhắc là "hôm nay bạn chưa học", "chuỗi sắp đứt",
+        "có thẻ tới hạn ôn" — không có nghĩa gì với tài khoản quản trị.
       */}
-      <div className="mt-6">
-        <ReminderSettings />
-      </div>
+      {isLearner && (
+        <div className="mt-6">
+          <ReminderSettings />
+        </div>
+      )}
     </div>
+  );
+}
+
+/**
+ * Thay cho khối "Tiến độ học tập" của người học.
+ *
+ * Quản trị viên vào trang này chỉ để sửa thông tin tài khoản, nhưng để trống hẳn chỗ
+ * đó thì trang trông như bị hỏng — thay bằng lối tắt tới đúng bốn khu họ dùng.
+ */
+function AdminShortcuts(): JSX.Element {
+  const t = useT();
+
+  const items: { to: string; icon: typeof Shield; label: string }[] = [
+    { to: '/admin', icon: LayoutDashboard, label: 'Tổng quan hệ thống' },
+    { to: '/admin/users', icon: Users, label: 'Quản lý tài khoản' },
+    { to: '/admin/access', icon: Activity, label: 'Lượt truy cập' },
+    { to: '/admin/content', icon: BookOpen, label: 'Nội dung học tập' },
+  ];
+
+  return (
+    <>
+      <SectionTitle>{t('Khu quản trị')}</SectionTitle>
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map((item) => (
+          <Link key={item.to} to={item.to}>
+            <Card interactive className="h-full">
+              <span className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft">
+                  <item.icon className="h-4 w-4 text-brand-strong" aria-hidden />
+                </span>
+                <span className="text-sm font-medium text-content">{t(item.label)}</span>
+              </span>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </>
   );
 }
 

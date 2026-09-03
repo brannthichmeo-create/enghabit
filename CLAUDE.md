@@ -39,6 +39,18 @@ không tự hạ quyền/khoá/xoá chính mình, không xoá hay hạ quyền *
 tài khoản thì **thu hồi luôn refresh token** — nếu không, người bị khoá vẫn dùng tiếp
 tới khi token hết hạn 30 ngày.
 
+**Quản trị viên KHÔNG có tính năng của người học**: không cấp độ, không XP, không chuỗi
+ngày, không phần thưởng, không nhắc nhở học tập. Route guard `Learner` đã chặn các màn
+hình học, nhưng những chỗ **dùng chung cho hai vai trò phải tự lọc** — quên lọc thì admin
+thấy một dãy số 0 vô nghĩa và tưởng hệ thống đếm sai:
+
+- `Sidebar`, `QuickStats` (thanh trên cùng) và **trang cá nhân**: ẩn khối học tập và
+  **không gọi API của người học** (`useLevel(isLearner)`, `useStreak(isLearner)`…) — gọi rồi
+  bỏ đi chỉ tốn request và làm log nhiễu.
+- **Cron nhắc nhở** (`be/src/jobs/reminder.job.ts`) lọc `user.role === USER`. Lọc ở job chứ
+  không ở chỗ tạo cấu hình, vì một tài khoản có thể được nâng lên quản trị **sau khi** đã có
+  sẵn cấu hình nhắc nhở.
+
 ## Kiến trúc & tech stack
 
 | Lớp | Công nghệ | Lý do |

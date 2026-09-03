@@ -370,6 +370,8 @@ export const EN: Dictionary = {
 
   // --- Trang cá nhân ---------------------------------------------------------------------
   'Thông tin tài khoản và tiến độ học tập': 'Account details and learning progress',
+  'Thông tin tài khoản quản trị': 'Administrator account details',
+  'Khu quản trị': 'Admin area',
   'Tham gia từ {date}': 'Joined {date}',
   'Cấp {from} → {to}': 'Level {from} → {to}',
   'còn {n} XP': '{n} XP to go',
