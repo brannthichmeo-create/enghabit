@@ -1,14 +1,17 @@
 import { Router } from 'express';
-import { practiceMistakesSchema, submitLessonSchema, type SubmitLessonInput } from '@enghabit/shared';
+import { UserRole, practiceMistakesSchema, submitLessonSchema, type SubmitLessonInput } from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
-import { currentUser, requireAuth } from '../../common/middlewares/auth-guard.js';
+import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
 import { getValidatedQuery, validateBody, validateQuery } from '../../common/middlewares/validate.js';
 import { BadRequestError } from '../../common/errors/app-error.js';
 import * as lessonService from './lesson.service.js';
 
 export const lessonRoutes: Router = Router();
 
-lessonRoutes.use(requireAuth);
+// Chỉ người học. Quản trị viên vận hành hệ thống chứ không đi học (xem CLAUDE.md >
+// Chức năng cho quản trị viên) — giao diện đã không hiện các màn hình này cho họ, nhưng
+// chặn luôn ở API để gọi thẳng bằng token admin cũng không ăn được XP, xu hay streak.
+lessonRoutes.use(requireAuth, requireRole(UserRole.USER));
 
 /** Lộ trình: các chủ đề và trạng thái từng bài. */
 lessonRoutes.get(

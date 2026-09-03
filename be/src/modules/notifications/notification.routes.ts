@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  UserRole,
   notificationQuerySchema,
   registerDeviceSchema,
   updateNotificationSettingSchema,
@@ -7,7 +8,7 @@ import {
   type UpdateNotificationSettingInput,
 } from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
-import { currentUser, requireAuth } from '../../common/middlewares/auth-guard.js';
+import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
 import { getValidatedQuery, validateBody, validateQuery } from '../../common/middlewares/validate.js';
 import { BadRequestError } from '../../common/errors/app-error.js';
 import * as notificationService from './notification.service.js';
@@ -61,9 +62,17 @@ notificationRoutes.delete(
 );
 
 // --- Cấu hình nhắc nhở ---
+//
+// Chỉ người học: nội dung nhắc là "hôm nay bạn chưa học", "chuỗi sắp đứt", "có thẻ tới
+// hạn ôn" — cron cũng đã bỏ qua tài khoản quản trị (xem be/src/jobs/reminder.job.ts),
+// nên để họ đặt được giờ nhắc chỉ tạo ra một cấu hình không bao giờ dùng tới.
+//
+// Danh sách thông báo phía trên thì KHÔNG chặn: quản trị viên vẫn nhận được thông báo
+// hệ thống trong chuông.
 
 notificationRoutes.get(
   '/settings',
+  requireRole(UserRole.USER),
   asyncHandler(async (req, res) => {
     res.json(await notificationService.getSetting(currentUser(req).id));
   }),
@@ -71,6 +80,7 @@ notificationRoutes.get(
 
 notificationRoutes.put(
   '/settings',
+  requireRole(UserRole.USER),
   validateBody(updateNotificationSettingSchema),
   asyncHandler(async (req, res) => {
     res.json(

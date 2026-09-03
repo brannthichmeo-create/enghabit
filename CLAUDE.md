@@ -262,6 +262,12 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - **Không nhắc người đã học hôm nay.** Job kiểm tra `ActivityLog` theo `local_date` trước khi tạo thông báo — nhắc người đang học đều là cách nhanh nhất khiến họ tắt thông báo.
 - Query param kiểu boolean **không dùng `z.coerce.boolean()`**: query string luôn là chuỗi và `Boolean('false') === true`, nên bộ lọc sẽ luôn bật. Dùng `z.preprocess` so khớp `'true'`/`'1'` (xem `notificationQuerySchema`).
 - Mọi route `/admin/*` bắt buộc đi qua role-guard middleware.
+- **Và ngược lại: module học tập chặn `requireRole(UserRole.USER)` ngay ở tầng router** —
+  `rewards`, `lessons`, `flashcards`, `quizzes`, `habits`, `goals`, `statistics`, cùng
+  `/notifications/settings`. Ẩn trên giao diện là chưa đủ: token admin gọi thẳng API vẫn
+  điểm danh lấy xu hay ghi `ActivityLog` được. Hai ngoại lệ cố ý mở cho cả hai vai trò:
+  `/topics` (khu quản trị đọc để quản lý nội dung) và danh sách `/notifications` (quản trị
+  viên vẫn nhận thông báo hệ thống trong chuông).
 - Thay đổi schema DB luôn qua `prisma migrate dev`, không sửa tay trực tiếp trên MySQL.
 
 ## Quy tắc tái sử dụng code

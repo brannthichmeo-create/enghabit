@@ -1,14 +1,17 @@
 import { Router } from 'express';
-import { submitQuizSchema, type SubmitQuizInput } from '@enghabit/shared';
+import { UserRole, submitQuizSchema, type SubmitQuizInput } from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
-import { currentUser, requireAuth } from '../../common/middlewares/auth-guard.js';
+import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
 import { validateBody } from '../../common/middlewares/validate.js';
 import { BadRequestError } from '../../common/errors/app-error.js';
 import * as quizService from './quiz.service.js';
 
 export const quizRoutes: Router = Router();
 
-quizRoutes.use(requireAuth);
+// Chỉ người học. Quản trị viên vận hành hệ thống chứ không đi học (xem CLAUDE.md >
+// Chức năng cho quản trị viên) — giao diện đã không hiện các màn hình này cho họ, nhưng
+// chặn luôn ở API để gọi thẳng bằng token admin cũng không ăn được XP, xu hay streak.
+quizRoutes.use(requireAuth, requireRole(UserRole.USER));
 
 quizRoutes.get(
   '/',
