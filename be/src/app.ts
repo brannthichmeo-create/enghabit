@@ -20,6 +20,7 @@ import { notificationRoutes } from './modules/notifications/notification.routes.
 import { rewardsRoutes } from './modules/rewards/rewards.routes.js';
 import { leaderboardRoutes } from './modules/leaderboard/leaderboard.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
+import { communityRoutes } from './modules/community/community.routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -30,6 +31,19 @@ export function createApp(): Express {
 
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGIN.split(','), credentials: true }));
+
+  /*
+    Đăng bài ở diễn đàn có thể kèm tối đa 3 tệp × 900KB, mà base64 làm phình thêm
+    ~33%, nên riêng nhánh này cần trần rộng hơn (3 × 900KB × 1,34 ≈ 3,6MB).
+
+    Phải khai báo TRƯỚC parser toàn cục: express.json bỏ qua request đã được parse, nên
+    cái đứng trước thắng. Đặt sau thì parser 1mb chạy trước và trả 413 cho mọi bài có
+    tệp — mà lỗi đó lại không nói gì về nguyên nhân thật.
+
+    Giữ trần chung ở 1mb thay vì nới hết: mọi endpoint còn lại chỉ nhận JSON nhỏ, không
+    có lý do gì mở rộng bề mặt tấn công của chúng.
+  */
+  app.use('/api/v1/community', express.json({ limit: '5mb' }));
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
 
@@ -62,6 +76,7 @@ export function createApp(): Express {
   api.use('/rewards', rewardsRoutes);
   api.use('/leaderboard', leaderboardRoutes);
   api.use('/admin', adminRoutes);
+  api.use('/community', communityRoutes);
 
   app.use('/api/v1', api);
 

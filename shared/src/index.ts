@@ -7,10 +7,12 @@
 
 export * from './constants/index.js';
 export * from './date/local-date.js';
+export * from './encoding/base64.js';
 export * from './streak/streak.js';
 export * from './level/level.js';
 export * from './srs/sm2.js';
 export * from './rewards/rewards.js';
 export * from './report/report.js';
 export * from './avatar/avatar.js';
+export * from './attachment/attachment.js';
 export * from './schemas/index.js';

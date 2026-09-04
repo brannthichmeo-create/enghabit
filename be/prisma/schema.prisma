@@ -151,6 +151,9 @@ model User {
   coinTransactions    CoinTransaction[]
   streakFreezes       StreakFreeze[]
   createdTopics       Topic[]              @relation("TopicCreatedBy")
+  posts               Post[]
+  postComments        PostComment[]
+  postLikes           PostLike[]
 
   @@map("users")
 }
@@ -642,6 +645,108 @@ model CoinTransaction {
   @@unique([userId, dedupeKey])
   @@index([userId, localDate])
   @@map("coin_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Cộng đồng — diễn đàn hỏi đáp dùng chung cho cả người học và quản trị viên
+// ---------------------------------------------------------------------------
+
+/// Một bài đăng trên diễn đàn.
+///
+/// Bài đăng KHÔNG phải hoạt động học nên không sinh `ActivityLog` (cùng nguyên tắc
+/// với module rewards): viết bài không giúp người ta nhớ từ vựng, ghi vào đó thì
+/// đăng vài dòng là đủ giữ chuỗi và mọi thống kê học tập sẽ nói dối.
+model Post {
+  id       Int    @id @default(autoincrement())
+  authorId Int    @map("author_id")
+  title    String @db.VarChar(200)
+
+  /// Nội dung dạng văn bản thuần. KHÔNG lưu HTML: nội dung do người dùng viết mà
+  /// render lại thành HTML cho người khác xem là đường thẳng tới XSS.
+  body String @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  author      User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments    PostComment[]
+  likes       PostLike[]
+  attachments PostAttachment[]
+
+  @@index([createdAt])
+  @@index([authorId])
+  @@map("posts")
+}
+
+/// Bình luận trong một bài đăng. Cố ý phẳng, không lồng nhau — luồng trả lời nhiều
+/// tầng làm giao diện phức tạp hẳn mà một diễn đàn hỏi đáp quy mô này không cần.
+model PostComment {
+  id       Int    @id @default(autoincrement())
+  postId   Int    @map("post_id")
+  authorId Int    @map("author_id")
+  body     String @db.VarChar(2000)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+  @@map("post_comments")
+}
+
+/// Một lượt thả tim. Số tim = đếm số dòng, không có cột đếm sẵn — cùng lý do với
+/// số dư xu tính bằng SUM: thêm cột đếm là thêm một chỗ có thể lệch với sự thật.
+///
+/// `@@unique([postId, userId])` là thứ DUY NHẤT chặn thả tim hai lần cho cùng một
+/// bài khi hai request về cùng lúc; kiểm tra đọc-rồi-ghi vẫn lọt.
+model PostLike {
+  id     Int @id @default(autoincrement())
+  postId Int @map("post_id")
+  userId Int @map("user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+  @@map("post_likes")
+}
+
+/// Tệp đính kèm của một bài đăng, lưu thẳng trong DB.
+///
+/// Lưu trong DB thay vì ghi ra ổ đĩa vì nền tảng deploy free tier có ổ đĩa tạm —
+/// mỗi lần deploy lại là mất sạch tệp người dùng đã tải lên (cùng lý do với UserAvatar).
+///
+/// CẢNH BÁO khi truy vấn: cột `data` nặng hơn hẳn phần còn lại của một dòng. Mọi chỗ
+/// liệt kê bài viết PHẢI `select` riêng các cột mô tả, tuyệt đối không `include:
+/// { attachments: true }` — một trang danh sách sẽ kéo về hàng chục MB byte không dùng.
+/// Chỉ endpoint tải tệp mới được đọc cột này.
+model PostAttachment {
+  id     Int @id @default(autoincrement())
+  postId Int @map("post_id")
+
+  data Bytes @db.MediumBlob
+
+  /// Chỉ nhận các giá trị trong danh sách trắng ở shared/attachment. Khi trả tệp về
+  /// phải dùng đúng giá trị đã lưu này, không bao giờ dùng Content-Type do client gửi.
+  mimeType String @map("mime_type") @db.VarChar(100)
+
+  /// Tên tệp gốc, chỉ để hiển thị và đặt tên khi tải về.
+  fileName String @map("file_name") @db.VarChar(255)
+
+  /// Kích thước sau khi giải mã, lưu sẵn để danh sách hiện được cỡ tệp mà không đọc `data`.
+  sizeBytes Int @map("size_bytes")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("post_attachments")
 }
 
 /// Một vật phẩm giữ chuỗi. Mỗi dòng là một cái đã mua.

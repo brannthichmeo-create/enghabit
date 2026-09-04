@@ -17,6 +17,7 @@ import { AdminOverviewPage } from '../features/admin/components/AdminOverviewPag
 import { AdminUsersPage } from '../features/admin/components/AdminUsersPage';
 import { AdminAccessPage } from '../features/admin/components/AdminAccessPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
+import { CommunityPage } from '../features/community/components/CommunityPage';
 import { NotificationsPage } from '../features/notifications/components/NotificationsPage';
 import { AnnouncementPage } from '../features/notifications/components/AnnouncementPage';
 import { FeatureErrorBoundary } from '../shared/components/FeatureErrorBoundary';
@@ -51,7 +52,8 @@ export function AppRoutes(): JSX.Element {
         <Route path="/quizzes" element={<Learner name="Quiz"><QuizzesPage /></Learner>} />
         <Route path="/leaderboard" element={<Learner name="Bảng xếp hạng"><LeaderboardPage /></Learner>} />
 
-        {/* Trang cá nhân và thông báo dùng chung cho cả hai vai trò */}
+        {/* Trang cá nhân, thông báo và diễn đàn dùng chung cho cả hai vai trò */}
+        <Route path="/community" element={<Feature name="Cộng đồng"><CommunityPage /></Feature>} />
         <Route path="/profile" element={<Feature name="Trang cá nhân"><ProfilePage /></Feature>} />
         <Route path="/notifications" element={<Feature name="Thông báo"><NotificationsPage /></Feature>} />
 

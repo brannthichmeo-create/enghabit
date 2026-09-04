@@ -668,4 +668,59 @@ export const EN: Dictionary = {
   'So chuỗi dài nhất đạt được với mục tiêu {target} ngày.':
     'Comparing your longest streak against the {target}-day goal.',
   'Trung bình đạt {percent}% các mục tiêu đã đặt.': 'On average you hit {percent}% of the goals you set.',
+
+  // --- Cộng đồng: diễn đàn hỏi đáp -------------------------------------------
+  'Cộng đồng': 'Community',
+  'Đặt câu hỏi, chia sẻ kinh nghiệm học tiếng Anh với mọi người.':
+    'Ask questions and share what works for learning English.',
+
+  // Danh sách và bộ lọc
+  'Mới nhất': 'Newest',
+  'Nhiều tim nhất': 'Most loved',
+  'Bài của tôi': 'My posts',
+  'Tìm': 'Search',
+  'Tìm trong tiêu đề và nội dung': 'Search titles and content',
+  'Không tải được danh sách bài viết': 'Could not load the posts',
+  'Chưa có bài viết nào': 'No posts yet',
+  'Hãy là người mở đầu — đặt một câu hỏi cho cộng đồng.':
+    'Be the first — ask the community a question.',
+  'Không có bài nào khớp': 'No posts match',
+  'Thử bỏ bớt bộ lọc hoặc từ khoá khác.': 'Try clearing a filter or using different words.',
+  'Trang {page}/{total}': 'Page {page} of {total}',
+  '{n} ảnh': { one: '{n} image', other: '{n} images' },
+  '{n} tệp': { one: '{n} file', other: '{n} files' },
+
+  // Soạn bài
+  'Đăng bài': 'New post',
+  'Đặt câu hỏi hoặc chia sẻ': 'Ask a question or share something',
+  'Ví dụ: Làm sao để nhớ từ vựng lâu?': 'For example: How do I remember vocabulary longer?',
+  'Mô tả cụ thể giúp người khác trả lời dễ hơn.': 'The more detail you give, the easier it is to help.',
+  '{n}/10000 ký tự': '{n}/10000 characters',
+  'Đính kèm': 'Attach',
+  'Tối đa {n} tệp, mỗi tệp {size}KB. Nhận ảnh, PDF và TXT.':
+    'Up to {n} files, {size}KB each. Images, PDF and TXT.',
+  'Mỗi bài chỉ đính kèm tối đa {n} tệp': 'A post can have at most {n} attachments',
+  'Gỡ tệp {name}': 'Remove {name}',
+  'Đã đăng bài': 'Post published',
+
+  // Chi tiết bài viết
+  'Bài viết': 'Post',
+  'Không tải được bài viết': 'Could not load the post',
+  'Quay lại danh sách': 'Back to list',
+  'Thả tim': 'Like',
+  'Xoá bài viết': 'Delete post',
+  'Xoá bài viết này? Thao tác không thể hoàn tác.': 'Delete this post? This cannot be undone.',
+  'Đã xoá bài viết': 'Post deleted',
+  'Tải tệp về': 'Download file',
+  'Không tải được ảnh': 'Image failed',
+
+  // Bình luận
+  'Bình luận ({n})': 'Comments ({n})',
+  'Viết bình luận của bạn…': 'Write a comment…',
+  'Gửi': 'Send',
+  'Chưa có bình luận nào. Hãy là người đầu tiên trả lời.':
+    'No comments yet. Be the first to reply.',
+  'Xoá bình luận': 'Delete comment',
+  'Xoá bình luận này?': 'Delete this comment?',
+  'Đã xoá bình luận': 'Comment deleted',
 };

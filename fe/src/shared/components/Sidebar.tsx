@@ -10,6 +10,7 @@ import {
   Megaphone,
   ListChecks,
   LogOut,
+  MessagesSquare,
   Shield,
   Target,
   Trophy,
@@ -74,6 +75,7 @@ export function Sidebar({
     { to: '/flashcards', label: 'Ôn tập', icon: Layers, badge: dueCount.data },
     { to: '/quizzes', label: 'Quiz', icon: Shield },
     { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },
+    { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
     { to: '/notifications', label: 'Thông báo', icon: Bell, badge: unread.data },
   ];
 
@@ -90,6 +92,8 @@ export function Sidebar({
     { to: '/admin/access', label: 'Lượt truy cập', icon: Activity },
     { to: '/admin/content', label: 'Nội dung học tập', icon: BookOpen },
     { to: '/admin/announcements', label: 'Gửi thông báo', icon: Megaphone },
+    // Diễn đàn mở cho cả hai vai trò — quản trị viên vào để trả lời và kiểm duyệt.
+    { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
   ];
 
   return (

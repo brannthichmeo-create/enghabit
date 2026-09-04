@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { AVATAR_MAX_BYTES, base64ByteLength, parseImageDataUrl } from './avatar.js';
+import { base64ByteLength } from '../encoding/base64.js';
+import { AVATAR_MAX_BYTES, parseImageDataUrl } from './avatar.js';
 
 /** Data URL hợp lệ với `bytes` byte dữ liệu (nội dung không cần là ảnh thật). */
 function dataUrl(mimeType: string, bytes: number): string {

@@ -9,6 +9,8 @@
  * ảnh ĐÃ thu nhỏ, không phải file gốc người dùng chọn.
  */
 
+import { base64ByteLength } from '../encoding/base64.js';
+
 /** Cạnh của ảnh sau khi thu nhỏ. Avatar hiển thị lớn nhất là 64px nên 256 là dư cho màn hình retina. */
 export const AVATAR_DIMENSION = 256;
 
@@ -32,12 +34,6 @@ export type ParsedAvatar =
   | { ok: false; reason: string };
 
 const DATA_URL_PATTERN = /^data:([a-z]+\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/]+={0,2})$/;
-
-/** Số byte thật sau khi giải mã base64, tính mà không cần decode cả chuỗi. */
-export function base64ByteLength(base64: string): number {
-  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
-  return Math.floor((base64.length * 3) / 4) - padding;
-}
 
 /**
  * Tách và kiểm tra một data URL ảnh.
