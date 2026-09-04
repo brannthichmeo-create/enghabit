@@ -379,7 +379,7 @@ function ReminderForm({
  * phần tử `absolute` không khai báo `left` sẽ neo vào GIỮA track chứ không phải mép
  * trái. Cộng thêm phép dịch ngang, núm rơi hẳn ra ngoài track và biến mất.
  *
- * Màu núm đổi theo trạng thái để tương phản ở cả hai: trên nền olive dùng `on-brand`
+ * Màu núm đổi theo trạng thái để tương phản ở cả hai: trên nền thương hiệu dùng `on-brand`
  * (tối ở cả chế độ sáng lẫn tối — đúng cặp token mà bảng màu định nghĩa cho "thứ nằm
  * trên nền thương hiệu"), còn khi tắt thì track chìm nên núm lấy màu `line-control`.
  * Track luôn có viền để phân biệt được với nền thẻ ngay cả lúc tắt.

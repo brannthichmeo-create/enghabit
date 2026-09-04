@@ -16,11 +16,11 @@ Quyết định cách tổ chức màu, làm trước khi chọn bất kỳ mã 
 
 Dùng `--text-primary`, `--surface`, `--action` thay vì `--blue-500`, `--gray-100`.
 
-**Vì sao:** đổi màu thương hiệu hoặc thêm chế độ tối chỉ cần đổi giá trị token, không phải sửa từng component. Tên theo màu sẽ thành nói dối ngay khi `--blue-500` chuyển sang màu olive.
+**Vì sao:** đổi màu thương hiệu hoặc thêm chế độ tối chỉ cần đổi giá trị token, không phải sửa từng component. Tên theo màu sẽ thành nói dối ngay khi `--olive-500` chuyển sang màu xanh dương — đúng chuyện đã xảy ra với dự án này.
 
 ### R2 — Chia hai tầng: màu gốc và màu ngữ nghĩa
 
-Tầng gốc là thang màu thô (`olive-100` … `olive-900`). Tầng ngữ nghĩa trỏ vào tầng gốc (`--action: olive-600`). **Component chỉ được dùng tầng ngữ nghĩa.**
+Tầng gốc là thang màu thô (`blue-100` … `blue-900`). Tầng ngữ nghĩa trỏ vào tầng gốc (`--action: blue-600`). **Component chỉ được dùng tầng ngữ nghĩa.**
 
 **Vì sao:** tách "màu này là gì" khỏi "màu này dùng làm gì", nên đổi một trong hai không kéo theo cái kia.
 
@@ -32,7 +32,7 @@ Màu thương hiệu để nhận diện. Màu chức năng (thành công / cả
 
 ### R4 — Không viết mã màu trực tiếp trong component
 
-Thấy `#8E9141` hay `bg-slate-200` trong file component là dấu hiệu token bị thiếu. Bổ sung token, đừng viết cứng.
+Thấy `#6090CF` hay `bg-slate-200` trong file component là dấu hiệu token bị thiếu. Bổ sung token, đừng viết cứng.
 
 **Vì sao:** màu viết cứng không đổi theo chế độ sáng/tối, và sẽ âm thầm sai màu khi bảng màu thay đổi.
 
@@ -67,14 +67,15 @@ Mắt người rất kém trong việc ước lượng tương phản, nhất l�
 
 Rất nhiều màu thương hiệu nằm ở dải sáng vừa, không đủ tương phản với chữ trắng.
 
-**Ví dụ thật trong dự án:** `#8E9141` với chữ trắng chỉ đạt **3.35:1** — chưa đạt. Hai lối xử lý:
+**Ví dụ thật trong dự án:** `#6090CF` với chữ trắng chỉ đạt **3.29:1** — đủ cho ranh giới nút nhưng chưa đạt ngưỡng 4.5:1 của chữ. Hai lối xử lý:
 
 | Cách | Kết quả |
 |---|---|
-| Dùng bậc đậm hơn `#6F7133` cho nút | 5.14:1 với chữ trắng |
-| Giữ nguyên `#8E9141`, đổi chữ sang olive-đen `#1C1D10` | **5.09:1** ← đã chọn |
+| Dùng bậc đậm hơn `#1E4E8C` cho nút | 8.32:1 với chữ trắng |
+| Giữ nguyên `#6090CF`, đổi chữ sang navy-đen `#0F1B2E` | **5.25:1** ← đã chọn |
 
-Cách thứ hai giữ được đúng màu thương hiệu, nên ưu tiên khi có thể.
+Cách thứ hai giữ được đúng màu thương hiệu, nên ưu tiên khi có thể. Bảng màu olive trước đây rơi
+vào y hệt tình huống này (`#8E9141` chỉ đạt 3.35:1 với chữ trắng) và cũng chọn cách thứ hai.
 
 ### R9 — Kiểm tra cả cặp chữ-trên-nền, không chỉ từng màu
 
@@ -88,7 +89,7 @@ Không dùng `text-white` cố định trên nền màu. Tạo token `--on-brand
 
 **Vì sao:** ở chế độ tối, màu nền thường chuyển sang bậc **sáng**, lúc đó chữ trắng chỉ còn khoảng **1.7:1** — gần như không đọc được. Lỗi này đã xảy ra thật trong dự án.
 
-Lưu ý: brand và status có thể cần token khác nhau. Ở chế độ sáng, olive là màu sáng vừa (cần chữ tối) trong khi success/danger là màu đậm (cần chữ trắng).
+Lưu ý: brand và status có thể cần token khác nhau. Ở chế độ sáng, xanh thương hiệu là màu sáng vừa (cần chữ tối) trong khi success/danger là màu đậm (cần chữ trắng).
 
 ---
 
@@ -116,7 +117,7 @@ Chọn một sắc độ làm thương hiệu, tối đa một màu nhấn phụ
 
 Xám thuần (`#808080`) trông như chưa ai chọn. Xám pha chút sắc của thương hiệu khiến cả bảng màu thành một hệ thống.
 
-Enghabit: nền `#FAF9F2` và chữ `#22231A` đều ngả olive thay vì xám/đen thuần.
+Enghabit: nền hệ thống `#E7EFFA` và chữ `#18212E` đều ngả xanh thay vì xám/trắng/đen thuần.
 
 ### R14 — Tránh trắng tinh và đen thuần làm nền lớn
 
@@ -142,7 +143,7 @@ Chế độ tối là một bảng màu **được thiết kế riêng**, không
 
 Bậc đậm dùng cho nền sáng sẽ chìm nghỉm trên nền tối. Phải lấy bậc sáng hơn của cùng sắc độ — và khi đó chữ đặt trên nó lại phải chuyển sang màu tối (xem R10).
 
-Enghabit: brand `#8E9141` (sáng) → `#C3C76E` (tối).
+Enghabit: brand `#6090CF` (sáng) → `#8FB8EC` (tối).
 
 ### R18 — Thể hiện độ cao bằng độ sáng bề mặt
 
@@ -217,40 +218,52 @@ Ví dụ: trong bảng đang dùng, cam và vàng không được đứng cạnh
 
 ## Bảng đối chiếu bảng màu hiện tại
 
-Đo ngày 31/08/2026, sau khi đổi nền hệ thống sang mận `#5A495C`. Chạy lại sau mỗi lần đổi màu.
+Đo ngày 04/09/2026, sau khi đổi sang bảng màu **xanh dương pastel** với nền hệ thống SÁNG `#E7EFFA`. Chạy lại sau mỗi lần đổi màu.
 
 | Cặp màu | Dùng ở đâu | Sáng | Tối | Ngưỡng |
 |---|---|---|---|---|
-| `text` / `surface` | Chữ chính trong thẻ | 16.42:1 ✓ | 11.56:1 ✓ | 4.5 |
-| `text-soft` / `surface` | Chữ phụ trong thẻ | 9.64:1 ✓ | 7.29:1 ✓ | 4.5 |
-| `text-muted` / `surface` | Chữ mờ trong thẻ | 5.81:1 ✓ | 4.80:1 ✓ | 4.5 |
-| `on-page` / `page` | Chữ chính trên nền hệ thống | 6.92:1 ✓ | 13.17:1 ✓ | 4.5 |
-| `on-page-soft` / `page` | Mục điều hướng | 5.37:1 ✓ | 8.31:1 ✓ | 4.5 |
-| `on-page-muted` / `page` | Nhãn nhóm, chữ mờ ngoài thẻ | 4.80:1 ✓ | 5.47:1 ✓ | 4.5 |
-| `on-page-link` / `page` | Liên kết trên nền hệ thống | 4.61:1 ✓ | 11.33:1 ✓ | 4.5 |
-| `brand-strong` / `surface` | Liên kết trong thẻ | 8.56:1 ✓ | 9.91:1 ✓ | 4.5 |
-| `on-brand` / `brand` | Chữ trên nút chính | 5.09:1 ✓ | 9.50:1 ✓ | 4.5 |
-| `on-brand` / `brand-vivid` | Chữ trên panel đăng nhập | 9.50:1 ✓ | 9.50:1 ✓ | 4.5 |
-| `success` / `surface` | Chữ trạng thái thành công | 6.00:1 ✓ | 6.70:1 ✓ | 4.5 |
-| `danger` / `surface` | Chữ trạng thái lỗi | 6.02:1 ✓ | 5.79:1 ✓ | 4.5 |
-| `accent-ink` / `surface` | Chữ màu nhấn | 6.36:1 ✓ | 9.63:1 ✓ | 4.5 |
-| `line-control` / `surface` | Viền ô nhập | 3.64:1 ✓ | 3.35:1 ✓ | 3 |
-| `surface` / `page` | Thẻ nổi trên nền hệ thống | 8.26:1 | 1.14:1 | — |
-| Ảnh tên sáng / `page` | ENG//HABIT trên nền hệ thống | 5.27:1 ✓ | 10.39:1 ✓ | 3 |
-| Ảnh tên navy / `brand-vivid` | ENG//HABIT trên panel đăng nhập | 8.00:1 ✓ | 8.00:1 ✓ | 3 |
+| `text` / `surface` | Chữ chính trong thẻ | 16.21:1 ✓ | 12.48:1 ✓ | 4.5 |
+| `text-soft` / `surface` | Chữ phụ trong thẻ | 7.80:1 ✓ | 8.01:1 ✓ | 4.5 |
+| `text-muted` / `surface` | Chữ mờ trong thẻ | 5.26:1 ✓ | 5.20:1 ✓ | 4.5 |
+| `text-muted` / `sunken` | Chữ mờ trên vùng chìm | 4.81:1 ✓ | 5.53:1 ✓ | 4.5 |
+| `on-page` / `page` | Chữ chính trên nền hệ thống | 13.99:1 ✓ | 14.32:1 ✓ | 4.5 |
+| `on-page-soft` / `page` | Mục điều hướng | 7.65:1 ✓ | 9.19:1 ✓ | 4.5 |
+| `on-page-muted` / `page` | Nhãn nhóm, chữ mờ ngoài thẻ | 5.19:1 ✓ | 5.96:1 ✓ | 4.5 |
+| `on-page-link` / `page` | Liên kết trên nền hệ thống | 6.08:1 ✓ | 8.43:1 ✓ | 4.5 |
+| `on-page` / `hover` | Mục điều hướng khi di chuột | 12.58:1 ✓ | 10.30:1 ✓ | 4.5 |
+| `brand-strong` / `surface` | Liên kết trong thẻ | 8.32:1 ✓ | 9.40:1 ✓ | 4.5 |
+| `brand-strong` / `brand-soft` | Chữ trên nền thương hiệu nhạt | 7.30:1 ✓ | 9.04:1 ✓ | 4.5 |
+| `on-brand` / `brand` | Chữ trên nút chính | 5.25:1 ✓ | 8.41:1 ✓ | 4.5 |
+| `on-brand` / `brand-vivid` | Chữ trên panel đăng nhập | 10.05:1 ✓ | 10.05:1 ✓ | 4.5 |
+| `success` / `surface` | Chữ trạng thái thành công | 5.23:1 ✓ | 6.12:1 ✓ | 4.5 |
+| `danger` / `surface` | Chữ trạng thái lỗi | 6.02:1 ✓ | 5.29:1 ✓ | 4.5 |
+| `accent-ink` / `surface` | Chữ màu nhấn | 6.36:1 ✓ | 8.81:1 ✓ | 4.5 |
+| `accent-ink` / `accent-soft` | Chữ nhấn trên nền nhấn nhạt | 5.82:1 ✓ | 9.00:1 ✓ | 4.5 |
+| `on-fill` / `success` | Chữ trên nền thành công | 5.23:1 ✓ | 7.02:1 ✓ | 4.5 |
+| `on-fill` / `danger` | Chữ trên nền lỗi | 6.02:1 ✓ | 6.07:1 ✓ | 4.5 |
+| `line-control` / `surface` | Viền ô nhập | 3.99:1 ✓ | 4.11:1 ✓ | 3 |
+| `brand` / `surface` | Nút chính nổi trên thẻ | 3.29:1 ✓ | 7.35:1 ✓ | 3 |
+| `line-on-page` / `page` | Viền khung app (trang trí) | 1.37:1 | 1.48:1 | — |
+| `surface` / `page` | Thẻ nổi trên nền hệ thống | 1.16:1 | 1.15:1 | — |
+| Ảnh tên / `page` | ENG//HABIT trên nền hệ thống | 12.38:1 ✓ | 11.02:1 ✓ | 3 |
+| Ảnh tên navy / `brand-vivid` | ENG//HABIT trên panel đăng nhập | 8.35:1 ✓ | 8.35:1 ✓ | 3 |
 
-**Nền hệ thống tối buộc phải có HAI bộ chữ.** `#5A495C` là màu tối (trắng trên nó đạt 8.26:1, chữ đen chỉ 2.52:1), trong khi thẻ vẫn nền trắng. Hai nền ngược nhau nên không thể dùng chung một bộ token chữ:
+**Vì sao `--brand` không phải màu pastel thật.** `#6090CF` là bậc **sáng nhất** của sắc xanh này còn đạt 3:1 trên thẻ trắng. Pastel nhạt hơn — ví dụ `#7BA7DB` — chỉ đạt 2.50:1, nghĩa là ranh giới nút chìm vào thẻ và vi phạm R6. Cảm giác pastel của giao diện đến từ **nền hệ thống** `#E7EFFA`, tức mảng 60% lớn nhất theo R11, chứ không phải từ màu nút.
 
-| Bộ token | Dùng cho | Chế độ sáng |
-|---|---|---|
-| `content` (`--text*`) | Chữ **trong thẻ** | tối |
-| `on-page` (`--on-page*`) | Chữ **trên nền hệ thống**: sidebar, thanh trên cùng, tiêu đề trang, chữ ngoài thẻ | sáng |
+**Thẻ tách khỏi nền bằng viền, không bằng độ sáng.** `surface`/`page` chỉ còn 1.16:1 (thời nền mận là 8.26:1) vì cả hai giờ đều sáng. Đây là điều bình thường ở giao diện nền sáng, nhưng có hệ quả bắt buộc: **mọi thẻ phải có `border-line`**, không được chỉ dựa vào bóng đổ. Bỏ viền là thẻ tan vào nền.
 
-Dùng nhầm bộ là lỗi im lặng — ở chế độ tối cả hai nền đều tối nên hai bộ trùng giá trị, chỉ chế độ sáng mới lộ ra. Vì vậy sau mỗi lần đổi màu phải chạy lại bộ đo trên **cả hai chế độ**, không chỉ chế độ đang mở.
+**Vẫn giữ HAI bộ chữ dù nay cùng chiều.** Ở bảng màu mận trước đây, nền hệ thống tối còn thẻ trắng nên hai bộ token bắt buộc ngược nhau. Giờ cả hai nền đều sáng nên `content` và `on-page` cùng chiều — nhưng **không gộp làm một**:
 
-**Được lại ba bậc chữ.** Thời nền trang màu olive sáng, `text-soft` và `text-muted` buộc phải dùng chung một bậc vì phải đọc được trên cả nền trang lẫn thẻ trắng. Giờ chữ trên nền hệ thống đã tách sang bộ riêng nên `text-muted` được nhẹ lại đúng vai trò của nó (5.81:1 thay vì phải gồng lên 9.97:1).
+| Bộ token | Dùng cho | Chế độ sáng | Chế độ tối |
+|---|---|---|---|
+| `content` (`--text*`) | Chữ **trong thẻ** (nền `#FFFFFF`) | tối | sáng |
+| `on-page` (`--on-page*`) | Chữ **ngoài thẻ**: sidebar, thanh trên cùng, tiêu đề trang (nền `#E7EFFA` / `#141B26`) | tối | sáng |
 
-**Tên hệ thống là ảnh nên màu nằm trong file, không nằm trong token.** Nền hệ thống giờ tối ở cả hai chế độ, nên khung app luôn dùng bản sáng màu (`wordmark-dark.png`); bản navy gốc chỉ dùng ở panel đăng nhập — nơi nền luôn sáng. Đổi bảng màu nền thì phải xuất lại hai file bằng `fe/scripts/make-wordmark.py`.
+Hai nền vẫn khác độ sáng nên bậc chữ mờ không dùng chung được, và ở chế độ tối nền hệ thống còn **tối hơn** thẻ — ngược chiều với chế độ sáng. Gộp hai bộ là mở đường cho lỗi im lặng ở lần đổi màu sau.
+
+**Tên hệ thống là ảnh nên màu nằm trong file, không nằm trong token.** Nền hệ thống giờ **sáng ở chế độ sáng và tối ở chế độ tối**, nên khung app không dùng cố định một bản như thời nền mận — `Wordmark` nhận `on="auto"`, vẽ cả hai ảnh rồi để CSS ẩn bớt một theo đúng bộ selector của token (xem `fe/src/index.css`). Panel đăng nhập vẫn `on="light"` vì nền ở đó luôn sáng.
+
+Hai file ảnh giữ nguyên, **không cần chạy lại** `fe/scripts/make-wordmark.py`: bản navy `#16255F` đạt 12.38:1 trên nền pastel sáng, bản nhạt `#C5CDF2` đạt 11.02:1 trên nền navy tối. Chỉ phải xuất lại nếu đổi màu chữ của chính tên hệ thống.
 
 ---
 

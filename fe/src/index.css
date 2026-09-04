@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /**
- * Design token của Enghabit.
+ * Design token của Enghabit — bảng màu xanh dương pastel.
  *
  * Ghi dưới dạng KÊNH MÀU (không có dấu #) để Tailwind áp được độ mờ, ví dụ
  * text-soft/70. Với `var(--x)` dạng hex thuần thì các class có `/` bị bỏ qua âm
@@ -12,104 +12,118 @@
  * Tên token đặt theo VAI TRÒ (page, surface, text) chứ không theo màu, để khi
  * đảo sang chế độ tối không phải đổi tên ở khắp nơi.
  *
- * Màu biểu đồ đã chạy qua validator (dải sáng, chroma, khả năng phân biệt cho
- * người mù màu). Không đổi bằng cảm tính — nếu cần đổi, chạy lại validator.
+ * Mọi giá trị dưới đây đã chạy qua bảng đối chiếu tương phản của
+ * docs/color-rules.md — 21 cặp, cả hai chế độ. Đổi bất kỳ con số nào thì phải
+ * chạy lại bảng đó, đừng chỉnh bằng cảm tính.
  */
 :root {
   color-scheme: light;
 
   /*
-   * Nền hệ thống là mận #5A495C — màu TỐI, khác hẳn nền sáng thông thường.
+   * Nền hệ thống là xanh dương pastel #E7EFFA — màu SÁNG.
    *
-   * Hệ quả quan trọng: chữ đặt trực tiếp lên nền này phải SÁNG (xem --on-page*),
-   * còn chữ trong thẻ trắng vẫn tối như cũ (--text*). Hai nền ngược nhau nên bắt
-   * buộc phải là hai bộ token riêng — dùng chung một bộ thì một trong hai chỗ sẽ
-   * không đọc được.
+   * Khác hẳn bản mận #5A495C trước đây: hồi đó nền hệ thống tối nên chữ đặt lên nó
+   * phải sáng, ngược với chữ trong thẻ. Giờ cả nền hệ thống lẫn thẻ đều sáng nên hai
+   * bộ token chữ (--text* và --on-page*) cùng chiều ở chế độ sáng.
+   *
+   * VẪN GIỮ HAI BỘ chứ không gộp làm một: chúng nằm trên hai nền khác độ sáng
+   * (#E7EFFA và #FFFFFF) nên bậc chữ mờ không thể dùng chung, và ở chế độ tối thì
+   * nền hệ thống lại tối hơn thẻ. Gộp lại là mở đường cho lỗi im lặng khi đổi màu sau này.
    */
-  --page: 90 73 92; /* #5a495c */
+  --page: 231 239 250; /* #e7effa */
   --surface: 255 255 255;
   --surface-raised: 255 255 255;
   /* Vùng chìm BÊN TRONG thẻ trắng (dải nút, nền biểu đồ, khung chờ tải) */
-  --sunken: 243 240 244;
+  --sunken: 241 245 252; /* #f1f5fc */
 
   /*
    * Trạng thái di chuột trên NỀN HỆ THỐNG (sidebar, thanh trên cùng).
-   * Tách khỏi --sunken vì hai chỗ này nằm trên hai nền ngược nhau: nền hệ thống
-   * tối nên hover phải sáng hơn nó, còn trong thẻ trắng thì hover phải tối hơn.
+   * Tách khỏi --sunken vì hai chỗ này nằm trên hai nền khác nhau: nền hệ thống giờ
+   * sáng nên hover phải ĐẬM hơn nó (trước đây nền tối thì hover phải sáng hơn).
    */
-  --hover: 109 90 112; /* #6d5a70 */
+  --hover: 214 228 247; /* #d6e4f7 */
 
   /* Viền trong thẻ trắng và giữa các dòng bảng */
-  --line: 224 218 226;
-  --line-strong: 186 176 189;
+  --line: 222 231 243;
+  --line-strong: 178 196 219;
   /*
    * Viền ô nhập là ranh giới DUY NHẤT của control nên phải đạt 3:1 (xem
    * docs/color-rules.md R6). --line-strong chỉ dùng cho viền trang trí.
    */
-  --line-control: 143 130 146; /* #8f8292 — đạt 3.64:1 trên nền thẻ */
-  /* Viền của khung app (mép sidebar, đáy thanh trên cùng) — nằm trên nền mận */
-  --line-on-page: 123 106 125; /* #7b6a7d */
+  --line-control: 110 129 153; /* #6e8199 — đạt 3.99:1 trên nền thẻ */
+  /* Viền của khung app (mép sidebar, đáy thanh trên cùng) — đường kẻ trang trí */
+  --line-on-page: 187 207 232; /* #bbcfe8 */
 
   /*
-   * Chữ TRONG THẺ. Ngả tím nhẹ thay vì đen thuần để cùng hệ với nền mận.
-   * Nền thẻ là trắng nên ba bậc tách nhau rõ — khác thời nền trang màu olive,
-   * lúc đó soft và muted buộc phải dùng chung một bậc.
+   * Chữ TRONG THẺ. Ngả xanh nhẹ thay vì đen thuần để cùng hệ với nền pastel (R13).
    */
-  --text: 34 30 36; /* #221e24 — 16.42:1 trên thẻ */
-  --text-soft: 74 66 77; /* #4a424d — 9.64:1 */
-  --text-muted: 108 98 111; /* #6c626f — 5.81:1 */
+  --text: 24 33 46; /* #18212e — 16.21:1 trên thẻ */
+  --text-soft: 68 83 106; /* #44536a — 7.80:1 */
+  --text-muted: 94 109 131; /* #5e6d83 — 5.26:1 trên thẻ, 4.81:1 trên vùng chìm */
 
   /*
    * Chữ TRÊN NỀN HỆ THỐNG (sidebar, thanh trên cùng, tiêu đề trang, chữ ngoài thẻ).
-   * Nền mận tối nên bộ này sáng, ngược hẳn với --text*.
+   * Nền pastel sáng nên bộ này TỐI — ngược hẳn với bản mận trước đây.
    */
-  --on-page: 239 233 240; /* #efe9f0 — 6.92:1 trên nền mận */
-  --on-page-soft: 216 205 218; /* #d8cdda — 5.37:1 */
-  --on-page-muted: 205 194 207; /* #cdc2cf — 4.80:1 */
-  /* Liên kết đặt trên nền hệ thống: bậc olive SÁNG, vì --brand đậm chỉ đạt 2.47:1 ở đây */
-  --on-page-link: 195 199 110; /* #c3c76e — 4.61:1 trên nền mận */
+  --on-page: 24 33 46; /* #18212e — 13.99:1 trên nền hệ thống */
+  --on-page-soft: 61 75 95; /* #3d4b5f — 7.65:1 */
+  --on-page-muted: 85 100 122; /* #55647a — 5.19:1 */
+  /* Liên kết trên nền hệ thống: bậc xanh ĐẬM, vì --brand sáng chỉ đạt 1.9:1 ở đây */
+  --on-page-link: 29 87 168; /* #1d57a8 — 6.08:1 trên nền hệ thống */
 
   /*
-   * Màu thương hiệu #8E9141 — dùng ĐÚNG mã màu đã chọn làm nền nút.
-   * Nó chỉ đạt 3.35:1 với chữ trắng nên chữ trên nó phải là olive-đen (5.09:1),
-   * xem --on-brand. Bậc đậm hơn dùng khi olive làm CHỮ trên nền sáng.
+   * Màu thương hiệu #6090CF.
+   *
+   * Đây là bậc SÁNG NHẤT của sắc xanh này còn đạt 3:1 trên thẻ trắng — ranh giới nút
+   * phải nhìn ra được (R6). Pastel nhạt hơn (vd #7BA7DB) chỉ đạt 2.50:1, dùng làm nền
+   * nút là nút chìm vào thẻ. Cảm giác "pastel" của giao diện đến từ nền hệ thống, tức
+   * mảng 60% lớn nhất (R11), chứ không phải từ màu nút.
+   *
+   * Nút dùng chữ tối --on-brand (5.25:1), cùng cách xử lý với olive trước đây (R8).
    */
-  --brand: 142 145 65; /* #8e9141 */
-  --brand-strong: 69 70 32; /* #454620 — làm chữ/link trên nền sáng, 8.56:1 trên brand-soft */
-  --brand-soft: 240 241 228;
-  --brand-vivid: 195 199 110;
+  --brand: 96 144 207; /* #6090cf */
+  --brand-strong: 30 78 140; /* #1e4e8c — làm chữ/link trên nền sáng, 8.32:1 trên thẻ */
+  --brand-soft: 232 241 252; /* #e8f1fc */
+  --brand-vivid: 168 201 236; /* #a8c9ec */
 
-  /* Chữ đặt trên nền thương hiệu — tối ở CẢ HAI chế độ, vì olive luôn ở dải sáng vừa */
-  --on-brand: 28 29 16;
+  /* Chữ đặt trên nền thương hiệu — tối ở CẢ HAI chế độ, vì xanh luôn ở dải sáng vừa */
+  --on-brand: 15 27 46; /* #0f1b2e */
 
-  /* Vàng của logo, cùng họ vàng-lục với olive nên đứng cạnh nhau hoà hợp */
+  /*
+   * Vàng của logo. Giữ nguyên vì nó là màu bổ túc của xanh dương — cặp xanh/vàng ấm
+   * hoà hợp và cho đúng MỘT màu nhấn phụ như R12 cho phép.
+   */
   --accent: 234 178 45;
   --accent-ink: 125 89 0;
   --accent-soft: 250 245 226;
 
-  --ink: 28 29 16;
+  --ink: 15 27 46;
 
-  --success: 61 110 62;
-  --success-soft: 236 243 233;
+  --success: 47 122 77;
+  --success-soft: 232 244 236;
   --danger: 176 58 46;
   --danger-soft: 250 238 236;
 
   /* Chữ trên nền trạng thái (success/danger) — hai màu này đậm nên chữ trắng */
   --on-fill: 255 255 255;
 
-  /* Chuỗi dữ liệu biểu đồ — thứ tự cố định, không hoán đổi */
+  /*
+   * Chuỗi dữ liệu biểu đồ — GIỮ NGUYÊN bảng cũ, thứ tự cố định, không hoán đổi (R25).
+   * Bảng này đã qua validator phân biệt màu cho người mù màu; đổi sang tông xanh cho
+   * "hợp bảng màu" sẽ phá mất tính phân biệt mà không có cách kiểm chứng lại tương đương.
+   * Đây là màu PHÂN LOẠI, cố ý khác họ với màu giao diện (R23).
+   */
   --series-vocab: #2a78d6;
   --series-flashcard: #eb6834;
   --series-quiz: #1baf7a;
   --series-habit: #eda100;
 
-  /* Thang lịch hoạt động, độ sáng giảm dần đơn điệu */
-  --cal-0: #eeeaef;
-  --cal-1: #dfe0b8;
-  --cal-2: #c3c67f;
-  --cal-3: #9b9e47;
-  --cal-4: #6f7133;
-
+  /* Thang lịch hoạt động — MỘT sắc độ, độ sáng giảm dần đơn điệu (R23, R24) */
+  --cal-0: #e5ebf4;
+  --cal-1: #c2d8f2;
+  --cal-2: #93b7e4;
+  --cal-3: #5a8fd0;
+  --cal-4: #2c5f9b;
 }
 
 /*
@@ -121,118 +135,116 @@
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    /* Nền tối là mận sẫm, cùng sắc với nền chế độ sáng, không dùng đen thuần */
-    --page: 36 30 38;
-    --surface: 47 40 49;
-    --surface-raised: 58 49 60;
-    --sunken: 42 35 44;
-    --hover: 59 50 62;
-    --line: 62 53 65;
-    --line-strong: 86 74 89;
-    --line-control: 132 118 135; /* #847687 — đạt 3.35:1 trên nền thẻ */
-    --line-on-page: 62 53 65;
+    /* Nền tối là navy sẫm, cùng sắc với nền chế độ sáng, không dùng đen thuần (R14) */
+    --page: 20 27 38; /* #141b26 */
+    --surface: 30 39 51; /* #1e2733 */
+    --surface-raised: 38 49 63;
+    --sunken: 26 34 45;
+    --hover: 42 53 67;
+    --line: 46 57 71;
+    --line-strong: 70 84 100;
+    --line-control: 119 135 155; /* #77879b — đạt 4.11:1 trên nền thẻ */
+    --line-on-page: 46 57 71;
 
-    --text: 233 230 234;
-    --text-soft: 192 182 194;
-    --text-muted: 157 146 160;
+    --text: 230 234 240;
+    --text-soft: 179 190 205;
+    --text-muted: 139 153 171;
 
-    /* Nền và thẻ đều tối nên chữ trên nền hệ thống dùng chung bậc với chữ trong thẻ */
-    --on-page: 233 230 234;
-    --on-page-soft: 192 182 194;
-    --on-page-muted: 157 146 160;
-    --on-page-link: 217 220 146;
+    /* Nền hệ thống và thẻ đều tối nên chữ ngoài thẻ dùng chung bậc với chữ trong thẻ */
+    --on-page: 230 234 240;
+    --on-page-soft: 179 190 205;
+    --on-page-muted: 139 153 171;
+    --on-page-link: 143 184 236;
 
-    /* Nền tối phải dùng bậc SÁNG của olive, không phải bậc đậm của chế độ sáng */
-    --brand: 195 199 110;
-    --brand-strong: 217 220 146;
-    --brand-soft: 42 44 26;
-    --brand-vivid: 195 199 110;
+    /* Nền tối phải dùng bậc SÁNG của xanh, không phải bậc đậm của chế độ sáng (R17) */
+    --brand: 143 184 236; /* #8fb8ec */
+    --brand-strong: 176 207 245;
+    --brand-soft: 28 42 61;
+    --brand-vivid: 168 201 236;
 
-    --on-brand: 28 29 16;
+    --on-brand: 15 27 46;
 
     --accent: 234 178 45;
     --accent-ink: 232 193 106;
-    --accent-soft: 42 35 16;
+    --accent-soft: 43 36 16;
 
-    --ink: 233 233 223;
+    --ink: 230 234 240;
 
     --success: 122 179 116;
     --success-soft: 26 40 25;
     --danger: 230 122 110;
     --danger-soft: 48 26 23;
 
-    --on-fill: 36 30 38;
+    --on-fill: 20 27 38;
 
     --series-vocab: #4d95e8;
     --series-flashcard: #f07a4a;
     --series-quiz: #2ecb95;
     --series-habit: #f0b62e;
 
-    --cal-0: #2a232c;
-    --cal-1: #3d4020;
-    --cal-2: #5c5f2c;
-    --cal-3: #8b8e3c;
-    --cal-4: #c3c76e;
-
+    --cal-0: #1a222d;
+    --cal-1: #20344b;
+    --cal-2: #2b4e75;
+    --cal-3: #3d72ab;
+    --cal-4: #6fa3e0;
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  /* Nền tối là mận sẫm, cùng sắc với nền chế độ sáng, không dùng đen thuần */
-  --page: 36 30 38;
-  --surface: 47 40 49;
-  --surface-raised: 58 49 60;
-  --sunken: 42 35 44;
-  --hover: 59 50 62;
-  --line: 62 53 65;
-  --line-strong: 86 74 89;
-  --line-control: 132 118 135; /* #847687 — đạt 3.35:1 trên nền thẻ */
-  --line-on-page: 62 53 65;
+  /* Nền tối là navy sẫm, cùng sắc với nền chế độ sáng, không dùng đen thuần (R14) */
+  --page: 20 27 38; /* #141b26 */
+  --surface: 30 39 51; /* #1e2733 */
+  --surface-raised: 38 49 63;
+  --sunken: 26 34 45;
+  --hover: 42 53 67;
+  --line: 46 57 71;
+  --line-strong: 70 84 100;
+  --line-control: 119 135 155; /* #77879b — đạt 4.11:1 trên nền thẻ */
+  --line-on-page: 46 57 71;
 
-  --text: 233 230 234;
-  --text-soft: 192 182 194;
-  --text-muted: 157 146 160;
+  --text: 230 234 240;
+  --text-soft: 179 190 205;
+  --text-muted: 139 153 171;
 
-  /* Nền và thẻ đều tối nên chữ trên nền hệ thống dùng chung bậc với chữ trong thẻ */
-  --on-page: 233 230 234;
-  --on-page-soft: 192 182 194;
-  --on-page-muted: 157 146 160;
-  --on-page-link: 217 220 146;
+  /* Nền hệ thống và thẻ đều tối nên chữ ngoài thẻ dùng chung bậc với chữ trong thẻ */
+  --on-page: 230 234 240;
+  --on-page-soft: 179 190 205;
+  --on-page-muted: 139 153 171;
+  --on-page-link: 143 184 236;
 
-  /* Nền tối phải dùng bậc SÁNG của olive, không phải bậc đậm của chế độ sáng */
-  --brand: 195 199 110;
-  --brand-strong: 217 220 146;
-  --brand-soft: 42 44 26;
-  --brand-vivid: 195 199 110;
+  /* Nền tối phải dùng bậc SÁNG của xanh, không phải bậc đậm của chế độ sáng (R17) */
+  --brand: 143 184 236; /* #8fb8ec */
+  --brand-strong: 176 207 245;
+  --brand-soft: 28 42 61;
+  --brand-vivid: 168 201 236;
 
-  --on-brand: 28 29 16;
+  --on-brand: 15 27 46;
 
   --accent: 234 178 45;
   --accent-ink: 232 193 106;
-  --accent-soft: 42 35 16;
+  --accent-soft: 43 36 16;
 
-  --ink: 233 233 223;
+  --ink: 230 234 240;
 
   --success: 122 179 116;
   --success-soft: 26 40 25;
   --danger: 230 122 110;
   --danger-soft: 48 26 23;
 
-  --on-fill: 36 30 38;
+  --on-fill: 20 27 38;
 
   --series-vocab: #4d95e8;
   --series-flashcard: #f07a4a;
   --series-quiz: #2ecb95;
   --series-habit: #f0b62e;
 
-  --cal-0: #2a232c;
-  --cal-1: #3d4020;
-  --cal-2: #5c5f2c;
-  --cal-3: #8b8e3c;
-  --cal-4: #c3c76e;
-
+  --cal-0: #1a222d;
+  --cal-1: #20344b;
+  --cal-2: #2b4e75;
+  --cal-3: #3d72ab;
+  --cal-4: #6fa3e0;
 }
 
 @layer base {
@@ -248,7 +260,7 @@
 
   /* Viền focus rõ ràng cho người dùng bàn phím, thay vì outline mặc định */
   :focus-visible {
-    outline: 2px solid rgb(var(--brand));
+    outline: 2px solid rgb(var(--brand-strong));
     outline-offset: 2px;
   }
 
@@ -260,6 +272,37 @@
   input::-ms-clear {
     display: none;
   }
+}
+
+/**
+ * Ảnh tên hệ thống trong khung app.
+ *
+ * Màu chữ nằm TRONG file ảnh nên không theo token được: bản navy dùng trên nền sáng,
+ * bản nhạt dùng trên nền tối. Từ khi nền hệ thống đổi sang pastel sáng thì khung app
+ * phải đổi bản theo chế độ, chứ không dùng cố định một bản như trước.
+ *
+ * Không dùng biến thể `dark:` của Tailwind vì cấu hình đang để darkMode mặc định
+ * (chỉ theo hệ điều hành) — lựa chọn tay trong app sẽ không có tác dụng. Dùng đúng bộ
+ * selector của các token phía trên để hai thứ không bao giờ lệch nhau.
+ */
+.wordmark-on-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .wordmark-on-light {
+    display: none;
+  }
+  :root:not([data-theme='light']) .wordmark-on-dark {
+    display: block;
+  }
+}
+
+:root[data-theme='dark'] .wordmark-on-light {
+  display: none;
+}
+:root[data-theme='dark'] .wordmark-on-dark {
+  display: block;
 }
 
 @layer utilities {

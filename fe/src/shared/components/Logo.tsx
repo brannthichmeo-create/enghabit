@@ -34,7 +34,12 @@ export function Logo({
 }: {
   size?: LogoSize;
   withText?: boolean;
-  /** Đặt trên nền SÁNG (panel đăng nhập) thì dùng bản navy thay vì bản sáng màu. */
+  /**
+   * Đặt trên nền LUÔN sáng ở cả hai chế độ (panel đăng nhập) — buộc dùng bản navy.
+   *
+   * Bỏ trống là để tên hệ thống tự đổi bản theo chế độ giao diện, đúng cho khung app:
+   * nền hệ thống pastel giờ sáng ở chế độ sáng và tối ở chế độ tối.
+   */
   onLight?: boolean;
 }): JSX.Element {
   return (
@@ -48,7 +53,7 @@ export function Logo({
         loading="eager"
         decoding="async"
       />
-      {withText && <Wordmark size={size} on={onLight ? 'light' : 'dark'} />}
+      {withText && <Wordmark size={size} on={onLight ? 'light' : 'auto'} />}
     </span>
   );
 }

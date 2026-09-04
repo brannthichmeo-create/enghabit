@@ -157,6 +157,22 @@ export const EN: Dictionary = {
   'Tiến độ mục tiêu': 'Goal progress',
   'Quản lý': 'Manage',
 
+  // Thẻ mở đầu và việc cần làm hôm nay
+  'Kỷ lục {n} ngày': 'Record: {n} days',
+  '{n} XP': '{n} XP',
+  'Còn {n} XP nữa để lên cấp {level}': '{n} XP to reach level {level}',
+  'HỌC ĐỂ GIỮ CHUỖI': 'STUDY TO KEEP THE STREAK',
+  'Việc hôm nay': 'Today',
+  'Bạn đã xong hết phần cần ôn.': 'You are all caught up.',
+  'Làm tiếp từ chỗ đang dở.': 'Pick up where you left off.',
+  '{n} thẻ tới hạn': { one: '{n} card due', other: '{n} cards due' },
+  'Luyện lại từ sai': 'Practise your mistakes',
+  '{n} từ cần luyện': { one: '{n} word to practise', other: '{n} words to practise' },
+  'Không còn từ sai': 'No mistakes left',
+  '{n}% ngày có học': '{n}% of days studied',
+  'Bạn chưa đặt mục tiêu nào': 'You have not set any goals',
+  'Đặt mục tiêu đầu tiên': 'Set your first goal',
+
   // --- Biểu đồ & lịch hoạt động --------------------------------------------------
   '{n} hoạt động': { one: '{n} activity', other: '{n} activities' },
   '{activities} hoạt động trong {days} ngày': '{activities} activities across {days} days',
@@ -605,6 +621,11 @@ export const EN: Dictionary = {
   'Thông báo thủ công gửi ngay, không phụ thuộc giờ nhắc của người dùng và không bị tắt bởi cài đặt nhắc nhở tự động — vì vậy chỉ dùng cho việc thật sự cần báo.':
     'Manual notifications go out immediately, ignore each user\'s reminder time and are not silenced by their automatic reminder settings — so use them only when something really needs saying.',
   'Hoạt động học 30 ngày qua': 'Learning activity, last 30 days',
+  'Tổng {n} lượt hoạt động từ trước tới nay': '{n} activities recorded all time',
+  'Người học đang làm gì nhiều nhất': 'What learners do most',
+  'Xếp theo tổng số lượt hoạt động': 'Ranked by total activities',
+  'Số liệu tra cứu': 'Reference figures',
+  'Cơ cấu tài khoản và kho nội dung': 'Account mix and content library',
 
   // --- Báo cáo học tập theo khoảng tự chọn -----------------------------------
   'Báo cáo': 'Report',
