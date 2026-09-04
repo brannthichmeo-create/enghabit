@@ -29,12 +29,12 @@ export interface NotificationSetting {
 // --- Danh sách mốc nhắc nhở ---
 
 /**
- * Số mốc nhắc tối đa một người được đặt.
+ * Số lời nhắc tối đa một người được đặt.
  *
- * Có trần vì mỗi mốc là một thông báo thật gửi tới người dùng: đặt 20 mốc thì ứng dụng
- * thành thứ làm phiền, và đó cũng là lúc người ta tắt hẳn thông báo.
+ * Vẫn phải có trần vì mỗi lời nhắc là một thông báo thật gửi tới người dùng: đặt vài
+ * chục cái thì ứng dụng thành thứ làm phiền, và đó cũng là lúc người ta tắt hẳn thông báo.
  */
-export const MAX_REMINDERS_PER_USER = 5;
+export const MAX_REMINDERS_PER_USER = 10;
 
 export const createReminderSchema = z.object({
   /** Tên gợi nhớ do người dùng đặt, vd "Trước khi đi làm". Bỏ trống thì hiển thị theo giờ. */

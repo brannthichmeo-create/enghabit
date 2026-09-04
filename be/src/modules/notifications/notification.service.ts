@@ -72,7 +72,7 @@ export async function listReminders(userId: number): Promise<ReminderDto[]> {
 export async function createReminder(userId: number, input: CreateReminderInput): Promise<ReminderDto> {
   const count = await prisma.reminder.count({ where: { userId } });
   if (count >= MAX_REMINDERS_PER_USER) {
-    throw new BadRequestError(`Mỗi người chỉ đặt được tối đa ${MAX_REMINDERS_PER_USER} mốc nhắc`);
+    throw new BadRequestError(`Mỗi người chỉ đặt được tối đa ${MAX_REMINDERS_PER_USER} lời nhắc`);
   }
 
   try {
@@ -88,7 +88,7 @@ export async function createReminder(userId: number, input: CreateReminderInput)
   } catch (error: unknown) {
     // Ràng buộc unique (user, time_of_day): hai mốc cùng giờ sẽ bắn hai thông báo
     // giống hệt nhau trong cùng một phút.
-    if (isUniqueViolation(error)) throw new ConflictError('Bạn đã có một mốc nhắc vào giờ này');
+    if (isUniqueViolation(error)) throw new ConflictError('Bạn đã có một lời nhắc vào giờ này');
     throw error;
   }
 }
@@ -100,7 +100,7 @@ export async function updateReminder(
 ): Promise<ReminderDto> {
   // Lọc theo cả userId để người này không sửa được mốc của người khác.
   const existing = await prisma.reminder.findFirst({ where: { id: reminderId, userId } });
-  if (!existing) throw new NotFoundError('Không tìm thấy mốc nhắc');
+  if (!existing) throw new NotFoundError('Không tìm thấy lời nhắc');
 
   try {
     const updated = await prisma.reminder.update({
@@ -114,14 +114,14 @@ export async function updateReminder(
     });
     return toReminderDto(updated);
   } catch (error: unknown) {
-    if (isUniqueViolation(error)) throw new ConflictError('Bạn đã có một mốc nhắc vào giờ này');
+    if (isUniqueViolation(error)) throw new ConflictError('Bạn đã có một lời nhắc vào giờ này');
     throw error;
   }
 }
 
 export async function deleteReminder(userId: number, reminderId: number): Promise<void> {
   const result = await prisma.reminder.deleteMany({ where: { id: reminderId, userId } });
-  if (result.count === 0) throw new NotFoundError('Không tìm thấy mốc nhắc');
+  if (result.count === 0) throw new NotFoundError('Không tìm thấy lời nhắc');
 }
 
 function toReminderDto(reminder: Reminder): ReminderDto {

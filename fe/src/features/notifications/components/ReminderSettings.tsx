@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Clock, Plus, Trash2, X } from 'lucide-react';
+import { Clock, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { MAX_REMINDERS_PER_USER, type Reminder } from '@enghabit/shared';
 import { WEEKDAY_LABELS, formatWeekdays } from '../../../shared/lib/labels';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import {
-  Badge,
   Button,
   Card,
   ErrorMessage,
@@ -25,10 +24,10 @@ import {
 import { useT } from '../../../shared/i18n/language';
 
 /**
- * Cài đặt nhắc nhở: công tắc chung + danh sách các mốc nhắc trong ngày.
+ * Cài đặt nhắc nhở: công tắc chung + danh sách các lời nhắc trong ngày.
  *
- * Nhiều mốc chứ không phải một, vì thói quen học của mỗi người rơi vào những khung giờ
- * khác nhau (sáng trước khi đi làm, tối trước khi ngủ) — ép về một giờ duy nhất thì
+ * Nhiều lời nhắc chứ không phải một, vì thói quen học của mỗi người rơi vào những khung
+ * giờ khác nhau (sáng trước khi đi làm, tối trước khi ngủ) — ép về một giờ duy nhất thì
  * người dùng phải chọn bỏ một trong hai.
  *
  * Giờ nhắc tính theo timezone trong hồ sơ cá nhân, không theo giờ máy chủ — nói rõ
@@ -110,13 +109,20 @@ export function ReminderSettings(): JSX.Element {
   );
 }
 
-/** Danh sách các mốc đã đặt, kèm chỗ thêm mốc mới. */
+/**
+ * Danh sách lời nhắc đã đặt.
+ *
+ * `editing` giữ cả ba trạng thái của khu vực form: `null` là đóng, `'new'` là đang thêm,
+ * còn một `Reminder` là đang sửa đúng lời nhắc đó. Gộp vào một biến thay vì hai cờ
+ * riêng để không bao giờ rơi vào cảnh vừa mở form thêm vừa mở form sửa.
+ */
 function ReminderList({ reminders }: { reminders: ReturnType<typeof useReminders> }): JSX.Element {
   const t = useT();
-  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Reminder | 'new' | null>(null);
 
   const items = reminders.data ?? [];
   const isFull = items.length >= MAX_REMINDERS_PER_USER;
+  const isCreating = editing === 'new';
 
   return (
     <Card>
@@ -124,58 +130,87 @@ function ReminderList({ reminders }: { reminders: ReturnType<typeof useReminders
         <div>
           <h3 className="flex items-center gap-2 font-semibold text-content">
             <Clock className="h-4 w-4 text-brand-strong" aria-hidden />
-            {t('Các mốc nhắc trong ngày')}
+            {t('Các lời nhắc trong ngày')}
           </h3>
           <p className="text-xs text-content-muted">
-            {t('Đã đặt {n}/{max} mốc', { n: items.length, max: MAX_REMINDERS_PER_USER })}
+            {t('Đã đặt {n}/{max} lời nhắc', { n: items.length, max: MAX_REMINDERS_PER_USER })}
           </p>
         </div>
 
         <Button
           size="sm"
-          variant={showForm ? 'secondary' : 'primary'}
-          icon={showForm ? X : Plus}
-          disabled={!showForm && isFull}
-          title={isFull ? t('Đã đạt số mốc tối đa') : undefined}
-          onClick={() => setShowForm((open) => !open)}
+          variant={isCreating ? 'secondary' : 'primary'}
+          icon={isCreating ? X : Plus}
+          disabled={!isCreating && isFull}
+          title={isFull ? t('Đã đạt số lời nhắc tối đa') : undefined}
+          onClick={() => setEditing(isCreating ? null : 'new')}
         >
-          {showForm ? t('Đóng') : t('Thêm mốc')}
+          {isCreating ? t('Đóng') : t('Thêm lời nhắc')}
         </Button>
       </div>
 
-      {showForm && <ReminderForm onDone={() => setShowForm(false)} />}
+      {isCreating && <ReminderForm reminder={null} onDone={() => setEditing(null)} />}
 
       {reminders.isLoading && <SkeletonList rows={2} />}
       {reminders.isError && <ErrorMessage>{getErrorMessage(reminders.error)}</ErrorMessage>}
 
       {!reminders.isLoading && items.length === 0 && (
         <p className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-content-muted">
-          {t('Chưa có mốc nhắc nào. Thêm một mốc để hệ thống nhắc bạn học.')}
+          {t('Chưa có lời nhắc nào. Thêm một lời nhắc để hệ thống nhắc bạn học.')}
         </p>
       )}
 
       <ul className="divide-y divide-line">
-        {items.map((reminder) => (
-          <li key={reminder.id}>
-            <ReminderRow reminder={reminder} />
-          </li>
-        ))}
+        {items.map((reminder) => {
+          const isEditingThis = editing !== 'new' && editing?.id === reminder.id;
+
+          return (
+            <li key={reminder.id} className="py-3">
+              {isEditingThis ? (
+                // `key` theo id để chuyển từ sửa lời nhắc này sang lời nhắc khác thì
+                // form dựng lại từ đầu, không giữ giá trị của cái trước.
+                <ReminderForm
+                  key={reminder.id}
+                  reminder={reminder}
+                  onDone={() => setEditing(null)}
+                />
+              ) : (
+                <ReminderRow reminder={reminder} onEdit={() => setEditing(reminder)} />
+              )}
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );
 }
 
-function ReminderRow({ reminder }: { reminder: Reminder }): JSX.Element {
+function ReminderRow({
+  reminder,
+  onEdit,
+}: {
+  reminder: Reminder;
+  onEdit: () => void;
+}): JSX.Element {
   const t = useT();
   const update = useUpdateReminder();
   const remove = useDeleteReminder();
   const toast = useToast();
 
-  return (
-    <div className="flex flex-wrap items-center gap-3 py-3">
-      <span className="w-16 shrink-0 text-lg font-bold tabular-nums text-content">{reminder.timeOfDay}</span>
+  const isToggling = update.isPending && update.variables?.id === reminder.id;
 
-      <span className="min-w-0 flex-1">
+  return (
+    // Lời nhắc đang tắt thì mờ đi, nhưng công tắc và các nút vẫn rõ để bật lại được.
+    <div className="flex flex-wrap items-center gap-3">
+      <span
+        className={`w-16 shrink-0 text-lg font-bold tabular-nums ${
+          reminder.isEnabled ? 'text-content' : 'text-content-muted'
+        }`}
+      >
+        {reminder.timeOfDay}
+      </span>
+
+      <span className={`min-w-0 flex-1 ${reminder.isEnabled ? '' : 'opacity-60'}`}>
         <span className="block truncate text-sm font-medium text-content-soft">
           {reminder.label || t('Nhắc học')}
         </span>
@@ -186,32 +221,30 @@ function ReminderRow({ reminder }: { reminder: Reminder }): JSX.Element {
         </span>
       </span>
 
-      {!reminder.isEnabled && <Badge>{t('Đang tắt')}</Badge>}
-
-      <Button
-        size="sm"
-        variant="secondary"
-        loading={update.isPending && update.variables?.id === reminder.id}
-        onClick={() =>
+      <Switch
+        checked={reminder.isEnabled}
+        busy={isToggling}
+        label={t('Lời nhắc lúc {time}', { time: reminder.timeOfDay })}
+        onChange={(next) =>
           update.mutate(
-            { id: reminder.id, input: { isEnabled: !reminder.isEnabled } },
+            { id: reminder.id, input: { isEnabled: next } },
             { onError: (error) => toast.error(getErrorMessage(error)) },
           )
         }
-      >
-        {reminder.isEnabled ? t('Tắt') : t('Bật')}
-      </Button>
+      />
+
+      <Button size="sm" variant="ghost" icon={Pencil} aria-label={t('Sửa lời nhắc')} onClick={onEdit} />
 
       <Button
         size="sm"
         variant="ghost"
         icon={Trash2}
-        aria-label={t('Xoá mốc nhắc')}
+        aria-label={t('Xoá lời nhắc')}
         loading={remove.isPending && remove.variables === reminder.id}
         onClick={() => {
-          if (!confirm(t('Xoá mốc nhắc lúc {time}?', { time: reminder.timeOfDay }))) return;
+          if (!confirm(t('Xoá lời nhắc lúc {time}?', { time: reminder.timeOfDay }))) return;
           remove.mutate(reminder.id, {
-            onSuccess: () => toast.success(t('Đã xoá mốc nhắc')),
+            onSuccess: () => toast.success(t('Đã xoá lời nhắc')),
             onError: (error) => toast.error(getErrorMessage(error)),
           });
         }}
@@ -220,15 +253,30 @@ function ReminderRow({ reminder }: { reminder: Reminder }): JSX.Element {
   );
 }
 
-/** Form thêm mốc mới: giờ, các thứ áp dụng và một nhãn tuỳ chọn. */
-function ReminderForm({ onDone }: { onDone: () => void }): JSX.Element {
+/**
+ * Form thêm mới hoặc sửa một lời nhắc: giờ, các thứ áp dụng và một nhãn tuỳ chọn.
+ *
+ * Dùng chung cho cả hai việc vì các trường giống hệt nhau — tách thành hai form thì
+ * mỗi lần thêm một trường lại phải nhớ sửa hai chỗ.
+ */
+function ReminderForm({
+  reminder,
+  onDone,
+}: {
+  /** `null` là thêm mới; có giá trị là sửa đúng lời nhắc đó. */
+  reminder: Reminder | null;
+  onDone: () => void;
+}): JSX.Element {
   const t = useT();
   const create = useCreateReminder();
+  const update = useUpdateReminder();
   const toast = useToast();
 
-  const [timeOfDay, setTimeOfDay] = useState('20:00');
-  const [label, setLabel] = useState('');
-  const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
+  const isEdit = reminder !== null;
+
+  const [timeOfDay, setTimeOfDay] = useState(reminder?.timeOfDay ?? '20:00');
+  const [label, setLabel] = useState(reminder?.label ?? '');
+  const [days, setDays] = useState<number[]>(reminder?.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7]);
 
   const toggleDay = (day: number): void => {
     setDays((current) =>
@@ -238,20 +286,27 @@ function ReminderForm({ onDone }: { onDone: () => void }): JSX.Element {
 
   const submit = (): void => {
     if (days.length === 0) return;
-    create.mutate(
-      { timeOfDay, daysOfWeek: days, ...(label.trim() && { label: label.trim() }) },
-      {
-        onSuccess: () => {
-          toast.success(t('Đã thêm mốc nhắc'));
-          onDone();
-        },
-        onError: (error) => toast.error(getErrorMessage(error)),
+
+    // Luôn gửi `label`, kể cả khi rỗng: có gửi thì backend mới xoá được nhãn cũ khi
+    // người dùng cố ý bỏ trống ô này.
+    const input = { timeOfDay, daysOfWeek: days, label: label.trim() };
+
+    const handlers = {
+      onSuccess: () => {
+        toast.success(isEdit ? t('Đã cập nhật lời nhắc') : t('Đã thêm lời nhắc'));
+        onDone();
       },
-    );
+      onError: (error: Error) => toast.error(getErrorMessage(error)),
+    };
+
+    if (isEdit) update.mutate({ id: reminder.id, input }, handlers);
+    else create.mutate(input, handlers);
   };
 
+  const isPending = isEdit ? update.isPending : create.isPending;
+
   return (
-    <div className="mb-4 animate-slide-up rounded-xl border border-line bg-sunken p-4">
+    <div className="animate-slide-up rounded-xl border border-line bg-sunken p-4">
       <div className="flex flex-wrap gap-4">
         <div className="w-[140px]">
           <Field label={t('Giờ nhắc')} hint={t('Theo múi giờ trong trang cá nhân của bạn.')}>
@@ -260,7 +315,7 @@ function ReminderForm({ onDone }: { onDone: () => void }): JSX.Element {
         </div>
 
         <div className="min-w-[200px] flex-1">
-          <Field label={t('Tên mốc (tuỳ chọn)')} hint={t('Ví dụ: Trước khi đi làm')}>
+          <Field label={t('Tên lời nhắc (tuỳ chọn)')} hint={t('Ví dụ: Trước khi đi làm')}>
             <Input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
@@ -296,19 +351,63 @@ function ReminderForm({ onDone }: { onDone: () => void }): JSX.Element {
           })}
         </div>
         {days.length === 0 && (
-          <p className="mt-1.5 text-xs text-danger">{t('Chọn ít nhất một ngày cho mốc này.')}</p>
+          <p className="mt-1.5 text-xs text-danger">{t('Chọn ít nhất một ngày cho lời nhắc này.')}</p>
         )}
       </div>
 
       <div className="mt-4 flex gap-2">
-        <Button onClick={submit} loading={create.isPending} disabled={days.length === 0}>
-          {t('Thêm mốc')}
+        <Button onClick={submit} loading={isPending} disabled={days.length === 0}>
+          {isEdit ? t('Lưu thay đổi') : t('Thêm lời nhắc')}
         </Button>
         <Button variant="secondary" onClick={onDone}>
           {t('Huỷ')}
         </Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Công tắc bật/tắt.
+ *
+ * Thay cho nút chữ "Bật"/"Tắt" trước đây: nút chữ luôn mơ hồ ở chỗ nó ghi TRẠNG THÁI
+ * HIỆN TẠI hay HÀNH ĐỘNG sẽ xảy ra khi bấm — người dùng phải đoán. Công tắc thì vị trí
+ * núm nói lên trạng thái, không cần đọc chữ.
+ *
+ * Để cục bộ trong feature này vì mới dùng một chỗ; đưa lên `shared/components/ui`
+ * khi có feature thứ hai cần tới (xem CLAUDE.md > Quy tắc tái sử dụng code).
+ */
+function Switch({
+  checked,
+  onChange,
+  label,
+  busy = false,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  /** Đọc cho trình đọc màn hình. Trạng thái bật/tắt đã nằm ở `aria-checked`. */
+  label: string;
+  busy?: boolean;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={busy}
+      onClick={() => onChange(!checked)}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20 ${
+        checked ? 'bg-brand' : 'bg-line-control'
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform ${
+          checked ? 'translate-x-[22px]' : 'translate-x-0.5'
+        }`}
+        aria-hidden
+      />
+    </button>
   );
 }
 
