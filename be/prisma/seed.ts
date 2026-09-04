@@ -1,3 +1,4 @@
+import { crc32, deflateSync } from 'node:zlib';
 import bcrypt from 'bcryptjs';
 import {
   ActivityType,
@@ -11,6 +12,7 @@ import {
 } from '@prisma/client';
 import { computeStreak, initialSrsState, reviewCard, toLocalDate, ReviewQuality } from '@enghabit/shared';
 import { TOPICS, buildMeaningQuestions } from './seed-data/content.js';
+import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
 
 /**
  * Seed dữ liệu mẫu — IDEMPOTENT, chạy nhiều lần không tạo bản ghi trùng.
@@ -49,6 +51,7 @@ async function main(): Promise<void> {
   await seedLearnerData(learner.id, vocabByTopic);
   await seedLoginHistory([admin.id, learner.id]);
   await seedNotifications(learner.id);
+  await seedCommunity(admin.id, learner.id);
 
   await printSummary();
 }
@@ -267,6 +270,155 @@ async function seedNotifications(userId: number): Promise<void> {
   });
 
   console.log('  Đã tạo 3 thông báo mẫu');
+}
+
+/**
+ * Diễn đàn Cộng đồng: người tham gia, bài đăng, bình luận và lượt tim.
+ *
+ * Bài đăng KHÔNG sinh ActivityLog — đăng bài không phải hoạt động học, ghi vào đó thì
+ * mọi thống kê sẽ tính cả việc viết bài là học (xem community.service).
+ *
+ * Mốc thời gian được đặt lùi về quá khứ chứ không để mặc định: mười bài cùng hiện
+ * "vài giây trước" trông không giống một diễn đàn có người dùng thật.
+ */
+async function seedCommunity(adminId: number, learnerId: number): Promise<void> {
+  const existing = await prisma.post.count();
+  if (existing > 0) {
+    console.log(`  (diễn đàn đã có ${existing} bài — bỏ qua)`);
+    return;
+  }
+
+  // Chỉ số 0 là quản trị viên, 1 là người học mẫu, còn lại là thành viên riêng của
+  // diễn đàn — khớp với quy ước ở seed-data/community.ts.
+  const people = [adminId, learnerId];
+  for (const member of COMMUNITY_MEMBERS) {
+    const user = await upsertUser(member.email, member.name, 'A1234567');
+    people.push(user.id);
+  }
+
+  let commentCount = 0;
+  let likeCount = 0;
+
+  for (const seed of POSTS) {
+    const createdAt = instantAtOffset(seed.daysAgo, seed.hour);
+
+    const post = await prisma.post.create({
+      data: {
+        authorId: people[seed.by] as number,
+        title: seed.title,
+        body: seed.body,
+        createdAt,
+        updatedAt: createdAt,
+      },
+      select: { id: true },
+    });
+
+    // Chèn từng tệp một chứ không dùng nested create — Prisma gộp nhiều dòng vào một
+    // câu INSERT và tổng dung lượng sẽ vượt max_allowed_packet của MySQL.
+    if (seed.textFile) {
+      const data = Buffer.from(seed.textFile.content, 'utf8');
+      await prisma.postAttachment.create({
+        data: {
+          postId: post.id,
+          data,
+          mimeType: 'text/plain',
+          fileName: seed.textFile.fileName,
+          sizeBytes: data.length,
+          createdAt,
+        },
+      });
+    }
+
+    if (seed.image) {
+      const data = makeBandedPng(seed.image.bands);
+      await prisma.postAttachment.create({
+        data: {
+          postId: post.id,
+          data,
+          mimeType: 'image/png',
+          fileName: seed.image.fileName,
+          sizeBytes: data.length,
+          createdAt,
+        },
+      });
+    }
+
+    await prisma.postLike.createMany({
+      data: seed.likedBy.map((index) => ({
+        postId: post.id,
+        userId: people[index] as number,
+        createdAt,
+      })),
+    });
+    likeCount += seed.likedBy.length;
+
+    await prisma.postComment.createMany({
+      data: seed.comments.map((comment) => ({
+        postId: post.id,
+        authorId: people[comment.by] as number,
+        body: comment.body,
+        createdAt: new Date(createdAt.getTime() + comment.hoursAfter * 3_600_000),
+      })),
+    });
+    commentCount += seed.comments.length;
+  }
+
+  console.log(
+    `  Đã tạo ${POSTS.length} bài viết, ${commentCount} bình luận, ${likeCount} lượt tim từ ${people.length} người`,
+  );
+}
+
+/**
+ * Sinh một ảnh PNG gồm các dải màu ngang, dùng làm ảnh đính kèm mẫu.
+ *
+ * Tự dựng thay vì nhúng chuỗi base64 sẵn: một khối base64 dài trong mã nguồn thì không
+ * ai đọc được nó là ảnh gì, còn ở đây nhìn mảng màu là biết ngay.
+ */
+function makeBandedPng(bands: readonly (readonly [number, number, number])[]): Buffer {
+  const width = 320;
+  const bandHeight = 40;
+  const height = bandHeight * bands.length;
+
+  // Mỗi hàng ảnh bắt đầu bằng một byte kiểu lọc (0 = không lọc), rồi tới các điểm ảnh RGB.
+  const raw = Buffer.alloc(height * (1 + width * 3));
+  for (let y = 0; y < height; y += 1) {
+    const rowStart = y * (1 + width * 3);
+    raw[rowStart] = 0;
+
+    const [r, g, b] = bands[Math.floor(y / bandHeight)] as readonly [number, number, number];
+    for (let x = 0; x < width; x += 1) {
+      const pixel = rowStart + 1 + x * 3;
+      raw[pixel] = r;
+      raw[pixel + 1] = g;
+      raw[pixel + 2] = b;
+    }
+  }
+
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8; // 8 bit mỗi kênh màu
+  ihdr[9] = 2; // kiểu màu 2 = RGB
+  // Ba byte còn lại là phương pháp nén, lọc và xen kẽ — đều để 0 theo chuẩn PNG.
+
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', deflateSync(raw)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+/** Một khối dữ liệu PNG: độ dài, tên khối, nội dung, rồi CRC của tên cộng nội dung. */
+function pngChunk(type: string, data: Buffer): Buffer {
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body), 0);
+
+  return Buffer.concat([length, body, crc]);
 }
 
 async function seedHabits(userId: number) {
@@ -498,18 +650,21 @@ function dateAtOffsetLocal(offset: number): string {
 }
 
 async function printSummary(): Promise<void> {
-  const [users, topics, vocab, quizzes, questions, logs] = await Promise.all([
+  const [users, topics, vocab, quizzes, questions, logs, posts, comments] = await Promise.all([
     prisma.user.count(),
     prisma.topic.count(),
     prisma.vocabulary.count(),
     prisma.quiz.count(),
     prisma.quizQuestion.count(),
     prisma.activityLog.count(),
+    prisma.post.count(),
+    prisma.postComment.count(),
   ]);
 
   console.log('\nSeed hoàn tất.');
   console.log(`  ${users} người dùng | ${topics} chủ đề | ${vocab} từ vựng`);
   console.log(`  ${quizzes} quiz (${questions} câu hỏi) | ${logs} hoạt động`);
+  console.log(`  ${posts} bài diễn đàn (${comments} bình luận)`);
   console.log('\nTài khoản đăng nhập:');
   console.log('  admin@enghabit.com  / A1234567   (quản trị viên)');
   console.log('  user@enghabit.com   / A1234567   (có sẵn dữ liệu học tập)');
