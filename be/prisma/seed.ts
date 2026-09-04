@@ -294,6 +294,7 @@ async function seedCommunity(adminId: number, learnerId: number): Promise<void> 
   for (const member of COMMUNITY_MEMBERS) {
     const user = await upsertUser(member.email, member.name, 'A1234567');
     people.push(user.id);
+    await seedMemberActivity(user.id, member);
   }
 
   let commentCount = 0;
@@ -366,6 +367,41 @@ async function seedCommunity(adminId: number, learnerId: number): Promise<void> 
   console.log(
     `  Đã tạo ${POSTS.length} bài viết, ${commentCount} bình luận, ${likeCount} lượt tim từ ${people.length} người`,
   );
+}
+
+/**
+ * Lịch sử học của một thành viên diễn đàn.
+ *
+ * Cần thiết vì cấp độ hiện cạnh tên người viết được suy từ ActivityLog — không có
+ * hoạt động thì ai cũng ở cấp 1 và nhãn cấp độ trở nên vô nghĩa.
+ *
+ * Nhẹ hơn hẳn `seedActivityHistory` của người dùng demo: chỉ có học từ và ôn tập, đủ
+ * để ra cấp độ và có mặt trên bảng xếp hạng, không cần thói quen hay bài quiz.
+ */
+async function seedMemberActivity(
+  userId: number,
+  plan: { activeDays: number; vocabPerDay: number; reviewsPerDay: number },
+): Promise<void> {
+  const existing = await prisma.activityLog.count({ where: { userId } });
+  if (existing > 0) return;
+
+  const logs: Prisma.ActivityLogCreateManyInput[] = [];
+
+  // Học liên tục tính từ hôm qua trở về trước, để chuỗi ngày của họ còn "sống".
+  for (let offset = plan.activeDays; offset >= 1; offset -= 1) {
+    const occurredAt = instantAtOffset(offset, 20);
+    const localDate = dateAtOffset(offset);
+
+    for (let i = 0; i < plan.vocabPerDay; i += 1) {
+      logs.push({ userId, type: ActivityType.VOCAB_LEARNED, value: 1, occurredAt, localDate });
+    }
+    for (let i = 0; i < plan.reviewsPerDay; i += 1) {
+      logs.push({ userId, type: ActivityType.FLASHCARD_REVIEWED, value: 1, occurredAt, localDate });
+    }
+  }
+
+  await prisma.activityLog.createMany({ data: logs });
+  await recomputeStreak(userId);
 }
 
 /**

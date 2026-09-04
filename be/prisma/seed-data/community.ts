@@ -8,14 +8,23 @@
  * trong DB — id chỉ có sau khi tạo tài khoản. Chỉ số 0 luôn là quản trị viên.
  */
 
-/** Người tham gia diễn đàn, ngoài ba tài khoản mặc định. Chỉ số 0 dành cho quản trị viên. */
+/**
+ * Người tham gia diễn đàn, ngoài ba tài khoản mặc định. Chỉ số 0 dành cho quản trị viên.
+ *
+ * Mỗi người có một lượng lịch sử học khác nhau để cấp độ hiện trên diễn đàn trải đều
+ * từ 2 tới 7. Cùng một mức cho tất cả thì cột cấp độ chỉ toàn "Cấp 1", nhìn như tính
+ * năng hỏng chứ không phải như một diễn đàn có người mới lẫn người học lâu.
+ *
+ * XP suy từ ActivityLog (8 điểm mỗi từ mới, 4 điểm mỗi lượt ôn) nên `activeDays` và số
+ * lượt mỗi ngày là thứ QUYẾT ĐỊNH cấp độ — không có chỗ nào gán thẳng cấp độ được.
+ */
 export const COMMUNITY_MEMBERS = [
-  { email: 'long.tran@enghabit.com', name: 'Trần Bảo Long' },
-  { email: 'ha.le@enghabit.com', name: 'Lê Thu Hà' },
-  { email: 'duy.pham@enghabit.com', name: 'Phạm Quốc Duy' },
-  { email: 'lan.vu@enghabit.com', name: 'Vũ Ngọc Lan' },
-  { email: 'nam.do@enghabit.com', name: 'Đỗ Hoàng Nam' },
-  { email: 'chi.bui@enghabit.com', name: 'Bùi Khánh Chi' },
+  { email: 'long.tran@enghabit.com', name: 'Trần Bảo Long', activeDays: 12, vocabPerDay: 3, reviewsPerDay: 4 },
+  { email: 'ha.le@enghabit.com', name: 'Lê Thu Hà', activeDays: 8, vocabPerDay: 3, reviewsPerDay: 3 },
+  { email: 'duy.pham@enghabit.com', name: 'Phạm Quốc Duy', activeDays: 5, vocabPerDay: 2, reviewsPerDay: 3 },
+  { email: 'lan.vu@enghabit.com', name: 'Vũ Ngọc Lan', activeDays: 25, vocabPerDay: 4, reviewsPerDay: 5 },
+  { email: 'nam.do@enghabit.com', name: 'Đỗ Hoàng Nam', activeDays: 30, vocabPerDay: 5, reviewsPerDay: 6 },
+  { email: 'chi.bui@enghabit.com', name: 'Bùi Khánh Chi', activeDays: 20, vocabPerDay: 3, reviewsPerDay: 4 },
 ] as const;
 
 export interface CommentSeed {

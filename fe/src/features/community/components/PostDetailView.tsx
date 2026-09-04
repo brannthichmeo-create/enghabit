@@ -216,7 +216,34 @@ function CommentSection({ post }: { post: PostDetail }): JSX.Element {
   );
 }
 
-/** Tên người viết, nhãn vai trò và thời điểm. */
+/**
+ * Nhãn đứng cạnh tên người viết.
+ *
+ * Mỗi người có ĐÚNG MỘT nhãn, không bao giờ có cả hai: quản trị viên vận hành hệ thống
+ * chứ không đi học nên họ không có cấp độ (xem CLAUDE.md > Chức năng cho quản trị viên),
+ * còn người học thì cấp độ chính là thứ nói lên họ đã học được bao nhiêu.
+ */
+function AuthorTag({ author }: { author: PostAuthor }): JSX.Element {
+  const t = useT();
+
+  // Nhãn quản trị viên dùng màu thương hiệu để câu trả lời chính thức nổi lên giữa
+  // luồng thảo luận; cấp độ dùng màu trung tính vì nó chỉ là thông tin phụ.
+  if (author.role === UserRole.ADMIN) {
+    return (
+      <span className="rounded-full bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-strong">
+        {t('Quản trị viên')}
+      </span>
+    );
+  }
+
+  return (
+    <span className="rounded-full bg-sunken px-1.5 py-0.5 text-[10px] font-semibold text-content-muted">
+      {t('Cấp {n}', { n: author.level ?? 1 })}
+    </span>
+  );
+}
+
+/** Tên người viết, nhãn cấp độ hoặc vai trò, và thời điểm. */
 export function AuthorLine({
   author,
   createdAt,
@@ -235,12 +262,7 @@ export function AuthorLine({
       <span className="min-w-0">
         <span className="flex flex-wrap items-center gap-1.5">
           <span className="text-sm font-medium text-content">{author.name}</span>
-          {/* Nhãn vai trò để câu trả lời chính thức của quản trị viên dễ nhận ra. */}
-          {author.role === UserRole.ADMIN && (
-            <span className="rounded-full bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-strong">
-              {t('Quản trị viên')}
-            </span>
-          )}
+          <AuthorTag author={author} />
         </span>
         <span className="block text-xs text-content-muted">
           {new Date(createdAt).toLocaleString(locale, {

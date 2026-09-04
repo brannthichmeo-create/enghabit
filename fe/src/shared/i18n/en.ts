@@ -705,6 +705,7 @@ export const EN: Dictionary = {
 
   // Chi tiết bài viết
   'Bài viết': 'Post',
+  'Cấp {n}': 'Level {n}',
   'Không tải được bài viết': 'Could not load the post',
   'Quay lại danh sách': 'Back to list',
   'Thả tim': 'Like',

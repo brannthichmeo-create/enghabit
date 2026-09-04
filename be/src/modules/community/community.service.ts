@@ -1,9 +1,12 @@
 import {
+  ActivityType,
   MAX_ATTACHMENTS_PER_POST,
   UserRole,
   isImageMime,
+  levelFromXp,
   parseAttachmentDataUrl,
   sanitizeFileName,
+  xpFromActivityCounts,
   type CreateCommentInput,
   type CreatePostInput,
   type LikeResult,
@@ -102,12 +105,14 @@ export async function listPosts(
     prisma.post.count({ where }),
   ]);
 
+  const levels = await loadLevels(posts.map((post) => post.author));
+
   return {
     items: posts.map((post) => ({
       id: post.id,
       title: post.title,
       excerpt: toExcerpt(post.body),
-      author: toAuthor(post.author),
+      author: toAuthor(post.author, levels),
       createdAt: post.createdAt.toISOString(),
       likeCount: post._count.likes,
       commentCount: post._count.comments,
@@ -141,11 +146,14 @@ export async function getPost(
   });
   if (!post) throw new NotFoundError('Không tìm thấy bài viết');
 
+  // Một truy vấn cho cả tác giả bài lẫn tất cả người bình luận.
+  const levels = await loadLevels([post.author, ...post.comments.map((c) => c.author)]);
+
   return {
     id: post.id,
     title: post.title,
     body: post.body,
-    author: toAuthor(post.author),
+    author: toAuthor(post.author, levels),
     createdAt: post.createdAt.toISOString(),
     likeCount: post._count.likes,
     commentCount: post._count.comments,
@@ -156,7 +164,7 @@ export async function getPost(
       (comment): PostCommentRow => ({
         id: comment.id,
         body: comment.body,
-        author: toAuthor(comment.author),
+        author: toAuthor(comment.author, levels),
         createdAt: comment.createdAt.toISOString(),
         canDelete: canDelete(comment.authorId, viewer),
       }),
@@ -251,7 +259,7 @@ export async function createComment(
   return {
     id: comment.id,
     body: comment.body,
-    author: toAuthor(comment.author),
+    author: toAuthor(comment.author, await loadLevels([comment.author])),
     createdAt: comment.createdAt.toISOString(),
     canDelete: true,
   };
@@ -338,8 +346,55 @@ export async function getAttachmentContent(attachmentId: number): Promise<{
 
 // --- Chuyển đổi ---
 
-function toAuthor(author: { id: number; name: string; role: UserRole }): PostAuthor {
-  return { id: author.id, name: author.name, role: author.role };
+/** Người viết bài hoặc bình luận, dạng thô lấy từ Prisma. */
+type AuthorRow = { id: number; name: string; role: UserRole };
+
+/**
+ * Cấp độ của một nhóm người dùng, tính bằng ĐÚNG MỘT truy vấn.
+ *
+ * Gọi `statistics.getLevel` cho từng tác giả sẽ thành N+1 truy vấn trên một trang danh
+ * sách — mười bài với hai chục bình luận là hai chục lần group toàn bộ ActivityLog.
+ * Cách gom nhóm ở đây giống hệt `leaderboard.service`, và cùng dùng `xpFromActivityCounts`
+ * của `shared/level` nên cấp độ hiện ở diễn đàn không bao giờ lệch với cấp độ ở trang cá nhân.
+ *
+ * Bỏ qua quản trị viên: họ không có cấp độ nên đếm hoạt động của họ cũng vô nghĩa.
+ */
+async function loadLevels(authors: AuthorRow[]): Promise<Map<number, number>> {
+  const learnerIds = [
+    ...new Set(authors.filter((a) => a.role !== UserRole.ADMIN).map((a) => a.id)),
+  ];
+  if (learnerIds.length === 0) return new Map();
+
+  const rows = await prisma.activityLog.groupBy({
+    by: ['userId', 'type'],
+    where: { userId: { in: learnerIds } },
+    _count: { _all: true },
+  });
+
+  const countsByUser = new Map<number, Partial<Record<ActivityType, number>>>();
+  for (const row of rows) {
+    const counts = countsByUser.get(row.userId) ?? {};
+    counts[row.type] = row._count._all;
+    countsByUser.set(row.userId, counts);
+  }
+
+  // Người chưa học buổi nào vẫn ở cấp 1 chứ không phải "không có cấp" — chỉ quản trị
+  // viên mới không có cấp độ.
+  return new Map(
+    learnerIds.map((id) => [
+      id,
+      levelFromXp(xpFromActivityCounts(countsByUser.get(id) ?? {})).level,
+    ]),
+  );
+}
+
+function toAuthor(author: AuthorRow, levels: Map<number, number>): PostAuthor {
+  return {
+    id: author.id,
+    name: author.name,
+    role: author.role,
+    level: author.role === UserRole.ADMIN ? null : (levels.get(author.id) ?? 1),
+  };
 }
 
 function toAttachmentInfo(attachment: {

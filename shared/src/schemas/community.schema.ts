@@ -58,6 +58,14 @@ export interface PostAuthor {
   name: string;
   /** Để giao diện gắn nhãn cho câu trả lời của quản trị viên. */
   role: UserRole;
+  /**
+   * Cấp độ suy từ `ActivityLog`, dùng đúng công thức của `shared/level`.
+   *
+   * `null` với quản trị viên: họ vận hành hệ thống chứ không đi học nên không có cấp
+   * độ (xem CLAUDE.md > Chức năng cho quản trị viên). Giao diện gắn nhãn vai trò cho
+   * họ thay chỗ đó — mỗi người luôn có đúng một nhãn, không bao giờ có cả hai.
+   */
+  level: number | null;
 }
 
 /** Thông tin mô tả một tệp đính kèm. KHÔNG bao giờ chứa nội dung tệp. */
