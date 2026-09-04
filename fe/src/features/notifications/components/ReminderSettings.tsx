@@ -374,6 +374,16 @@ function ReminderForm({
  * HIỆN TẠI hay HÀNH ĐỘNG sẽ xảy ra khi bấm — người dùng phải đoán. Công tắc thì vị trí
  * núm nói lên trạng thái, không cần đọc chữ.
  *
+ * Núm đặt bằng FLEX chứ không phải `absolute` thiếu `left`: trình duyệt đặt sẵn
+ * `text-align: center` cho thẻ `button` và Tailwind preflight không ghi đè, nên một
+ * phần tử `absolute` không khai báo `left` sẽ neo vào GIỮA track chứ không phải mép
+ * trái. Cộng thêm phép dịch ngang, núm rơi hẳn ra ngoài track và biến mất.
+ *
+ * Màu núm đổi theo trạng thái để tương phản ở cả hai: trên nền olive dùng `on-brand`
+ * (tối ở cả chế độ sáng lẫn tối — đúng cặp token mà bảng màu định nghĩa cho "thứ nằm
+ * trên nền thương hiệu"), còn khi tắt thì track chìm nên núm lấy màu `line-control`.
+ * Track luôn có viền để phân biệt được với nền thẻ ngay cả lúc tắt.
+ *
  * Để cục bộ trong feature này vì mới dùng một chỗ; đưa lên `shared/components/ui`
  * khi có feature thứ hai cần tới (xem CLAUDE.md > Quy tắc tái sử dụng code).
  */
@@ -397,13 +407,14 @@ function Switch({
       aria-label={label}
       disabled={busy}
       onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20 ${
-        checked ? 'bg-brand' : 'bg-line-control'
+      className={`flex h-6 w-11 shrink-0 items-center rounded-full border px-0.5 transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20 ${
+        checked ? 'border-brand bg-brand' : 'border-line-control bg-sunken'
       }`}
     >
+      {/* Quãng chạy 18px = 44 (track) − 2 (viền) − 4 (đệm) − 20 (núm) */}
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow-sm transition-transform ${
-          checked ? 'translate-x-[22px]' : 'translate-x-0.5'
+        className={`h-5 w-5 rounded-full shadow-sm transition-transform ${
+          checked ? 'translate-x-[18px] bg-on-brand' : 'translate-x-0 bg-line-control'
         }`}
         aria-hidden
       />
