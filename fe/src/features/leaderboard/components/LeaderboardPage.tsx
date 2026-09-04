@@ -126,15 +126,20 @@ export function LeaderboardPage(): JSX.Element {
         được bằng CHIỀU CAO chứ không chỉ bằng màu, nên người mù màu vẫn thấy (R21).
         Thứ tự trên màn rộng là 2 – 1 – 3 như bục trao giải; màn hẹp xếp dọc 1 – 2 – 3
         theo đúng thứ tự đọc.
+
+        Cả cụm còn nằm trong một khung riêng — viền màu nhấn dày hơn hẳn viền
+        `border-line` của Card thường phía dưới, để mắt nhận ra "đây là khu vực đặc
+        biệt" trước cả khi đọc số hạng. Nền để `surface` trung tính (không dùng
+        accent-soft) vì ô hạng nhất bên trong đã dùng chính accent-soft — tô cả khung
+        ngoài cùng màu sẽ làm ô hạng nhất mất viền phân biệt với nền của nó.
       */}
       {podium.length > 0 && (
-        <div
-          key={metric}
-          className="mb-4 grid animate-fade-in gap-3 sm:grid-cols-3 sm:items-end"
-        >
-          {podium.map((entry) => (
-            <PodiumCard key={entry.userId} entry={entry} metric={metric} />
-          ))}
+        <div className="mb-4 rounded-2xl border-2 border-accent/50 bg-surface p-3 shadow-card sm:p-4">
+          <div key={metric} className="grid animate-fade-in gap-3 sm:grid-cols-3 sm:items-end">
+            {podium.map((entry) => (
+              <PodiumCard key={entry.userId} entry={entry} metric={metric} />
+            ))}
+          </div>
         </div>
       )}
 
