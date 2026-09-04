@@ -12,7 +12,7 @@ import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useGoalProgress } from '../../goals/goal.hooks';
 import { useDueCount } from '../../flashcards/flashcard.hooks';
-import { useActivityCalendar, useStatsSummary, useStreak } from '../statistics.hooks';
+import { useActivityCalendar, useLevel, useStatsSummary, useStreak } from '../statistics.hooks';
 import { useT } from '../../../shared/i18n/language';
 
 /**
@@ -52,6 +52,17 @@ export function DashboardPage(): JSX.Element {
 
   const summary = useStatsSummary(range);
   const streak = useStreak();
+  /*
+    Cấp độ lấy từ endpoint RIÊNG chứ không từ `summary`, dù `summary` cũng từng trả nó.
+
+    Khoá cache của `useStatsSummary` có chứa `range`, nên mỗi lần người dùng đổi bộ lọc
+    thời gian là `summary.data` về undefined trong lúc tải lại — cấp độ sẽ chớp tắt theo
+    bộ lọc dù con số không hề đổi. `useLevel` không có `range` trong khoá nên đứng yên.
+
+    Không tốn thêm request: sidebar đã gọi `useLevel` ở mọi trang nên dữ liệu có sẵn
+    trong cache của TanStack Query.
+  */
+  const level = useLevel();
   const goalProgress = useGoalProgress();
   const dueCount = useDueCount();
   const calendar = useActivityCalendar(calendarMonths);
@@ -73,7 +84,7 @@ export function DashboardPage(): JSX.Element {
       {/* Hàng 1 — thẻ mở đầu chiếm 2/3, việc cần làm 1/3 */}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <HeroCard streak={streak.data} level={summary.data?.level} loading={streak.isLoading || summary.isLoading}>
+          <HeroCard streak={streak.data} level={level.data} loading={streak.isLoading || level.isLoading}>
             <RewardsBar />
           </HeroCard>
         </div>

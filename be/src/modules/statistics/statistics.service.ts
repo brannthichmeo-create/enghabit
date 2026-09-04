@@ -49,10 +49,9 @@ export async function getSummary(
   const today = todayLocalDate(timezone);
   const from = rangeStart(range, today);
 
-  const [daily, streak, level] = await Promise.all([
+  const [daily, streak] = await Promise.all([
     getDailyStats(userId, from, today),
     getStreak(userId, timezone),
-    getLevel(userId),
   ]);
 
   const activeDays = daily.filter((d) => d.totalActivities > 0).length;
@@ -65,7 +64,6 @@ export async function getSummary(
     totals: sumByType(daily),
     activeDayRate: daily.length === 0 ? 0 : Math.round((activeDays / daily.length) * 100),
     streak,
-    level,
   };
 }
 

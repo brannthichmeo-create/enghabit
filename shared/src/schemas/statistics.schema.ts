@@ -66,6 +66,14 @@ export interface LevelSummary {
   progressPercent: number;
 }
 
+/**
+ * Số liệu của MỘT khoảng thời gian.
+ *
+ * Cố ý KHÔNG có `level`. Cấp độ là con số tích luỹ của cả hành trình, không thuộc về
+ * bất kỳ khoảng nào — để nó ở đây thì người đọc kiểu dữ liệu có lý do chính đáng để
+ * tưởng nó cũng theo `range`, và giao diện lấy cấp độ từ payload này sẽ cho nó biến
+ * mất mỗi lần người dùng đổi bộ lọc. Cấp độ lấy từ `GET /statistics/level`.
+ */
 export interface StatsSummary {
   range: StatsRangeInput['range'];
   from: LocalDate;
@@ -75,7 +83,6 @@ export interface StatsSummary {
   /** Số ngày có hoạt động / tổng số ngày trong khoảng, tính theo %. */
   activeDayRate: number;
   streak: StreakSummary;
-  level: LevelSummary;
 }
 
 // --- Báo cáo học tập theo khoảng tự chọn ------------------------------------
