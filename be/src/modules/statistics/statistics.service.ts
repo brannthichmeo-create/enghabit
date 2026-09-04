@@ -106,6 +106,41 @@ export async function getLevel(userId: number): Promise<LevelSummary> {
 }
 
 /**
+ * Cấp độ của NHIỀU người dùng, tính bằng đúng MỘT truy vấn.
+ *
+ * Gọi `getLevel` cho từng người sẽ thành N+1 truy vấn ở những chỗ liệt kê nhiều người
+ * (bảng xếp hạng, danh sách bài viết ở diễn đàn) — mỗi lượt lại group toàn bộ
+ * ActivityLog một lần.
+ *
+ * Luôn tính trên TOÀN BỘ lịch sử, không giới hạn khoảng thời gian: cấp độ là con số
+ * tích luỹ của cả hành trình. Bảng xếp hạng theo tuần vẫn phải hiện cấp độ thật của
+ * người đó, không phải cấp độ suy từ điểm kiếm được trong tuần.
+ *
+ * Người chưa có hoạt động nào vẫn ở cấp 1, nên mọi id truyền vào đều có mặt trong kết quả.
+ */
+export async function getLevelsFor(userIds: number[]): Promise<Map<number, number>> {
+  const ids = [...new Set(userIds)];
+  if (ids.length === 0) return new Map();
+
+  const rows = await prisma.activityLog.groupBy({
+    by: ['userId', 'type'],
+    where: { userId: { in: ids } },
+    _count: { _all: true },
+  });
+
+  const countsByUser = new Map<number, Partial<Record<ActivityType, number>>>();
+  for (const row of rows) {
+    const counts = countsByUser.get(row.userId) ?? {};
+    counts[row.type] = row._count._all;
+    countsByUser.set(row.userId, counts);
+  }
+
+  return new Map(
+    ids.map((id) => [id, levelFromXp(xpFromActivityCounts(countsByUser.get(id) ?? {})).level]),
+  );
+}
+
+/**
  * Số liệu từng ngày trong khoảng. Group theo localDate — không convert timezone trong SQL.
  * Những ngày không có hoạt động vẫn được trả về với giá trị 0 để FE vẽ biểu đồ liền mạch.
  */

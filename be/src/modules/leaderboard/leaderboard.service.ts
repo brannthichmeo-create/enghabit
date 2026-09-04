@@ -13,6 +13,7 @@ import {
 } from '@enghabit/shared';
 import { prisma } from '../../lib/prisma.js';
 import { toDbDate } from '../../common/utils/db-date.js';
+import { getLevelsFor } from '../statistics/statistics.service.js';
 
 /**
  * Bảng xếp hạng người học.
@@ -63,13 +64,18 @@ export async function getLeaderboard(
   // định giữa các lần gọi — không có mốc này, hai người hoà nhau sẽ nhảy chỗ mỗi lần tải.
   scored.sort((a, b) => b.xp - a.xp || a.activities - b.activities || a.userId - b.userId);
 
-  const profiles = await loadProfiles(scored.map((item) => item.userId));
+  const rankedIds = scored.map((item) => item.userId);
+
+  // Cấp độ tính từ TOÀN BỘ lịch sử, không phải từ `xp` của khoảng đang xem — xem ghi
+  // chú ở `LeaderboardEntry.level`. Một truy vấn cho cả bảng, không phải mỗi người một lần.
+  const [profiles, levels] = await Promise.all([loadProfiles(rankedIds), getLevelsFor(rankedIds)]);
 
   const all: LeaderboardEntry[] = scored.map((item, index) => ({
     rank: index + 1,
     userId: item.userId,
     name: profiles.get(item.userId)?.name ?? '—',
     xp: item.xp,
+    level: levels.get(item.userId) ?? 1,
     activities: item.activities,
     currentStreak: profiles.get(item.userId)?.currentStreak ?? 0,
     isMe: item.userId === userId,

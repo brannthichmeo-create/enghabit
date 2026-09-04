@@ -1,12 +1,9 @@
 import {
-  ActivityType,
   MAX_ATTACHMENTS_PER_POST,
   UserRole,
   isImageMime,
-  levelFromXp,
   parseAttachmentDataUrl,
   sanitizeFileName,
-  xpFromActivityCounts,
   type CreateCommentInput,
   type CreatePostInput,
   type LikeResult,
@@ -21,6 +18,7 @@ import {
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors/app-error.js';
+import { getLevelsFor } from '../statistics/statistics.service.js';
 
 /**
  * Diễn đàn Cộng đồng.
@@ -350,42 +348,17 @@ export async function getAttachmentContent(attachmentId: number): Promise<{
 type AuthorRow = { id: number; name: string; role: UserRole };
 
 /**
- * Cấp độ của một nhóm người dùng, tính bằng ĐÚNG MỘT truy vấn.
+ * Cấp độ của những người viết trong trang, tính bằng đúng một truy vấn.
  *
- * Gọi `statistics.getLevel` cho từng tác giả sẽ thành N+1 truy vấn trên một trang danh
- * sách — mười bài với hai chục bình luận là hai chục lần group toàn bộ ActivityLog.
- * Cách gom nhóm ở đây giống hệt `leaderboard.service`, và cùng dùng `xpFromActivityCounts`
- * của `shared/level` nên cấp độ hiện ở diễn đàn không bao giờ lệch với cấp độ ở trang cá nhân.
+ * Dùng chung `statistics.getLevelsFor` với bảng xếp hạng thay vì tự gom nhóm ở đây —
+ * cùng một công thức XP thì cấp độ hiện ở diễn đàn, ở bảng xếp hạng và ở trang cá nhân
+ * không bao giờ nói khác nhau.
  *
- * Bỏ qua quản trị viên: họ không có cấp độ nên đếm hoạt động của họ cũng vô nghĩa.
+ * Lọc bỏ quản trị viên trước khi hỏi: họ không có cấp độ nên đếm hoạt động của họ cũng
+ * vô nghĩa (xem CLAUDE.md > Chức năng cho quản trị viên).
  */
 async function loadLevels(authors: AuthorRow[]): Promise<Map<number, number>> {
-  const learnerIds = [
-    ...new Set(authors.filter((a) => a.role !== UserRole.ADMIN).map((a) => a.id)),
-  ];
-  if (learnerIds.length === 0) return new Map();
-
-  const rows = await prisma.activityLog.groupBy({
-    by: ['userId', 'type'],
-    where: { userId: { in: learnerIds } },
-    _count: { _all: true },
-  });
-
-  const countsByUser = new Map<number, Partial<Record<ActivityType, number>>>();
-  for (const row of rows) {
-    const counts = countsByUser.get(row.userId) ?? {};
-    counts[row.type] = row._count._all;
-    countsByUser.set(row.userId, counts);
-  }
-
-  // Người chưa học buổi nào vẫn ở cấp 1 chứ không phải "không có cấp" — chỉ quản trị
-  // viên mới không có cấp độ.
-  return new Map(
-    learnerIds.map((id) => [
-      id,
-      levelFromXp(xpFromActivityCounts(countsByUser.get(id) ?? {})).level,
-    ]),
-  );
+  return getLevelsFor(authors.filter((a) => a.role !== UserRole.ADMIN).map((a) => a.id));
 }
 
 function toAuthor(author: AuthorRow, levels: Map<number, number>): PostAuthor {

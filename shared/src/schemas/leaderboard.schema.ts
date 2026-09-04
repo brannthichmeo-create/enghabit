@@ -25,7 +25,15 @@ export interface LeaderboardEntry {
   rank: number;
   userId: number;
   name: string;
+  /** XP kiếm được TRONG khoảng đang xem — đây mới là điểm dùng để xếp hạng. */
   xp: number;
+  /**
+   * Cấp độ của người đó, tính từ TOÀN BỘ lịch sử học.
+   *
+   * Cố ý không suy ra từ `xp` ở trên: với bảng tuần hay tháng, `xp` chỉ là điểm kiếm
+   * được trong khoảng đó, quy ra cấp độ sẽ cho một con số không ai nhận ra là của mình.
+   */
+  level: number;
   /** Số hoạt động trong khoảng — để phân biệt "học nhiều lượt nhỏ" với "ít lượt nặng". */
   activities: number;
   /** Chuỗi ngày hiện tại, hiển thị kèm cho có ngữ cảnh. */
