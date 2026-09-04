@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Award, Crown, Flame, Medal, Trophy } from 'lucide-react';
-import type { LeaderboardEntry, LeaderboardQueryInput } from '@enghabit/shared';
+import { Award, Crown, Flame, Layers, Medal, Sparkles, Trophy } from 'lucide-react';
+import type { LeaderboardEntry, LeaderboardMetric, LeaderboardQueryInput } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Card, EmptyState, ErrorMessage, PageHeader, SkeletonList } from '../../../shared/components/ui';
 import { Avatar } from '../../../shared/components/Sidebar';
@@ -10,11 +10,18 @@ import { useLeaderboard } from '../leaderboard.hooks';
 /**
  * Bảng xếp hạng người học.
  *
- * Điểm xếp hạng là XP kiếm được trong khoảng đang xem — cùng công thức với cấp độ ở
- * trang cá nhân, nên không bao giờ có chuyện hai chỗ nói hai kiểu.
+ * Hai trục lọc ĐỘC LẬP với nhau: tiêu chí xếp hạng (điểm học tập / hoạt động) và
+ * khoảng thời gian (tuần / tháng / toàn thời gian) — không phải bốn bảng cố định, nên
+ * chọn một tiêu chí không giới hạn khoảng thời gian nào cả.
  *
- * Cấp độ hiện cạnh tên là cấp độ của CẢ HÀNH TRÌNH, không suy từ điểm trong khoảng:
- * bảng tuần mà quy điểm tuần ra cấp độ thì ra một con số không ai nhận là của mình.
+ * - **Điểm học tập (XP):** cùng công thức với cấp độ ở trang cá nhân, nên không bao
+ *   giờ có chuyện "cấp của tôi nói một đằng, thứ hạng nói một nẻo".
+ * - **Hoạt động:** tổng số lượt bất kể loại, không quy đổi qua XP. XP thiên vị hoạt
+ *   động nặng điểm (một quiz = 20 XP = năm lượt ôn thẻ), nên đây là chỗ để người ôn
+ *   đều đặn nhiều việc nhỏ so tài mà không bị lép vế.
+ *
+ * Cấp độ hiện cạnh tên luôn là cấp độ của CẢ HÀNH TRÌNH, không đổi theo hai trục lọc
+ * trên — xem ghi chú ở `LeaderboardEntry.level`.
  *
  * Mặc định là tuần này chứ không phải toàn thời gian: bảng toàn thời gian gần như bất
  * động, người mới nhìn vào thấy mình ở đáy và không có cách nào leo lên trong tầm nhìn
@@ -27,13 +34,24 @@ const RANGE_LABELS: Record<LeaderboardQueryInput['range'], string> = {
   all: 'Từ trước tới nay',
 };
 
+const METRIC_LABELS: Record<LeaderboardMetric, string> = {
+  xp: 'Điểm học tập',
+  activities: 'Hoạt động',
+};
+
+const METRIC_ICONS: Record<LeaderboardMetric, typeof Sparkles> = {
+  xp: Sparkles,
+  activities: Layers,
+};
+
 /** Số người được đưa lên bục. Dưới ngần này thì bục trông trống trải, hiện danh sách thường. */
 const PODIUM_SIZE = 3;
 
 export function LeaderboardPage(): JSX.Element {
   const t = useT();
   const [range, setRange] = useState<LeaderboardQueryInput['range']>('week');
-  const board = useLeaderboard(range);
+  const [metric, setMetric] = useState<LeaderboardMetric>('xp');
+  const board = useLeaderboard(range, metric);
 
   const entries = board.data?.entries ?? [];
   const hasPodium = entries.length >= PODIUM_SIZE;
@@ -47,20 +65,42 @@ export function LeaderboardPage(): JSX.Element {
         description={t('So sánh điểm học tập với những người học khác')}
       />
 
-      <div className="mb-4 flex gap-1 rounded-lg bg-sunken p-1" role="tablist" aria-label={t('Khoảng thời gian')}>
-        {(Object.keys(RANGE_LABELS) as LeaderboardQueryInput['range'][]).map((key) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={range === key}
-            onClick={() => setRange(key)}
-            className={`rounded-md px-4 py-1.5 text-sm transition ${
-              range === key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
-            }`}
-          >
-            {t(RANGE_LABELS[key])}
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex gap-1 rounded-lg bg-sunken p-1" role="tablist" aria-label={t('Xếp theo')}>
+          {(Object.keys(METRIC_LABELS) as LeaderboardMetric[]).map((key) => {
+            const Icon = METRIC_ICONS[key];
+            return (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={metric === key}
+                onClick={() => setMetric(key)}
+                className={`flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm transition ${
+                  metric === key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {t(METRIC_LABELS[key])}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex gap-1 rounded-lg bg-sunken p-1" role="tablist" aria-label={t('Khoảng thời gian')}>
+          {(Object.keys(RANGE_LABELS) as LeaderboardQueryInput['range'][]).map((key) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={range === key}
+              onClick={() => setRange(key)}
+              className={`rounded-md px-4 py-1.5 text-sm transition ${
+                range === key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
+              }`}
+            >
+              {t(RANGE_LABELS[key])}
+            </button>
+          ))}
+        </div>
       </div>
 
       {board.isLoading && <SkeletonList rows={5} />}
@@ -82,9 +122,12 @@ export function LeaderboardPage(): JSX.Element {
         theo đúng thứ tự đọc.
       */}
       {podium.length > 0 && (
-        <div className="mb-4 grid gap-3 sm:grid-cols-3 sm:items-end">
+        <div
+          key={metric}
+          className="mb-4 grid animate-fade-in gap-3 sm:grid-cols-3 sm:items-end"
+        >
           {podium.map((entry) => (
-            <PodiumCard key={entry.userId} entry={entry} />
+            <PodiumCard key={entry.userId} entry={entry} metric={metric} />
           ))}
         </div>
       )}
@@ -94,7 +137,7 @@ export function LeaderboardPage(): JSX.Element {
           <ul className="divide-y divide-line">
             {rest.map((entry) => (
               <li key={entry.userId}>
-                <Row entry={entry} />
+                <Row entry={entry} metric={metric} />
               </li>
             ))}
           </ul>
@@ -103,7 +146,7 @@ export function LeaderboardPage(): JSX.Element {
               để không ai tưởng mình đang đứng ngay sau người cuối cùng của bảng. */}
           {board.data?.me && (
             <div className="mt-2 border-t-2 border-dashed border-line pt-2">
-              <Row entry={board.data.me} />
+              <Row entry={board.data.me} metric={metric} />
             </div>
           )}
         </Card>
@@ -112,7 +155,7 @@ export function LeaderboardPage(): JSX.Element {
       {/* Người đang xem ngoài top mà danh sách dưới bục rỗng — vẫn phải thấy mình ở đâu */}
       {rest.length === 0 && board.data?.me && (
         <Card>
-          <Row entry={board.data.me} />
+          <Row entry={board.data.me} metric={metric} />
         </Card>
       )}
 
@@ -153,10 +196,34 @@ const PODIUM_STYLES = {
   },
 } as const;
 
-function PodiumCard({ entry }: { entry: LeaderboardEntry }): JSX.Element {
+/**
+ * Con số lớn hiển thị theo tiêu chí đang chọn, và câu chú thích cho con số còn lại.
+ *
+ * Tách hàm dùng chung cho cả `PodiumCard` và `Row` để hai nơi không lệch cách trình
+ * bày khi thêm tiêu chí xếp hạng mới sau này.
+ */
+function primaryStat(
+  entry: LeaderboardEntry,
+  metric: LeaderboardMetric,
+  t: ReturnType<typeof useT>,
+): { value: number; unit: string; secondary: string } {
+  if (metric === 'activities') {
+    return { value: entry.activities, unit: t('lượt'), secondary: t('{n} XP', { n: entry.xp }) };
+  }
+  return { value: entry.xp, unit: 'XP', secondary: t('{n} lượt', { n: entry.activities }) };
+}
+
+function PodiumCard({
+  entry,
+  metric,
+}: {
+  entry: LeaderboardEntry;
+  metric: LeaderboardMetric;
+}): JSX.Element {
   const t = useT();
   const style = PODIUM_STYLES[entry.rank as 1 | 2 | 3] ?? PODIUM_STYLES[3];
   const Icon = style.icon;
+  const stat = primaryStat(entry, metric, t);
 
   return (
     <div
@@ -181,19 +248,22 @@ function PodiumCard({ entry }: { entry: LeaderboardEntry }): JSX.Element {
 
       <p className="mt-1 text-xs text-content-muted">{t('Cấp {n}', { n: entry.level })}</p>
 
-      <p className="mt-2.5 text-2xl font-bold leading-none tabular-nums text-content">{entry.xp}</p>
-      <p className="text-[11px] text-content-muted">XP</p>
+      <p className="mt-2.5 text-2xl font-bold leading-none tabular-nums text-content">{stat.value}</p>
+      <p className="text-[11px] text-content-muted">{stat.unit}</p>
 
-      <p className="mt-2 flex items-center gap-1 text-xs text-content-muted">
+      <p className="mt-2 flex items-center justify-center gap-1 text-xs text-content-muted">
         <Flame className="h-3 w-3 shrink-0" aria-hidden />
         {t('{n} ngày', { n: entry.currentStreak })}
+        <span aria-hidden>·</span>
+        {stat.secondary}
       </p>
     </div>
   );
 }
 
-function Row({ entry }: { entry: LeaderboardEntry }): JSX.Element {
+function Row({ entry, metric }: { entry: LeaderboardEntry; metric: LeaderboardMetric }): JSX.Element {
   const t = useT();
+  const stat = primaryStat(entry, metric, t);
 
   return (
     <div className={`flex items-center gap-3 rounded-lg px-2 py-3 ${entry.isMe ? 'bg-brand-soft' : ''}`}>
@@ -215,13 +285,13 @@ function Row({ entry }: { entry: LeaderboardEntry }): JSX.Element {
           <Flame className="h-3 w-3 shrink-0" aria-hidden />
           {t('{n} ngày', { n: entry.currentStreak })}
           <span aria-hidden>·</span>
-          {t('{n} lượt', { n: entry.activities })}
+          {stat.secondary}
         </span>
       </span>
 
       <span className="shrink-0 text-right">
-        <span className="block text-lg font-bold tabular-nums text-content">{entry.xp}</span>
-        <span className="block text-[11px] text-content-muted">XP</span>
+        <span className="block text-lg font-bold tabular-nums text-content">{stat.value}</span>
+        <span className="block text-[11px] text-content-muted">{stat.unit}</span>
       </span>
     </div>
   );

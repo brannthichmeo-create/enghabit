@@ -22,8 +22,14 @@ import { getLevelsFor } from '../statistics/statistics.service.js';
  * tắc với thống kê (xem CLAUDE.md). Ở quy mô vài trăm user, một lần `groupBy` là đủ
  * nhanh, còn bảng tổng hợp thì phải cập nhật ở mọi chỗ ghi hoạt động và chỉ chờ ngày lệch.
  *
- * Điểm xếp hạng là XP, dùng đúng `xpFromActivityCounts` của `shared/level` để thứ hạng
- * không bao giờ mâu thuẫn với cấp độ hiện trên trang cá nhân.
+ * Hai tiêu chí xếp hạng, chọn qua `query.metric`:
+ *  - XP: dùng đúng `xpFromActivityCounts` của `shared/level` để thứ hạng không bao giờ
+ *    mâu thuẫn với cấp độ hiện trên trang cá nhân.
+ *  - Số hoạt động: tổng lượt bất kể loại, không quy đổi qua XP — người ôn nhiều
+ *    flashcard nhỏ có chỗ so tài với người làm ít quiz nặng điểm hơn.
+ *
+ * MỘT truy vấn `groupBy` tính đủ cả hai con số cho mọi người dùng; `metric` chỉ quyết
+ * định thứ tự sắp xếp phía sau, không đổi câu truy vấn.
  *
  * Chỉ xếp hạng tài khoản `USER` đang hoạt động: quản trị viên không đi học, còn tài
  * khoản bị khoá thì không nên tiếp tục chiếm chỗ trong bảng.
@@ -59,10 +65,22 @@ export async function getLeaderboard(
     activities: Object.values(counts).reduce((sum, n) => sum + (n ?? 0), 0),
   }));
 
-  // Sắp xếp: XP giảm dần, hoà thì ai ít hoạt động hơn đứng trên (cùng điểm mà làm ít
-  // lượt hơn nghĩa là chọn việc nặng hơn). Cuối cùng chốt bằng userId để thứ tự ổn
-  // định giữa các lần gọi — không có mốc này, hai người hoà nhau sẽ nhảy chỗ mỗi lần tải.
-  scored.sort((a, b) => b.xp - a.xp || a.activities - b.activities || a.userId - b.userId);
+  /*
+    Sắp xếp theo đúng tiêu chí đã chọn, tiêu chí còn lại làm chỗ chia hoà — mỗi hướng
+    hoà theo cách nói lên nỗ lực nhiều hơn:
+      - xếp theo XP: hoà thì ai ÍT hoạt động hơn đứng trên (cùng điểm mà làm ít lượt
+        hơn nghĩa là chọn việc nặng hơn).
+      - xếp theo hoạt động: hoà thì ai NHIỀU XP hơn đứng trên (cùng số lượt mà điểm
+        cao hơn nghĩa là làm nhiều việc nặng hơn trong số đó).
+    Cuối cùng luôn chốt bằng userId để thứ tự ổn định giữa các lần gọi — không có mốc
+    này, hai người hoà nhau tuyệt đối sẽ nhảy chỗ mỗi lần tải lại.
+  */
+  scored.sort((a, b) => {
+    if (query.metric === 'activities') {
+      return b.activities - a.activities || b.xp - a.xp || a.userId - b.userId;
+    }
+    return b.xp - a.xp || a.activities - b.activities || a.userId - b.userId;
+  });
 
   const rankedIds = scored.map((item) => item.userId);
 
@@ -86,6 +104,7 @@ export async function getLeaderboard(
 
   return {
     range: query.range,
+    metric: query.metric,
     entries,
     // Đã nằm trong bảng thì không lặp lại ở dưới.
     me: mine && mine.rank > query.limit ? mine : null,

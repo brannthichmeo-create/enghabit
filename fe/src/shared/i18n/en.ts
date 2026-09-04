@@ -34,11 +34,15 @@ export const EN: Dictionary = {
   'Bảng xếp hạng': 'Leaderboard',
   'So sánh điểm học tập với những người học khác': 'See how your XP compares with other learners',
   'Chưa ai có điểm trong khoảng này': 'Nobody has scored in this period yet',
-  // Ba nhãn hạng đi qua t() bằng khoá động nên script check:i18n không quét được —
-  // thêm hoặc sửa nhãn ở PODIUM_STYLES thì phải tự cập nhật ở đây.
+  // Ba nhãn hạng và hai nhãn tiêu chí đi qua t() bằng khoá động nên script check:i18n
+  // không quét được — thêm hoặc sửa nhãn ở PODIUM_STYLES/METRIC_LABELS thì phải tự
+  // cập nhật ở đây.
   'Hạng nhất': 'First place',
   'Hạng nhì': 'Second place',
   'Hạng ba': 'Third place',
+  'Xếp theo': 'Rank by',
+  'Điểm học tập': 'XP earned',
+  'lượt': 'activities',
   'Học vài phút là bạn đứng đầu bảng ngay.': 'A few minutes of study puts you straight on top.',
   '{n} người có điểm trong khoảng này': {
     one: '{n} learner scored in this period',

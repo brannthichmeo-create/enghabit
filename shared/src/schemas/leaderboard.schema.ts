@@ -3,29 +3,39 @@ import { z } from 'zod';
 /**
  * Bảng xếp hạng người học.
  *
- * Điểm xếp hạng chính là XP — cùng công thức với cấp độ (`shared/level`), tính từ
- * `ActivityLog`. Không dựng thang điểm riêng cho bảng xếp hạng: hai cách tính điểm
- * song song là hai chỗ để lệch nhau, và người dùng sẽ thấy "cấp của tôi nói một đằng,
- * thứ hạng nói một nẻo".
+ * Hai cách xếp hạng, chọn qua `metric`:
+ *  - `xp`         điểm học tập — cùng công thức với cấp độ (`shared/level`). Không dựng
+ *                 thang điểm riêng cho bảng xếp hạng: hai cách tính điểm song song là
+ *                 hai chỗ để lệch nhau, và người dùng sẽ thấy "cấp của tôi nói một đằng,
+ *                 thứ hạng nói một nẻo".
+ *  - `activities` tổng số lượt hoạt động — cho người chăm chỉ làm nhiều việc nhỏ (ôn
+ *                 flashcard, check-in) một chỗ để so tài, vì XP thiên vị hoạt động nặng
+ *                 điểm (một bài quiz = 20 XP = năm lượt ôn thẻ).
+ *
+ * Cả hai cách đều xem được theo tuần, tháng hoặc toàn thời gian — `metric` và `range`
+ * là hai trục độc lập, không phải bốn bảng cố định.
  */
 
 export const leaderboardQuerySchema = z.object({
   /**
    * Khoảng thời gian tính điểm:
-   * - `week` / `month`: XP kiếm được trong tuần / tháng này (theo `local_date`)
-   * - `all`: tổng XP từ trước tới nay, khớp với "Tổng điểm" ở trang cá nhân
+   * - `week` / `month`: theo `local_date` của tuần / tháng này
+   * - `all`: tổng từ trước tới nay, khớp với "Tổng điểm" ở trang cá nhân
    */
   range: z.enum(['week', 'month', 'all']).default('week'),
+  /** Xếp theo điểm học tập (XP) hay theo tổng số lượt hoạt động. */
+  metric: z.enum(['xp', 'activities']).default('xp'),
   /** Số người hiển thị trong bảng. */
   limit: z.coerce.number().int().min(3).max(50).default(20),
 });
 export type LeaderboardQueryInput = z.infer<typeof leaderboardQuerySchema>;
+export type LeaderboardMetric = LeaderboardQueryInput['metric'];
 
 export interface LeaderboardEntry {
   rank: number;
   userId: number;
   name: string;
-  /** XP kiếm được TRONG khoảng đang xem — đây mới là điểm dùng để xếp hạng. */
+  /** XP kiếm được TRONG khoảng đang xem. */
   xp: number;
   /**
    * Cấp độ của người đó, tính từ TOÀN BỘ lịch sử học.
@@ -34,7 +44,7 @@ export interface LeaderboardEntry {
    * được trong khoảng đó, quy ra cấp độ sẽ cho một con số không ai nhận ra là của mình.
    */
   level: number;
-  /** Số hoạt động trong khoảng — để phân biệt "học nhiều lượt nhỏ" với "ít lượt nặng". */
+  /** Số hoạt động TRONG khoảng đang xem. */
   activities: number;
   /** Chuỗi ngày hiện tại, hiển thị kèm cho có ngữ cảnh. */
   currentStreak: number;
@@ -44,6 +54,7 @@ export interface LeaderboardEntry {
 
 export interface LeaderboardResult {
   range: LeaderboardQueryInput['range'];
+  metric: LeaderboardMetric;
   /** Top N theo thứ hạng. */
   entries: LeaderboardEntry[];
   /**
