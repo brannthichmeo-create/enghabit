@@ -59,6 +59,15 @@ const SANG = {
   dangerSoft: '#FAEEEC',
   onFill: '#FFFFFF',
 
+  // Huy chương bạc/đồng cho hạng 2/3 ở bảng xếp hạng. CỐ Ý CỐ ĐỊNH giá trị chip
+  // (không đổi theo chế độ), cùng cách accent/on-brand đang làm — đây là màu nhận
+  // diện nhỏ, không phải mảng lớn nên không cần bậc riêng cho nền tối (R17 áp dụng
+  // cho màu THƯƠNG HIỆU diện rộng, không bắt buộc cho một chip huy hiệu nhỏ).
+  rankSilver: '#8B96A3',
+  rankSilverSoft: '#EEF1F4',
+  rankBronze: '#B87333',
+  rankBronzeSoft: '#F7EDE3',
+
   cal: ['#E5EBF4', '#C2D8F2', '#93B7E4', '#5A8FD0', '#2C5F9B'],
 };
 
@@ -98,6 +107,13 @@ const TOI = {
   dangerSoft: '#301A17',
   onFill: '#141B26',
 
+  // Chip huy hiệu cố định giống chế độ sáng — chỉ nền thẻ "soft" mới cần bậc tối
+  // riêng, cùng cấu trúc với accent/accent-soft.
+  rankSilver: '#8B96A3',
+  rankSilverSoft: '#28313D',
+  rankBronze: '#B87333',
+  rankBronzeSoft: '#332821',
+
   cal: ['#1A222D', '#20344B', '#2B4E75', '#3D72AB', '#6FA3E0'],
 };
 
@@ -127,6 +143,17 @@ const PAIRS = [
   ['brand / surface', 'Nút chính nổi trên thẻ', (p) => [p.brand, p.surface], 3],
   ['line-on-page / page', 'Viền khung app (trang trí)', (p) => [p.lineOnPage, p.page], 0],
   ['surface / page', 'Thẻ nổi trên nền hệ thống', (p) => [p.surface, p.page], 0],
+
+  // Huy hiệu hạng 1/2/3 ở bảng xếp hạng. `on-brand` dùng lại — cùng vai trò "chữ tối
+  // cố định trên nền màu sáng vừa" mà token này đã được định nghĩa cho, không phải
+  // token mới. Trước khi có hàng này, cặp on-brand/accent CHƯA từng được đo — hoá ra
+  // chỉ đạt 1.59:1 ở chế độ tối vì badge cũ dùng `--ink` (đổi theo chế độ) thay vì
+  // `--on-brand` (cố định); đây là lỗi thật được phát hiện và sửa nhờ thêm hàng này.
+  ['on-brand / accent', 'Chữ trên huy hiệu hạng nhất', (p) => [p.onBrand, p.accent], 4.5],
+  ['on-brand / rank-silver', 'Chữ trên huy hiệu hạng nhì', (p) => [p.onBrand, p.rankSilver], 4.5],
+  ['on-brand / rank-bronze', 'Chữ trên huy hiệu hạng ba', (p) => [p.onBrand, p.rankBronze], 4.5],
+  ['text-muted / rank-silver-soft', 'Chữ mờ trên thẻ hạng nhì', (p) => [p.textMuted, p.rankSilverSoft], 4.5],
+  ['text-muted / rank-bronze-soft', 'Chữ mờ trên thẻ hạng ba', (p) => [p.textMuted, p.rankBronzeSoft], 4.5],
 ];
 
 let fail = 0;

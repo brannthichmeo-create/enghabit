@@ -180,29 +180,33 @@ export function LeaderboardPage(): JSX.Element {
 }
 
 /**
- * Kiểu trình bày cho từng bục.
+ * Kiểu trình bày cho từng bục: vàng cho hạng nhất, bạc cho hạng nhì, đồng cho hạng ba —
+ * đúng màu huy chương thật, dễ nhận ra hơn hẳn bộ màu trung tính/xanh thương hiệu cũ.
  *
- * Dùng token có sẵn thay vì bịa ba màu huy chương mới: vàng của logo cho hạng nhất,
- * trung tính cho hạng nhì, xanh thương hiệu cho hạng ba (xem docs/color-rules.md R4).
- * Màu chỉ là lớp phụ — thứ hạng vẫn đọc được qua số, biểu tượng và chiều cao ô.
+ * Cả ba đều dùng chung MỘT token chữ cho badge (`text-on-brand`), không phải ba cách
+ * khác nhau như bản trước. Bản trước hạng nhất dùng `text-ink` (đổi theo chế độ) và
+ * hạng nhì dùng `text-on-fill` (cũng đổi theo chế độ) trong khi nền badge lại CỐ ĐỊNH —
+ * ghép một cặp cố định với một cặp đổi theo chế độ khiến chữ gần như biến mất ở chế độ
+ * tối (hạng nhất chỉ còn 1.59:1, hạng nhì chỉ 1.78–2.23:1, đo bằng
+ * fe/scripts/check-contrast.mjs). `on-brand` không đổi theo chế độ nên không mắc lại lỗi đó.
  */
 const PODIUM_STYLES = {
   1: {
     icon: Crown,
     card: 'border-accent bg-accent-soft sm:order-2 sm:pb-7',
-    badge: 'bg-accent text-ink',
+    badge: 'bg-accent text-on-brand',
     label: 'Hạng nhất',
   },
   2: {
     icon: Medal,
-    card: 'border-line-strong bg-sunken sm:order-1',
-    badge: 'bg-line-strong text-on-fill',
+    card: 'border-rank-silver bg-rank-silver-soft sm:order-1',
+    badge: 'bg-rank-silver text-on-brand',
     label: 'Hạng nhì',
   },
   3: {
     icon: Award,
-    card: 'border-brand/50 bg-brand-soft sm:order-3',
-    badge: 'bg-brand text-on-brand',
+    card: 'border-rank-bronze bg-rank-bronze-soft sm:order-3',
+    badge: 'bg-rank-bronze text-on-brand',
     label: 'Hạng ba',
   },
 } as const;

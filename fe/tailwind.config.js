@@ -59,6 +59,17 @@ export default {
           DEFAULT: 'rgb(var(--danger) / <alpha-value>)',
           soft: 'rgb(var(--danger-soft) / <alpha-value>)',
         },
+        // Huy chương bạc/đồng cho hạng nhì/ba ở bảng xếp hạng — xem index.css.
+        rank: {
+          silver: {
+            DEFAULT: 'rgb(var(--rank-silver) / <alpha-value>)',
+            soft: 'rgb(var(--rank-silver-soft) / <alpha-value>)',
+          },
+          bronze: {
+            DEFAULT: 'rgb(var(--rank-bronze) / <alpha-value>)',
+            soft: 'rgb(var(--rank-bronze-soft) / <alpha-value>)',
+          },
+        },
         series: {
           vocab: 'var(--series-vocab)',
           flashcard: 'var(--series-flashcard)',

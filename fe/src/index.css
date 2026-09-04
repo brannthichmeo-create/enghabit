@@ -13,8 +13,8 @@
  * đảo sang chế độ tối không phải đổi tên ở khắp nơi.
  *
  * Mọi giá trị dưới đây đã chạy qua bảng đối chiếu tương phản của
- * docs/color-rules.md — 21 cặp, cả hai chế độ. Đổi bất kỳ con số nào thì phải
- * chạy lại bảng đó, đừng chỉnh bằng cảm tính.
+ * docs/color-rules.md (28 cặp, cả hai chế độ — đo bằng fe/scripts/check-contrast.mjs).
+ * Đổi bất kỳ con số nào thì phải chạy lại script đó, đừng chỉnh bằng cảm tính.
  */
 :root {
   color-scheme: light;
@@ -108,6 +108,26 @@
   --on-fill: 255 255 255;
 
   /*
+   * Huy chương bạc/đồng — hạng nhì và hạng ba ở bảng xếp hạng. Hạng nhất dùng thẳng
+   * --accent (vàng của logo) nên không cần token riêng.
+   *
+   * Chip huy hiệu (--rank-silver, --rank-bronze) CỐ ĐỊNH giá trị ở cả hai chế độ —
+   * cùng cách --accent đang làm. Đây là màu nhận diện diện tích nhỏ (một chip 28px),
+   * không phải màu thương hiệu diện rộng nên R17 (nền tối cần bậc sáng hơn) không bắt
+   * buộc áp dụng; --success/--danger/--brand mới cần bậc riêng vì chúng phủ cả nút
+   * hoặc mảng lớn.
+   *
+   * Chữ trên chip dùng lại --on-brand (đã cố định, xem ngay trên) — KHÔNG dùng --ink
+   * vì --ink đổi theo chế độ trong khi chip thì không, ghép hai thứ lệch pha sẽ ra
+   * đúng lỗi mà huy hiệu hạng nhất từng mắc phải trước khi có token này (xem
+   * docs/color-rules.md, hàng `on-brand / accent`).
+   */
+  --rank-silver: 139 150 163; /* #8b96a3 */
+  --rank-silver-soft: 238 241 244; /* #eef1f4 */
+  --rank-bronze: 184 115 51; /* #b87333 */
+  --rank-bronze-soft: 247 237 227; /* #f7ede3 */
+
+  /*
    * Chuỗi dữ liệu biểu đồ — GIỮ NGUYÊN bảng cũ, thứ tự cố định, không hoán đổi (R25).
    * Bảng này đã qua validator phân biệt màu cho người mù màu; đổi sang tông xanh cho
    * "hợp bảng màu" sẽ phá mất tính phân biệt mà không có cách kiểm chứng lại tương đương.
@@ -177,6 +197,12 @@
 
     --on-fill: 20 27 38;
 
+    /* Chip cố định giống chế độ sáng — chỉ nền thẻ "soft" đổi bậc, cùng cấu trúc accent-soft. */
+    --rank-silver: 139 150 163;
+    --rank-silver-soft: 40 49 61; /* #28313d */
+    --rank-bronze: 184 115 51;
+    --rank-bronze-soft: 51 40 33; /* #332821 */
+
     --series-vocab: #4d95e8;
     --series-flashcard: #f07a4a;
     --series-quiz: #2ecb95;
@@ -234,6 +260,12 @@
   --danger-soft: 48 26 23;
 
   --on-fill: 20 27 38;
+
+  /* Chip cố định giống chế độ sáng — chỉ nền thẻ "soft" đổi bậc, cùng cấu trúc accent-soft. */
+  --rank-silver: 139 150 163;
+  --rank-silver-soft: 40 49 61; /* #28313d */
+  --rank-bronze: 184 115 51;
+  --rank-bronze-soft: 51 40 33; /* #332821 */
 
   --series-vocab: #4d95e8;
   --series-flashcard: #f07a4a;
