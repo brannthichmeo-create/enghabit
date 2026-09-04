@@ -1,8 +1,16 @@
 import {
   ActivityType,
+  GOAL_ACTIVITY_TYPE,
+  GoalStatus,
   addDays,
+  computeStreak,
+  diffInDays,
   displayStreak,
   eachDayBetween,
+  effectivenessScore,
+  evaluateEffectiveness,
+  expectedForRange,
+  isCumulativeGoal,
   isStreakAlive,
   levelFromXp,
   xpFromActivityCounts,
@@ -11,14 +19,20 @@ import {
   streakDeadline,
   todayLocalDate,
   type ActivityCalendar,
+  type CalendarDay,
   type DailyStat,
+  type LearningReport,
   type LevelSummary,
   type LocalDate,
+  type ReportGoalProgress,
+  type ReportRangeInput,
+  type ReportTotals,
   type StatsRangeInput,
   type StatsSummary,
   type StreakSummary,
   type StreakState,
 } from '@enghabit/shared';
+import type { Goal } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { fromDbDate, toDbDate } from '../../common/utils/db-date.js';
 
@@ -41,7 +55,23 @@ export async function getSummary(
     getLevel(userId),
   ]);
 
-  const totals = daily.reduce(
+  const activeDays = daily.filter((d) => d.totalActivities > 0).length;
+
+  return {
+    range,
+    from,
+    to: today,
+    daily,
+    totals: sumByType(daily),
+    activeDayRate: daily.length === 0 ? 0 : Math.round((activeDays / daily.length) * 100),
+    streak,
+    level,
+  };
+}
+
+/** Cộng dồn số lượt theo từng loại hoạt động cho cả khoảng. */
+function sumByType(daily: DailyStat[]): Record<ActivityType, number> {
+  return daily.reduce(
     (acc, day) => ({
       [ActivityType.VOCAB_LEARNED]: acc[ActivityType.VOCAB_LEARNED] + day.vocabLearned,
       [ActivityType.FLASHCARD_REVIEWED]: acc[ActivityType.FLASHCARD_REVIEWED] + day.flashcardsReviewed,
@@ -55,19 +85,6 @@ export async function getSummary(
       [ActivityType.HABIT_CHECKIN]: 0,
     } as Record<ActivityType, number>,
   );
-
-  const activeDays = daily.filter((d) => d.totalActivities > 0).length;
-
-  return {
-    range,
-    from,
-    to: today,
-    daily,
-    totals,
-    activeDayRate: daily.length === 0 ? 0 : Math.round((activeDays / daily.length) * 100),
-    streak,
-    level,
-  };
 }
 
 /**
@@ -185,6 +202,166 @@ export async function getActivityCalendar(
     totalActivities: activeCounts.reduce((sum, n) => sum + n, 0),
     activeDays: activeCounts.length,
     thresholds: computeThresholds(activeCounts),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Báo cáo học tập theo khoảng tự chọn
+// ---------------------------------------------------------------------------
+
+/**
+ * Báo cáo cho một khoảng ngày do người học tự chọn.
+ *
+ * Trả lời ba câu hỏi trong đúng một lần gọi: trong khoảng đó đã làm được những gì,
+ * đạt bao nhiêu phần trăm so với mục tiêu đã đặt, và tổng thể học có hiệu quả không.
+ *
+ * Mọi con số vẫn đi ra từ `ActivityLog` group theo `local_date` như phần thống kê
+ * còn lại — không có bảng tổng hợp riêng cho báo cáo (xem CLAUDE.md).
+ */
+export async function getLearningReport(
+  userId: number,
+  timezone: string,
+  range: ReportRangeInput,
+): Promise<LearningReport> {
+  // Cắt mốc cuối về hôm nay: ngày chưa tới thì đương nhiên chưa có hoạt động, để
+  // chúng nằm trong mẫu số sẽ kéo tỷ lệ ngày học xuống một cách vô lý.
+  const today = todayLocalDate(timezone);
+  const from = range.from;
+  const to = range.to > today ? today : range.to;
+  const days = Math.max(0, diffInDays(from, to) + 1);
+
+  // Kỳ liền trước, cùng độ dài — để nói được "hơn hay kém kỳ trước" thay vì đưa ra
+  // một con số trơ trọi không có gì đối chiếu.
+  const previousTo = addDays(from, -1);
+  const previousFrom = addDays(previousTo, -(days - 1));
+
+  const [daily, previousDaily, goals, frozenDates] = await Promise.all([
+    getDailyStats(userId, from, to),
+    getDailyStats(userId, previousFrom, previousTo),
+    findGoalsOverlapping(userId, from, to),
+    listFrozenDates(userId, from, to),
+  ]);
+
+  const totals = sumByType(daily);
+  const activeDates = daily.filter((day) => day.totalActivities > 0).map((day) => day.date);
+
+  // Chuỗi trong khoảng tính cả ngày được vật phẩm bù, đúng như cách streak chính thức
+  // được dựng lại. Bỏ qua thì báo cáo sẽ báo chuỗi ngắn hơn con số người dùng đang
+  // nhìn thấy ở trang tổng quan, và họ không có cách nào hiểu vì sao lệch.
+  const streakInRange = computeStreak(activeDates, frozenDates);
+
+  const goalProgress = goals.map((goal) =>
+    measureGoalInRange(goal, days, totals, streakInRange.longestStreak),
+  );
+
+  const goalCompletionRate =
+    goalProgress.length === 0
+      ? null
+      : Math.round(
+          goalProgress.reduce((sum, goal) => sum + goal.completionRate, 0) / goalProgress.length,
+        );
+
+  const current = toReportTotals(from, to, daily);
+  const score = effectivenessScore(current.activeDayRate, goalCompletionRate);
+
+  return {
+    from,
+    to,
+    days,
+    daily,
+    totals,
+    current,
+    previous: toReportTotals(previousFrom, previousTo, previousDaily),
+    bestDay: findBestDay(daily),
+    longestStreakInRange: streakInRange.longestStreak,
+    goals: goalProgress,
+    goalCompletionRate,
+    effectivenessScore: score,
+    effectiveness: evaluateEffectiveness(score),
+  };
+}
+
+/**
+ * Mục tiêu còn hiệu lực trong khoảng.
+ *
+ * Bỏ qua mục tiêu bắt đầu SAU khoảng hoặc đã kết thúc TRƯỚC khoảng — chấm một mục
+ * tiêu trong quãng thời gian nó chưa tồn tại thì lúc nào cũng ra 0%.
+ */
+async function findGoalsOverlapping(userId: number, from: LocalDate, to: LocalDate): Promise<Goal[]> {
+  return prisma.goal.findMany({
+    where: {
+      userId,
+      status: GoalStatus.ACTIVE,
+      startDate: { lte: toDbDate(to) },
+      OR: [{ endDate: null }, { endDate: { gte: toDbDate(from) } }],
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+}
+
+/** Các ngày trong khoảng đã được vật phẩm giữ chuỗi bù. */
+async function listFrozenDates(userId: number, from: LocalDate, to: LocalDate): Promise<LocalDate[]> {
+  const rows = await prisma.streakFreeze.findMany({
+    where: { userId, usedOnDate: { gte: toDbDate(from), lte: toDbDate(to) } },
+    select: { usedOnDate: true },
+  });
+
+  return rows.flatMap((row) => (row.usedOnDate ? [fromDbDate(row.usedOnDate)] : []));
+}
+
+function toReportTotals(from: LocalDate, to: LocalDate, daily: DailyStat[]): ReportTotals {
+  const activeDays = daily.filter((day) => day.totalActivities > 0).length;
+
+  return {
+    from,
+    to,
+    totalActivities: daily.reduce((sum, day) => sum + day.totalActivities, 0),
+    activeDays,
+    activeDayRate: daily.length === 0 ? 0 : Math.round((activeDays / daily.length) * 100),
+    // Dùng lại đúng công thức XP của shared/level — không dựng thang điểm thứ hai.
+    xp: xpFromActivityCounts(sumByType(daily)),
+  };
+}
+
+/** Ngày học nhiều nhất; ngày đầu tiên thắng khi hoà, để kết quả ổn định giữa các lần gọi. */
+function findBestDay(daily: DailyStat[]): CalendarDay | null {
+  const best = daily.reduce<DailyStat | null>(
+    (top, day) => (day.totalActivities > (top?.totalActivities ?? 0) ? day : top),
+    null,
+  );
+
+  return best ? { date: best.date, count: best.totalActivities } : null;
+}
+
+/**
+ * Tiến độ một mục tiêu trong khoảng báo cáo.
+ *
+ * Mục tiêu đếm hoạt động thì so tổng số lượt với chỉ tiêu đã quy đổi sang cả khoảng;
+ * mục tiêu chuỗi ngày thì so chuỗi dài nhất đạt được với đúng con số người dùng đặt
+ * (xem `isCumulativeGoal` và `expectedForRange` ở shared/report).
+ */
+function measureGoalInRange(
+  goal: Goal,
+  days: number,
+  totals: Record<ActivityType, number>,
+  longestStreakInRange: number,
+): ReportGoalProgress {
+  const expectedValue = expectedForRange(goal.type, goal.period, goal.targetValue, days);
+
+  const currentValue = isCumulativeGoal(goal.type)
+    ? totals[GOAL_ACTIVITY_TYPE[goal.type]]
+    : longestStreakInRange;
+
+  return {
+    goalId: goal.id,
+    type: goal.type,
+    period: goal.period,
+    targetValue: goal.targetValue,
+    expectedValue,
+    currentValue,
+    completionRate:
+      expectedValue === 0 ? 0 : Math.min(100, Math.round((currentValue / expectedValue) * 100)),
+    isCompleted: expectedValue > 0 && currentValue >= expectedValue,
   };
 }
 

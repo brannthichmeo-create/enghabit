@@ -2,6 +2,7 @@ import {
   Activity,
   Bell,
   BookOpen,
+  ChartColumn,
   ChevronLeft,
   GraduationCap,
   Layers,
@@ -79,6 +80,7 @@ export function Sidebar({
   const habitItems: NavItem[] = [
     { to: '/habits', label: 'Thói quen', icon: ListChecks },
     { to: '/goals', label: 'Mục tiêu', icon: Target },
+    { to: '/report', label: 'Báo cáo', icon: ChartColumn },
   ];
 
   /** Quản trị viên vận hành hệ thống, không đi học — nên thấy đúng bộ mục của mình. */

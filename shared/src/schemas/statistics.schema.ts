@@ -1,6 +1,8 @@
 import { z } from 'zod';
-import { ActivityType } from '../constants/enums.js';
-import { type LocalDate } from '../date/local-date.js';
+import { ActivityType, GoalPeriod, GoalType } from '../constants/enums.js';
+import { diffInDays, type LocalDate } from '../date/local-date.js';
+import { MAX_REPORT_DAYS, type EffectivenessLevel } from '../report/report.js';
+import { localDateSchema } from './common.schema.js';
 
 export const statsRangeSchema = z.object({
   range: z.enum(['day', 'week', 'month']).default('week'),
@@ -74,4 +76,73 @@ export interface StatsSummary {
   activeDayRate: number;
   streak: StreakSummary;
   level: LevelSummary;
+}
+
+// --- Báo cáo học tập theo khoảng tự chọn ------------------------------------
+//
+// Khác `statsRangeSchema` ở trên (ngày/tuần/tháng cố định): ở đây người học tự chọn
+// hai đầu mốc, và báo cáo đối chiếu hoạt động với chỉ tiêu của chính họ.
+
+export const reportRangeSchema = z
+  .object({
+    from: localDateSchema,
+    to: localDateSchema,
+  })
+  // So sánh chuỗi là đủ vì LocalDate luôn ở dạng YYYY-MM-DD — thứ tự từ điển
+  // trùng với thứ tự thời gian.
+  .refine((range) => range.from <= range.to, {
+    message: 'Ngày bắt đầu phải trước hoặc trùng ngày kết thúc',
+    path: ['from'],
+  })
+  .refine((range) => diffInDays(range.from, range.to) + 1 <= MAX_REPORT_DAYS, {
+    message: `Khoảng báo cáo tối đa ${MAX_REPORT_DAYS} ngày`,
+    path: ['to'],
+  });
+export type ReportRangeInput = z.infer<typeof reportRangeSchema>;
+
+/** Tiến độ một mục tiêu, tính trên đúng khoảng báo cáo đang xem. */
+export interface ReportGoalProgress {
+  goalId: number;
+  type: GoalType;
+  period: GoalPeriod;
+  /** Chỉ tiêu gốc người dùng đặt cho MỘT kỳ (một ngày hoặc một tuần). */
+  targetValue: number;
+  /** Chỉ tiêu đã quy đổi sang toàn khoảng — xem `expectedForRange` ở shared/report. */
+  expectedValue: number;
+  currentValue: number;
+  /** 0-100, đã làm tròn và cắt trần. */
+  completionRate: number;
+  isCompleted: boolean;
+}
+
+/** Số liệu gọn của một khoảng — dùng để đối chiếu kỳ này với kỳ liền trước. */
+export interface ReportTotals {
+  from: LocalDate;
+  to: LocalDate;
+  totalActivities: number;
+  activeDays: number;
+  activeDayRate: number;
+  /** XP kiếm được trong khoảng, dùng đúng công thức của shared/level. */
+  xp: number;
+}
+
+export interface LearningReport {
+  from: LocalDate;
+  to: LocalDate;
+  /** Số ngày trong khoảng, tính cả hai đầu mốc. */
+  days: number;
+  daily: DailyStat[];
+  totals: Record<ActivityType, number>;
+  current: ReportTotals;
+  /** Khoảng cùng độ dài nằm ngay trước khoảng đang xem, để thấy xu hướng. */
+  previous: ReportTotals;
+  /** Ngày học nhiều nhất trong khoảng; null khi cả khoảng không có hoạt động nào. */
+  bestDay: CalendarDay | null;
+  /** Chuỗi ngày liên tiếp dài nhất đạt được TRONG khoảng này. */
+  longestStreakInRange: number;
+  goals: ReportGoalProgress[];
+  /** Trung bình tỷ lệ đạt của các mục tiêu; null khi chưa đặt mục tiêu nào. */
+  goalCompletionRate: number | null;
+  effectivenessScore: number;
+  effectiveness: EffectivenessLevel;
 }

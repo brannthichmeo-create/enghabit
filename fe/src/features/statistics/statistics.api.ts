@@ -1,6 +1,8 @@
 import type {
   ActivityCalendar,
+  LearningReport,
   LevelSummary,
+  ReportRangeInput,
   StatsRangeInput,
   StatsSummary,
   StreakSummary,
@@ -9,6 +11,12 @@ import { apiClient } from '../../shared/lib/api-client';
 
 export async function getSummary(range: StatsRangeInput['range']): Promise<StatsSummary> {
   const { data } = await apiClient.get<StatsSummary>('/statistics/summary', { params: { range } });
+  return data;
+}
+
+/** Báo cáo học tập cho khoảng ngày người học tự chọn. */
+export async function getReport(range: ReportRangeInput): Promise<LearningReport> {
+  const { data } = await apiClient.get<LearningReport>('/statistics/report', { params: range });
   return data;
 }
 

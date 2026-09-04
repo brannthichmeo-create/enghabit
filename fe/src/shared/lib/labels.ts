@@ -1,4 +1,12 @@
-import { ActivityType, GoalPeriod, GoalType, HabitFrequency, UserStatus, VocabLevel } from '@enghabit/shared';
+import {
+  ActivityType,
+  EffectivenessLevel,
+  GoalPeriod,
+  GoalType,
+  HabitFrequency,
+  UserStatus,
+  VocabLevel,
+} from '@enghabit/shared';
 
 /**
  * Nhãn tiếng Việt cho các enum nghiệp vụ.
@@ -36,6 +44,22 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   [ActivityType.FLASHCARD_REVIEWED]: 'Ôn flashcard',
   [ActivityType.QUIZ_COMPLETED]: 'Làm quiz',
   [ActivityType.HABIT_CHECKIN]: 'Check-in thói quen',
+};
+
+/** Xếp loại hiệu quả học tập của một khoảng báo cáo. */
+export const EFFECTIVENESS_LABELS: Record<EffectivenessLevel, string> = {
+  [EffectivenessLevel.EXCELLENT]: 'Xuất sắc',
+  [EffectivenessLevel.GOOD]: 'Tốt',
+  [EffectivenessLevel.FAIR]: 'Khá',
+  [EffectivenessLevel.LOW]: 'Cần cải thiện',
+};
+
+/** Một câu nhận xét đi kèm xếp loại — nói rõ nên làm gì tiếp, không chỉ chấm điểm. */
+export const EFFECTIVENESS_NOTES: Record<EffectivenessLevel, string> = {
+  [EffectivenessLevel.EXCELLENT]: 'Bạn học rất đều và bám sát mục tiêu. Cứ giữ nhịp này.',
+  [EffectivenessLevel.GOOD]: 'Nhịp học ổn định. Thêm vài ngày nữa trong tuần là đạt mức xuất sắc.',
+  [EffectivenessLevel.FAIR]: 'Bạn có học nhưng còn ngắt quãng. Học ít mỗi ngày tốt hơn dồn một hôm.',
+  [EffectivenessLevel.LOW]: 'Khoảng này bạn nghỉ khá nhiều. Thử hạ mục tiêu xuống mức dễ giữ hơn.',
 };
 
 export const USER_STATUS_LABELS: Record<UserStatus, string> = {

@@ -4,6 +4,7 @@ import { useAuthStore } from '../features/auth/auth.store';
 import { LoginPage } from '../features/auth/components/LoginPage';
 import { RegisterPage } from '../features/auth/components/RegisterPage';
 import { DashboardPage } from '../features/statistics/components/DashboardPage';
+import { ReportPage } from '../features/statistics/components/ReportPage';
 import { HabitsPage } from '../features/habits/components/HabitsPage';
 import { GoalsPage } from '../features/goals/components/GoalsPage';
 import { PathPage } from '../features/lessons/components/PathPage';
@@ -41,6 +42,7 @@ export function AppRoutes(): JSX.Element {
       <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
         {/* --- Khu người học --- */}
         <Route path="/" element={<Learner name="Thống kê"><DashboardPage /></Learner>} />
+        <Route path="/report" element={<Learner name="Báo cáo"><ReportPage /></Learner>} />
         <Route path="/learn" element={<Learner name="Bài học"><PathPage /></Learner>} />
         <Route path="/habits" element={<Learner name="Thói quen"><HabitsPage /></Learner>} />
         <Route path="/goals" element={<Learner name="Mục tiêu"><GoalsPage /></Learner>} />

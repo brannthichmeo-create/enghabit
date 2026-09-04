@@ -23,6 +23,7 @@ export const ADMIN_ROOT: Crumb = { label: 'Tổng quan hệ thống', to: '/admi
 /** Đường dẫn → các mục nằm SAU mục gốc. Mảng rỗng nghĩa là chính trang gốc. */
 const TRAILS: Record<string, Crumb[]> = {
   '/': [],
+  '/report': [{ label: 'Báo cáo' }],
   '/learn': [{ label: 'Học' }],
   '/vocabulary': [{ label: 'Từ vựng' }],
   '/flashcards': [{ label: 'Ôn tập' }],

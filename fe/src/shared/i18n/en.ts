@@ -605,4 +605,67 @@ export const EN: Dictionary = {
   'Thông báo thủ công gửi ngay, không phụ thuộc giờ nhắc của người dùng và không bị tắt bởi cài đặt nhắc nhở tự động — vì vậy chỉ dùng cho việc thật sự cần báo.':
     'Manual notifications go out immediately, ignore each user\'s reminder time and are not silenced by their automatic reminder settings — so use them only when something really needs saying.',
   'Hoạt động học 30 ngày qua': 'Learning activity, last 30 days',
+
+  // --- Báo cáo học tập theo khoảng tự chọn -----------------------------------
+  'Báo cáo': 'Report',
+  'Báo cáo học tập': 'Learning report',
+  'Chọn một khoảng thời gian để xem bạn đã học được gì và đạt bao nhiêu so với mục tiêu.':
+    'Pick a date range to see what you learned and how far you got against your goals.',
+
+  // Bộ chọn khoảng
+  '30 ngày': '30 days',
+  'Từ ngày': 'From',
+  'Đến ngày': 'To',
+  'Ngày bắt đầu phải trước hoặc trùng ngày kết thúc': 'The start date must be on or before the end date',
+  'Không tải được báo cáo': 'Could not load the report',
+  'Khoảng này chưa có hoạt động nào': 'No activity in this range',
+  'Hãy chọn một khoảng khác, hoặc bắt đầu học hôm nay để lần sau báo cáo có số liệu.':
+    'Pick another range, or start learning today so the next report has something to show.',
+
+  // Tổng kết hiệu quả
+  'Tổng kết hiệu quả': 'Effectiveness summary',
+  'trên 100': 'out of 100',
+  'Xuất sắc': 'Excellent',
+  'Cần cải thiện': 'Needs work',
+  'Bạn học rất đều và bám sát mục tiêu. Cứ giữ nhịp này.':
+    'You are learning consistently and staying on target. Keep this rhythm.',
+  'Nhịp học ổn định. Thêm vài ngày nữa trong tuần là đạt mức xuất sắc.':
+    'A steady rhythm. A few more days each week and you reach excellent.',
+  'Bạn có học nhưng còn ngắt quãng. Học ít mỗi ngày tốt hơn dồn một hôm.':
+    'You are learning, but in bursts. A little every day beats one long session.',
+  'Khoảng này bạn nghỉ khá nhiều. Thử hạ mục tiêu xuống mức dễ giữ hơn.':
+    'You missed a lot of days here. Try lowering the goal to something easier to keep.',
+  'Điểm tính theo mức độ đều đặn. Đặt mục tiêu để báo cáo chấm thêm phần hoàn thành mục tiêu.':
+    'The score reflects consistency only. Set a goal and the report will score goal completion too.',
+  'Điểm tính từ mức độ đều đặn ({consistency}%) và tỷ lệ đạt mục tiêu ({goal}%).':
+    'Scored from consistency ({consistency}%) and goal completion ({goal}%).',
+
+  // Đối chiếu với kỳ trước
+  'So với kỳ trước': 'Vs previous period',
+  '{from} → {to}': '{from} → {to}',
+  'Số hoạt động': 'Activities',
+  'Điểm kinh nghiệm': 'Experience points',
+  '{percent}%': '{percent}%',
+  'mới': 'new',
+
+  // Đã làm được gì
+  'Đã làm được gì': 'What you got done',
+  'Từ {from} đến {to}, tổng {days} ngày.': 'From {from} to {to}, {days} days in total.',
+  'Lượt ôn tập': 'Reviews',
+  '{active}/{total} ngày': '{active}/{total} days',
+  '{percent}% số ngày': '{percent}% of days',
+  'Chuỗi dài nhất trong kỳ': 'Longest streak in range',
+  'Ngày học nhiều nhất': 'Busiest day',
+  'Tổng {n} hoạt động, thu được {xp} XP': '{n} activities in total, earning {xp} XP',
+
+  // Tiến độ mục tiêu trong khoảng
+  'Chỉ tiêu đã quy đổi sang {days} ngày của khoảng đang xem.':
+    'Targets converted to the {days} days you are viewing.',
+  'Bạn chưa đặt mục tiêu nào cho khoảng này. Đặt mục tiêu để báo cáo đối chiếu được kết quả.':
+    'You have no goals covering this range. Set one so the report has something to measure against.',
+  'Mục tiêu {target} mỗi kỳ, quy đổi thành {expected} cho khoảng này.':
+    'Goal of {target} per period, which comes to {expected} for this range.',
+  'So chuỗi dài nhất đạt được với mục tiêu {target} ngày.':
+    'Comparing your longest streak against the {target}-day goal.',
+  'Trung bình đạt {percent}% các mục tiêu đã đặt.': 'On average you hit {percent}% of the goals you set.',
 };

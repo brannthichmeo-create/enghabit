@@ -1,8 +1,9 @@
 import {
-  ActivityType,
+  GOAL_ACTIVITY_TYPE,
   GoalPeriod,
   GoalStatus,
   GoalType,
+  isCumulativeGoal,
   startOfWeek,
   todayLocalDate,
   type CreateGoalInput,
@@ -84,20 +85,14 @@ async function measureProgress(
   to: LocalDate,
 ): Promise<number> {
   // STREAK_TARGET đo bằng chuỗi ngày hiện tại, không phải đếm hoạt động.
-  if (type === GoalType.STREAK_TARGET) {
+  if (!isCumulativeGoal(type)) {
     return (await getStreak(userId, timezone)).currentStreak;
   }
-
-  const activityType = {
-    [GoalType.VOCAB_PER_DAY]: ActivityType.VOCAB_LEARNED,
-    [GoalType.MINUTES_PER_DAY]: ActivityType.FLASHCARD_REVIEWED,
-    [GoalType.LESSONS_PER_WEEK]: ActivityType.QUIZ_COMPLETED,
-  }[type];
 
   const result = await prisma.activityLog.aggregate({
     where: {
       userId,
-      type: activityType,
+      type: GOAL_ACTIVITY_TYPE[type],
       localDate: { gte: toDbDate(from), lte: toDbDate(to) },
     },
     _count: { _all: true },
