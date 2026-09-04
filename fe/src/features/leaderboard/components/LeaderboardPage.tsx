@@ -65,7 +65,13 @@ export function LeaderboardPage(): JSX.Element {
         description={t('So sánh điểm học tập với những người học khác')}
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+      {/*
+        Hai nhóm tab đẩy về hai đầu trên màn đủ rộng để đối xứng với PageHeader phía
+        trên — tiêu chí xếp hạng là lựa chọn CHÍNH nên bám lề trái cùng tiêu đề, khoảng
+        thời gian là lựa chọn phụ nên bám lề phải. Màn hẹp bỏ `justify-between` vì hai
+        nhóm sát mép hai bên trên khổ hẹp trông rời rạc hơn là đứng cạnh nhau.
+      */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 sm:justify-between">
         <div className="flex gap-1 rounded-lg bg-sunken p-1" role="tablist" aria-label={t('Xếp theo')}>
           {(Object.keys(METRIC_LABELS) as LeaderboardMetric[]).map((key) => {
             const Icon = METRIC_ICONS[key];
