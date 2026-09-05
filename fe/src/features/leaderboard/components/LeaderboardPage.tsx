@@ -132,10 +132,20 @@ export function LeaderboardPage(): JSX.Element {
         biệt" trước cả khi đọc số hạng. Nền để `surface` trung tính (không dùng
         accent-soft) vì ô hạng nhất bên trong đã dùng chính accent-soft — tô cả khung
         ngoài cùng màu sẽ làm ô hạng nhất mất viền phân biệt với nền của nó.
+
+        HUY HIỆU HẠNG THÒ LÊN 14px TRÊN MÉP THẺ (`-top-3.5`), nên hai khoảng cách dưới
+        đây phải LỚN HƠN 14px, nếu không huy hiệu đè lên thứ nằm trên nó:
+         - `pt` của khung: chừa chỗ cho huy hiệu ô cao nhất, không thì nó nằm đè lên
+           chính đường viền của khung.
+         - `gap-y` của lưới: màn hẹp xếp dọc nên huy hiệu ô dưới thò lên đè vào đáy ô
+           trên. Màn rộng chỉ có một hàng nên `gap-y` không dùng tới, và ngược lại màn
+           hẹp chỉ một cột nên `gap-x` không dùng tới — tách hai chiều để mỗi khổ màn
+           lấy đúng số nó cần.
+        Sửa `-top-3.5` thì phải chỉnh lại cả hai số này.
       */}
       {podium.length > 0 && (
-        <div className="mb-4 rounded-2xl border-2 border-accent/50 bg-surface p-3 shadow-card sm:p-4">
-          <div key={metric} className="grid animate-fade-in gap-3 sm:grid-cols-3 sm:items-end">
+        <div className="mb-4 rounded-2xl border-2 border-accent/50 bg-surface px-3 pb-3 pt-6 shadow-card sm:px-4 sm:pb-4 sm:pt-7">
+          <div key={metric} className="grid animate-fade-in gap-x-3 gap-y-7 sm:grid-cols-3 sm:items-end">
             {podium.map((entry) => (
               <PodiumCard key={entry.userId} entry={entry} metric={metric} />
             ))}
@@ -243,7 +253,11 @@ function PodiumCard({
   return (
     <div
       className={`relative flex flex-col items-center rounded-2xl border-2 px-4 pb-5 pt-7 text-center shadow-card ${style.card} ${
-        entry.isMe ? 'ring-2 ring-brand ring-offset-2 ring-offset-page' : ''
+        // `ring-offset` chỉ TÔ MÀU khe hở giữa vòng sáng và thẻ chứ không tự biết nền
+        // thật là gì — phải khai đúng màu của thứ nằm NGAY SAU thẻ. Thẻ nằm trong khung
+        // bục nên nền sau nó là `surface`; để `page` như trước (hồi bục còn nằm thẳng
+        // trên nền trang) sẽ vẽ một khe xanh pastel giữa vòng sáng và thẻ trắng.
+        entry.isMe ? 'ring-2 ring-brand ring-offset-2 ring-offset-surface' : ''
       }`}
     >
       {/* Huy hiệu hạng nằm vắt lên mép trên để ô nào cũng có một điểm neo cho mắt */}
