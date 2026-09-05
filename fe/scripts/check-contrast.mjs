@@ -59,11 +59,10 @@ const SANG = {
   dangerSoft: '#FAEEEC',
   onFill: '#FFFFFF',
 
-  // Huy chương bạc/đồng cho hạng 2/3 ở bảng xếp hạng. CỐ Ý CỐ ĐỊNH giá trị chip
-  // (không đổi theo chế độ), cùng cách accent/on-brand đang làm — đây là màu nhận
-  // diện nhỏ, không phải mảng lớn nên không cần bậc riêng cho nền tối (R17 áp dụng
-  // cho màu THƯƠNG HIỆU diện rộng, không bắt buộc cho một chip huy hiệu nhỏ).
-  rankSilver: '#8B96A3',
+  // Huy chương bạc/đồng cho hạng 2/3 ở bảng xếp hạng. Đồng cố định ở cả hai chế độ,
+  // bạc thì đổi bậc (R17) — bạc trung tính nên chỉ có độ sáng để tách nền, còn đồng
+  // bão hoà thì tách bằng sắc độ. Xem giải thích đầy đủ trong fe/src/index.css.
+  rankSilver: '#A5AFBB',
   rankSilverSoft: '#EEF1F4',
   rankBronze: '#B87333',
   rankBronzeSoft: '#F7EDE3',
@@ -107,9 +106,8 @@ const TOI = {
   dangerSoft: '#301A17',
   onFill: '#141B26',
 
-  // Chip huy hiệu cố định giống chế độ sáng — chỉ nền thẻ "soft" mới cần bậc tối
-  // riêng, cùng cấu trúc với accent/accent-soft.
-  rankSilver: '#8B96A3',
+  // Bạc lên bậc sáng trên nền tối (R17); đồng giữ nguyên vì bão hoà.
+  rankSilver: '#C4CCD5',
   rankSilverSoft: '#28313D',
   rankBronze: '#B87333',
   rankBronzeSoft: '#332821',
@@ -154,14 +152,28 @@ const PAIRS = [
   ['on-brand / rank-bronze', 'Chữ trên huy hiệu hạng ba', (p) => [p.onBrand, p.rankBronze], 4.5],
   ['text-muted / rank-silver-soft', 'Chữ mờ trên thẻ hạng nhì', (p) => [p.textMuted, p.rankSilverSoft], 4.5],
   ['text-muted / rank-bronze-soft', 'Chữ mờ trên thẻ hạng ba', (p) => [p.textMuted, p.rankBronzeSoft], 4.5],
+
+  // Viền thẻ bục, đo trên nền KHUNG bục (`surface`) chứ không phải nền trang: từ khi
+  // ba ô có khung riêng bao ngoài, thứ nằm sau viền là surface.
+  //
+  // Ngưỡng 0 (chỉ theo dõi, không chặn) là CÓ CHỦ Ý. Đây là viền trang trí báo thứ
+  // hạng, không phải viền ô nhập liệu, nên WCAG 1.4.11 không áp; và đặt ngưỡng 3
+  // sẽ đánh trượt ngay chính viền vàng hạng nhất đang chạy tốt ở 1.93:1 — nó đọc
+  // được nhờ SẮC ĐỘ vàng chứ không nhờ chênh lệch độ sáng.
+  //
+  // Bảng vẫn phải in ba hàng này để thấy khi một giá trị tụt quá xa. Riêng bạc là
+  // màu trung tính, không có sắc độ cứu, nên giữ nó KHÔNG THẤP HƠN mốc 1.93 của vàng.
+  ['accent / surface', 'Viền thẻ hạng nhất (mốc đối chiếu)', (p) => [p.accent, p.surface], 0],
+  ['rank-silver / surface', 'Viền thẻ hạng nhì', (p) => [p.rankSilver, p.surface], 0],
+  ['rank-bronze / surface', 'Viền thẻ hạng ba', (p) => [p.rankBronze, p.surface], 0],
 ];
 
 let fail = 0;
-console.log('\n' + '═'.repeat(86));
+console.log('\n' + '═'.repeat(88));
 console.log('BẢNG ĐỐI CHIẾU TƯƠNG PHẢN — bảng màu xanh dương pastel');
-console.log('═'.repeat(86));
-console.log('Cặp màu'.padEnd(28) + 'Dùng ở đâu'.padEnd(32) + 'Sáng'.padStart(9) + 'Tối'.padStart(10) + '  Ngưỡng');
-console.log('─'.repeat(86));
+console.log('═'.repeat(88));
+console.log('Cặp màu'.padEnd(30) + 'Dùng ở đâu'.padEnd(32) + 'Sáng'.padStart(9) + 'Tối'.padStart(10) + '  Ngưỡng');
+console.log('─'.repeat(88));
 
 for (const [name, use, pick, min] of PAIRS) {
   const s = cr(...pick(SANG));
@@ -169,14 +181,14 @@ for (const [name, use, pick, min] of PAIRS) {
   const mark = (v) => (min === 0 ? ' ' : v >= min ? '✓' : '✗');
   if (min > 0 && (s < min || t < min)) fail += 1;
   console.log(
-    name.padEnd(28) + use.padEnd(32) +
+    name.padEnd(30) + use.padEnd(32) +
     (s.toFixed(2) + mark(s)).padStart(9) + (t.toFixed(2) + mark(t)).padStart(10) +
     '  ' + (min || '—'),
   );
 }
 
 // R24 — thang lịch hoạt động phải có độ sáng biến thiên đơn điệu
-console.log('\n' + '─'.repeat(86));
+console.log('\n' + '─'.repeat(88));
 for (const [che, p] of [['SÁNG', SANG], ['TỐI', TOI]]) {
   const l = p.cal.map(lum);
   const tang = l.every((v, i) => i === 0 || v > l[i - 1]);
@@ -186,9 +198,9 @@ for (const [che, p] of [['SÁNG', SANG], ['TỐI', TOI]]) {
   console.log(`Thang lịch ${che.padEnd(5)} đơn điệu: ${ok ? '✓ ĐẠT' : '✗ HỎNG'}  [${l.map((v) => v.toFixed(3)).join(' → ')}]`);
 }
 
-console.log('\n' + '═'.repeat(86));
+console.log('\n' + '═'.repeat(88));
 console.log(fail === 0 ? '✓ TẤT CẢ ĐẠT NGƯỠNG' : `✗ CÒN ${fail} MỤC CHƯA ĐẠT`);
-console.log('═'.repeat(86));
+console.log('═'.repeat(88));
 
 // In sẵn dạng kênh màu để dán vào index.css (R5)
 if (process.argv.includes('--css')) {

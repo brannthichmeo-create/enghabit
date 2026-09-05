@@ -218,9 +218,9 @@ Ví dụ: trong bảng đang dùng, cam và vàng không được đứng cạnh
 
 ## Bảng đối chiếu bảng màu hiện tại
 
-Đo ngày 05/09/2026, sau khi thêm huy chương bạc/đồng cho bảng xếp hạng. Bảng gốc đo ngày
-04/09/2026 khi đổi sang bảng màu **xanh dương pastel** với nền hệ thống SÁNG `#E7EFFA`.
-Chạy lại sau mỗi lần đổi màu bằng `node fe/scripts/check-contrast.mjs`.
+Đo ngày 05/09/2026, sau khi thêm huy chương bạc/đồng cho bảng xếp hạng và nâng bạc lên
+bậc sáng hơn. Bảng gốc đo ngày 04/09/2026 khi đổi sang bảng màu **xanh dương pastel** với
+nền hệ thống SÁNG `#E7EFFA`. Chạy lại sau mỗi lần đổi màu bằng `node fe/scripts/check-contrast.mjs`.
 
 | Cặp màu | Dùng ở đâu | Sáng | Tối | Ngưỡng |
 |---|---|---|---|---|
@@ -250,10 +250,13 @@ Chạy lại sau mỗi lần đổi màu bằng `node fe/scripts/check-contrast.
 | Ảnh tên / `page` | ENG//HABIT trên nền hệ thống | 12.38:1 ✓ | 11.02:1 ✓ | 3 |
 | Ảnh tên navy / `brand-vivid` | ENG//HABIT trên panel đăng nhập | 8.35:1 ✓ | 8.35:1 ✓ | 3 |
 | `on-brand` / `accent` | Chữ trên huy hiệu hạng nhất | 8.96:1 ✓ | 8.96:1 ✓ | 4.5 |
-| `on-brand` / `rank-silver` | Chữ trên huy hiệu hạng nhì | 5.75:1 ✓ | 5.75:1 ✓ | 4.5 |
+| `on-brand` / `rank-silver` | Chữ trên huy hiệu hạng nhì | 7.77:1 ✓ | 10.64:1 ✓ | 4.5 |
 | `on-brand` / `rank-bronze` | Chữ trên huy hiệu hạng ba | 4.55:1 ✓ | 4.55:1 ✓ | 4.5 |
 | `text-muted` / `rank-silver-soft` | Chữ mờ trên thẻ hạng nhì | 4.64:1 ✓ | 4.54:1 ✓ | 4.5 |
 | `text-muted` / `rank-bronze-soft` | Chữ mờ trên thẻ hạng ba | 4.55:1 ✓ | 4.94:1 ✓ | 4.5 |
+| `accent` / `surface` | Viền thẻ hạng nhất (mốc đối chiếu) | 1.93:1 | 7.83:1 | — |
+| `rank-silver` / `surface` | Viền thẻ hạng nhì | 2.22:1 | 9.29:1 | — |
+| `rank-bronze` / `surface` | Viền thẻ hạng ba | 3.79:1 | 3.98:1 | — |
 
 **Huy chương bạc/đồng suýt lặp lại đúng lỗi mà bản pastel từng mắc với `--on-page`.**
 Bảng xếp hạng trước đó tô hạng nhì bằng `bg-line-strong text-on-fill` và hạng nhất bằng
@@ -264,10 +267,32 @@ nhì, cả hai chế độ) — không đạt nổi cả ngưỡng 3:1 cho viề
 này chưa từng bị bắt vì cặp `on-brand`/`accent` (hay `on-fill`/`line-strong`) chưa từng có
 mặt trong bảng đối chiếu — đúng cảnh báo ở R9: "đừng quên các cặp ít nghĩ tới".
 
-Token `--rank-silver` và `--rank-bronze` sửa việc này bằng cách đi theo đúng khuôn của
-`--accent`: giá trị chip **cố định cả hai chế độ**, ghép với `--on-brand` (cũng cố định).
-Hai cái cố định ghép với nhau thì không bao giờ lệch pha. Chỉ riêng bậc "soft" (nền thẻ) là
-đổi theo chế độ — giống hệt cách `--accent-soft` đã làm.
+Token `--rank-silver` và `--rank-bronze` sửa việc này bằng cách luôn ghép với `--on-brand`
+(chữ tối, **cố định cả hai chế độ**), thay cho `--ink`/`--on-fill` vốn đổi theo chế độ.
+
+**Bạc đổi bậc theo chế độ, đồng thì không** — khác nhau vì bản chất hai màu khác nhau,
+không phải tuỳ hứng:
+
+| | Sáng | Tối | Tách khỏi nền bằng |
+|---|---|---|---|
+| `--accent` (vàng, hạng nhất) | `#EAB22D` | `#EAB22D` | sắc độ |
+| `--rank-bronze` (hạng ba) | `#B87333` | `#B87333` | sắc độ |
+| `--rank-silver` (hạng nhì) | `#A5AFBB` | `#C4CCD5` | **độ sáng** |
+
+Vàng và đồng **bão hoà**, nên một giá trị dùng được cho cả hai nền: viền vàng hạng nhất chỉ
+đạt 1.93:1 trên thẻ trắng mà vẫn nhận ra ngay, vì nó vàng chứ không vì nó đậm. Bạc là màu
+**trung tính**, không có sắc độ để dựa vào nên chỉ còn độ sáng — ép một giá trị gánh cả hai
+nền là buộc phải chọn mức xám lỡ cỡ: đủ tối để thấy trên nền trắng thì xỉn và không còn ra
+chất kim loại trên nền tối. Đây đúng là tình huống R17 mô tả.
+
+Đổi lại, bạc đổi theo chế độ nghĩa là cặp `on-brand`/`rank-silver` **phải đo ở cả hai bậc** —
+cả hai đều nằm trong bảng trên (7.77:1 và 10.64:1). Bậc "soft" (nền thẻ) đổi theo chế độ cho
+cả bạc lẫn đồng, giống hệt `--accent-soft`.
+
+**Ba hàng viền thẻ để ngưỡng "—" là có chủ ý.** Đây là viền trang trí báo thứ hạng chứ không
+phải viền ô nhập liệu, nên WCAG 1.4.11 không áp; đặt ngưỡng 3:1 sẽ đánh trượt ngay chính viền
+vàng hạng nhất đang chạy tốt. Nhưng vẫn phải in ra để thấy khi một giá trị tụt quá xa — và
+riêng bạc, vì không có sắc độ cứu, **giữ không thấp hơn mốc 1.93:1 của vàng**.
 
 **Vì sao `--brand` không phải màu pastel thật.** `#6090CF` là bậc **sáng nhất** của sắc xanh này còn đạt 3:1 trên thẻ trắng. Pastel nhạt hơn — ví dụ `#7BA7DB` — chỉ đạt 2.50:1, nghĩa là ranh giới nút chìm vào thẻ và vi phạm R6. Cảm giác pastel của giao diện đến từ **nền hệ thống** `#E7EFFA`, tức mảng 60% lớn nhất theo R11, chứ không phải từ màu nút.
 

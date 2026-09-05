@@ -111,18 +111,24 @@
    * Huy chương bạc/đồng — hạng nhì và hạng ba ở bảng xếp hạng. Hạng nhất dùng thẳng
    * --accent (vàng của logo) nên không cần token riêng.
    *
-   * Chip huy hiệu (--rank-silver, --rank-bronze) CỐ ĐỊNH giá trị ở cả hai chế độ —
-   * cùng cách --accent đang làm. Đây là màu nhận diện diện tích nhỏ (một chip 28px),
-   * không phải màu thương hiệu diện rộng nên R17 (nền tối cần bậc sáng hơn) không bắt
-   * buộc áp dụng; --success/--danger/--brand mới cần bậc riêng vì chúng phủ cả nút
-   * hoặc mảng lớn.
+   * --rank-bronze CỐ ĐỊNH ở cả hai chế độ, --rank-silver thì ĐỔI (R17). Khác nhau vì
+   * bản chất hai màu khác nhau, không phải tuỳ hứng:
    *
-   * Chữ trên chip dùng lại --on-brand (đã cố định, xem ngay trên) — KHÔNG dùng --ink
-   * vì --ink đổi theo chế độ trong khi chip thì không, ghép hai thứ lệch pha sẽ ra
-   * đúng lỗi mà huy hiệu hạng nhất từng mắc phải trước khi có token này (xem
-   * docs/color-rules.md, hàng `on-brand / accent`).
+   *   Đồng và vàng là màu BÃO HOÀ, tách khỏi nền bằng SẮC ĐỘ nên một giá trị dùng
+   *   được cho cả hai nền. Viền vàng hạng nhất chỉ đạt 1.93:1 trên thẻ trắng mà vẫn
+   *   đọc ra ngay, chính vì nó vàng chứ không vì nó đậm.
+   *
+   *   Bạc là màu TRUNG TÍNH, không có sắc độ để dựa vào nên chỉ còn độ sáng. Một giá
+   *   trị bạc đủ sáng để ra chất kim loại trên thẻ tối sẽ tan biến trên thẻ trắng, và
+   *   ngược lại. Ép một giá trị gánh cả hai nền là buộc phải chọn mức xám lỡ cỡ: đủ
+   *   tối để thấy trên nền sáng, nhưng xỉn và không còn giống bạc trên nền tối.
+   *
+   * Chữ trên chip dùng lại --on-brand (cố định ở cả hai chế độ, xem ngay trên) — KHÔNG
+   * dùng --ink vì --ink đổi theo chế độ, ghép lệch pha sẽ ra đúng lỗi mà huy hiệu hạng
+   * nhất từng mắc (xem docs/color-rules.md, hàng `on-brand / accent`). Bạc đổi theo chế
+   * độ thì cặp này phải đo ở CẢ HAI bậc — cả hai đều nằm trong bảng đối chiếu.
    */
-  --rank-silver: 139 150 163; /* #8b96a3 */
+  --rank-silver: 165 175 187; /* #a5afbb */
   --rank-silver-soft: 238 241 244; /* #eef1f4 */
   --rank-bronze: 184 115 51; /* #b87333 */
   --rank-bronze-soft: 247 237 227; /* #f7ede3 */
@@ -197,8 +203,9 @@
 
     --on-fill: 20 27 38;
 
-    /* Chip cố định giống chế độ sáng — chỉ nền thẻ "soft" đổi bậc, cùng cấu trúc accent-soft. */
-    --rank-silver: 139 150 163;
+    /* Bạc lên bậc SÁNG trên nền tối (R17) — bạc là màu trung tính, mất độ sáng là mất
+       luôn chất kim loại. Đồng giữ nguyên vì bão hoà, tách nền bằng sắc độ. */
+    --rank-silver: 196 204 213; /* #c4ccd5 */
     --rank-silver-soft: 40 49 61; /* #28313d */
     --rank-bronze: 184 115 51;
     --rank-bronze-soft: 51 40 33; /* #332821 */
@@ -261,8 +268,10 @@
 
   --on-fill: 20 27 38;
 
-  /* Chip cố định giống chế độ sáng — chỉ nền thẻ "soft" đổi bậc, cùng cấu trúc accent-soft. */
-  --rank-silver: 139 150 163;
+  /* Bạc lên bậc SÁNG trên nền tối (R17) — xem giải thích ở khối :root. Phải khớp y hệt
+     khối @media ở trên, lệch một trong hai là người tự chọn chế độ tối thấy màu khác
+     người để hệ điều hành quyết. */
+  --rank-silver: 196 204 213; /* #c4ccd5 */
   --rank-silver-soft: 40 49 61; /* #28313d */
   --rank-bronze: 184 115 51;
   --rank-bronze-soft: 51 40 33; /* #332821 */
