@@ -33,20 +33,6 @@ export const updateUserStatusSchema = z.object({
 });
 export type UpdateUserStatusInput = z.infer<typeof updateUserStatusSchema>;
 
-export const resetUserPasswordSchema = z.object({
-  /**
-   * Mật khẩu tạm do quản trị viên đặt. Dùng chung passwordSchema là hợp lý về mặt
-   * quy tắc, nhưng khai báo lại ở đây để tránh import vòng giữa hai file schema.
-   */
-  newPassword: z
-    .string()
-    .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
-    .max(72, 'Mật khẩu tối đa 72 ký tự')
-    .regex(/[a-zA-Z]/, 'Mật khẩu phải chứa ít nhất một chữ cái')
-    .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất một chữ số'),
-});
-export type ResetUserPasswordInput = z.infer<typeof resetUserPasswordSchema>;
-
 /** Một dòng trong danh sách người dùng của trang quản trị. */
 export interface AdminUserRow extends PublicUser {
   activityCount: number;

@@ -91,10 +91,6 @@ export function useUpdateUserStatus(): UseMutationResult<
   return useAdminMutation(({ id, status }) => adminApi.updateUserStatus(id, status));
 }
 
-export function useResetUserPassword(): UseMutationResult<void, Error, { id: number; newPassword: string }> {
-  return useAdminMutation(({ id, newPassword }) => adminApi.resetUserPassword(id, newPassword));
-}
-
 export function useDeleteUser(): UseMutationResult<void, Error, number> {
   return useAdminMutation(adminApi.deleteUser);
 }

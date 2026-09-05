@@ -10,7 +10,6 @@ import {
   createVocabularySchema,
   rejectResetRequestSchema,
   resetRequestQuerySchema,
-  resetUserPasswordSchema,
   updateTopicSchema,
   updateUserRoleSchema,
   updateUserStatusSchema,
@@ -21,7 +20,6 @@ import {
   type CreateTopicInput,
   type CreateVocabularyInput,
   type RejectResetRequestInput,
-  type ResetUserPasswordInput,
   type UpdateTopicInput,
   type UpdateUserRoleInput,
   type UpdateUserStatusInput,
@@ -83,15 +81,10 @@ adminRoutes.patch(
   }),
 );
 
-adminRoutes.post(
-  '/users/:id/reset-password',
-  validateBody(resetUserPasswordSchema),
-  asyncHandler(async (req, res) => {
-    const { newPassword } = req.body as ResetUserPasswordInput;
-    await adminService.resetUserPassword(parseId(req.params.id), newPassword);
-    res.status(204).send();
-  }),
-);
+// KHÔNG có endpoint đặt mật khẩu hộ người dùng — đã bỏ. Việc cấp lại mật khẩu đi qua
+// `/admin/password-reset-requests/*` ở dưới: quản trị viên chỉ DUYỆT, còn mật khẩu mới
+// do chính người dùng đặt. Đừng thêm lại đường tắt này: nó là cách thứ hai làm cùng một
+// việc, và là cách duy nhất khiến quản trị viên biết mật khẩu của người dùng.
 
 adminRoutes.delete(
   '/users/:id',

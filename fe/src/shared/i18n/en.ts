@@ -544,12 +544,6 @@ export const EN: Dictionary = {
   'Đã khoá tài khoản và thu hồi phiên đăng nhập': 'Account locked and sessions revoked',
   'Mở khoá': 'Unlock',
   'Đã mở khoá tài khoản': 'Account unlocked',
-  'Đặt lại mật khẩu': 'Reset password',
-  'Mật khẩu tạm': 'Temporary password',
-  'Ít nhất 8 ký tự, có cả chữ và số. Nhớ báo mật khẩu tạm cho người dùng qua kênh riêng.':
-    'At least 8 characters with letters and numbers. Send it to the user through a private channel.',
-  'Đặt lại': 'Reset',
-  'Đã đặt lại mật khẩu, mọi phiên cũ bị thu hồi': 'Password reset; all old sessions were revoked',
   'Vùng nguy hiểm': 'Danger zone',
   'Xoá tài khoản': 'Delete account',
   'Xoá vĩnh viễn {email}?\n\nToàn bộ {n} hoạt động, chuỗi ngày và tiến độ học sẽ mất và không khôi phục được. Nếu chỉ muốn chặn đăng nhập, hãy dùng "Khoá tài khoản".':

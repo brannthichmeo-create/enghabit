@@ -15,6 +15,11 @@ Cập nhật: 05/09/2026.
 
 Không gửi email, không có mã xác thực. **Quản trị viên duyệt tay từng yêu cầu.**
 
+Đây là **đường DUY NHẤT** để cấp lại mật khẩu. Endpoint `POST /admin/users/:id/reset-password`
+(quản trị viên đặt mật khẩu tạm hộ người dùng) đã bị gỡ bỏ — giữ cả hai là hai cách làm cùng
+một việc, và đường cũ còn tệ hơn ở chỗ quản trị viên **biết** mật khẩu của người dùng rồi phải
+tự tìm kênh báo lại. Nếu thay luồng này bằng luồng khác, đừng khôi phục đường tắt đó.
+
 ```
 Người dùng                         Hệ thống                        Quản trị viên
 ────────────────────────────────────────────────────────────────────────────────

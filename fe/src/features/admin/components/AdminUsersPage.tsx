@@ -15,13 +15,13 @@ import {
   SkeletonList,
 } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
+import { Avatar } from '../../../shared/components/Sidebar';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useLocale, useT, type TranslateFn } from '../../../shared/i18n/language';
 import {
   useAdminUser,
   useAdminUsers,
   useDeleteUser,
-  useResetUserPassword,
   useUpdateUserRole,
   useUpdateUserStatus,
 } from '../admin.hooks';
@@ -31,6 +31,12 @@ import {
  *
  * Ba mức can thiệp, xếp theo mức độ khó đảo ngược: đổi vai trò → khoá (đảo được,
  * dữ liệu còn nguyên) → xoá (mất hết). Nút xoá vì vậy tách riêng và luôn hỏi lại.
+ *
+ * KHÔNG có chức năng đặt mật khẩu hộ người dùng — đã bỏ. Việc cấp lại mật khẩu đi
+ * qua màn "Quản lý yêu cầu" (`/admin/requests`): người dùng tự đặt mật khẩu mới sau
+ * khi quản trị viên duyệt. Giữ cả hai đường sẽ là hai cách làm cùng một việc, mà
+ * đường cũ còn tệ hơn ở chỗ quản trị viên BIẾT mật khẩu của người dùng và phải tự
+ * tìm cách báo lại cho họ. Xem docs/luong-quen-mat-khau.md.
  */
 export function AdminUsersPage(): JSX.Element {
   const t = useT();
@@ -221,10 +227,7 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
 
   const updateRole = useUpdateUserRole();
   const updateStatus = useUpdateUserStatus();
-  const resetPassword = useResetUserPassword();
   const deleteUser = useDeleteUser();
-
-  const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -236,8 +239,7 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
 
   const user = detail.data;
   const isSelf = userId === currentUser?.id;
-  const error =
-    updateRole.error ?? updateStatus.error ?? resetPassword.error ?? deleteUser.error ?? detail.error;
+  const error = updateRole.error ?? updateStatus.error ?? deleteUser.error ?? detail.error;
 
   return (
     <>
@@ -248,9 +250,14 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
         aria-label={t('Chi tiết tài khoản')}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold text-content">{user?.name ?? t('Đang tải…')}</h2>
-            <p className="truncate text-sm text-content-muted">{user?.email}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            {/* Chỉ vẽ khi đã có dữ liệu: `Avatar` cần `name` để dựng chữ cái đầu, truyền
+                chuỗi rỗng lúc đang tải sẽ hiện một vòng tròn "?" rồi nhảy sang ảnh thật. */}
+            {user && <Avatar name={user.name} src={user.avatarDataUrl} size="lg" />}
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-semibold text-content">{user?.name ?? t('Đang tải…')}</h2>
+              <p className="truncate text-sm text-content-muted">{user?.email}</p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -350,39 +357,6 @@ function UserDetailDrawer({ userId, onClose }: { userId: number; onClose: () => 
               )}
               <p className="mt-1.5 text-xs text-content-muted">
                 {t('Khoá không xoá dữ liệu học tập — mở khoá là người dùng vào lại được như cũ.')}
-              </p>
-            </Section>
-
-            <Section title={t('Đặt lại mật khẩu')}>
-              <div className="flex gap-2">
-                <Input
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder={t('Mật khẩu tạm')}
-                  autoComplete="new-password"
-                />
-                <Button
-                  size="sm"
-                  className="shrink-0 whitespace-nowrap"
-                  disabled={newPassword.length < 8}
-                  loading={resetPassword.isPending}
-                  onClick={() =>
-                    resetPassword.mutate(
-                      { id: user.id, newPassword },
-                      {
-                        onSuccess: () => {
-                          setNewPassword('');
-                          toast.success(t('Đã đặt lại mật khẩu, mọi phiên cũ bị thu hồi'));
-                        },
-                      },
-                    )
-                  }
-                >
-                  {t('Đặt lại')}
-                </Button>
-              </div>
-              <p className="mt-1.5 text-xs text-content-muted">
-                {t('Ít nhất 8 ký tự, có cả chữ và số. Nhớ báo mật khẩu tạm cho người dùng qua kênh riêng.')}
               </p>
             </Section>
 

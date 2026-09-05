@@ -49,10 +49,6 @@ export async function updateUserStatus(id: number, status: UserStatus): Promise<
   return data;
 }
 
-export async function resetUserPassword(id: number, newPassword: string): Promise<void> {
-  await apiClient.post(`/admin/users/${id}/reset-password`, { newPassword });
-}
-
 export async function deleteUser(id: number): Promise<void> {
   await apiClient.delete(`/admin/users/${id}`);
 }

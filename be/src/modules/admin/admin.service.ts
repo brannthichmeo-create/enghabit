@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import {
   ActivityType,
   UserRole,
@@ -32,8 +31,6 @@ import { toPublicUser } from '../auth/auth.service.js';
  * Mọi số liệu hoạt động ở đây đều đọc từ ActivityLog (nguồn sự thật duy nhất) và
  * group theo localDate, không tự tính lại từ bảng nghiệp vụ nào khác.
  */
-
-const BCRYPT_ROUNDS = 10;
 
 /** Mốc thời gian N ngày trước, dùng cho các bộ lọc "trong 7/30 ngày qua". */
 function daysAgo(days: number): Date {
@@ -109,6 +106,10 @@ export async function getUserDetail(userId: number): Promise<AdminUserDetail> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
+      // Bắt buộc: `toPublicUser` đọc quan hệ này để dựng `avatarDataUrl`. Không
+      // include thì nó trả null một cách im lặng và giao diện hiện chữ cái đầu như
+      // thể người dùng chưa từng tải ảnh lên.
+      avatar: true,
       streak: true,
       _count: {
         select: {
@@ -201,21 +202,6 @@ export async function updateUserStatus(
   }
 
   return findRow(userId);
-}
-
-/** Đặt lại mật khẩu hộ người dùng (quên mật khẩu). Thu hồi mọi phiên đang mở. */
-export async function resetUserPassword(userId: number, newPassword: string): Promise<void> {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new NotFoundError('Không tìm thấy người dùng');
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { passwordHash: await bcrypt.hash(newPassword, BCRYPT_ROUNDS) },
-  });
-  await prisma.refreshToken.updateMany({
-    where: { userId, revokedAt: null },
-    data: { revokedAt: new Date() },
-  });
 }
 
 export async function deleteUser(userId: number, actorId: number): Promise<void> {

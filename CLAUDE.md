@@ -30,7 +30,8 @@ Quản trị viên **vận hành hệ thống, không phải người học**: �
 `Learner` trong `fe/src/routes/AppRoutes.tsx` đẩy admin về khu quản trị).
 
 - **Tổng quan hệ thống** (`/admin`) — quy mô người dùng, người hoạt động 1/7/30 ngày, cơ cấu hoạt động, kho nội dung, tình trạng kết nối DB, uptime API
-- **Quản lý tài khoản** (`/admin/users`) — tìm kiếm/lọc/sắp xếp, xem hồ sơ chi tiết, đổi vai trò, khoá–mở khoá, đặt lại mật khẩu, xoá
+- **Quản lý tài khoản** (`/admin/users`) — tìm kiếm/lọc/sắp xếp (theo tên, **tên tài khoản** hoặc email), xem hồ sơ chi tiết, đổi vai trò, khoá–mở khoá, xoá
+- **Quản lý yêu cầu** (`/admin/requests`) — duyệt hoặc từ chối (kèm lý do) yêu cầu cấp lại mật khẩu; tab Nhật ký ghi ai xử lý, lúc nào, vì sao
 - **Lượt truy cập** (`/admin/access`) — nhật ký đăng nhập (cả lần thất bại), lượt truy cập theo ngày, phiên đang mở
 - **Nội dung học tập** (`/admin/content`) — chủ đề, từ vựng, câu hỏi quiz
 
@@ -39,6 +40,13 @@ không tự hạ quyền/khoá/xoá chính mình, không xoá hay hạ quyền *
 động cuối cùng** (mất hết admin thì phải sửa tay trong DB mới vào lại được), và khoá
 tài khoản thì **thu hồi luôn refresh token** — nếu không, người bị khoá vẫn dùng tiếp
 tới khi token hết hạn 30 ngày.
+
+**Quản trị viên KHÔNG đặt mật khẩu hộ người dùng.** Endpoint
+`POST /admin/users/:id/reset-password` đã bị gỡ bỏ, đừng thêm lại. Việc cấp lại mật khẩu
+chỉ đi qua màn "Quản lý yêu cầu": quản trị viên **duyệt**, còn mật khẩu mới do chính người
+dùng đặt. Hai lý do: giữ cả hai đường là hai cách làm cùng một việc, và đường cũ là cách
+duy nhất khiến quản trị viên **biết** mật khẩu của người dùng rồi phải tự tìm kênh báo lại.
+Toàn bộ luồng mô tả trong `docs/luong-quen-mat-khau.md` — đọc file đó trước khi sửa.
 
 **Quản trị viên KHÔNG có tính năng của người học**: không cấp độ, không XP, không chuỗi
 ngày, không phần thưởng, không nhắc nhở học tập. Route guard `Learner` đã chặn các màn
