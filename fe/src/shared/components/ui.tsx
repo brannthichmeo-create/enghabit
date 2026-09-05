@@ -185,13 +185,17 @@ export function SkeletonList({ rows = 3 }: { rows?: number }): JSX.Element {
   );
 }
 
-type BadgeTone = 'slate' | 'green' | 'brand' | 'amber';
+type BadgeTone = 'slate' | 'green' | 'brand' | 'amber' | 'red';
 
 const BADGE_TONES: Record<BadgeTone, string> = {
   slate: 'bg-sunken text-content-soft',
   green: 'bg-success-soft text-success',
   brand: 'bg-brand-soft text-brand-strong',
   amber: 'bg-accent-soft text-accent-ink',
+  // Đối xứng với `green`: cùng cặp <màu>-soft làm nền và <màu> làm chữ. Cần cho các
+  // trạng thái phủ định (bị từ chối, thất bại) — trước đây phải mượn tạm `amber`,
+  // nhưng vàng nghĩa là "chú ý", không phải "bị bác".
+  red: 'bg-danger-soft text-danger',
 };
 
 export function Badge({
