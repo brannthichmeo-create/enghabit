@@ -56,12 +56,26 @@ async function main(): Promise<void> {
   await printSummary();
 }
 
+/**
+ * Tên tài khoản suy ra từ phần trước dấu @ của email — CÙNG QUY TẮC với bước điền dữ
+ * liệu trong migration `20260905020000_them_ten_tai_khoan_va_yeu_cau_cap_lai_mat_khau`.
+ * Hai chỗ lệch nhau thì cùng một email sẽ ra hai tên khác nhau tuỳ vào việc dữ liệu
+ * đến từ migration hay từ seed.
+ *
+ * Các email trong seed đều có phần đầu khác nhau nên không cần bước khử trùng như
+ * migration; nếu thêm email mới vào seed thì phải tự kiểm tra điều đó.
+ */
+function usernameFromEmail(email: string): string {
+  return email.split('@')[0]!.slice(0, 40).toLowerCase();
+}
+
 async function upsertUser(email: string, name: string, password: string, role: UserRole = UserRole.USER) {
   return prisma.user.upsert({
     where: { email },
     update: {},
     create: {
       name,
+      username: usernameFromEmail(email),
       email,
       passwordHash: await bcrypt.hash(password, 10),
       role,

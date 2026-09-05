@@ -1,5 +1,12 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query';
-import type { AuthResponse, LoginInput, RegisterInput } from '@enghabit/shared';
+import type {
+  AuthResponse,
+  LoginInput,
+  PasswordResetConfirmInput,
+  PasswordResetRequestInput,
+  PasswordResetState,
+  RegisterInput,
+} from '@enghabit/shared';
 import { useNavigate } from 'react-router-dom';
 import * as authApi from './auth.api';
 import { useAuthStore } from './auth.store';
@@ -30,6 +37,28 @@ export function useRegister(): UseMutationResult<AuthResponse, Error, RegisterIn
       navigate('/');
     },
   });
+}
+
+/**
+ * Tra cứu yêu cầu quên mật khẩu.
+ *
+ * Không tự điều hướng: kết quả quyết định màn hình con nào hiện ra ngay tại chỗ, nên
+ * việc chuyển bước do component giữ. Xem `ForgotPasswordPage`.
+ */
+export function usePasswordResetRequest(): UseMutationResult<
+  PasswordResetState,
+  Error,
+  PasswordResetRequestInput
+> {
+  return useMutation({ mutationFn: authApi.requestPasswordReset });
+}
+
+export function usePasswordResetConfirm(): UseMutationResult<
+  void,
+  Error,
+  PasswordResetConfirmInput
+> {
+  return useMutation({ mutationFn: authApi.confirmPasswordReset });
 }
 
 export function useLogout(): UseMutationResult<void, Error, void> {

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, ArrowRight, Lock, Mail } from 'lucide-react';
+import { AlertCircle, ArrowRight, Lock, UserRound } from 'lucide-react';
 import { loginSchema } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button } from '../../../shared/components/ui';
@@ -12,7 +12,7 @@ import { useT } from '../../../shared/i18n/language';
 export function LoginPage(): JSX.Element {
   const t = useT();
   const login = useLogin();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ identifier: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (event: FormEvent): void => {
@@ -50,16 +50,19 @@ export function LoginPage(): JSX.Element {
           </div>
         )}
 
+        {/* Một ô cho cả email lẫn tên tài khoản: người dùng gõ thứ họ nhớ, backend tự
+            phân biệt. `type="text"` chứ không phải `type="email"` — để email thì trình
+            duyệt sẽ báo "thiếu @" khi người ta gõ tên tài khoản. */}
         <div className="animate-enter-up [animation-delay:60ms]">
           <AuthField
-            label="Email"
-            icon={Mail}
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            error={fieldErrors.email}
-            placeholder="ban@example.com"
-            autoComplete="email"
+            label={t('Email hoặc tên tài khoản')}
+            icon={UserRound}
+            type="text"
+            value={form.identifier}
+            onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+            error={fieldErrors.identifier}
+            placeholder={t('ban@example.com hoặc tentaikhoan')}
+            autoComplete="username"
             autoFocus
           />
         </div>
@@ -74,6 +77,14 @@ export function LoginPage(): JSX.Element {
             placeholder={t('Nhập mật khẩu')}
             autoComplete="current-password"
           />
+          <div className="mt-2 text-right">
+            <Link
+              to="/forgot-password"
+              className="text-sm font-medium text-brand-strong underline-offset-2 transition-colors hover:underline"
+            >
+              {t('Quên mật khẩu?')}
+            </Link>
+          </div>
         </div>
 
         <div className="animate-enter-up [animation-delay:180ms]">

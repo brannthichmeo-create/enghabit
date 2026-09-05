@@ -40,6 +40,7 @@ const TRAILS: Record<string, Crumb[]> = {
   '/admin/access': [{ label: 'Lượt truy cập' }],
   '/admin/content': [{ label: 'Nội dung học tập' }],
   '/admin/announcements': [{ label: 'Gửi thông báo' }],
+  '/admin/requests': [{ label: 'Quản lý yêu cầu' }],
 };
 
 /**

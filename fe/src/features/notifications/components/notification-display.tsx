@@ -1,4 +1,4 @@
-import { AlertTriangle, Bell, Flame, Layers, Megaphone, Target, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, Bell, Flame, KeyRound, Layers, Megaphone, Target, type LucideIcon } from 'lucide-react';
 import { NotificationType } from '@enghabit/shared';
 import type { TranslateFn } from '../../../shared/i18n/language';
 
@@ -23,6 +23,12 @@ const DISPLAY: Record<NotificationType, Display> = {
   [NotificationType.MISTAKES_PENDING]: { icon: AlertTriangle, label: 'Từ sai', tone: 'text-accent-ink' },
   [NotificationType.GOAL_ACHIEVED]: { icon: Target, label: 'Đạt mục tiêu', tone: 'text-success' },
   [NotificationType.ANNOUNCEMENT]: { icon: Megaphone, label: 'Thông báo', tone: 'text-brand-strong' },
+  // Loại duy nhất chỉ quản trị viên nhận — người học không bao giờ thấy dòng này.
+  [NotificationType.PASSWORD_RESET_REQUEST]: {
+    icon: KeyRound,
+    label: 'Yêu cầu cấp lại mật khẩu',
+    tone: 'text-accent-ink',
+  },
 };
 
 export function displayFor(type: NotificationType): Display {

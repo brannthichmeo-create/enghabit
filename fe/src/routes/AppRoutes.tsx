@@ -17,6 +17,8 @@ import { AdminOverviewPage } from '../features/admin/components/AdminOverviewPag
 import { AdminUsersPage } from '../features/admin/components/AdminUsersPage';
 import { AdminAccessPage } from '../features/admin/components/AdminAccessPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
+import { AdminRequestsPage } from '../features/admin/components/AdminRequestsPage';
+import { ForgotPasswordPage } from '../features/auth/components/ForgotPasswordPage';
 import { CommunityPage } from '../features/community/components/CommunityPage';
 import { NotificationsPage } from '../features/notifications/components/NotificationsPage';
 import { AnnouncementPage } from '../features/notifications/components/AnnouncementPage';
@@ -39,6 +41,9 @@ export function AppRoutes(): JSX.Element {
     <Routes>
       <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
       <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
+      {/* Quên mật khẩu nằm trong PublicOnly như hai màn trên: người đang đăng nhập
+          được thì không cần tới đây, họ đổi mật khẩu ở trang cá nhân. */}
+      <Route path="/forgot-password" element={<PublicOnly><ForgotPasswordPage /></PublicOnly>} />
 
       <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
         {/* --- Khu người học --- */}
@@ -62,6 +67,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/admin/users" element={<Admin name="Quản lý tài khoản"><AdminUsersPage /></Admin>} />
         <Route path="/admin/access" element={<Admin name="Lượt truy cập"><AdminAccessPage /></Admin>} />
         <Route path="/admin/content" element={<Admin name="Nội dung học tập"><AdminContentPage /></Admin>} />
+        <Route path="/admin/requests" element={<Admin name="Quản lý yêu cầu"><AdminRequestsPage /></Admin>} />
         <Route
           path="/admin/announcements"
           element={<Admin name="Gửi thông báo"><AnnouncementPage /></Admin>}

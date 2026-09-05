@@ -2,6 +2,8 @@ import type { Request, Response } from 'express';
 import type {
   ChangePasswordInput,
   LoginInput,
+  PasswordResetConfirmInput,
+  PasswordResetRequestInput,
   RegisterInput,
   UpdateAvatarInput,
   UpdateProfileInput,
@@ -10,6 +12,7 @@ import { BadRequestError } from '../../common/errors/app-error.js';
 import { currentUser } from '../../common/middlewares/auth-guard.js';
 import { isProduction } from '../../config/env.js';
 import * as authService from './auth.service.js';
+import * as passwordResetService from './password-reset.service.js';
 
 /**
  * Controller chỉ nhận request / trả response.
@@ -77,6 +80,17 @@ export async function removeAvatar(req: Request, res: Response): Promise<void> {
 
 export async function changePassword(req: Request, res: Response): Promise<void> {
   await authService.changePassword(currentUser(req).id, req.body as ChangePasswordInput);
+  res.status(204).send();
+}
+
+// --- Quên mật khẩu (không cần đăng nhập — người dùng đang không vào được tài khoản) ---
+
+export async function requestPasswordReset(req: Request, res: Response): Promise<void> {
+  res.json(await passwordResetService.requestReset(req.body as PasswordResetRequestInput));
+}
+
+export async function confirmPasswordReset(req: Request, res: Response): Promise<void> {
+  await passwordResetService.confirmReset(req.body as PasswordResetConfirmInput);
   res.status(204).send();
 }
 

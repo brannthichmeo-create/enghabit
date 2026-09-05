@@ -2,6 +2,9 @@ import type {
   AuthResponse,
   ChangePasswordInput,
   LoginInput,
+  PasswordResetConfirmInput,
+  PasswordResetRequestInput,
+  PasswordResetState,
   PublicUser,
   RegisterInput,
   UpdateProfileInput,
@@ -37,6 +40,24 @@ export async function updateMe(input: UpdateProfileInput): Promise<PublicUser> {
 /** Đổi mật khẩu. Backend thu hồi mọi phiên cũ nên các thiết bị khác sẽ bị đăng xuất. */
 export async function changePassword(input: ChangePasswordInput): Promise<void> {
   await apiClient.post('/auth/me/change-password', input);
+}
+
+// --- Quên mật khẩu (không cần đăng nhập) ---
+
+/**
+ * Tra cứu tài khoản và lấy bước tiếp theo. Cùng một lời gọi vừa TẠO yêu cầu mới (nếu
+ * chưa có) vừa TRẢ VỀ trạng thái hiện tại — xem `PasswordResetOutcome` bên shared.
+ */
+export async function requestPasswordReset(
+  input: PasswordResetRequestInput,
+): Promise<PasswordResetState> {
+  const { data } = await apiClient.post<PasswordResetState>('/auth/password-reset/request', input);
+  return data;
+}
+
+/** Đặt mật khẩu mới. Chỉ thành công khi quản trị viên đã duyệt yêu cầu. */
+export async function confirmPasswordReset(input: PasswordResetConfirmInput): Promise<void> {
+  await apiClient.post('/auth/password-reset/confirm', input);
 }
 
 /** Đổi ảnh đại diện. `dataUrl` là ảnh ĐÃ thu nhỏ ở client (xem shared/avatar). */

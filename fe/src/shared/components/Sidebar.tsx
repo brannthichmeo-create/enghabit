@@ -5,6 +5,7 @@ import {
   ChartColumn,
   ChevronLeft,
   GraduationCap,
+  Inbox,
   Layers,
   LayoutDashboard,
   Megaphone,
@@ -92,6 +93,9 @@ export function Sidebar({
     { to: '/admin/access', label: 'Lượt truy cập', icon: Activity },
     { to: '/admin/content', label: 'Nội dung học tập', icon: BookOpen },
     { to: '/admin/announcements', label: 'Gửi thông báo', icon: Megaphone },
+    // Nhãn phải GIỐNG HỆT `name` của route và nhãn trong TRAILS (xem CLAUDE.md) —
+    // một màn hình chỉ có một tên, và chỉ cần một khoá dịch.
+    { to: '/admin/requests', label: 'Quản lý yêu cầu', icon: Inbox },
     // Diễn đàn mở cho cả hai vai trò — quản trị viên vào để trả lời và kiểm duyệt.
     { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
   ];

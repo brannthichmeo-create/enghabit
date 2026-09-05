@@ -76,7 +76,7 @@ export function AdminUsersPage(): JSX.Element {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('Tìm theo tên hoặc email')}
+              placeholder={t('Tìm theo tên, tên tài khoản hoặc email')}
               aria-label={t('Tìm người dùng')}
               className="pl-9"
             />

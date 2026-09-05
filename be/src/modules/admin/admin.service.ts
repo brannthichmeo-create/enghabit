@@ -50,7 +50,14 @@ export async function listUsers(query: AdminUserQueryInput): Promise<Paginated<A
     ...(query.status ? { status: query.status } : {}),
     ...(query.search
       ? {
-          OR: [{ name: { contains: query.search } }, { email: { contains: query.search } }],
+          // Có cả `username`: từ khi đăng nhập chấp nhận tên tài khoản, người dùng gọi
+          // hỗ trợ sẽ đọc tên đó chứ không phải email — không tra được theo nó thì
+          // quản trị viên phải dò tay cả danh sách.
+          OR: [
+            { name: { contains: query.search } },
+            { username: { contains: query.search } },
+            { email: { contains: query.search } },
+          ],
         }
       : {}),
   };

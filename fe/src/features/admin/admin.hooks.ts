@@ -15,6 +15,9 @@ import type {
   CreateVocabularyInput,
   LoginEventRow,
   Paginated,
+  RejectResetRequestInput,
+  ResetRequestQueryInput,
+  ResetRequestRow,
   SystemOverview,
   UserRole,
   UserStatus,
@@ -30,6 +33,7 @@ export const adminKeys = {
   user: (id: number) => ['admin', 'user', id] as const,
   accessOverview: (days: number) => ['admin', 'access', 'overview', days] as const,
   accessLogs: (query: Partial<AccessLogQueryInput>) => ['admin', 'access', 'logs', query] as const,
+  resetRequests: (query: Partial<ResetRequestQueryInput>) => ['admin', 'reset-requests', query] as const,
 };
 
 /** Số liệu tổng quan đổi liên tục nên làm mới định kỳ thay vì để người dùng bấm F5. */
@@ -93,6 +97,34 @@ export function useResetUserPassword(): UseMutationResult<void, Error, { id: num
 
 export function useDeleteUser(): UseMutationResult<void, Error, number> {
   return useAdminMutation(adminApi.deleteUser);
+}
+
+// --- Yêu cầu cấp lại mật khẩu ---
+
+export function useResetRequests(
+  query: Partial<ResetRequestQueryInput>,
+): UseQueryResult<Paginated<ResetRequestRow>> {
+  return useQuery({
+    queryKey: adminKeys.resetRequests(query),
+    queryFn: () => adminApi.listResetRequests(query as ResetRequestQueryInput),
+    placeholderData: (previous) => previous,
+  });
+}
+
+/**
+ * Duyệt và từ chối đều đi qua `useAdminMutation` nên sau khi xong sẽ làm mới CẢ HAI
+ * tab: một yêu cầu vừa rời hàng chờ thì đồng thời phải xuất hiện trong nhật ký.
+ */
+export function useApproveResetRequest(): UseMutationResult<void, Error, number> {
+  return useAdminMutation(adminApi.approveResetRequest);
+}
+
+export function useRejectResetRequest(): UseMutationResult<
+  void,
+  Error,
+  { id: number; input: RejectResetRequestInput }
+> {
+  return useAdminMutation(({ id, input }) => adminApi.rejectResetRequest(id, input));
 }
 
 /**

@@ -92,6 +92,17 @@ enum NotificationType {
   GOAL_ACHIEVED
   /// Quản trị viên gửi tới người dùng
   ANNOUNCEMENT
+  /// Có yêu cầu cấp lại mật khẩu mới chờ duyệt — gửi cho MỌI quản trị viên
+  PASSWORD_RESET_REQUEST
+}
+
+enum PasswordResetStatus {
+  /// Đã gửi, quản trị viên chưa thao tác
+  PENDING
+  /// Đã duyệt — người dùng được phép đặt mật khẩu mới
+  APPROVED
+  /// Đã từ chối, kèm lý do
+  REJECTED
 }
 
 enum DevicePlatform {
@@ -115,10 +126,15 @@ enum CoinReason {
 // ---------------------------------------------------------------------------
 
 model User {
-  id           Int        @id @default(autoincrement())
-  name         String     @db.VarChar(100)
-  email        String     @unique @db.VarChar(190) // 190 để vừa giới hạn index utf8mb4
-  passwordHash String     @map("password_hash") @db.VarChar(255)
+  id    Int    @id @default(autoincrement())
+  name  String @db.VarChar(100)
+  email String @unique @db.VarChar(190) // 190 để vừa giới hạn index utf8mb4
+
+  /// Tên tài khoản đăng nhập, KHÁC `name` (tên hiển thị, được phép trùng).
+  /// Đăng nhập chấp nhận cả email lẫn tên này nên cả hai đều phải unique.
+  username String @unique @db.VarChar(50)
+
+  passwordHash String @map("password_hash") @db.VarChar(255)
   role         UserRole   @default(USER)
   status       UserStatus @default(ACTIVE)
 
@@ -154,6 +170,12 @@ model User {
   posts               Post[]
   postComments        PostComment[]
   postLikes           PostLike[]
+
+  /// Yêu cầu cấp lại mật khẩu do CHÍNH người này gửi
+  passwordResetRequests PasswordResetRequest[] @relation("ResetRequester")
+
+  /// Yêu cầu mà người này (quản trị viên) đã duyệt hoặc từ chối
+  reviewedResetRequests PasswordResetRequest[] @relation("ResetReviewer")
 
   @@map("users")
 }
@@ -219,6 +241,50 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+/// Yêu cầu cấp lại mật khẩu, do quản trị viên duyệt tay.
+///
+/// Bảng này là NGUỒN SỰ THẬT DUY NHẤT cho cả hai tab của màn "Quản lý yêu cầu":
+/// tab Yêu cầu đọc các dòng PENDING, tab Nhật ký đọc các dòng đã xử lý sắp theo
+/// `reviewedAt`. Không tách bảng nhật ký riêng — mọi thứ cần ghi lại (ai duyệt,
+/// lúc nào, lý do từ chối) đều đã nằm sẵn ở đây, thêm bảng thứ hai chỉ tạo ra
+/// chỗ để hai nguồn lệch nhau.
+model PasswordResetRequest {
+  id     Int                 @id @default(autoincrement())
+  userId Int                 @map("user_id")
+  status PasswordResetStatus @default(PENDING)
+
+  /// Bằng `userId` khi đang chờ duyệt, NULL sau khi đã xử lý.
+  ///
+  /// Đây là cách chặn "một người có hai yêu cầu chờ cùng lúc" bằng RÀNG BUỘC DB
+  /// thay vì đọc-rồi-ghi: hai request bấm cùng lúc đều đọc thấy "chưa có yêu cầu"
+  /// và sẽ cùng tạo. MySQL cho phép nhiều NULL trong unique index nên lịch sử
+  /// nhiều yêu cầu đã xử lý của cùng một người vẫn lưu được bình thường.
+  /// Cùng thủ pháp với `StreakFreeze.usedOnDate`.
+  pendingUserId Int? @unique @map("pending_user_id")
+
+  reviewedById Int?      @map("reviewed_by_id")
+  reviewedAt   DateTime? @map("reviewed_at")
+
+  /// Chỉ có giá trị khi status = REJECTED. Người dùng được xem lý do này.
+  rejectReason String? @map("reject_reason") @db.VarChar(500)
+
+  /// Thời điểm người dùng đã dùng lượt duyệt này để đặt mật khẩu mới.
+  /// Một lần duyệt chỉ đổi được mật khẩu MỘT lần.
+  usedAt DateTime? @map("used_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user       User  @relation("ResetRequester", fields: [userId], references: [id], onDelete: Cascade)
+  /// SetNull chứ không Cascade: xoá tài khoản quản trị viên không được phép làm
+  /// bốc hơi nhật ký phê duyệt — chỉ mất thông tin "ai làm", không mất sự kiện.
+  reviewedBy User? @relation("ResetReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status, createdAt])
+  @@index([reviewedAt])
+  @@map("password_reset_requests")
 }
 
 // ---------------------------------------------------------------------------

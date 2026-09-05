@@ -10,6 +10,9 @@ import type {
   CreateVocabularyInput,
   LoginEventRow,
   Paginated,
+  RejectResetRequestInput,
+  ResetRequestQueryInput,
+  ResetRequestRow,
   SystemOverview,
   UserRole,
   UserStatus,
@@ -96,4 +99,26 @@ export async function createQuiz(input: CreateQuizInput): Promise<{ id: number; 
 export async function addQuizQuestion(quizId: number, input: CreateQuizQuestionInput): Promise<{ id: number }> {
   const { data } = await apiClient.post<{ id: number }>(`/admin/quizzes/${quizId}/questions`, input);
   return data;
+}
+
+// --- Yêu cầu cấp lại mật khẩu ---
+//
+// Hai tab của màn "Quản lý yêu cầu" dùng CHUNG endpoint này, khác nhau ở `tab`:
+// `pending` là hàng chờ xử lý, `log` là nhật ký các yêu cầu đã xử lý.
+
+export async function listResetRequests(
+  query: ResetRequestQueryInput,
+): Promise<Paginated<ResetRequestRow>> {
+  const { data } = await apiClient.get<Paginated<ResetRequestRow>>('/admin/password-reset-requests', {
+    params: query,
+  });
+  return data;
+}
+
+export async function approveResetRequest(id: number): Promise<void> {
+  await apiClient.post(`/admin/password-reset-requests/${id}/approve`);
+}
+
+export async function rejectResetRequest(id: number, input: RejectResetRequestInput): Promise<void> {
+  await apiClient.post(`/admin/password-reset-requests/${id}/reject`, input);
 }

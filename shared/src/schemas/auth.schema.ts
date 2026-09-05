@@ -9,16 +9,46 @@ export const passwordSchema = z
   .regex(/[a-zA-Z]/, 'Mật khẩu phải chứa ít nhất một chữ cái')
   .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất một chữ số');
 
+/**
+ * Tên tài khoản đăng nhập — khác `name` là tên hiển thị (được phép trùng).
+ *
+ * Chuẩn hoá về chữ thường ngay tại schema, vì hai lý do:
+ *  - Collation của DB là `utf8mb4_unicode_ci`, tức PHÂN BIỆT HOA THƯỜNG LÀ KHÔNG.
+ *    "Admin" và "admin" vốn đã đụng nhau ở tầng DB; hạ chữ thường tại đây làm điều
+ *    đó thành quy tắc tường minh thay vì một hành vi ngầm của MySQL.
+ *  - Đăng nhập cũng hạ chữ thường, nên gõ "Admin" hay "admin" đều vào được.
+ *
+ * Không cho dấu tiếng Việt và khoảng trắng: tên này còn dùng để tra cứu khi quên
+ * mật khẩu, gõ sai dấu một ly là không tìm ra tài khoản.
+ */
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, 'Tên tài khoản phải có ít nhất 3 ký tự')
+  .max(30, 'Tên tài khoản tối đa 30 ký tự')
+  .regex(
+    /^[a-z0-9][a-z0-9._-]*$/,
+    'Tên tài khoản chỉ gồm chữ không dấu, số và các ký tự . _ - và phải bắt đầu bằng chữ hoặc số',
+  );
+
 export const registerSchema = z.object({
   name: z.string().trim().min(2, 'Tên phải có ít nhất 2 ký tự').max(100),
+  username: usernameSchema,
   email: z.string().trim().toLowerCase().email('Email không hợp lệ'),
   password: passwordSchema,
   timezone: z.string().min(1).optional(),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 
+/**
+ * Đăng nhập bằng email HOẶC tên tài khoản.
+ *
+ * Một ô nhập duy nhất chứ không phải hai ô hay một nút chuyển kiểu: người dùng chỉ
+ * cần gõ thứ họ nhớ. Backend phân biệt bằng cách xem có dấu "@" hay không.
+ */
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email('Email không hợp lệ'),
+  identifier: z.string().trim().toLowerCase().min(1, 'Vui lòng nhập email hoặc tên tài khoản'),
   password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -44,6 +74,8 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export interface PublicUser {
   id: number;
   name: string;
+  /** Tên tài khoản đăng nhập, luôn chữ thường. Khác `name` là tên hiển thị. */
+  username: string;
   email: string;
   role: UserRole;
   status: UserStatus;

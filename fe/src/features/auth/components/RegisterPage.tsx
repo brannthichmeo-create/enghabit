@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, ArrowRight, Lock, Mail, User } from 'lucide-react';
+import { AlertCircle, ArrowRight, AtSign, Lock, Mail, User } from 'lucide-react';
 import { registerSchema } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button } from '../../../shared/components/ui';
@@ -12,7 +12,7 @@ import { useT } from '../../../shared/i18n/language';
 export function RegisterPage(): JSX.Element {
   const t = useT();
   const register = useRegister();
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', username: '', email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (event: FormEvent): void => {
@@ -66,7 +66,22 @@ export function RegisterPage(): JSX.Element {
           />
         </div>
 
+        {/* Tên tài khoản là trường BẮT BUỘC và không được trùng. Khác "Họ tên" ở trên:
+            họ tên là tên hiển thị, được phép trùng nhau. */}
         <div className="animate-enter-up [animation-delay:120ms]">
+          <AuthField
+            label={t('Tên tài khoản')}
+            icon={AtSign}
+            value={form.username}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            error={fieldErrors.username}
+            hint={t('Dùng để đăng nhập. Chỉ gồm chữ không dấu, số và . _ -')}
+            placeholder={t('vidu: nguyenvana')}
+            autoComplete="username"
+          />
+        </div>
+
+        <div className="animate-enter-up [animation-delay:180ms]">
           <AuthField
             label="Email"
             icon={Mail}
@@ -79,7 +94,7 @@ export function RegisterPage(): JSX.Element {
           />
         </div>
 
-        <div className="animate-enter-up [animation-delay:180ms]">
+        <div className="animate-enter-up [animation-delay:240ms]">
           <PasswordField
             label={t('Mật khẩu')}
             icon={Lock}
@@ -93,13 +108,13 @@ export function RegisterPage(): JSX.Element {
           <PasswordStrength password={form.password} />
         </div>
 
-        <div className="animate-enter-up [animation-delay:240ms]">
+        <div className="animate-enter-up [animation-delay:300ms]">
           <Button type="submit" loading={register.isPending} className="w-full" icon={ArrowRight}>
             {register.isPending ? t('Đang tạo tài khoản...') : t('Tạo tài khoản')}
           </Button>
         </div>
 
-        <p className="animate-enter-up text-center text-sm text-content-muted [animation-delay:300ms]">
+        <p className="animate-enter-up text-center text-sm text-content-muted [animation-delay:360ms]">
           {t('Đã có tài khoản?')}{' '}
           <Link to="/login" className="font-medium text-brand-strong underline-offset-2 transition-colors hover:underline">
             {t('Đăng nhập')}

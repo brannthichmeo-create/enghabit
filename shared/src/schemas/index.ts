@@ -8,6 +8,7 @@ export * from './statistics.schema.js';
 export * from './lesson.schema.js';
 export * from './notification.schema.js';
 export * from './admin.schema.js';
+export * from './password-reset.schema.js';
 export * from './rewards.schema.js';
 export * from './leaderboard.schema.js';
 export * from './community.schema.js';

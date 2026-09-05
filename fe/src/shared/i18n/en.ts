@@ -508,7 +508,7 @@ export const EN: Dictionary = {
   'Tìm kiếm, phân quyền, khoá và xoá tài khoản người dùng':
     'Search, assign roles, lock and delete user accounts',
   'Tìm người dùng': 'Search users',
-  'Tìm theo tên hoặc email': 'Search by name or email',
+  'Tìm theo tên, tên tài khoản hoặc email': 'Search by name, username or email',
   'Lọc theo vai trò': 'Filter by role',
   'Mọi vai trò': 'All roles',
   'Chỉ quản trị viên': 'Administrators only',
@@ -754,4 +754,72 @@ export const EN: Dictionary = {
   'Xoá bình luận': 'Delete comment',
   'Xoá bình luận này?': 'Delete this comment?',
   'Đã xoá bình luận': 'Comment deleted',
+
+  // --- Tên tài khoản & quên mật khẩu ---
+  'Tên tài khoản': 'Username',
+  'Email hoặc tên tài khoản': 'Email or username',
+  'ban@example.com hoặc tentaikhoan': 'you@example.com or username',
+  'vidu: nguyenvana': 'e.g. johndoe',
+  'Dùng để đăng nhập. Chỉ gồm chữ không dấu, số và . _ -':
+    'Used to sign in. Letters, numbers and . _ - only',
+
+  'Quên mật khẩu': 'Forgot password',
+  'Quên mật khẩu?': 'Forgot your password?',
+  'Quay lại đăng nhập': 'Back to sign in',
+  'Nhập email hoặc tên tài khoản của bạn. Quản trị viên sẽ xem xét yêu cầu.':
+    'Enter your email or username. An administrator will review your request.',
+  'Đang kiểm tra...': 'Checking...',
+  'Đã gửi yêu cầu': 'Request sent',
+  'Quản trị viên đã nhận được yêu cầu của bạn. Vui lòng quay lại sau khi được duyệt.':
+    'An administrator has received your request. Come back once it has been approved.',
+  'Yêu cầu đang chờ duyệt': 'Request pending approval',
+  'Đã gửi yêu cầu, đợi quản trị viên xác nhận':
+    'Request already sent, waiting for an administrator to confirm',
+  'Đã hiểu': 'Got it',
+  'Yêu cầu của bạn đã bị từ chối': 'Your request was rejected',
+  'Gửi lại yêu cầu': 'Send another request',
+
+  'Đặt mật khẩu mới': 'Set a new password',
+  'Yêu cầu của bạn đã được duyệt. Nhập mật khẩu mới để tiếp tục.':
+    'Your request has been approved. Enter a new password to continue.',
+  'Nhập mật khẩu mới': 'Enter a new password',
+  'Xác nhận mật khẩu mới': 'Confirm new password',
+  // 'Nhập lại mật khẩu mới' đã có sẵn ở phần đổi mật khẩu trong trang cá nhân — dùng lại
+  // đúng khoá đó, không khai thêm bản thứ hai.
+  'Đang đổi mật khẩu...': 'Changing password...',
+  'Xác nhận': 'Confirm',
+  'Đổi mật khẩu thành công': 'Password changed successfully',
+
+  // --- Khu quản trị: quản lý yêu cầu ---
+  'Quản lý yêu cầu': 'Request management',
+  'Xét duyệt yêu cầu cấp lại mật khẩu của người dùng': 'Review password reset requests from users',
+  // Hai khoá này nằm trong mảng hằng số `TABS` nên script check:i18n KHÔNG quét được —
+  // thêm hoặc đổi nhãn tab thì phải tự sửa ở đây (xem CLAUDE.md, mục ngôn ngữ).
+  'Yêu cầu': 'Requests',
+  'Nhật ký': 'Log',
+  'Loại danh sách': 'List type',
+  'Không có yêu cầu nào đang chờ': 'No pending requests',
+  'Khi người dùng gửi yêu cầu cấp lại mật khẩu, yêu cầu sẽ hiện ở đây.':
+    'When someone asks for a password reset, their request will appear here.',
+  'Nhật ký còn trống': 'The log is empty',
+  'Các yêu cầu đã duyệt hoặc từ chối sẽ được ghi lại ở đây.':
+    'Approved or rejected requests are recorded here.',
+  'Gửi lúc {time}': 'Sent at {time}',
+  'Người thực hiện': 'Handled by',
+  'Lý do từ chối': 'Rejection reason',
+  'Chưa đổi mật khẩu': 'Password not changed yet',
+  'Từ chối': 'Reject',
+  'Từ chối yêu cầu': 'Reject request',
+  'Người dùng sẽ đọc được lý do này, nên hãy nói rõ họ cần làm gì tiếp theo.':
+    'The user will read this reason, so make it clear what they should do next.',
+  'Ví dụ: Không xác minh được danh tính. Vui lòng liên hệ trực tiếp giáo vụ.':
+    'Example: Could not verify your identity. Please contact the academic office directly.',
+  'Lý do:': 'Reason:',
+  'Lý do không hợp lệ': 'Invalid reason',
+  'Đã duyệt yêu cầu': 'Request approved',
+  'Đã từ chối yêu cầu': 'Request rejected',
+  'Đã xác nhận': 'Approved',
+  'Đã từ chối': 'Rejected',
+  'Quản trị viên đã bị xoá': 'Deleted administrator',
+  'Yêu cầu cấp lại mật khẩu': 'Password reset request',
 };

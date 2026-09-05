@@ -8,6 +8,8 @@ import {
   createQuizSchema,
   createTopicSchema,
   createVocabularySchema,
+  rejectResetRequestSchema,
+  resetRequestQuerySchema,
   resetUserPasswordSchema,
   updateTopicSchema,
   updateUserRoleSchema,
@@ -18,6 +20,7 @@ import {
   type CreateQuizQuestionInput,
   type CreateTopicInput,
   type CreateVocabularyInput,
+  type RejectResetRequestInput,
   type ResetUserPasswordInput,
   type UpdateTopicInput,
   type UpdateUserRoleInput,
@@ -29,6 +32,7 @@ import { currentUser, requireAuth, requireRole } from '../../common/middlewares/
 import { getValidatedQuery, validateBody, validateQuery } from '../../common/middlewares/validate.js';
 import { BadRequestError } from '../../common/errors/app-error.js';
 import * as notificationService from '../notifications/notification.service.js';
+import * as passwordResetService from '../auth/password-reset.service.js';
 import * as topicService from '../topics/topic.service.js';
 import * as adminService from './admin.service.js';
 
@@ -112,6 +116,40 @@ adminRoutes.get(
   validateQuery(accessLogQuerySchema),
   asyncHandler(async (req, res) => {
     res.json(await adminService.listLoginEvents(getValidatedQuery(req, accessLogQuerySchema)));
+  }),
+);
+
+// --- Yêu cầu cấp lại mật khẩu (tái dùng password-reset.service của module auth) ---
+//
+// Toàn bộ nghiệp vụ nằm ở service bên auth, ở đây chỉ nối route. Hai nửa của cùng một
+// luồng (người dùng gửi / quản trị viên duyệt) phải dùng chung một service, nếu không
+// hai bên sẽ hiểu khác nhau về việc yêu cầu nào còn hiệu lực.
+adminRoutes.get(
+  '/password-reset-requests',
+  validateQuery(resetRequestQuerySchema),
+  asyncHandler(async (req, res) => {
+    res.json(await passwordResetService.listRequests(getValidatedQuery(req, resetRequestQuerySchema)));
+  }),
+);
+
+adminRoutes.post(
+  '/password-reset-requests/:id/approve',
+  asyncHandler(async (req, res) => {
+    await passwordResetService.approveRequest(parseId(req.params.id), currentUser(req).id);
+    res.status(204).send();
+  }),
+);
+
+adminRoutes.post(
+  '/password-reset-requests/:id/reject',
+  validateBody(rejectResetRequestSchema),
+  asyncHandler(async (req, res) => {
+    await passwordResetService.rejectRequest(
+      parseId(req.params.id),
+      currentUser(req).id,
+      req.body as RejectResetRequestInput,
+    );
+    res.status(204).send();
   }),
 );
 

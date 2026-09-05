@@ -11,7 +11,7 @@ import {
   type UpdateProfileInput,
   type ChangePasswordInput,
 } from '@enghabit/shared';
-import type { User, UserAvatar } from '@prisma/client';
+import { Prisma, type User, type UserAvatar } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import {
   BadRequestError,
@@ -24,26 +24,69 @@ import { issueRefreshToken, revokeRefreshToken, rotateRefreshToken, signAccessTo
 
 const BCRYPT_ROUNDS = 10;
 
-export async function register(input: RegisterInput): Promise<AuthResponse> {
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new ConflictError('Email này đã được đăng ký');
+/**
+ * Băm mật khẩu. Xuất ra ngoài để `password-reset.service` dùng đúng cùng số vòng —
+ * hai chỗ băm với hai tham số khác nhau thì mật khẩu đặt lại sẽ có độ mạnh khác
+ * mật khẩu đăng ký mà không ai nhận ra.
+ */
+export function hashPassword(plain: string): Promise<string> {
+  return bcrypt.hash(plain, BCRYPT_ROUNDS);
+}
 
-  const user = await prisma.user.create({
-    data: {
-      name: input.name,
-      email: input.email,
-      passwordHash: await bcrypt.hash(input.password, BCRYPT_ROUNDS),
-      timezone: input.timezone ?? DEFAULT_TIMEZONE,
-      // Khởi tạo sẵn streak và cài đặt nhắc nhở để các module sau không phải kiểm tra null.
-      streak: { create: {} },
-      notificationSetting: { create: {} },
-      // Một mốc nhắc mặc định 20:00 cả tuần: người mới chưa biết vào đâu để đặt, mà
-      // không có mốc nào thì tính năng nhắc nhở coi như không tồn tại với họ.
-      reminders: { create: { timeOfDay: '20:00', daysOfWeek: [1, 2, 3, 4, 5, 6, 7] } },
-    },
+export async function register(input: RegisterInput): Promise<AuthResponse> {
+  // Kiểm tra trước chỉ để có thông báo lỗi nói đúng trường nào bị trùng. Ràng buộc
+  // UNIQUE của DB mới là thứ chặn thật (xem catch P2002 ở dưới): hai request đăng ký
+  // cùng lúc đều đọc thấy "chưa tồn tại" rồi cùng ghi.
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email: input.email }, { username: input.username }] },
+    select: { email: true, username: true },
   });
+  if (existing) throw conflictFor(existing, input);
+
+  const user = await createUser(input);
 
   return buildAuthResponse(user);
+}
+
+/** Tách ra để `register` chỉ còn đọc như mô tả luồng, không lẫn phần xử lý lỗi race. */
+async function createUser(input: RegisterInput): Promise<User> {
+  try {
+    return await prisma.user.create({
+      data: {
+        name: input.name,
+        username: input.username,
+        email: input.email,
+        passwordHash: await bcrypt.hash(input.password, BCRYPT_ROUNDS),
+        timezone: input.timezone ?? DEFAULT_TIMEZONE,
+        // Khởi tạo sẵn streak và cài đặt nhắc nhở để các module sau không phải kiểm tra null.
+        streak: { create: {} },
+        notificationSetting: { create: {} },
+        // Một mốc nhắc mặc định 20:00 cả tuần: người mới chưa biết vào đâu để đặt, mà
+        // không có mốc nào thì tính năng nhắc nhở coi như không tồn tại với họ.
+        reminders: { create: { timeOfDay: '20:00', daysOfWeek: [1, 2, 3, 4, 5, 6, 7] } },
+      },
+    });
+  } catch (err) {
+    // P2002 = vi phạm UNIQUE. Xảy ra khi hai người đăng ký cùng tên/email trong đúng
+    // khoảng giữa lúc kiểm tra ở trên và lúc ghi. `meta.target` cho biết cột nào.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      const target = String(err.meta?.['target'] ?? '');
+      throw new ConflictError(
+        target.includes('username') ? 'Tên đã tồn tại' : 'Email này đã được đăng ký',
+      );
+    }
+    throw err;
+  }
+}
+
+function conflictFor(
+  existing: { email: string; username: string },
+  input: RegisterInput,
+): ConflictError {
+  // Ưu tiên báo trùng tên tài khoản: đây là trường người dùng vừa được yêu cầu tự
+  // nghĩ ra, nên khả năng phải sửa cao hơn email.
+  if (existing.username === input.username) return new ConflictError('Tên đã tồn tại');
+  return new ConflictError('Email này đã được đăng ký');
 }
 
 /**
@@ -54,35 +97,57 @@ export async function register(input: RegisterInput): Promise<AuthResponse> {
  * của request, do controller lấy từ req rồi truyền xuống (service không đụng tới req).
  */
 export async function login(input: LoginInput, client: LoginClientInfo = {}): Promise<AuthResponse> {
-  const user = await prisma.user.findUnique({
-    where: { email: input.email },
-    include: { avatar: true },
-  });
+  const user = await findByIdentifier(input.identifier);
 
-  // Cùng một thông báo cho cả hai trường hợp để không lộ email nào đã tồn tại.
-  const invalid = new UnauthorizedError('Email hoặc mật khẩu không đúng');
+  // Cùng một thông báo cho cả hai trường hợp để không lộ tài khoản nào đã tồn tại.
+  const invalid = new UnauthorizedError('Thông tin đăng nhập hoặc mật khẩu không đúng');
+
+  // Nhật ký truy cập ghi EMAIL THẬT khi lần ra được tài khoản, và ghi nguyên chuỗi
+  // người dùng gõ khi không lần ra. Nhờ vậy màn "Lượt truy cập" của trang quản trị
+  // vẫn hiện email quen thuộc cho các lượt vào tài khoản có thật, mà vẫn giữ được
+  // dấu vết chính xác của những chuỗi lạ ai đó thử dò.
+  const logged = user?.email ?? input.identifier;
 
   if (!user) {
-    await recordLoginEvent(input.email, null, LoginFailReason.NO_ACCOUNT, client);
+    await recordLoginEvent(logged, null, LoginFailReason.NO_ACCOUNT, client);
     throw invalid;
   }
   if (!(await bcrypt.compare(input.password, user.passwordHash))) {
-    await recordLoginEvent(input.email, user.id, LoginFailReason.WRONG_PASSWORD, client);
+    await recordLoginEvent(logged, user.id, LoginFailReason.WRONG_PASSWORD, client);
     throw invalid;
   }
   if (user.status === UserStatus.LOCKED) {
     // Nói rõ lý do ở trường hợp này: mật khẩu đã đúng nên không lộ thêm thông tin gì,
     // mà người dùng cần biết phải liên hệ quản trị viên thay vì thử lại mật khẩu.
-    await recordLoginEvent(input.email, user.id, LoginFailReason.LOCKED, client);
+    await recordLoginEvent(logged, user.id, LoginFailReason.LOCKED, client);
     throw new ForbiddenError('Tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên.');
   }
 
   await Promise.all([
-    recordLoginEvent(input.email, user.id, null, client),
+    recordLoginEvent(logged, user.id, null, client),
     prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }),
   ]);
 
   return buildAuthResponse(user);
+}
+
+/**
+ * Tìm tài khoản theo email HOẶC tên tài khoản.
+ *
+ * Dùng chung cho đăng nhập và cho luồng quên mật khẩu, nên hai chỗ không thể lệch
+ * nhau về cách hiểu "chuỗi người dùng gõ vào là ai".
+ *
+ * Không đoán trước bằng cách xem có dấu "@" rồi mới tra một cột: email và tên tài
+ * khoản đều đã unique nên `OR` chỉ có thể ra tối đa một dòng, mà lại đúng cả với
+ * trường hợp tên tài khoản có chứa "@" nếu sau này nới luật đặt tên.
+ */
+export async function findByIdentifier(
+  identifier: string,
+): Promise<(User & { avatar: UserAvatar | null }) | null> {
+  return prisma.user.findFirst({
+    where: { OR: [{ email: identifier }, { username: identifier }] },
+    include: { avatar: true },
+  });
 }
 
 export interface LoginClientInfo {
@@ -186,6 +251,7 @@ export function toPublicUser(user: User & { avatar?: UserAvatar | null }): Publi
   return {
     id: user.id,
     name: user.name,
+    username: user.username,
     email: user.email,
     role: user.role,
     status: user.status,

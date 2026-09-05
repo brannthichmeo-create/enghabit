@@ -2,6 +2,8 @@ import { Router } from 'express';
 import {
   changePasswordSchema,
   loginSchema,
+  passwordResetConfirmSchema,
+  passwordResetRequestSchema,
   registerSchema,
   updateAvatarSchema,
   updateProfileSchema,
@@ -17,6 +19,20 @@ authRoutes.post('/register', validateBody(registerSchema), asyncHandler(controll
 authRoutes.post('/login', validateBody(loginSchema), asyncHandler(controller.login));
 authRoutes.post('/refresh', asyncHandler(controller.refresh));
 authRoutes.post('/logout', asyncHandler(controller.logout));
+
+// Quên mật khẩu — KHÔNG có `requireAuth`, vì người dùng đang không vào được tài khoản.
+// Cả hai endpoint đều chỉ nhận email hoặc tên tài khoản; xem giới hạn an toàn của
+// thiết kế này ở đầu `password-reset.service.ts` và trong docs/luong-quen-mat-khau.md.
+authRoutes.post(
+  '/password-reset/request',
+  validateBody(passwordResetRequestSchema),
+  asyncHandler(controller.requestPasswordReset),
+);
+authRoutes.post(
+  '/password-reset/confirm',
+  validateBody(passwordResetConfirmSchema),
+  asyncHandler(controller.confirmPasswordReset),
+);
 
 authRoutes.get('/me', requireAuth, asyncHandler(controller.getMe));
 authRoutes.patch('/me', requireAuth, validateBody(updateProfileSchema), asyncHandler(controller.updateMe));

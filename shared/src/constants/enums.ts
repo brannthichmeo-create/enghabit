@@ -84,8 +84,24 @@ export const NotificationType = {
   MISTAKES_PENDING: 'MISTAKES_PENDING',
   GOAL_ACHIEVED: 'GOAL_ACHIEVED',
   ANNOUNCEMENT: 'ANNOUNCEMENT',
+  PASSWORD_RESET_REQUEST: 'PASSWORD_RESET_REQUEST',
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
+
+/**
+ * Trạng thái một yêu cầu cấp lại mật khẩu.
+ *
+ * Luồng: PENDING -> APPROVED (người dùng được đặt mật khẩu mới) hoặc
+ * PENDING -> REJECTED (kèm lý do, người dùng được gửi yêu cầu lại).
+ * Không có đường quay ngược: quản trị viên đã thao tác thì yêu cầu đó khép lại,
+ * muốn làm lại thì tạo yêu cầu MỚI để nhật ký giữ được đủ dấu vết.
+ */
+export const PasswordResetStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+export type PasswordResetStatus = (typeof PasswordResetStatus)[keyof typeof PasswordResetStatus];
 
 export const VocabLevel = {
   BEGINNER: 'BEGINNER',
