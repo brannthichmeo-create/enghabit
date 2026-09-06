@@ -1,4 +1,7 @@
 import type {
+  AdminGroupDetail,
+  AdminGroupQueryInput,
+  AdminGroupRow,
   AccessLogQueryInput,
   AccessOverview,
   AdminUserDetail,
@@ -117,4 +120,35 @@ export async function approveResetRequest(id: number): Promise<void> {
 
 export async function rejectResetRequest(id: number, input: RejectResetRequestInput): Promise<void> {
   await apiClient.post(`/admin/password-reset-requests/${id}/reject`, input);
+}
+
+// --- Nhóm lớp ---
+
+export async function listGroups(
+  query: Partial<AdminGroupQueryInput> = {},
+): Promise<Paginated<AdminGroupRow>> {
+  const { data } = await apiClient.get<Paginated<AdminGroupRow>>('/admin/groups', { params: query });
+  return data;
+}
+
+export async function getGroupDetail(groupId: number): Promise<AdminGroupDetail> {
+  const { data } = await apiClient.get<AdminGroupDetail>(`/admin/groups/${groupId}`);
+  return data;
+}
+
+export async function warnGroup(groupId: number, message: string): Promise<{ recipients: number }> {
+  const { data } = await apiClient.post<{ recipients: number }>(`/admin/groups/${groupId}/warn`, {
+    message,
+  });
+  return data;
+}
+
+export async function blockGroup(groupId: number, reason: string): Promise<AdminGroupDetail> {
+  const { data } = await apiClient.post<AdminGroupDetail>(`/admin/groups/${groupId}/block`, { reason });
+  return data;
+}
+
+export async function unblockGroup(groupId: number): Promise<AdminGroupDetail> {
+  const { data } = await apiClient.post<AdminGroupDetail>(`/admin/groups/${groupId}/unblock`);
+  return data;
 }

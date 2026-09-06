@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  Ban,
   Check,
   Crown,
   Globe,
@@ -93,6 +94,32 @@ export function GroupDetailPage(): JSX.Element {
 
   const data = group.data;
   const isLeader = data.viewerState === GroupViewerState.LEADER;
+
+  // Nhóm bị chặn thì thành viên vẫn mở được trang này, nhưng chỉ để ĐỌC LÝ DO — bảng
+  // tin, danh sách thành viên và cài đặt đều đóng lại. Không cho vào hẳn thì họ không
+  // biết vì sao nhóm im lặng.
+  if (data.block) {
+    return (
+      <div>
+        <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/groups')} className="mb-2">
+          {t('Nhóm lớp')}
+        </Button>
+        <PageHeader title={data.name} description={data.description ?? undefined} />
+        <Card className="border-danger/40">
+          <p className="flex items-center gap-2 font-semibold text-danger">
+            <Ban className="h-5 w-5" aria-hidden />
+            {t('Nhóm này đang bị chặn')}
+          </p>
+          <p className="mt-2 text-sm text-content-soft">{data.block.reason}</p>
+          <p className="mt-3 border-t border-line pt-3 text-xs text-content-muted">
+            {t('Bị chặn lúc {time} bởi quản trị viên. Liên hệ quản trị viên nếu bạn cho rằng có nhầm lẫn.', {
+              time: new Date(data.block.blockedAt).toLocaleString('vi-VN'),
+            })}
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   const tabs: { key: Tab; label: string; badge?: number }[] = [
     { key: 'feed', label: t('Bảng tin') },

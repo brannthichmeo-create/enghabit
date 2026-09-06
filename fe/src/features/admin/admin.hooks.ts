@@ -6,6 +6,9 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 import type {
+  AdminGroupDetail,
+  AdminGroupQueryInput,
+  AdminGroupRow,
   AccessLogQueryInput,
   AccessOverview,
   AdminUserDetail,
@@ -28,6 +31,8 @@ import * as adminApi from './admin.api';
 
 export const adminKeys = {
   all: ['admin'] as const,
+  groups: (query: Partial<AdminGroupQueryInput>) => ['admin', 'groups', query] as const,
+  group: (id: number) => ['admin', 'group', id] as const,
   overview: () => ['admin', 'overview'] as const,
   users: (query: Partial<AdminUserQueryInput>) => ['admin', 'users', query] as const,
   user: (id: number) => ['admin', 'user', id] as const,
@@ -164,4 +169,44 @@ function useContentMutation<TData, TVariables>(
       void queryClient.invalidateQueries({ queryKey: vocabularyKeys.all });
     },
   });
+}
+
+// --- Quản lý nhóm lớp ---
+
+export function useAdminGroups(
+  query: Partial<AdminGroupQueryInput>,
+): UseQueryResult<Paginated<AdminGroupRow>> {
+  return useQuery({
+    queryKey: adminKeys.groups(query),
+    queryFn: () => adminApi.listGroups(query),
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useAdminGroup(groupId: number | null): UseQueryResult<AdminGroupDetail> {
+  return useQuery({
+    queryKey: adminKeys.group(groupId ?? 0),
+    queryFn: () => adminApi.getGroupDetail(groupId as number),
+    enabled: groupId !== null,
+  });
+}
+
+export function useWarnGroup(): UseMutationResult<
+  { recipients: number },
+  Error,
+  { groupId: number; message: string }
+> {
+  return useAdminMutation(({ groupId, message }) => adminApi.warnGroup(groupId, message));
+}
+
+export function useBlockGroup(): UseMutationResult<
+  AdminGroupDetail,
+  Error,
+  { groupId: number; reason: string }
+> {
+  return useAdminMutation(({ groupId, reason }) => adminApi.blockGroup(groupId, reason));
+}
+
+export function useUnblockGroup(): UseMutationResult<AdminGroupDetail, Error, number> {
+  return useAdminMutation(adminApi.unblockGroup);
 }

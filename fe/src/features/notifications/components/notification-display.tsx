@@ -7,6 +7,8 @@ import {
   Megaphone,
   Target,
   UserCheck,
+  Ban,
+  ShieldCheck,
   UserPlus,
   UserX,
   type LucideIcon,
@@ -35,6 +37,21 @@ const DISPLAY: Record<NotificationType, Display> = {
   [NotificationType.MISTAKES_PENDING]: { icon: AlertTriangle, label: 'Từ sai', tone: 'text-accent-ink' },
   [NotificationType.GOAL_ACHIEVED]: { icon: Target, label: 'Đạt mục tiêu', tone: 'text-success' },
   [NotificationType.ANNOUNCEMENT]: { icon: Megaphone, label: 'Thông báo', tone: 'text-brand-strong' },
+  [NotificationType.GROUP_WARNING]: {
+    icon: Megaphone,
+    label: 'Cảnh báo vi phạm',
+    tone: 'text-danger',
+  },
+  [NotificationType.GROUP_BLOCKED]: {
+    icon: Ban,
+    label: 'Nhóm bị chặn',
+    tone: 'text-danger',
+  },
+  [NotificationType.GROUP_UNBLOCKED]: {
+    icon: ShieldCheck,
+    label: 'Nhóm được mở chặn',
+    tone: 'text-success',
+  },
   [NotificationType.GROUP_JOIN_REQUEST]: {
     icon: UserPlus,
     label: 'Yêu cầu vào nhóm',

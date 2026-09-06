@@ -16,6 +16,7 @@ import { ProfilePage } from '../features/profile/components/ProfilePage';
 import { AdminOverviewPage } from '../features/admin/components/AdminOverviewPage';
 import { AdminUsersPage } from '../features/admin/components/AdminUsersPage';
 import { AdminAccessPage } from '../features/admin/components/AdminAccessPage';
+import { AdminGroupsPage } from '../features/admin/components/AdminGroupsPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
 import { AdminRequestsPage } from '../features/admin/components/AdminRequestsPage';
 import { ForgotPasswordPage } from '../features/auth/components/ForgotPasswordPage';
@@ -61,8 +62,8 @@ export function AppRoutes(): JSX.Element {
 
         {/* Trang cá nhân, thông báo và diễn đàn dùng chung cho cả hai vai trò */}
         <Route path="/community" element={<Feature name="Cộng đồng"><CommunityPage /></Feature>} />
-        <Route path="/groups" element={<Feature name="Nhóm lớp"><GroupsPage /></Feature>} />
-        <Route path="/groups/:id" element={<Feature name="Nhóm lớp"><GroupDetailPage /></Feature>} />
+        <Route path="/groups" element={<Learner name="Nhóm lớp"><GroupsPage /></Learner>} />
+        <Route path="/groups/:id" element={<Learner name="Nhóm lớp"><GroupDetailPage /></Learner>} />
         <Route path="/profile" element={<Feature name="Trang cá nhân"><ProfilePage /></Feature>} />
         <Route path="/notifications" element={<Feature name="Thông báo"><NotificationsPage /></Feature>} />
 
@@ -71,6 +72,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/admin/users" element={<Admin name="Quản lý tài khoản"><AdminUsersPage /></Admin>} />
         <Route path="/admin/access" element={<Admin name="Lượt truy cập"><AdminAccessPage /></Admin>} />
         <Route path="/admin/content" element={<Admin name="Nội dung học tập"><AdminContentPage /></Admin>} />
+        <Route path="/admin/groups" element={<Admin name="Quản lý nhóm"><AdminGroupsPage /></Admin>} />
         <Route path="/admin/requests" element={<Admin name="Quản lý yêu cầu"><AdminRequestsPage /></Admin>} />
         <Route
           path="/admin/announcements"

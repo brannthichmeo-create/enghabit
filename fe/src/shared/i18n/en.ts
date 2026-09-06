@@ -923,4 +923,63 @@ export const EN: Dictionary = {
   'Yêu cầu vào nhóm': 'Join request',
   'Được duyệt vào nhóm': 'Join approved',
   'Yêu cầu vào nhóm bị từ chối': 'Join rejected',
+
+  // --- Quản lý nhóm (quản trị viên) -------------------------------------------
+  'Quản lý nhóm': 'Manage groups',
+  'Giám sát nhóm lớp do người học lập, gửi cảnh báo và chặn nhóm vi phạm':
+    'Watch over learner-created groups, send warnings and block groups that break the rules',
+  'Tìm nhóm': 'Search groups',
+  'Tìm theo tên nhóm hoặc mã': 'Search by group name or code',
+  'Lọc theo quyền riêng tư': 'Filter by visibility',
+  'Công khai và riêng tư': 'Public and private',
+  'Chỉ nhóm công khai': 'Public only',
+  'Chỉ nhóm riêng tư': 'Private only',
+  'Đang bị chặn': 'Blocked',
+  'Mới lập nhất': 'Newest',
+  'Nhiều thành viên nhất': 'Most members',
+  'Nhiều bài đăng nhất': 'Most posts',
+  'Không có nhóm nào khớp': 'No group matches',
+  'Nhóm': 'Group',
+  'Người lập': 'Created by',
+  'Bài đăng': 'Posts',
+  'Tài khoản đã xoá': 'Deleted account',
+  'Xem': 'View',
+  'Trang {page} / {total}': 'Page {page} of {total}',
+
+  'Thông tin nhóm': 'Group details',
+  'Nhóm đang bị chặn': 'This group is blocked',
+  'Chặn lúc {time}': 'Blocked at {time}',
+  'Quyền riêng tư': 'Visibility',
+  'Chờ duyệt': 'Waiting',
+  'Bật': 'On',
+  'Tắt': 'Off',
+  'Bài mới nhất': 'Latest post',
+  'Bài đăng gần đây': 'Recent posts',
+
+  'Gửi cảnh báo vi phạm': 'Send a warning',
+  'Nội dung cảnh báo': 'Warning message',
+  'Ví dụ: Nhóm có bài đăng sai nội quy, đề nghị trưởng nhóm rà soát lại.':
+    'For example: This group has posts that break the rules — leaders, please review them.',
+  'Mọi thành viên trong nhóm đều nhận được thông báo này.': 'Every member of the group receives this notification.',
+  'Gửi cảnh báo': 'Send warning',
+  'Đã gửi cảnh báo tới {n} thành viên': { one: 'Warning sent to {n} member', other: 'Warning sent to {n} members' },
+
+  'Chặn nhóm': 'Block group',
+  'Lý do chặn nhóm': 'Reason for blocking',
+  'Ví dụ: Nhóm chia sẻ nội dung vi phạm nội quy học tập.':
+    'For example: This group shares content that breaks the study rules.',
+  'Thành viên nhóm sẽ đọc đúng câu này khi mở nhóm, nên viết cho họ hiểu.':
+    'Group members read this exact text when they open the group, so write it for them.',
+  'Đã chặn nhóm': 'Group blocked',
+  'Mở chặn nhóm': 'Unblock group',
+  'Đã mở chặn nhóm': 'Group unblocked',
+
+  'Nhóm này đang bị chặn': 'This group is blocked',
+  'Bị chặn lúc {time} bởi quản trị viên. Liên hệ quản trị viên nếu bạn cho rằng có nhầm lẫn.':
+    'Blocked at {time} by an administrator. Contact them if you think this is a mistake.',
+
+  // Nhãn loại thông báo mới
+  'Cảnh báo vi phạm': 'Rule warning',
+  'Nhóm bị chặn': 'Group blocked',
+  'Nhóm được mở chặn': 'Group unblocked',
 };

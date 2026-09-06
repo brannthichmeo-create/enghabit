@@ -99,8 +99,8 @@ export function Sidebar({
     // một màn hình chỉ có một tên, và chỉ cần một khoá dịch.
     { to: '/admin/requests', label: 'Quản lý yêu cầu', icon: Inbox },
     // Diễn đàn mở cho cả hai vai trò — quản trị viên vào để trả lời và kiểm duyệt.
+    { to: '/admin/groups', label: 'Quản lý nhóm', icon: UsersRound },
     { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
-    { to: '/groups', label: 'Nhóm lớp', icon: UsersRound },
   ];
 
   return (
