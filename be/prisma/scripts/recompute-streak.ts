@@ -1,6 +1,5 @@
-import { computeStreak } from '@enghabit/shared';
 import { prisma } from '../../src/lib/prisma.js';
-import { fromDbDate, toDbDate } from '../../src/common/utils/db-date.js';
+import { recomputeStreak } from '../../src/modules/activity-logs/activity-log.service.js';
 
 /**
  * Tính lại UserStreak từ ActivityLog — nguồn sự thật duy nhất.
@@ -10,44 +9,12 @@ import { fromDbDate, toDbDate } from '../../src/common/utils/db-date.js';
  *   pnpm --filter @enghabit/be db:recompute-streak          # tất cả user
  *   pnpm --filter @enghabit/be db:recompute-streak -- 42    # chỉ user id 42
  *
- * Ngoài ActivityLog còn phải đọc streak_freezes: những ngày đã được bù bằng vật phẩm
- * giữ chuỗi cũng nối mạch. Bỏ qua bảng này thì mỗi lần chạy script là một lần xoá
- * sạch công dụng của vật phẩm người dùng đã mua.
+ * Phép tính nằm ở `activity-logs/activity-log.service.ts` để dùng chung với đường ghi
+ * bù hoạt động cho ngày đã qua — script này chỉ lo phần chạy dòng lệnh và in kết quả.
  */
 
 async function recomputeForUser(userId: number): Promise<void> {
-  const [rows, freezes] = await Promise.all([
-    prisma.activityLog.findMany({
-      where: { userId },
-      select: { localDate: true },
-      distinct: ['localDate'],
-      orderBy: { localDate: 'asc' },
-    }),
-    prisma.streakFreeze.findMany({
-      where: { userId, usedOnDate: { not: null } },
-      select: { usedOnDate: true },
-    }),
-  ]);
-
-  const state = computeStreak(
-    rows.map((r) => fromDbDate(r.localDate)),
-    freezes.flatMap((f) => (f.usedOnDate ? [fromDbDate(f.usedOnDate)] : [])),
-  );
-
-  await prisma.userStreak.upsert({
-    where: { userId },
-    create: {
-      userId,
-      currentStreak: state.currentStreak,
-      longestStreak: state.longestStreak,
-      lastActiveDate: state.lastActiveDate ? toDbDate(state.lastActiveDate) : null,
-    },
-    update: {
-      currentStreak: state.currentStreak,
-      longestStreak: state.longestStreak,
-      lastActiveDate: state.lastActiveDate ? toDbDate(state.lastActiveDate) : null,
-    },
-  });
+  const state = await recomputeStreak(prisma, userId);
 
   console.log(
     `  user ${userId}: current=${state.currentStreak}, longest=${state.longestStreak}, last=${state.lastActiveDate ?? '-'}`,
@@ -55,10 +22,18 @@ async function recomputeForUser(userId: number): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const arg = process.argv[2];
+  // Bỏ dấu `--`: pnpm chuyển nguyên nó vào argv, nên `-- 42` trước đây bị đọc thành
+  // id người dùng và script chết vì `Number('--')` là NaN — đúng cách gọi ghi trong
+  // CLAUDE.md lại là cách duy nhất không chạy được.
+  const arg = process.argv.slice(2).find((value) => value !== '--');
+
   const userIds = arg
     ? [Number(arg)]
     : (await prisma.user.findMany({ select: { id: true } })).map((u) => u.id);
+
+  if (userIds.some((id) => !Number.isInteger(id))) {
+    throw new Error(`Id người dùng không hợp lệ: ${arg}`);
+  }
 
   console.log(`Tính lại streak cho ${userIds.length} người dùng...`);
   for (const userId of userIds) {

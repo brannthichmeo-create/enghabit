@@ -2,6 +2,7 @@ import {
   ActivityType,
   HabitFrequency,
   addDays,
+  diffInDays,
   todayLocalDate,
   type CheckInHabitInput,
   type CreateHabitInput,
@@ -10,7 +11,7 @@ import {
 } from '@enghabit/shared';
 import type { Habit } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { ConflictError, NotFoundError } from '../../common/errors/app-error.js';
+import { BadRequestError, ConflictError, NotFoundError } from '../../common/errors/app-error.js';
 import { fromDbDate, toDbDate } from '../../common/utils/db-date.js';
 import { recordActivity } from '../activity-logs/activity-log.service.js';
 
@@ -81,6 +82,16 @@ export async function deleteHabit(userId: number, habitId: number): Promise<void
 }
 
 /**
+ * Số ngày được phép check-in BÙ về trước, tính cả hôm nay.
+ *
+ * Có giới hạn vì check-in là thứ ghi thẳng vào ActivityLog, mà streak lại tính từ đó:
+ * không chặn thì chỉ cần gọi API với vài chục ngày quá khứ là dựng được một chuỗi dài
+ * mà không học buổi nào. Bảy ngày vừa đủ để vá chỗ quên đánh dấu, và khớp với dải 7 ngày
+ * mà giao diện đang hiển thị.
+ */
+const MAX_BACKFILL_DAYS = 7;
+
+/**
  * Check-in hoàn thành thói quen trong ngày.
  * Ghi HabitCheckIn và ActivityLog trong CÙNG một transaction để streak không bao giờ lệch.
  */
@@ -92,7 +103,15 @@ export async function checkIn(
 ): Promise<{ date: LocalDate }> {
   await assertOwnership(userId, habitId);
 
-  const date = input.date ?? todayLocalDate(timezone);
+  const today = todayLocalDate(timezone);
+  const date = input.date ?? today;
+
+  // Ngày mai chưa xảy ra: cho phép sẽ tạo ra ngày học nằm ở tương lai, và mọi phép
+  // tính streak sau đó đọc phải một mốc không có thật.
+  if (date > today) throw new BadRequestError('Không thể check-in cho ngày chưa tới');
+  if (diffInDays(date, today) >= MAX_BACKFILL_DAYS) {
+    throw new BadRequestError(`Chỉ check-in bù được trong vòng ${MAX_BACKFILL_DAYS} ngày gần nhất`);
+  }
 
   const existing = await prisma.habitCheckIn.findUnique({
     where: { habitId_localDate: { habitId, localDate: toDbDate(date) } },
@@ -109,6 +128,9 @@ export async function checkIn(
       type: ActivityType.HABIT_CHECKIN,
       refId: habitId,
       timezone,
+      // Check-in bù phải tính cho ĐÚNG ngày được bù. Thiếu dòng này thì bù cho hôm qua
+      // lại đánh dấu hôm nay có học, và chuỗi ngày hiện sai ở cả hai ngày.
+      localDate: date,
       tx,
     });
   });

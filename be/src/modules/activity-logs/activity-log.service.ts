@@ -2,6 +2,7 @@ import {
   GoalPeriod,
   NotificationType,
   applyActivity,
+  computeStreak,
   startOfWeek,
   toLocalDate,
   type ActivityType,
@@ -33,6 +34,14 @@ export interface RecordActivityInput {
   value?: number;
   /** Timezone của user — bắt buộc để tính đúng localDate. */
   timezone: string;
+  /**
+   * Ngày (theo lịch của user) mà hoạt động được TÍNH cho. Mặc định là hôm nay.
+   *
+   * Chỉ truyền khi ghi bù cho ngày đã qua, vd check-in bù một thói quen của hôm qua.
+   * Thiếu tham số này thì mọi bản ghi bù đều rơi vào hôm nay và đánh dấu sai ngày học —
+   * user chưa học hôm nay vẫn được tính là có.
+   */
+  localDate?: LocalDate;
   /** Cho phép truyền client transaction khi cần ghi log cùng thao tác khác trong một transaction. */
   tx?: Prisma.TransactionClient;
 }
@@ -43,7 +52,11 @@ export interface RecordActivityInput {
  */
 export async function recordActivity(input: RecordActivityInput): Promise<{ localDate: LocalDate; streak: StreakState }> {
   const occurredAt = new Date();
-  const localDate = toLocalDate(occurredAt, input.timezone);
+  const today = toLocalDate(occurredAt, input.timezone);
+  const localDate = input.localDate ?? today;
+
+  // LocalDate là chuỗi 'YYYY-MM-DD' nên so sánh chuỗi cũng chính là so sánh ngày.
+  const isBackdated = localDate < today;
 
   const run = async (tx: Prisma.TransactionClient) => {
     await tx.activityLog.create({
@@ -52,12 +65,22 @@ export async function recordActivity(input: RecordActivityInput): Promise<{ loca
         type: input.type,
         refId: input.refId ?? null,
         value: input.value ?? 1,
+        // `occurredAt` là lúc bản ghi được TẠO, `localDate` mới là ngày được tính.
+        // Với bản ghi bù, hai mốc này lệch nhau — đó là chủ ý: vẫn biết được ai bù
+        // lúc nào, còn streak và thống kê chỉ đọc `localDate`.
         occurredAt,
         localDate: toDbDate(localDate),
       },
     });
 
-    const streak = await updateStreak(tx, input.userId, localDate);
+    /*
+      Ghi bù cho ngày đã qua thì KHÔNG cộng dồn được: `applyActivity` chỉ biết trạng
+      thái hiện tại nên gặp ngày quá khứ là bỏ qua, trong khi ngày vừa bù có thể vá
+      liền một quãng đứt ở giữa và làm chuỗi dài ra. Chỉ tính lại từ đầu mới ra đúng.
+    */
+    const streak = isBackdated
+      ? await recomputeStreak(tx, input.userId)
+      : await updateStreak(tx, input.userId, localDate);
     return { localDate, streak };
   };
 
@@ -171,6 +194,48 @@ async function updateStreak(
   });
 
   return next;
+}
+
+/**
+ * Dựng lại UserStreak từ đầu dựa trên ActivityLog — nguồn sự thật duy nhất.
+ *
+ * Đây là bản dùng chung cho hai chỗ: script `recompute-streak` (chạy tay khi số liệu
+ * sai) và đường ghi bù ở `recordActivity`. Viết hai lần thì hai chỗ sẽ trôi khỏi nhau
+ * và cùng một dữ liệu lại ra hai con số streak khác nhau.
+ *
+ * Phải đọc thêm `streak_freezes`: ngày đã bù bằng vật phẩm giữ chuỗi cũng nối mạch,
+ * bỏ qua bảng này là xoá sạch công dụng của vật phẩm người dùng đã mua.
+ */
+export async function recomputeStreak(
+  tx: Prisma.TransactionClient,
+  userId: number,
+): Promise<StreakState> {
+  const [rows, freezes] = await Promise.all([
+    tx.activityLog.findMany({
+      where: { userId },
+      select: { localDate: true },
+      distinct: ['localDate'],
+      orderBy: { localDate: 'asc' },
+    }),
+    tx.streakFreeze.findMany({
+      where: { userId, usedOnDate: { not: null } },
+      select: { usedOnDate: true },
+    }),
+  ]);
+
+  const state = computeStreak(
+    rows.map((r) => fromDbDate(r.localDate)),
+    freezes.flatMap((f) => (f.usedOnDate ? [fromDbDate(f.usedOnDate)] : [])),
+  );
+
+  const data = {
+    currentStreak: state.currentStreak,
+    longestStreak: state.longestStreak,
+    lastActiveDate: state.lastActiveDate ? toDbDate(state.lastActiveDate) : null,
+  };
+  await tx.userStreak.upsert({ where: { userId }, create: { userId, ...data }, update: data });
+
+  return state;
 }
 
 /** Danh sách ngày (local) user có hoạt động trong khoảng — dùng cho thống kê và recompute. */
