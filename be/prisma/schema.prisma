@@ -92,6 +92,11 @@ enum NotificationType {
   GOAL_ACHIEVED
   /// Quản trị viên gửi tới người dùng
   ANNOUNCEMENT
+  /// Quản trị viên gửi cảnh báo vi phạm — gửi cho MỌI thành viên của nhóm
+  GROUP_WARNING
+  /// Nhóm bị chặn hoặc được mở chặn — gửi cho MỌI thành viên
+  GROUP_BLOCKED
+  GROUP_UNBLOCKED
   /// Có người xin vào nhóm — gửi cho MỌI trưởng nhóm của nhóm đó
   GROUP_JOIN_REQUEST
   /// Yêu cầu vào nhóm được duyệt
@@ -192,6 +197,7 @@ model User {
   streakFreezes       StreakFreeze[]
   createdTopics       Topic[]              @relation("TopicCreatedBy")
   createdGroups       Group[]              @relation("GroupCreatedBy")
+  blockedGroups       Group[]              @relation("GroupBlockedBy")
   groupMemberships    GroupMember[]
   groupJoinRequests   GroupJoinRequest[]   @relation("JoinRequestUser")
   groupDecisions      GroupJoinRequest[]   @relation("JoinRequestDecidedBy")
@@ -872,15 +878,29 @@ model Group {
   /// còn trưởng nhóm khác điều hành (xem quy tắc "luôn còn ít nhất một trưởng nhóm").
   createdById Int? @map("created_by_id")
 
+  /// Thời điểm quản trị viên chặn nhóm. Null nghĩa là nhóm đang hoạt động bình thường.
+  ///
+  /// Chặn KHÔNG xoá dữ liệu: bài đăng và thành viên còn nguyên, chỉ đóng băng nhóm lại.
+  /// Nhờ vậy mở chặn là nhóm trở lại y như cũ, và lý do chặn vẫn tra lại được.
+  blockedAt DateTime? @map("blocked_at")
+
+  /// Lý do chặn — HIỆN CHO THÀNH VIÊN NHÓM đọc khi họ mở nhóm, nên viết cho người
+  /// dùng cuối chứ không phải ghi chú nội bộ.
+  blockedReason String? @map("blocked_reason") @db.VarChar(500)
+
+  blockedById Int? @map("blocked_by_id")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   createdBy    User?              @relation("GroupCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  blockedBy    User?              @relation("GroupBlockedBy", fields: [blockedById], references: [id], onDelete: SetNull)
   members      GroupMember[]
   joinRequests GroupJoinRequest[]
   posts        Post[]
 
   @@index([visibility, createdAt])
+  @@index([blockedAt])
   @@map("groups")
 }
 

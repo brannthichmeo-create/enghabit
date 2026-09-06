@@ -1,0 +1,13 @@
+-- AlterTable
+ALTER TABLE `groups` ADD COLUMN `blocked_at` DATETIME(3) NULL,
+    ADD COLUMN `blocked_by_id` INTEGER NULL,
+    ADD COLUMN `blocked_reason` VARCHAR(500) NULL;
+
+-- AlterTable
+ALTER TABLE `notifications` MODIFY `type` ENUM('DAILY_REMINDER', 'STREAK_AT_RISK', 'REVIEW_DUE', 'MISTAKES_PENDING', 'GOAL_ACHIEVED', 'ANNOUNCEMENT', 'GROUP_WARNING', 'GROUP_BLOCKED', 'GROUP_UNBLOCKED', 'GROUP_JOIN_REQUEST', 'GROUP_JOIN_APPROVED', 'GROUP_JOIN_REJECTED', 'PASSWORD_RESET_REQUEST') NOT NULL;
+
+-- CreateIndex
+CREATE INDEX `groups_blocked_at_idx` ON `groups`(`blocked_at`);
+
+-- AddForeignKey
+ALTER TABLE `groups` ADD CONSTRAINT `groups_blocked_by_id_fkey` FOREIGN KEY (`blocked_by_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

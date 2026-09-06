@@ -2,7 +2,9 @@ import { Router } from 'express';
 import {
   UserRole,
   accessLogQuerySchema,
+  adminGroupQuerySchema,
   adminUserQuerySchema,
+  blockGroupSchema,
   createAnnouncementSchema,
   createQuizQuestionSchema,
   createQuizSchema,
@@ -14,6 +16,8 @@ import {
   updateUserRoleSchema,
   updateUserStatusSchema,
   updateVocabularySchema,
+  warnGroupSchema,
+  type BlockGroupInput,
   type CreateAnnouncementInput,
   type CreateQuizInput,
   type CreateQuizQuestionInput,
@@ -24,6 +28,7 @@ import {
   type UpdateUserRoleInput,
   type UpdateUserStatusInput,
   type UpdateVocabularyInput,
+  type WarnGroupInput,
 } from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
 import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
@@ -33,6 +38,7 @@ import * as notificationService from '../notifications/notification.service.js';
 import * as passwordResetService from '../auth/password-reset.service.js';
 import * as topicService from '../topics/topic.service.js';
 import * as adminService from './admin.service.js';
+import * as adminGroupService from './admin-group.service.js';
 
 export const adminRoutes: Router = Router();
 
@@ -160,6 +166,50 @@ adminRoutes.post(
   validateBody(createAnnouncementSchema),
   asyncHandler(async (req, res) => {
     res.status(201).json(await notificationService.createAnnouncement(req.body as CreateAnnouncementInput));
+  }),
+);
+
+// --- Nhóm lớp ---
+//
+// Quản trị viên KHÔNG tham gia nhóm: không đọc bài, không duyệt yêu cầu vào nhóm.
+// Chỉ giám sát và xử lý vi phạm, nên chỉ có xem, cảnh báo và chặn/mở chặn.
+adminRoutes.get(
+  '/groups',
+  validateQuery(adminGroupQuerySchema),
+  asyncHandler(async (req, res) => {
+    res.json(await adminGroupService.listGroups(getValidatedQuery(req, adminGroupQuerySchema)));
+  }),
+);
+
+adminRoutes.get(
+  '/groups/:id',
+  asyncHandler(async (req, res) => {
+    res.json(await adminGroupService.getGroupDetail(parseId(req.params.id)));
+  }),
+);
+
+adminRoutes.post(
+  '/groups/:id/warn',
+  validateBody(warnGroupSchema),
+  asyncHandler(async (req, res) => {
+    const { message } = req.body as WarnGroupInput;
+    res.json(await adminGroupService.warnGroup(parseId(req.params.id), message));
+  }),
+);
+
+adminRoutes.post(
+  '/groups/:id/block',
+  validateBody(blockGroupSchema),
+  asyncHandler(async (req, res) => {
+    const { reason } = req.body as BlockGroupInput;
+    res.json(await adminGroupService.blockGroup(parseId(req.params.id), currentUser(req).id, reason));
+  }),
+);
+
+adminRoutes.post(
+  '/groups/:id/unblock',
+  asyncHandler(async (req, res) => {
+    res.json(await adminGroupService.unblockGroup(parseId(req.params.id)));
   }),
 );
 

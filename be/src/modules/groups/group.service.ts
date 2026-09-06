@@ -7,6 +7,7 @@ import {
   NotificationType,
   type AddMemberInput,
   type CreateGroupInput,
+  type GroupBlockInfo,
   type GroupDetail,
   type GroupJoinRequestRow,
   type GroupMemberRow,
@@ -70,6 +71,17 @@ async function generateUniqueCode(): Promise<string> {
 // Quyền
 // ---------------------------------------------------------------------------
 
+/** Nhóm đang bị chặn thì mọi thao tác thay đổi đều dừng lại, kèm đúng lý do đã ghi. */
+async function assertNotBlocked(groupId: number): Promise<void> {
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: { blockedAt: true, blockedReason: true },
+  });
+  if (group?.blockedAt) {
+    throw new ForbiddenError(`Nhóm đang bị chặn: ${group.blockedReason ?? 'không rõ lý do'}`);
+  }
+}
+
 async function getMembership(groupId: number, userId: number) {
   return prisma.groupMember.findUnique({ where: { groupId_userId: { groupId, userId } } });
 }
@@ -102,8 +114,19 @@ async function assertNotLastLeader(groupId: number, userId: number): Promise<voi
   }
 }
 
-/** Dùng cho community.service: người này có đọc/ghi được nội dung nhóm không. */
+/**
+ * Dùng cho community.service: người này có đọc/ghi được nội dung nhóm không.
+ *
+ * Nhóm bị chặn trả về false với TẤT CẢ mọi người, kể cả trưởng nhóm — chặn mà nội
+ * dung vẫn đọc và đăng được thì không phải là chặn.
+ */
 export async function isMember(groupId: number, userId: number): Promise<boolean> {
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: { blockedAt: true },
+  });
+  if (!group || group.blockedAt !== null) return false;
+
   return (await getMembership(groupId, userId)) !== null;
 }
 
@@ -137,6 +160,7 @@ export async function updateGroup(
   input: UpdateGroupInput,
 ): Promise<GroupSummary> {
   await assertLeader(groupId, userId);
+  await assertNotBlocked(groupId);
   await prisma.group.update({
     where: { id: groupId },
     data: {
@@ -201,6 +225,9 @@ export async function searchPublicGroups(
 ): Promise<Paginated<GroupSummary>> {
   const where: Prisma.GroupWhereInput = {
     visibility: GroupVisibility.PUBLIC,
+    // Nhóm đang bị chặn biến mất khỏi tìm kiếm: không ai nên xin vào một nhóm đã bị
+    // đóng băng, và để nó trong danh sách chỉ tạo thêm yêu cầu không ai duyệt được.
+    blockedAt: null,
     ...(query.search
       ? {
           OR: [{ name: { contains: query.search } }, { description: { contains: query.search } }],
@@ -264,7 +291,7 @@ export async function getGroupDetail(groupId: number, userId: number): Promise<G
 
   const group = await prisma.group.findUniqueOrThrow({
     where: { id: groupId },
-    include: { _count: { select: { members: true, posts: true } } },
+    include: { _count: { select: { members: true, posts: true } }, blockedBy: { select: { name: true } } },
   });
 
   const members = await prisma.groupMember.findMany({
@@ -340,6 +367,7 @@ export async function requestJoin(
 ): Promise<JoinGroupResult> {
   const group = await prisma.group.findUnique({ where: { id: groupId } });
   if (!group) throw new NotFoundError('Không tìm thấy nhóm');
+  if (group.blockedAt) throw new ForbiddenError('Nhóm này đang bị chặn, tạm thời không nhận thành viên mới');
 
   const existing = await getMembership(groupId, userId);
   if (existing) {
@@ -615,8 +643,20 @@ async function loadViewerStates(
   return states;
 }
 
+/** Thông tin chặn kèm tên người chặn, nếu truy vấn có include `blockedBy`. */
+export function toBlockInfo(
+  group: Group & { blockedBy?: { name: string } | null },
+): GroupBlockInfo | null {
+  if (!group.blockedAt || !group.blockedReason) return null;
+  return {
+    reason: group.blockedReason,
+    blockedAt: group.blockedAt.toISOString(),
+    blockedBy: group.blockedBy?.name ?? null,
+  };
+}
+
 function toSummary(
-  group: Group,
+  group: Group & { blockedBy?: { name: string } | null },
   extra: {
     memberCount: number;
     postCount: number;
@@ -636,5 +676,6 @@ function toSummary(
     createdAt: group.createdAt.toISOString(),
     viewerState: extra.viewerState,
     pendingCount: extra.pendingCount ?? 0,
+    block: toBlockInfo(group),
   };
 }

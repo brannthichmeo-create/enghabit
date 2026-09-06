@@ -78,6 +78,19 @@ export const GroupViewerState = {
 } as const;
 export type GroupViewerState = (typeof GroupViewerState)[keyof typeof GroupViewerState];
 
+/**
+ * Thông tin nhóm bị chặn.
+ *
+ * `reason` viết cho THÀNH VIÊN đọc, không phải ghi chú nội bộ của quản trị viên —
+ * đây chính là dòng hiện ra khi họ mở nhóm bị chặn.
+ */
+export interface GroupBlockInfo {
+  reason: string;
+  blockedAt: string;
+  /** Tên quản trị viên đã chặn. Null nếu tài khoản đó đã bị xoá. */
+  blockedBy: string | null;
+}
+
 export interface GroupSummary {
   id: number;
   code: string;
@@ -91,6 +104,8 @@ export interface GroupSummary {
   viewerState: GroupViewerState;
   /** Số yêu cầu đang chờ — chỉ có giá trị khi người xem là trưởng nhóm. */
   pendingCount: number;
+  /** Null nghĩa là nhóm đang hoạt động bình thường. */
+  block: GroupBlockInfo | null;
 }
 
 export interface GroupMemberRow {
@@ -124,4 +139,48 @@ export interface JoinGroupResult {
   state: GroupViewerState;
   /** true nghĩa là đã là thành viên ngay, không phải chờ duyệt. */
   joined: boolean;
+}
+
+// --- Dành cho quản trị viên ---
+
+export const adminGroupQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  /** Tìm theo tên nhóm hoặc mã 8 số. */
+  search: z.string().trim().max(120).optional(),
+  visibility: z.nativeEnum(GroupVisibility).optional(),
+  /** `blocked` chỉ nhóm đang bị chặn, `active` chỉ nhóm bình thường. */
+  status: z.enum(['all', 'active', 'blocked']).default('all'),
+  sort: z.enum(['newest', 'members', 'posts']).default('newest'),
+});
+export type AdminGroupQueryInput = z.infer<typeof adminGroupQuerySchema>;
+
+export const blockGroupSchema = z.object({
+  /**
+   * Lý do chặn, BẮT BUỘC. Thành viên nhóm sẽ đọc đúng câu này khi mở nhóm, nên chặn
+   * mà không nói lý do là để họ tự đoán — và trưởng nhóm không biết phải sửa gì.
+   */
+  reason: z.string().trim().min(10, 'Lý do phải có ít nhất 10 ký tự').max(500),
+});
+export type BlockGroupInput = z.infer<typeof blockGroupSchema>;
+
+export const warnGroupSchema = z.object({
+  message: z.string().trim().min(10, 'Nội dung cảnh báo phải có ít nhất 10 ký tự').max(500),
+});
+export type WarnGroupInput = z.infer<typeof warnGroupSchema>;
+
+/** Một dòng trong bảng quản lý nhóm của quản trị viên. */
+export interface AdminGroupRow extends Omit<GroupSummary, 'viewerState' | 'pendingCount'> {
+  /** Người lập nhóm; null nếu tài khoản đã bị xoá. */
+  createdBy: { id: number; name: string; username: string } | null;
+  leaderCount: number;
+  pendingCount: number;
+  lastPostAt: string | null;
+}
+
+/** Hồ sơ đầy đủ một nhóm, mở từ bảng quản lý. */
+export interface AdminGroupDetail extends AdminGroupRow {
+  members: GroupMemberRow[];
+  /** Vài bài gần nhất để quản trị viên xem nhóm đang trao đổi gì. */
+  recentPosts: { id: number; title: string; authorName: string; createdAt: string }[];
 }
