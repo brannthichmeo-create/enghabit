@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { CalendarDays } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { addDays, type ActivityCalendar as CalendarData, type CalendarDay } from '@enghabit/shared';
 import { useT } from '../../shared/i18n/language';
 
@@ -25,10 +27,28 @@ const LEVEL_COLORS = [
 
 const WEEKDAY_LABELS = ['T2', '', 'T4', '', 'T6', '', 'CN'];
 
+/** Hôm nay theo giờ máy người dùng, dùng để đánh dấu ô hiện tại. */
+function todayIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 const MONTH_LABELS = ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'];
 
-const CELL = 11;
+/**
+ * Kích thước một ô. 13px thay vì 11px: ở 11px, ô và khe giữa gần bằng nhau nên cả lưới
+ * nhìn như một mảng nhiễu, khó dò theo hàng để biết ô nào là thứ mấy.
+ */
+const CELL = 13;
 const GAP = 3;
+
+/**
+ * Bề ngang cột nhãn thứ (T2, T4...).
+ *
+ * Dùng CHUNG cho cả cột nhãn lẫn lề trái của hàng nhãn tháng — trước đây hai chỗ ghi
+ * hai con số khác nhau nên nhãn tháng lệch khỏi cột tuần của chính nó.
+ */
+const LABEL_COL = 26;
 
 interface Week {
   /** 7 ô, index 0 = Thứ Hai. Null là ngày nằm ngoài khoảng dữ liệu. */
@@ -47,6 +67,7 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
   const shown = hovered ?? data.days.find((day) => day.date === pinned) ?? null;
 
   const weeks = useMemo(() => buildWeeks(data.days), [data.days]);
+  const today = todayIso();
 
   const levelOf = (count: number): number => {
     if (count === 0) return 0;
@@ -56,6 +77,33 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
     if (count <= t3) return 3;
     return 4;
   };
+
+  /*
+    Chưa học buổi nào thì KHÔNG vẽ lưới.
+
+    Lưới toàn ô rỗng cùng một màu không nói được gì, mà lại kèm dòng "0 hoạt động trong
+    0 ngày", chú thích Ít–Nhiều và câu mời bấm vào ô — ba thứ đều vô nghĩa lúc này và
+    khiến người mới tưởng trang bị lỗi. Thay bằng một lời mời làm việc tiếp theo.
+  */
+  if (data.totalActivities === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-line px-6 py-10 text-center">
+        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-sunken">
+          <CalendarDays className="h-5 w-5 text-content-muted" aria-hidden />
+        </div>
+        <p className="font-medium text-content-soft">{t('Chưa có ngày học nào')}</p>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-content-muted">
+          {t('Học một bài bất kỳ hôm nay là ô đầu tiên sáng lên, và chuỗi ngày của bạn bắt đầu.')}
+        </p>
+        <Link
+          to="/learn"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-on-brand transition-colors hover:bg-brand-strong"
+        >
+          {t('Học ngay')}
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -94,8 +142,15 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
                         aria-label={`${day.date}: ${t('{n} hoạt động', { n: day.count })}`}
                         aria-pressed={pinned === day.date}
                         title={`${formatDate(day.date)} — ${t('{n} hoạt động', { n: day.count })}`}
-                        className={`rounded-[2px] transition-transform hover:scale-125 ${
-                          pinned === day.date ? 'ring-2 ring-brand ring-offset-1 ring-offset-surface' : ''
+                        // Viền quanh ô HÔM NAY để người xem định vị được mình đang ở
+                        // đâu trên dải ngày — không có mốc này thì phải đếm ngược từ
+                        // nhãn tháng mới biết ô cuối là ngày nào.
+                        className={`rounded-[3px] transition-transform hover:scale-125 ${
+                          pinned === day.date
+                            ? 'ring-2 ring-brand ring-offset-1 ring-offset-surface'
+                            : day.date === today
+                              ? 'ring-1 ring-content-muted'
+                              : ''
                         }`}
                         style={{
                           width: CELL,
@@ -151,11 +206,11 @@ function Legend(): JSX.Element {
 
 function WeekdayLabels(): JSX.Element {
   return (
-    <div className="flex flex-col gap-[3px] pr-1">
+    <div className="flex shrink-0 flex-col gap-[3px]" style={{ width: LABEL_COL }}>
       {WEEKDAY_LABELS.map((label, i) => (
         <span
           key={i}
-          className="text-[9px] leading-none text-content-muted"
+          className="text-[10px] leading-none text-content-muted"
           style={{ height: CELL, lineHeight: `${CELL}px` }}
         >
           {label}
@@ -188,11 +243,11 @@ function MonthLabels({ weeks }: { weeks: Week[] }): JSX.Element {
   });
 
   return (
-    <div className="relative mb-1 h-3" style={{ marginLeft: 22 }}>
+    <div className="relative mb-1.5 h-3.5" style={{ marginLeft: LABEL_COL }}>
       {labels.map((label) => (
         <span
           key={label.index}
-          className="absolute text-[9px] leading-none text-content-muted"
+          className="absolute text-[10px] font-medium leading-none text-content-muted"
           style={{ left: label.index * (CELL + GAP) }}
         >
           {label.text}

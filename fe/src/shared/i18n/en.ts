@@ -1027,4 +1027,10 @@ export const EN: Dictionary = {
   'Nội dung bạn đang soạn sẽ mất.': "What you've written will be lost.",
   'Hủy đăng bài': 'Discard',
   'Tiếp tục soạn': 'Keep writing',
+
+  // --- Lịch hoạt động khi chưa có dữ liệu ---
+  'Chưa có ngày học nào': 'No study days yet',
+  'Học một bài bất kỳ hôm nay là ô đầu tiên sáng lên, và chuỗi ngày của bạn bắt đầu.':
+    'Study anything today and the first square lights up — that starts your streak.',
+  'Học ngay': 'Start learning',
 };
