@@ -1050,13 +1050,9 @@ export const EN: Dictionary = {
   'Là thành viên': 'Member',
   'Là trưởng nhóm': 'Group leader',
   'Lọc theo vai trò trong nhóm': 'Filter by role in group',
-  'Lọc theo trạng thái nhóm': 'Filter by group visibility',
   'Bạn chưa làm trưởng nhóm ở nhóm nào': 'You do not lead any group yet',
   'Bạn là trưởng nhóm ở tất cả các nhóm của mình': 'You lead every group you belong to',
   'Chọn "Tất cả" để xem lại toàn bộ nhóm của bạn.': 'Pick "All" to see every group you belong to.',
   'Tạo một nhóm mới, hoặc sang tab Khám phá nhóm để xin vào một nhóm công khai.':
     'Create a group, or open the Discover groups tab to ask to join a public one.',
-  'Nhóm riêng tư không hiện ở đây': 'Private groups never show up here',
-  'Đó là điểm khác biệt của nhóm riêng tư: chỉ vào được khi biết mã {n} số.':
-    'That is what makes a group private: you can only join it with its {n}-digit code.',
 };

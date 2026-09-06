@@ -93,7 +93,7 @@ export function GroupsPage(): JSX.Element {
         ))}
       </div>
 
-      {tab === 'mine' ? <MyGroupsTab /> : <DiscoverTab onOpenCode={() => setCodeOpen(true)} />}
+      {tab === 'mine' ? <MyGroupsTab /> : <DiscoverTab />}
 
       <JoinByCodeModal open={codeOpen} onClose={() => setCodeOpen(false)} />
     </div>
@@ -185,106 +185,61 @@ function MyGroupsTab(): JSX.Element {
 // Tab "Khám phá nhóm"
 // ---------------------------------------------------------------------------
 
-type VisibilityFilter = 'all' | GroupVisibility;
-
-const VISIBILITY_FILTERS: { value: VisibilityFilter; label: string }[] = [
-  { value: 'all', label: 'Tất cả' },
-  { value: GroupVisibility.PUBLIC, label: 'Công khai' },
-  { value: GroupVisibility.PRIVATE, label: 'Riêng tư' },
-];
-
 /**
  * Nhóm công khai trong hệ thống.
  *
- * Bộ lọc "Riêng tư" cố ý KHÔNG trả về nhóm nào: nhóm riêng tư không xuất hiện trong
- * tìm kiếm là điều làm nên chữ "riêng tư" (xem `searchPublicGroups` ở BE). Vẫn để lựa
- * chọn đó trong danh sách và giải thích tại chỗ, kèm lối đi đúng — nhập mã 8 số — vì
- * người không tìm thấy nhóm riêng tư của mình sẽ tưởng hệ thống hỏng chứ không đoán
- * được đây là chủ ý.
+ * Không có bộ lọc công khai/riêng tư ở đây vì mọi nhóm trong danh sách này đều là nhóm
+ * công khai: nhóm riêng tư không xuất hiện trong tìm kiếm là điều làm nên chữ "riêng tư"
+ * (xem `searchPublicGroups` ở BE). Muốn vào nhóm riêng tư thì dùng nút "Nhập ID nhóm".
  */
-function DiscoverTab({ onOpenCode }: { onOpenCode: () => void }): JSX.Element {
+function DiscoverTab(): JSX.Element {
   const t = useT();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
-  const [visibility, setVisibility] = useState<VisibilityFilter>('all');
 
-  const onlyPrivate = visibility === GroupVisibility.PRIVATE;
-  const results = useGroupSearch({ search: search || undefined, page: 1, pageSize: 12 }, !onlyPrivate);
+  const results = useGroupSearch({ search: search || undefined, page: 1, pageSize: 12 });
 
   return (
     <section>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <form
-          noValidate
-          className="flex min-w-[16rem] flex-1 gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSearch(input.trim());
-          }}
-        >
-          <div className="relative flex-1">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
-              aria-hidden
-            />
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t('Tìm theo tên nhóm')}
-              className="!mt-0 pl-9"
-            />
-          </div>
-          <Button type="submit" variant="secondary">
-            {t('Tìm')}
-          </Button>
-        </form>
-
-        <div className="w-44">
-          <Select
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value as VisibilityFilter)}
-            aria-label={t('Lọc theo trạng thái nhóm')}
-          >
-            {VISIBILITY_FILTERS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {t(option.label)}
-              </option>
-            ))}
-          </Select>
+      <form
+        noValidate
+        className="mb-4 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setSearch(input.trim());
+        }}
+      >
+        <div className="relative flex-1">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+            aria-hidden
+          />
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t('Tìm theo tên nhóm')}
+            className="!mt-0 pl-9"
+          />
         </div>
-      </div>
+        <Button type="submit" variant="secondary">
+          {t('Tìm')}
+        </Button>
+      </form>
 
-      {onlyPrivate ? (
+      {results.isLoading && <SkeletonList rows={2} />}
+      {results.isError && <ErrorMessage>{getErrorMessage(results.error)}</ErrorMessage>}
+
+      {results.data?.items.length === 0 && (
         <EmptyState
-          icon={Lock}
-          title={t('Nhóm riêng tư không hiện ở đây')}
-          description={t('Đó là điểm khác biệt của nhóm riêng tư: chỉ vào được khi biết mã {n} số.', {
-            n: GROUP_CODE_LENGTH,
-          })}
-          action={
-            <Button icon={Hash} variant="secondary" onClick={onOpenCode}>
-              {t('Nhập ID nhóm')}
-            </Button>
-          }
+          icon={Search}
+          title={t('Không có nhóm công khai nào khớp')}
+          description={t('Nhóm riêng tư không hiện ở đây — muốn vào thì cần mã 8 số.')}
         />
-      ) : (
-        <>
-          {results.isLoading && <SkeletonList rows={2} />}
-          {results.isError && <ErrorMessage>{getErrorMessage(results.error)}</ErrorMessage>}
-
-          {results.data?.items.length === 0 && (
-            <EmptyState
-              icon={Search}
-              title={t('Không có nhóm công khai nào khớp')}
-              description={t('Nhóm riêng tư không hiện ở đây — muốn vào thì cần mã 8 số.')}
-            />
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {results.data?.items.map((group) => <GroupCard key={group.id} group={group} />)}
-          </div>
-        </>
       )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {results.data?.items.map((group) => <GroupCard key={group.id} group={group} />)}
+      </div>
     </section>
   );
 }
