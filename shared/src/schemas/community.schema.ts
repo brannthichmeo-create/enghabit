@@ -19,6 +19,14 @@ export const postAttachmentInputSchema = z.object({
 export type PostAttachmentInput = z.infer<typeof postAttachmentInputSchema>;
 
 export const createPostSchema = z.object({
+  /**
+   * Bài thuộc nhóm nào. Bỏ trống là đăng ở diễn đàn chung.
+   *
+   * Bài của nhóm KHÔNG bao giờ lọt ra diễn đàn chung — xem bộ lọc `groupId: null`
+   * trong community.service.listPosts. Thiếu bộ lọc đó là nội dung nhóm riêng tư
+   * hiện cho cả hệ thống.
+   */
+  groupId: z.number().int().positive().optional(),
   title: z.string().trim().min(5, 'Tiêu đề phải có ít nhất 5 ký tự').max(200),
   body: z.string().trim().min(10, 'Nội dung phải có ít nhất 10 ký tự').max(10_000),
   attachments: z
@@ -45,6 +53,8 @@ export const postQuerySchema = z.object({
    * lượng bài thực tế, mà ở quy mô này hai lựa chọn trên là đủ dùng.
    */
   sort: z.enum(['latest', 'popular']).default('latest'),
+  /** Lọc theo nhóm. Bỏ trống là diễn đàn chung (chỉ bài không thuộc nhóm nào). */
+  groupId: z.coerce.number().int().positive().optional(),
   /** Chỉ lấy bài của chính mình — dùng cho tab "Bài của tôi". */
   mine: z
     .preprocess((value) => value === true || value === 'true' || value === '1', z.boolean())
@@ -80,6 +90,8 @@ export interface PostAttachmentInfo {
 
 /** Một bài trong danh sách. Không kèm bình luận để trang danh sách nhẹ. */
 export interface PostSummary {
+  /** Null nghĩa là bài ở diễn đàn chung. */
+  groupId?: number | null;
   id: number;
   title: string;
   /** Vài dòng đầu của nội dung, đã cắt ở backend. */

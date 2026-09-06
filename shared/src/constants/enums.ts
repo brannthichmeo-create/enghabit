@@ -84,6 +84,9 @@ export const NotificationType = {
   MISTAKES_PENDING: 'MISTAKES_PENDING',
   GOAL_ACHIEVED: 'GOAL_ACHIEVED',
   ANNOUNCEMENT: 'ANNOUNCEMENT',
+  GROUP_JOIN_REQUEST: 'GROUP_JOIN_REQUEST',
+  GROUP_JOIN_APPROVED: 'GROUP_JOIN_APPROVED',
+  GROUP_JOIN_REJECTED: 'GROUP_JOIN_REJECTED',
   PASSWORD_RESET_REQUEST: 'PASSWORD_RESET_REQUEST',
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
@@ -102,6 +105,31 @@ export const PasswordResetStatus = {
   REJECTED: 'REJECTED',
 } as const;
 export type PasswordResetStatus = (typeof PasswordResetStatus)[keyof typeof PasswordResetStatus];
+
+/** Ai tìm thấy nhóm: công khai thì hiện trong ô tìm kiếm, riêng tư chỉ vào được bằng mã. */
+export const GroupVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+} as const;
+export type GroupVisibility = (typeof GroupVisibility)[keyof typeof GroupVisibility];
+
+/**
+ * Vai trò trong nhóm. Một nhóm có thể có NHIỀU trưởng nhóm (như quản trị viên của
+ * nhóm Messenger) — người tạo là trưởng nhóm đầu tiên và có thể phong thêm.
+ */
+export const GroupMemberRole = {
+  LEADER: 'LEADER',
+  MEMBER: 'MEMBER',
+} as const;
+export type GroupMemberRole = (typeof GroupMemberRole)[keyof typeof GroupMemberRole];
+
+/** Trạng thái một yêu cầu xin vào nhóm. */
+export const GroupJoinStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+export type GroupJoinStatus = (typeof GroupJoinStatus)[keyof typeof GroupJoinStatus];
 
 export const VocabLevel = {
   BEGINNER: 'BEGINNER',

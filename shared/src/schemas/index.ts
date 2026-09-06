@@ -12,3 +12,4 @@ export * from './password-reset.schema.js';
 export * from './rewards.schema.js';
 export * from './leaderboard.schema.js';
 export * from './community.schema.js';
+export * from './group.schema.js';

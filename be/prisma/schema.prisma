@@ -92,8 +92,32 @@ enum NotificationType {
   GOAL_ACHIEVED
   /// Quản trị viên gửi tới người dùng
   ANNOUNCEMENT
+  /// Có người xin vào nhóm — gửi cho MỌI trưởng nhóm của nhóm đó
+  GROUP_JOIN_REQUEST
+  /// Yêu cầu vào nhóm được duyệt
+  GROUP_JOIN_APPROVED
+  /// Yêu cầu vào nhóm bị từ chối
+  GROUP_JOIN_REJECTED
   /// Có yêu cầu cấp lại mật khẩu mới chờ duyệt — gửi cho MỌI quản trị viên
   PASSWORD_RESET_REQUEST
+}
+
+/// Ai tìm thấy nhóm: công khai hiện trong ô tìm kiếm, riêng tư chỉ vào được bằng mã 8 số.
+enum GroupVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+/// Một nhóm có thể có NHIỀU trưởng nhóm, giống quản trị viên của nhóm Messenger.
+enum GroupMemberRole {
+  LEADER
+  MEMBER
+}
+
+enum GroupJoinStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum PasswordResetStatus {
@@ -167,6 +191,10 @@ model User {
   coinTransactions    CoinTransaction[]
   streakFreezes       StreakFreeze[]
   createdTopics       Topic[]              @relation("TopicCreatedBy")
+  createdGroups       Group[]              @relation("GroupCreatedBy")
+  groupMemberships    GroupMember[]
+  groupJoinRequests   GroupJoinRequest[]   @relation("JoinRequestUser")
+  groupDecisions      GroupJoinRequest[]   @relation("JoinRequestDecidedBy")
   posts               Post[]
   postComments        PostComment[]
   postLikes           PostLike[]
@@ -734,13 +762,18 @@ model Post {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  /// Null = bài ở diễn đàn chung. Có giá trị = bài nội bộ của nhóm, chỉ thành viên đọc được.
+  groupId Int? @map("group_id")
+
   author      User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  group       Group?           @relation(fields: [groupId], references: [id], onDelete: Cascade)
   comments    PostComment[]
   likes       PostLike[]
   attachments PostAttachment[]
 
   @@index([createdAt])
   @@index([authorId])
+  @@index([groupId, createdAt])
   @@map("posts")
 }
 
@@ -813,6 +846,90 @@ model PostAttachment {
 
   @@index([postId])
   @@map("post_attachments")
+}
+
+// ---------------------------------------------------------------------------
+// Nhóm lớp
+// ---------------------------------------------------------------------------
+
+/// Nhóm trao đổi nội bộ do người học tự lập.
+model Group {
+  id Int @id @default(autoincrement())
+
+  /// Mã 8 chữ số, duy nhất toàn hệ thống — cách duy nhất tìm ra một nhóm riêng tư.
+  /// Dùng Char(8) chứ không phải Int: mã bắt đầu bằng số 0 vẫn phải giữ nguyên 8 ký tự.
+  code String @unique @db.Char(8)
+
+  name        String  @db.VarChar(120)
+  description String? @db.VarChar(500)
+
+  visibility GroupVisibility @default(PUBLIC)
+
+  /// Bật thì người xin vào phải chờ duyệt; tắt thì vào thẳng.
+  requireApproval Boolean @default(true) @map("require_approval")
+
+  /// Người lập nhóm. Cho phép null để xoá tài khoản không kéo theo cả nhóm — nhóm vẫn
+  /// còn trưởng nhóm khác điều hành (xem quy tắc "luôn còn ít nhất một trưởng nhóm").
+  createdById Int? @map("created_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  createdBy    User?              @relation("GroupCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  members      GroupMember[]
+  joinRequests GroupJoinRequest[]
+  posts        Post[]
+
+  @@index([visibility, createdAt])
+  @@map("groups")
+}
+
+model GroupMember {
+  id      Int             @id @default(autoincrement())
+  groupId Int             @map("group_id")
+  userId  Int             @map("user_id")
+  role    GroupMemberRole @default(MEMBER)
+
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Chặn một người vào nhóm hai lần. Đây là thứ DUY NHẤT chặn được khi hai request
+  /// duyệt cùng một yêu cầu về đúng lúc — kiểm tra đọc-rồi-ghi vẫn lọt.
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@map("group_members")
+}
+
+/// Một lượt xin vào nhóm.
+///
+/// Mỗi cặp (nhóm, người) chỉ có MỘT dòng: bị từ chối rồi xin lại thì cập nhật chính
+/// dòng đó về PENDING, không tạo dòng mới. Nhờ vậy hộp yêu cầu của trưởng nhóm không
+/// bị một người xin đi xin lại làm ngập.
+model GroupJoinRequest {
+  id      Int             @id @default(autoincrement())
+  groupId Int             @map("group_id")
+  userId  Int             @map("user_id")
+  status  GroupJoinStatus @default(PENDING)
+
+  /// Lời nhắn gửi trưởng nhóm, vd "Em là sinh viên lớp K65".
+  message String? @db.VarChar(300)
+
+  decidedById Int?      @map("decided_by_id")
+  decidedAt   DateTime? @map("decided_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User  @relation("JoinRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  decidedBy User? @relation("JoinRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@unique([groupId, userId])
+  @@index([groupId, status])
+  @@index([userId])
+  @@map("group_join_requests")
 }
 
 /// Một vật phẩm giữ chuỗi. Mỗi dòng là một cái đã mua.

@@ -20,6 +20,7 @@ import { notificationRoutes } from './modules/notifications/notification.routes.
 import { rewardsRoutes } from './modules/rewards/rewards.routes.js';
 import { leaderboardRoutes } from './modules/leaderboard/leaderboard.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
+import { groupRoutes } from './modules/groups/group.routes.js';
 import { communityRoutes } from './modules/community/community.routes.js';
 
 export function createApp(): Express {
@@ -77,6 +78,7 @@ export function createApp(): Express {
   api.use('/leaderboard', leaderboardRoutes);
   api.use('/admin', adminRoutes);
   api.use('/community', communityRoutes);
+  api.use('/groups', groupRoutes);
 
   app.use('/api/v1', api);
 
