@@ -17,6 +17,7 @@ import { useT } from '../../../shared/i18n/language';
  * phần lớn lượt vào chỉ để liếc xem còn nhiệm vụ nào chưa xong.
  */
 export function RewardsBar(): JSX.Element | null {
+  const t = useT();
   const rewards = useRewards();
   const [showMissions, setShowMissions] = useState(false);
 
@@ -52,6 +53,17 @@ export function RewardsBar(): JSX.Element | null {
         <FreezeControl freeze={freeze} coins={rewards.data.coins} />
       </div>
 
+      {/*
+        Nói thẳng xu và chuỗi là hai thứ khác nhau.
+
+        Nút nhận xu nằm ngay dưới ô "Chuỗi hiện tại" nên rất dễ bị hiểu là bấm vào thì
+        chuỗi tăng — người dùng đã hiểu nhầm đúng như vậy. Chuỗi chỉ tính ngày CÓ HỌC
+        (xem CLAUDE.md), một cú bấm nút không phải là học.
+      */}
+      <p className="text-xs text-content-muted">
+        {t('Xu không tính vào chuỗi ngày. Muốn giữ chuỗi, hãy học một bài, ôn thẻ, làm quiz hoặc check-in một thói quen.')}
+      </p>
+
       {showMissions && (
         <ul className="animate-slide-up space-y-2 rounded-xl border border-line bg-surface p-3">
           {missions.map((mission) => (
@@ -74,7 +86,7 @@ function CheckInButton({ claimed, reward }: { claimed: boolean; reward: number }
     return (
       <span className="flex items-center gap-2 rounded-xl border-2 border-success/40 bg-success-soft px-4 py-3 text-sm font-semibold text-success">
         <Check className="h-4 w-4 shrink-0" aria-hidden />
-        {t('ĐÃ ĐIỂM DANH HÔM NAY')}
+        {t('ĐÃ NHẬN XU HÔM NAY')}
       </span>
     );
   }
@@ -91,7 +103,7 @@ function CheckInButton({ claimed, reward }: { claimed: boolean; reward: number }
       className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-strong disabled:opacity-60"
     >
       <Coins className="h-4 w-4 shrink-0" aria-hidden />
-      {t('ĐIỂM DANH · NHẬN {n} XU', { n: reward })}
+      {t('NHẬN {n} XU MỖI NGÀY', { n: reward })}
     </button>
   );
 }

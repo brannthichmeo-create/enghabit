@@ -62,6 +62,17 @@ export function HeroCard({
               <Trophy className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {t('Kỷ lục {n} ngày', { n: streak.longestStreak })}
             </p>
+
+            {/*
+              Nói rõ hôm nay đã tính hay chưa. Chỉ hiện con số chuỗi thì người dùng
+              không biết mình còn phải làm gì hôm nay — và dễ tưởng nút nhận xu bên
+              dưới đã lo phần đó.
+            */}
+            <p className={`mt-1 text-xs font-medium ${alive ? 'text-success' : 'text-accent-ink'}`}>
+              {alive
+                ? t('Hôm nay đã được tính')
+                : t('Hôm nay chưa được tính — học một bài để giữ chuỗi')}
+            </p>
           </div>
         </div>
 

@@ -1033,4 +1033,13 @@ export const EN: Dictionary = {
   'Học một bài bất kỳ hôm nay là ô đầu tiên sáng lên, và chuỗi ngày của bạn bắt đầu.':
     'Study anything today and the first square lights up — that starts your streak.',
   'Học ngay': 'Start learning',
+
+  // --- Xu và chuỗi ngày là hai thứ khác nhau ---
+  'NHẬN {n} XU MỖI NGÀY': 'CLAIM {n} COINS TODAY',
+  'ĐÃ NHẬN XU HÔM NAY': 'COINS CLAIMED TODAY',
+  'Xu không tính vào chuỗi ngày. Muốn giữ chuỗi, hãy học một bài, ôn thẻ, làm quiz hoặc check-in một thói quen.':
+    'Coins do not count toward your streak. To keep it alive, study a lesson, review cards, take a quiz or check in a habit.',
+  'Hôm nay đã được tính': "Today already counts",
+  'Hôm nay chưa được tính — học một bài để giữ chuỗi':
+    "Today doesn't count yet — study something to keep the streak",
 };
