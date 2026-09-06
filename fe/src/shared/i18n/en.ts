@@ -981,4 +981,34 @@ export const EN: Dictionary = {
   'Cảnh báo vi phạm': 'Rule warning',
   'Nhóm bị chặn': 'Group blocked',
   'Nhóm được mở chặn': 'Group unblocked',
+
+  // --- Hộp thoại xác nhận -----------------------------------------------------
+  'Bạn có chắc muốn tiếp tục?': 'Are you sure you want to continue?',
+  'Xoá mục tiêu': 'Delete goal',
+  'Tiến độ đã đạt của mục tiêu sẽ không còn được theo dõi.':
+    'The progress recorded for this goal will no longer be tracked.',
+  'Xoá thói quen "{name}"?': 'Delete the habit "{name}"?',
+  'Lịch sử check-in của thói quen này cũng mất theo và không khôi phục được.':
+    'Its check-in history goes with it and cannot be recovered.',
+  'Xoá bài viết này?': 'Delete this post?',
+  'Bình luận và tệp đính kèm của bài cũng mất theo. Thao tác không thể hoàn tác.':
+    'Its comments and attachments go with it. This cannot be undone.',
+  'Gửi thông báo tới {n} người dùng?': {
+    one: 'Send this notification to {n} user?',
+    other: 'Send this notification to {n} users?',
+  },
+  'Đã gửi thì không thu hồi được.': "Once sent, it can't be taken back.",
+  'Người này sẽ mất quyền đọc bài trong nhóm, nhưng vẫn xin vào lại được.':
+    'They lose access to the group feed, but can ask to join again.',
+  'Toàn bộ bài đăng và danh sách thành viên sẽ mất. Không khôi phục được.':
+    'Every post and the member list will be gone. This cannot be recovered.',
+  'Bạn sẽ không đọc được bài trong nhóm nữa cho tới khi vào lại.':
+    "You won't be able to read the group feed until you join again.",
+  'Xoá vĩnh viễn {email}?': 'Permanently delete {email}?',
+  'Toàn bộ {n} hoạt động, chuỗi ngày và tiến độ học sẽ mất và không khôi phục được. Nếu chỉ muốn chặn đăng nhập, hãy dùng "Khoá tài khoản".':
+    'All {n} activities, the streak and every bit of learning progress will be gone for good. To block sign-in only, use "Lock account" instead.',
+  'Xoá chủ đề': 'Delete topic',
+  'Xoá chủ đề "{name}"?': 'Delete the topic "{name}"?',
+  'Toàn bộ từ vựng và quiz thuộc chủ đề này sẽ mất theo.':
+    'Every word and quiz under this topic goes with it.',
 };

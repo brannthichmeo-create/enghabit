@@ -13,6 +13,7 @@ import {
   Select,
 } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
+import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { useAudienceCount, useSendAnnouncement } from '../notification.hooks';
 import { displayFor, timeAgo } from './notification-display';
 import { useLocale, useT } from '../../../shared/i18n/language';
@@ -28,6 +29,7 @@ type Audience = 'all' | 'USER' | 'ADMIN';
 export function AnnouncementPage(): JSX.Element {
   const locale = useLocale();
   const t = useT();
+  const confirm = useConfirm();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<Audience>('all');
@@ -39,7 +41,7 @@ export function AnnouncementPage(): JSX.Element {
   const send = useSendAnnouncement();
   const toast = useToast();
 
-  const submit = (event: FormEvent): void => {
+  const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
 
     const parsed = createAnnouncementSchema.safeParse({
@@ -57,7 +59,12 @@ export function AnnouncementPage(): JSX.Element {
     setValidationError(null);
 
     const recipients = audienceCount.data ?? 0;
-    if (!confirm(t('Gửi thông báo này tới {n} người dùng? Đã gửi thì không thu hồi được.', { n: recipients }))) return;
+    const ok = await confirm({
+      title: t('Gửi thông báo tới {n} người dùng?', { n: recipients }),
+      message: t('Đã gửi thì không thu hồi được.'),
+      confirmLabel: t('Gửi thông báo'),
+    });
+    if (!ok) return;
 
     send.mutate(parsed.data, {
       onSuccess: (result) => {

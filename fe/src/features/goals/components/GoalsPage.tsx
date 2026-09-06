@@ -20,6 +20,7 @@ import {
   PageHeader,
   Select,
 } from '../../../shared/components/ui';
+import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useCreateGoal, useDeleteGoal, useGoalProgress, useGoals } from '../goal.hooks';
@@ -27,6 +28,7 @@ import { useT } from '../../../shared/i18n/language';
 
 export function GoalsPage(): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const goals = useGoals();
   const progress = useGoalProgress();
   const deleteGoal = useDeleteGoal();
@@ -72,8 +74,14 @@ export function GoalsPage(): JSX.Element {
 
               <Button
                 variant="ghost"
-                onClick={() => {
-                  if (confirm(t('Xoá mục tiêu này?'))) deleteGoal.mutate(goal.id);
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: t('Xoá mục tiêu này?'),
+                    message: t('Tiến độ đã đạt của mục tiêu sẽ không còn được theo dõi.'),
+                    confirmLabel: t('Xoá mục tiêu'),
+                    tone: 'danger',
+                  });
+                  if (ok) deleteGoal.mutate(goal.id);
                 }}
               >
                 {t('Xoá')}

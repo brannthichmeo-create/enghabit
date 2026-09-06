@@ -12,6 +12,7 @@ import {
   PageHeader,
 } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
+import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { HABIT_FREQUENCY_LABELS, WEEKDAY_LABELS, formatWeekdays } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useCheckInHabit, useDeleteHabit, useHabits } from '../habit.hooks';
@@ -69,6 +70,7 @@ export function HabitsPage(): JSX.Element {
 
 function HabitCard({ habit }: { habit: Habit }): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const toast = useToast();
   const checkIn = useCheckInHabit();
   const deleteHabit = useDeleteHabit();
@@ -86,8 +88,14 @@ function HabitCard({ habit }: { habit: Habit }): JSX.Element {
     );
   };
 
-  const handleDelete = (): void => {
-    if (!confirm(t('Xoá thói quen "{name}"? Lịch sử check-in cũng sẽ mất.', { name: habit.name }))) return;
+  const handleDelete = async (): Promise<void> => {
+    const ok = await confirm({
+      title: t('Xoá thói quen "{name}"?', { name: habit.name }),
+      message: t('Lịch sử check-in của thói quen này cũng mất theo và không khôi phục được.'),
+      confirmLabel: t('Xoá thói quen'),
+      tone: 'danger',
+    });
+    if (!ok) return;
     deleteHabit.mutate(habit.id, {
       onSuccess: () => toast.success(t('Đã xoá thói quen')),
       onError: (error) => toast.error(getErrorMessage(error)),

@@ -12,6 +12,7 @@ import {
   SkeletonList,
   Select,
 } from '../../../shared/components/ui';
+import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import { useTopics, useTopicVocabulary } from '../../vocabulary/vocabulary.hooks';
 import { useCreateTopic, useCreateVocabulary, useDeleteTopic } from '../admin.hooks';
@@ -20,6 +21,7 @@ import { useT } from '../../../shared/i18n/language';
 /** Quản lý chủ đề và từ vựng. Chọn một chủ đề để thêm/xem từ trong chủ đề đó. */
 export function ContentManager(): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const topics = useTopics();
   const deleteTopic = useDeleteTopic();
   const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
@@ -51,8 +53,14 @@ export function ContentManager(): JSX.Element {
 
                 <Button
                   variant="ghost"
-                  onClick={() => {
-                    if (confirm(t('Xoá chủ đề "{name}"? Toàn bộ từ vựng và quiz thuộc chủ đề sẽ mất.', { name: topic.name }))) {
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: t('Xoá chủ đề "{name}"?', { name: topic.name }),
+                      message: t('Toàn bộ từ vựng và quiz thuộc chủ đề này sẽ mất theo.'),
+                      confirmLabel: t('Xoá chủ đề'),
+                      tone: 'danger',
+                    });
+                    if (ok) {
                       deleteTopic.mutate(topic.id);
                       if (selectedTopicId === topic.id) setSelectedTopicId(null);
                     }

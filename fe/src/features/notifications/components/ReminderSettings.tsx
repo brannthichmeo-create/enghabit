@@ -13,6 +13,7 @@ import {
   SkeletonList,
 } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
+import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import {
   useCreateReminder,
   useDeleteReminder,
@@ -193,6 +194,7 @@ function ReminderRow({
   onEdit: () => void;
 }): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const update = useUpdateReminder();
   const remove = useDeleteReminder();
   const toast = useToast();
@@ -241,8 +243,13 @@ function ReminderRow({
         icon={Trash2}
         aria-label={t('Xoá lời nhắc')}
         loading={remove.isPending && remove.variables === reminder.id}
-        onClick={() => {
-          if (!confirm(t('Xoá lời nhắc lúc {time}?', { time: reminder.timeOfDay }))) return;
+        onClick={async () => {
+          const ok = await confirm({
+            title: t('Xoá lời nhắc lúc {time}?', { time: reminder.timeOfDay }),
+            confirmLabel: t('Xoá lời nhắc'),
+            tone: 'danger',
+          });
+          if (!ok) return;
           remove.mutate(reminder.id, {
             onSuccess: () => toast.success(t('Đã xoá lời nhắc')),
             onError: (error) => toast.error(getErrorMessage(error)),

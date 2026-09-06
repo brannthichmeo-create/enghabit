@@ -38,6 +38,7 @@ import {
   SkeletonList,
 } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
+import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { useT } from '../../../shared/i18n/language';
 import { usePosts } from '../../community/community.hooks';
 import { PostCard } from '../../community/components/CommunityPage';
@@ -230,6 +231,7 @@ function GroupFeed({ groupId }: { groupId: number }): JSX.Element {
 /** Danh sách thành viên. Trưởng nhóm thấy thêm nút phong quyền và xoá khỏi nhóm. */
 function MemberList({ group }: { group: GroupDetail }): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const toast = useToast();
   const isLeader = group.viewerState === GroupViewerState.LEADER;
 
@@ -346,8 +348,14 @@ function MemberList({ group }: { group: GroupDetail }): JSX.Element {
                         icon={UserMinus}
                         aria-label={t('Xoá khỏi nhóm')}
                         loading={removeMember.isPending && removeMember.variables?.userId === member.userId}
-                        onClick={() => {
-                          if (!confirm(t('Xoá {name} khỏi nhóm?', { name: member.name }))) return;
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: t('Xoá {name} khỏi nhóm?', { name: member.name }),
+                            message: t('Người này sẽ mất quyền đọc bài trong nhóm, nhưng vẫn xin vào lại được.'),
+                            confirmLabel: t('Xoá khỏi nhóm'),
+                            tone: 'danger',
+                          });
+                          if (!ok) return;
                           removeMember.mutate(
                             { groupId: group.id, userId: member.userId },
                             { onError: (err) => toast.error(getErrorMessage(err)) },
@@ -422,6 +430,7 @@ function RequestList({ group }: { group: GroupDetail }): JSX.Element {
 /** Cài đặt nhóm — chỉ trưởng nhóm vào được. */
 function GroupSettings({ group }: { group: GroupDetail }): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -520,8 +529,14 @@ function GroupSettings({ group }: { group: GroupDetail }): JSX.Element {
             variant="danger"
             icon={Trash2}
             loading={removeGroup.isPending}
-            onClick={() => {
-              if (!confirm(t('Xoá vĩnh viễn nhóm "{name}"?', { name: group.name }))) return;
+            onClick={async () => {
+              const ok = await confirm({
+                title: t('Xoá vĩnh viễn nhóm "{name}"?', { name: group.name }),
+                message: t('Toàn bộ bài đăng và danh sách thành viên sẽ mất. Không khôi phục được.'),
+                confirmLabel: t('Xoá nhóm'),
+                tone: 'danger',
+              });
+              if (!ok) return;
               removeGroup.mutate(group.id, {
                 onSuccess: () => {
                   toast.success(t('Đã xoá nhóm'));
@@ -541,6 +556,7 @@ function GroupSettings({ group }: { group: GroupDetail }): JSX.Element {
 
 function LeaveButton({ group }: { group: GroupDetail }): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const toast = useToast();
   const navigate = useNavigate();
   const leave = useLeaveGroup();
@@ -550,8 +566,14 @@ function LeaveButton({ group }: { group: GroupDetail }): JSX.Element {
       variant="secondary"
       icon={LogOut}
       loading={leave.isPending}
-      onClick={() => {
-        if (!confirm(t('Rời khỏi nhóm "{name}"?', { name: group.name }))) return;
+      onClick={async () => {
+        const ok = await confirm({
+          title: t('Rời khỏi nhóm "{name}"?', { name: group.name }),
+          message: t('Bạn sẽ không đọc được bài trong nhóm nữa cho tới khi vào lại.'),
+          confirmLabel: t('Rời nhóm'),
+          tone: 'danger',
+        });
+        if (!ok) return;
         leave.mutate(group.id, {
           onSuccess: () => {
             toast.success(t('Đã rời nhóm'));

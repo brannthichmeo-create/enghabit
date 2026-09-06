@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes } from './routes/AppRoutes';
 import { ToastProvider } from './shared/components/Toast';
+import { ConfirmProvider } from './shared/components/ConfirmDialog';
 import { LanguageProvider } from './shared/i18n/language';
 import { initTheme } from './shared/components/ThemeToggle';
 import './index.css';
@@ -34,8 +35,11 @@ createRoot(rootElement).render(
       {/* Ngôn ngữ bọc ngoài cùng: Toast và mọi màn hình bên trong đều cần dịch chữ */}
       <LanguageProvider>
         <ToastProvider>
+          {/* Hộp thoại xác nhận bọc trong Router: nội dung của nó có thể chứa liên kết */}
           <BrowserRouter>
-            <AppRoutes />
+            <ConfirmProvider>
+              <AppRoutes />
+            </ConfirmProvider>
           </BrowserRouter>
         </ToastProvider>
       </LanguageProvider>

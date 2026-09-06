@@ -209,6 +209,12 @@ Vật phẩm giữ chuỗi (`streak_freezes`) là ngoại lệ duy nhất đư�
 
 ## Quy tắc viết code
 
+- **Không dùng `confirm()`, `alert()`, `prompt()` của trình duyệt.** Hỏi xác nhận thì gọi
+  `useConfirm()` (`shared/components/ConfirmDialog`), báo kết quả thì gọi `useToast()`.
+  Lý do: hộp thoại gốc không theo bảng màu và chế độ tối của app, khoá cứng cả tab trong
+  lúc chờ, không đặt được nhãn nút, và bị chặn hoàn toàn trên vài trình duyệt di động —
+  người dùng bấm nút mà không có gì xảy ra.
+
 - TypeScript strict mode ở cả `fe`, `be`, `mobile`, `shared`. Không dùng `any` trừ khi kèm comment giải thích lý do.
 - Mỗi module BE bắt buộc theo đúng luồng `routes → controller → service → schema (Zod) → Prisma`. Không viết business logic trong route hoặc controller.
 - File tiện ích đặt tên cụ thể theo domain (`streak-calculator.ts`, `timezone.util.ts`) — không tạo `helpers.ts`/`common.ts` chung chung làm nơi chứa đồ tạp.

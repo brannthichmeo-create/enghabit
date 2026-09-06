@@ -5,6 +5,7 @@ import { Button, Card, Skeleton } from '../../../shared/components/ui';
 import { Avatar } from '../../../shared/components/Sidebar';
 import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
 import { useToast } from '../../../shared/components/Toast';
+import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { AttachmentList } from './AttachmentView';
 import {
@@ -62,6 +63,7 @@ export function PostDetailView({
 
 function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const toast = useToast();
   const toggleLike = useToggleLike();
   const deletePost = useDeletePost();
@@ -79,8 +81,14 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
           {post.canDelete && (
             <button
               type="button"
-              onClick={() => {
-                if (!window.confirm(t('Xoá bài viết này? Thao tác không thể hoàn tác.'))) return;
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t('Xoá bài viết này?'),
+                  message: t('Bình luận và tệp đính kèm của bài cũng mất theo. Thao tác không thể hoàn tác.'),
+                  confirmLabel: t('Xoá bài viết'),
+                  tone: 'danger',
+                });
+                if (!ok) return;
                 deletePost.mutate(post.id, {
                   onSuccess: () => {
                     toast.success(t('Đã xoá bài viết'));
@@ -139,6 +147,7 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
 
 function CommentSection({ post }: { post: PostDetail }): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
   const toast = useToast();
   const [body, setBody] = useState('');
   const createComment = useCreateComment(post.id);
@@ -192,8 +201,13 @@ function CommentSection({ post }: { post: PostDetail }): JSX.Element {
                   {comment.canDelete && (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!window.confirm(t('Xoá bình luận này?'))) return;
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: t('Xoá bình luận này?'),
+                          confirmLabel: t('Xoá bình luận'),
+                          tone: 'danger',
+                        });
+                        if (!ok) return;
                         deleteComment.mutate(comment.id, {
                           onSuccess: () => toast.success(t('Đã xoá bình luận')),
                           onError: (error) => toast.error(getErrorMessage(error)),
