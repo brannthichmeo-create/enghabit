@@ -122,28 +122,46 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const layer = useModalLayer(open);
 
-  // Đóng bằng phím Esc. Gắn ở `document` chứ không ở panel: người dùng có thể chưa
-  // bấm vào đâu trong hộp thoại nên focus vẫn còn nằm ngoài nó.
+  /*
+    Giữ `onClose` trong ref để hiệu ứng bên dưới KHÔNG phụ thuộc vào nó.
+
+    Chỗ gọi thường truyền hàm inline (`onClose={() => ...}`), tức là một hàm MỚI sau mỗi
+    lần render của trang cha. Nếu hiệu ứng phụ thuộc vào `onClose` thì nó chạy lại theo,
+    kéo theo dòng `focus()` bên dưới — con trỏ bị giật khỏi ô nhập ngay giữa lúc người
+    dùng đang gõ. Đây là lỗi thật đã xảy ra: gõ được đúng một ký tự rồi phải bấm lại vào
+    ô mới gõ tiếp được.
+  */
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Đóng bằng phím Esc và khoá cuộn nền. Gắn ở `document` chứ không ở panel: người dùng
+  // có thể chưa bấm vào đâu trong hộp thoại nên focus vẫn còn nằm ngoài nó.
   useEffect(() => {
     if (!open) return;
 
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
 
-    // Khoá cuộn nền, nếu không thì cuộn chuột sẽ trôi trang phía sau hộp thoại.
     const scrollCu = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-
-    // Đưa focus vào hộp thoại để người dùng bàn phím không bị bỏ lại ở nền.
-    panelRef.current?.focus();
 
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = scrollCu;
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  /*
+    Đưa focus vào hộp thoại đúng MỘT LẦN lúc mở, để người dùng bàn phím không bị bỏ lại
+    ở nền. Tách riêng khỏi hiệu ứng trên và chỉ phụ thuộc `open`: gộp chung thì mỗi lần
+    hiệu ứng kia chạy lại là focus lại nhảy về khung hộp thoại.
+  */
+  useEffect(() => {
+    if (!open) return;
+    panelRef.current?.focus();
+  }, [open]);
 
   if (!open) return null;
 
