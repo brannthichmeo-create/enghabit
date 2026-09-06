@@ -64,7 +64,7 @@ export async function like(req: Request, res: Response): Promise<void> {
  *  - Tên tệp mã hoá theo RFC 5987 vì tên tiếng Việt có dấu không nằm trong latin-1.
  */
 export async function attachment(req: Request, res: Response): Promise<void> {
-  const file = await communityService.getAttachmentContent(parseId(req.params.id));
+  const file = await communityService.getAttachmentContent(parseId(req.params.id), currentUser(req).id);
 
   const asciiName = file.fileName.replace(/[^\x20-\x7E]/g, '_');
   const disposition = file.isImage ? 'inline' : 'attachment';

@@ -19,8 +19,22 @@ import * as communityApi from './community.api';
 
 export const communityKeys = {
   all: ['community'] as const,
+  /**
+   * `groupId` BẮT BUỘC có trong khoá: thiếu nó thì bảng tin của nhóm và diễn đàn chung
+   * dùng chung một ô cache, và người vừa mở nhóm xong quay ra diễn đàn sẽ thấy đúng
+   * danh sách bài nội bộ vừa xem.
+   */
   list: (query: PostQueryInput) =>
-    ['community', 'posts', query.page, query.pageSize, query.sort, query.search ?? '', query.mine] as const,
+    [
+      'community',
+      'posts',
+      query.groupId ?? null,
+      query.page,
+      query.pageSize,
+      query.sort,
+      query.search ?? '',
+      query.mine,
+    ] as const,
   detail: (postId: number) => ['community', 'post', postId] as const,
 };
 

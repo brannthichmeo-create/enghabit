@@ -17,6 +17,7 @@ import {
 } from '@enghabit/shared';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
+import { isMember } from '../groups/group.service.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors/app-error.js';
 import { getLevelsFor } from '../statistics/statistics.service.js';
 
@@ -61,6 +62,16 @@ const ATTACHMENT_SELECT = {
 } as const;
 
 /**
+ * Người này có quyền đọc/ghi trong nhóm không.
+ *
+ * Dùng NotFoundError chứ không phải ForbiddenError: báo "bạn không có quyền" cũng là
+ * xác nhận nhóm đó tồn tại, đủ để người ngoài dò ra id của các nhóm riêng tư.
+ */
+async function assertGroupAccess(groupId: number, userId: number): Promise<void> {
+  if (!(await isMember(groupId, userId))) throw new NotFoundError('Không tìm thấy nội dung');
+}
+
+/**
  * Danh sách bài đăng.
  *
  * KHÔNG trả ảnh đại diện của tác giả: một trang 10 bài sẽ kéo theo 10 ảnh, mỗi ảnh vài
@@ -71,7 +82,12 @@ export async function listPosts(
   viewer: { id: number; role: UserRole },
   query: PostQueryInput,
 ): Promise<Paginated<PostSummary>> {
+  // Bài của nhóm KHÔNG được lẫn vào diễn đàn chung. `groupId: null` là thứ duy nhất
+  // chặn việc đó — bỏ dòng này là toàn bộ nội dung nhóm riêng tư hiện cho cả hệ thống.
+  if (query.groupId !== undefined) await assertGroupAccess(query.groupId, viewer.id);
+
   const where: Prisma.PostWhereInput = {
+    groupId: query.groupId ?? null,
     ...(query.mine ? { authorId: viewer.id } : {}),
     ...(query.search
       ? {
@@ -108,6 +124,7 @@ export async function listPosts(
   return {
     items: posts.map((post) => ({
       id: post.id,
+      groupId: post.groupId,
       title: post.title,
       excerpt: toExcerpt(post.body),
       author: toAuthor(post.author, levels),
@@ -143,6 +160,8 @@ export async function getPost(
     },
   });
   if (!post) throw new NotFoundError('Không tìm thấy bài viết');
+  // Chặn cả đường vào thẳng bằng id: danh sách đã lọc nhưng ai biết id bài vẫn gọi được endpoint này.
+  if (post.groupId !== null) await assertGroupAccess(post.groupId, viewer.id);
 
   // Một truy vấn cho cả tác giả bài lẫn tất cả người bình luận.
   const levels = await loadLevels([post.author, ...post.comments.map((c) => c.author)]);
@@ -183,6 +202,8 @@ export async function createPost(
   author: { id: number; role: UserRole },
   input: CreatePostInput,
 ): Promise<PostDetail> {
+  if (input.groupId !== undefined) await assertGroupAccess(input.groupId, author.id);
+
   if (input.attachments.length > MAX_ATTACHMENTS_PER_POST) {
     throw new BadRequestError(`Mỗi bài chỉ đính kèm tối đa ${MAX_ATTACHMENTS_PER_POST} tệp`);
   }
@@ -201,7 +222,12 @@ export async function createPost(
 
   const post = await prisma.$transaction(async (tx) => {
     const created = await tx.post.create({
-      data: { authorId: author.id, title: input.title, body: input.body },
+      data: {
+        authorId: author.id,
+        title: input.title,
+        body: input.body,
+        groupId: input.groupId ?? null,
+      },
       select: { id: true },
     });
 
@@ -246,8 +272,9 @@ export async function createComment(
   authorId: number,
   input: CreateCommentInput,
 ): Promise<PostCommentRow> {
-  const exists = await prisma.post.count({ where: { id: postId } });
-  if (exists === 0) throw new NotFoundError('Không tìm thấy bài viết');
+  const post = await prisma.post.findUnique({ where: { id: postId }, select: { groupId: true } });
+  if (!post) throw new NotFoundError('Không tìm thấy bài viết');
+  if (post.groupId !== null) await assertGroupAccess(post.groupId, authorId);
 
   const comment = await prisma.postComment.create({
     data: { postId, authorId, body: input.body },
@@ -289,8 +316,9 @@ export async function deleteComment(
  * đúng những gì người dùng thấy sau lần bấm cuối.
  */
 export async function toggleLike(postId: number, userId: number): Promise<LikeResult> {
-  const exists = await prisma.post.count({ where: { id: postId } });
-  if (exists === 0) throw new NotFoundError('Không tìm thấy bài viết');
+  const post = await prisma.post.findUnique({ where: { id: postId }, select: { groupId: true } });
+  if (!post) throw new NotFoundError('Không tìm thấy bài viết');
+  if (post.groupId !== null) await assertGroupAccess(post.groupId, userId);
 
   const existing = await prisma.postLike.findUnique({
     where: { postId_userId: { postId, userId } },
@@ -322,7 +350,10 @@ export async function toggleLike(postId: number, userId: number): Promise<LikeRe
  * qua danh sách trắng lúc đăng bài — chứ không phải thứ client gửi lên, nên không thể
  * ép trình duyệt diễn giải tệp thành HTML.
  */
-export async function getAttachmentContent(attachmentId: number): Promise<{
+export async function getAttachmentContent(
+  attachmentId: number,
+  viewerId: number,
+): Promise<{
   data: Buffer;
   mimeType: string;
   fileName: string;
@@ -330,9 +361,14 @@ export async function getAttachmentContent(attachmentId: number): Promise<{
 }> {
   const attachment = await prisma.postAttachment.findUnique({
     where: { id: attachmentId },
-    select: { data: true, mimeType: true, fileName: true },
+    // `post.groupId` chứ không phải cả bài: cột `data` đã nặng sẵn, kéo thêm thân bài
+    // vào cùng truy vấn là tốn thêm băng thông cho mỗi lượt tải tệp.
+    select: { data: true, mimeType: true, fileName: true, post: { select: { groupId: true } } },
   });
   if (!attachment) throw new NotFoundError('Không tìm thấy tệp đính kèm');
+  // Tệp của nhóm riêng tư phải chặn ở đây nữa: biết id tệp là tải được, không cần
+  // qua trang bài viết.
+  if (attachment.post.groupId !== null) await assertGroupAccess(attachment.post.groupId, viewerId);
 
   return {
     data: Buffer.from(attachment.data),

@@ -22,7 +22,14 @@ import { useT } from '../../../shared/i18n/language';
  * ở shared) — người dùng biết tệp không hợp lệ trước khi bấm đăng, thay vì chờ tải lên
  * xong mới nhận lỗi. Backend vẫn kiểm lại vì giao diện có thể bị bỏ qua hoàn toàn.
  */
-export function PostComposer({ onDone }: { onDone: () => void }): JSX.Element {
+export function PostComposer({
+  onDone,
+  groupId,
+}: {
+  onDone: () => void;
+  /** Đăng vào nhóm này. Bỏ trống là đăng ở diễn đàn chung. */
+  groupId?: number;
+}): JSX.Element {
   const t = useT();
   const toast = useToast();
   const createPost = useCreatePost();
@@ -65,7 +72,7 @@ export function PostComposer({ onDone }: { onDone: () => void }): JSX.Element {
     setError('');
 
     createPost.mutate(
-      { title: title.trim(), body: body.trim(), attachments: files },
+      { title: title.trim(), body: body.trim(), attachments: files, ...(groupId ? { groupId } : {}) },
       {
         onSuccess: () => {
           toast.success(t('Đã đăng bài'));

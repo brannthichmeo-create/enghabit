@@ -203,7 +203,7 @@ function Tab({
 }
 
 /** Một bài trong danh sách. Cả thẻ bấm được để mở chi tiết. */
-function PostCard({ post, onOpen }: { post: PostSummary; onOpen: () => void }): JSX.Element {
+export function PostCard({ post, onOpen }: { post: PostSummary; onOpen: () => void }): JSX.Element {
   const t = useT();
   const imageCount = post.attachments.filter((file) => file.isImage).length;
 
