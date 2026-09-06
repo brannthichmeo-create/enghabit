@@ -35,6 +35,17 @@ Không gian trao đổi nội bộ do chính người học lập ra, tách hẳ
 - Trưởng nhóm bật/tắt **phê duyệt thành viên**: bật thì người xin vào phải chờ duyệt, tắt
   thì vào thẳng. Duyệt hoặc từ chối đều sinh thông báo cho người xin.
 
+**Quản trị viên KHÔNG dùng khu nhóm của người học.** Route `/groups` bọc guard `Learner`,
+sidebar quản trị không có mục đó. Quản trị viên có `/admin/groups` với đúng ba việc: xem
+thông tin nhóm, gửi cảnh báo vi phạm tới toàn bộ thành viên, và chặn/mở chặn nhóm. Không
+có "xoá nhóm" ở phía quản trị — chặn là biện pháp đảo ngược được, xoá thì mất dữ liệu.
+
+**Chặn nhóm phải khoá đủ mọi lối, không chỉ giấu giao diện.** `isMember` trả false với
+mọi người khi nhóm bị chặn, nên toàn bộ bài đăng, bình luận, thả tim và tệp đính kèm khoá
+theo; ngoài ra chặn riêng: sửa thông tin nhóm, xin vào nhóm, và nhóm biến mất khỏi tìm
+kiếm. Lý do chặn là **bắt buộc** và hiện nguyên văn cho thành viên khi họ mở nhóm — nên
+viết cho người dùng cuối đọc, không phải ghi chú nội bộ.
+
 Ba quy tắc bắt buộc giữ khi sửa module này:
 
 - **Nhóm luôn còn ít nhất một trưởng nhóm.** `assertNotLastLeader` chặn mọi thao tác làm
