@@ -86,9 +86,18 @@ export async function listPosts(
   // chặn việc đó — bỏ dòng này là toàn bộ nội dung nhóm riêng tư hiện cho cả hệ thống.
   if (query.groupId !== undefined) await assertGroupAccess(query.groupId, viewer.id);
 
+  /*
+    Các bộ lọc CỘNG DỒN: chọn hai cái là phải thoả cả hai, không phải thoả một trong hai.
+    Prisma gộp các khoá cùng cấp bằng AND nên viết phẳng như dưới là đúng ý; riêng tìm
+    kiếm dùng OR nên phải nằm gọn trong khoá `OR` của chính nó, nếu bung ra cùng cấp thì
+    nó sẽ nuốt luôn các điều kiện khác.
+  */
   const where: Prisma.PostWhereInput = {
     groupId: query.groupId ?? null,
     ...(query.mine ? { authorId: viewer.id } : {}),
+    ...(query.liked ? { likes: { some: { userId: viewer.id } } } : {}),
+    ...(query.hasFiles ? { attachments: { some: {} } } : {}),
+    ...(query.unanswered ? { comments: { none: {} } } : {}),
     ...(query.search
       ? {
           OR: [{ title: { contains: query.search } }, { body: { contains: query.search } }],
@@ -96,10 +105,18 @@ export async function listPosts(
       : {}),
   };
 
-  // "Nhiều tim nhất" sắp theo số dòng trong bảng likes — Prisma dịch được sang
-  // ORDER BY COUNT, không cần cột đếm sẵn.
-  const orderBy: Prisma.PostOrderByWithRelationInput =
-    query.sort === 'popular' ? { likes: { _count: 'desc' } } : { createdAt: 'desc' };
+  /*
+    Sắp xếp chỉ có MỘT tiêu chí chính — một danh sách không thể vừa xếp theo tim vừa xếp
+    theo ngày. "Nhiều tim nhất" đã ngầm lấy bài mới hơn khi bằng tim, nhờ khoá phụ bên dưới.
+
+    Khoá phụ `id` là bắt buộc cho phân trang: hai bài cùng số tim (rất hay gặp, vd cùng 0
+    tim) mà không có khoá phụ thì MySQL trả về thứ tự tuỳ ý, nên cùng một bài có thể xuất
+    hiện ở cả trang 1 lẫn trang 2 — hoặc biến mất khỏi cả hai.
+  */
+  const orderBy: Prisma.PostOrderByWithRelationInput[] =
+    query.sort === 'popular'
+      ? [{ likes: { _count: 'desc' } }, { createdAt: 'desc' }, { id: 'desc' }]
+      : [{ createdAt: 'desc' }, { id: 'desc' }];
 
   const [posts, total] = await Promise.all([
     prisma.post.findMany({

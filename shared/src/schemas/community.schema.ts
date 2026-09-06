@@ -41,6 +41,11 @@ export const createCommentSchema = z.object({
 });
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 
+/** Cờ bật/tắt đọc từ query string. Tách ra vì có bốn bộ lọc dùng chung một luật. */
+const booleanFlag = z
+  .preprocess((value) => value === true || value === 'true' || value === '1', z.boolean())
+  .default(false);
+
 export const postQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
@@ -55,10 +60,23 @@ export const postQuerySchema = z.object({
   sort: z.enum(['latest', 'popular']).default('latest'),
   /** Lọc theo nhóm. Bỏ trống là diễn đàn chung (chỉ bài không thuộc nhóm nào). */
   groupId: z.coerce.number().int().positive().optional(),
-  /** Chỉ lấy bài của chính mình — dùng cho tab "Bài của tôi". */
-  mine: z
-    .preprocess((value) => value === true || value === 'true' || value === '1', z.boolean())
-    .default(false),
+  /**
+   * Bộ lọc — CỘNG DỒN với nhau, chọn bao nhiêu cái cũng được.
+   *
+   * Khác với `sort`: hai kiểu sắp xếp không thể cùng áp dụng (một danh sách chỉ có một
+   * thứ tự), còn các bộ lọc thì chồng lên nhau được — "bài của tôi" + "chưa ai trả lời"
+   * là câu hỏi có nghĩa.
+   *
+   * Không dùng `z.coerce.boolean()`: query string luôn là chuỗi mà `Boolean('false')`
+   * bằng `true`, nên mọi bộ lọc sẽ luôn bật (xem CLAUDE.md).
+   */
+  mine: booleanFlag,
+  /** Bài mình đã thả tim. */
+  liked: booleanFlag,
+  /** Bài có tệp đính kèm. */
+  hasFiles: booleanFlag,
+  /** Bài chưa ai bình luận — dành cho người muốn tìm câu hỏi còn bỏ ngỏ để trả lời. */
+  unanswered: booleanFlag,
 });
 export type PostQueryInput = z.infer<typeof postQuerySchema>;
 

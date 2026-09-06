@@ -33,7 +33,12 @@ export const communityKeys = {
       query.pageSize,
       query.sort,
       query.search ?? '',
+      // Đủ CẢ BỐN bộ lọc: thiếu một cái thì bật/tắt nó xong danh sách vẫn là bản cũ
+      // trong cache, người dùng tưởng bộ lọc hỏng.
       query.mine,
+      query.liked,
+      query.hasFiles,
+      query.unanswered,
     ] as const,
   detail: (postId: number) => ['community', 'post', postId] as const,
 };

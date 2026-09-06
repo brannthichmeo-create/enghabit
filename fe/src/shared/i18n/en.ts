@@ -1011,4 +1011,13 @@ export const EN: Dictionary = {
   'Xoá chủ đề "{name}"?': 'Delete the topic "{name}"?',
   'Toàn bộ từ vựng và quiz thuộc chủ đề này sẽ mất theo.':
     'Every word and quiz under this topic goes with it.',
+
+  // --- Bộ lọc diễn đàn ---------------------------------------------------------
+  'Lọc': 'Filter',
+  'Bài tôi đã thích': 'Posts I liked',
+  'Có tệp đính kèm': 'With attachments',
+  'Chưa có trả lời': 'No replies yet',
+  'Bỏ tất cả bộ lọc ({n})': 'Clear all filters ({n})',
+  'Các bộ lọc cộng dồn với nhau — bỏ bớt một cái hoặc đổi từ khoá.':
+    'Filters stack on top of each other — drop one or change your search.',
 };

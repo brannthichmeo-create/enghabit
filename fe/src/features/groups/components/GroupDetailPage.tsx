@@ -190,7 +190,17 @@ function GroupFeed({ groupId }: { groupId: number }): JSX.Element {
   const [composing, setComposing] = useState(false);
   const [openPostId, setOpenPostId] = useState<number | null>(null);
 
-  const posts = usePosts({ groupId, page: 1, pageSize: 20, sort: 'latest', mine: false });
+  // Bảng tin nhóm không có bộ lọc riêng: bài trong nhóm ít, lọc thêm chỉ làm rối.
+  const posts = usePosts({
+    groupId,
+    page: 1,
+    pageSize: 20,
+    sort: 'latest',
+    mine: false,
+    liked: false,
+    hasFiles: false,
+    unanswered: false,
+  });
 
   if (openPostId !== null) {
     return <PostDetailView postId={openPostId} onBack={() => setOpenPostId(null)} />;

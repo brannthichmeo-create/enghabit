@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, MessageCircle, MessagesSquare, Paperclip, Plus, Search } from 'lucide-react';
+import { Check, Heart, MessageCircle, MessagesSquare, Paperclip, Plus, Search } from 'lucide-react';
 import type { PostQueryInput, PostSummary } from '@enghabit/shared';
 import {
   Button,
@@ -29,25 +29,62 @@ const SORTS: { value: PostQueryInput['sort']; label: string }[] = [
   { value: 'popular', label: 'Nhiều tim nhất' },
 ];
 
+/**
+ * Các bộ lọc CỘNG DỒN — chọn bao nhiêu cái cũng được, kết quả phải thoả hết.
+ *
+ * Tách khỏi nhóm sắp xếp vì hai thứ khác bản chất: một danh sách chỉ có MỘT thứ tự
+ * (không thể vừa xếp theo tim vừa xếp theo ngày), nhưng lọc thì chồng lên nhau được.
+ * Trước đây ba nút nằm chung một dải nên trông như chọn một trong ba.
+ */
+type FilterKey = 'mine' | 'liked' | 'hasFiles' | 'unanswered';
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'mine', label: 'Bài của tôi' },
+  { key: 'liked', label: 'Bài tôi đã thích' },
+  { key: 'hasFiles', label: 'Có tệp đính kèm' },
+  { key: 'unanswered', label: 'Chưa có trả lời' },
+];
+
 export function CommunityPage(): JSX.Element {
   const t = useT();
 
   const [openPostId, setOpenPostId] = useState<number | null>(null);
   const [composing, setComposing] = useState(false);
   const [sort, setSort] = useState<PostQueryInput['sort']>('latest');
-  const [mine, setMine] = useState(false);
+  const [filters, setFilters] = useState<Set<FilterKey>>(new Set());
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
-  const query: PostQueryInput = { page, pageSize: 10, sort, mine, ...(search ? { search } : {}) };
+  const query: PostQueryInput = {
+    page,
+    pageSize: 10,
+    sort,
+    mine: filters.has('mine'),
+    liked: filters.has('liked'),
+    hasFiles: filters.has('hasFiles'),
+    unanswered: filters.has('unanswered'),
+    ...(search ? { search } : {}),
+  };
   const posts = usePosts(query);
+
+  const toggleFilter = (key: FilterKey): void => {
+    setFilters((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    setPage(1);
+  };
 
   if (openPostId !== null) {
     return <PostDetailView postId={openPostId} onBack={() => setOpenPostId(null)} />;
   }
 
   const total = posts.data?.total ?? 0;
+  /** Có đang lọc hay tìm gì không — quyết định câu chữ lúc danh sách rỗng. */
+  const hasQuery = search !== '' || filters.size > 0;
   const totalPages = Math.max(1, Math.ceil(total / query.pageSize));
 
   return (
@@ -105,15 +142,35 @@ export function CommunityPage(): JSX.Element {
                 }}
               />
             ))}
-            <Tab
-              label={t('Bài của tôi')}
-              active={mine}
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+          <span className="text-xs font-medium uppercase tracking-wide text-content-muted">
+            {t('Lọc')}
+          </span>
+
+          {FILTERS.map((filter) => (
+            <FilterChip
+              key={filter.key}
+              label={t(filter.label)}
+              active={filters.has(filter.key)}
+              onClick={() => toggleFilter(filter.key)}
+            />
+          ))}
+
+          {filters.size > 0 && (
+            <button
+              type="button"
               onClick={() => {
-                setMine((current) => !current);
+                setFilters(new Set());
                 setPage(1);
               }}
-            />
-          </div>
+              className="ml-auto text-xs text-brand-strong hover:underline"
+            >
+              {t('Bỏ tất cả bộ lọc ({n})', { n: filters.size })}
+            </button>
+          )}
         </div>
       </Card>
 
@@ -128,14 +185,14 @@ export function CommunityPage(): JSX.Element {
       {posts.data && posts.data.items.length === 0 && (
         <EmptyState
           icon={MessagesSquare}
-          title={search || mine ? t('Không có bài nào khớp') : t('Chưa có bài viết nào')}
+          title={hasQuery ? t('Không có bài nào khớp') : t('Chưa có bài viết nào')}
           description={
-            search || mine
-              ? t('Thử bỏ bớt bộ lọc hoặc từ khoá khác.')
+            hasQuery
+              ? t('Các bộ lọc cộng dồn với nhau — bỏ bớt một cái hoặc đổi từ khoá.')
               : t('Hãy là người mở đầu — đặt một câu hỏi cho cộng đồng.')
           }
           action={
-            !search && !mine ? (
+            !hasQuery ? (
               <Button icon={Plus} onClick={() => setComposing(true)}>
                 {t('Đăng bài')}
               </Button>
@@ -176,6 +233,39 @@ export function CommunityPage(): JSX.Element {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Một bộ lọc bật/tắt. Dùng `role="checkbox"` chứ không phải nút thường: người dùng
+ * trình đọc màn hình phải nghe được đây là thứ chọn nhiều, khác với dải sắp xếp
+ * bên trên chỉ chọn một.
+ */
+function FilterChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={active}
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+        active
+          ? 'border-brand bg-brand-soft text-brand-strong'
+          : 'border-line-control text-content-soft hover:bg-sunken'
+      }`}
+    >
+      {/* Dấu tích chỉ hiện khi bật — màu không phải dấu hiệu duy nhất (docs/color-rules.md R21) */}
+      {active && <Check className="h-3 w-3" aria-hidden />}
+      {label}
+    </button>
   );
 }
 
