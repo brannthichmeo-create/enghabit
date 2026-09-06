@@ -9,7 +9,7 @@ import {
   parseAttachmentDataUrl,
   type PostAttachmentInput,
 } from '@enghabit/shared';
-import { Button, Card, ErrorMessage, Field, Input } from '../../../shared/components/ui';
+import { Button, ErrorMessage, Field, Input } from '../../../shared/components/ui';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { useToast } from '../../../shared/components/Toast';
 import { useCreatePost } from '../community.hooks';
@@ -17,7 +17,7 @@ import { formatFileSize } from './AttachmentView';
 import { useT } from '../../../shared/i18n/language';
 
 /**
- * Ô soạn bài mới.
+ * Ruột của hộp thoại đăng bài mới.
  *
  * Tệp được kiểm ngay khi chọn bằng đúng hàm mà backend dùng (`parseAttachmentDataUrl`
  * ở shared) — người dùng biết tệp không hợp lệ trước khi bấm đăng, thay vì chờ tải lên
@@ -107,101 +107,97 @@ export function PostComposer({
   };
 
   return (
-    <Card>
-      <form noValidate onSubmit={submit} className="space-y-4">
-        <h2 className="font-semibold text-content">{t('Đặt câu hỏi hoặc chia sẻ')}</h2>
+    <form noValidate onSubmit={submit} className="space-y-4">
+      <Field label={t('Tiêu đề')} error={fieldErrors.title}>
+        <Input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder={t('Ví dụ: Làm sao để nhớ từ vựng lâu?')}
+          maxLength={200}
+        />
+      </Field>
 
-        <Field label={t('Tiêu đề')} error={fieldErrors.title}>
-          <Input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder={t('Ví dụ: Làm sao để nhớ từ vựng lâu?')}
-            maxLength={200}
-          />
-        </Field>
+      <Field
+        label={t('Nội dung')}
+        hint={t('{n}/10000 ký tự', { n: body.length })}
+        error={fieldErrors.body}
+      >
+        <textarea
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
+          placeholder={t('Mô tả cụ thể giúp người khác trả lời dễ hơn.')}
+          rows={5}
+          maxLength={10_000}
+          className="mt-1.5 w-full rounded-lg border border-line-control bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10"
+        />
+      </Field>
 
-        <Field
-          label={t('Nội dung')}
-          hint={t('{n}/10000 ký tự', { n: body.length })}
-          error={fieldErrors.body}
-        >
-          <textarea
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
-            placeholder={t('Mô tả cụ thể giúp người khác trả lời dễ hơn.')}
-            rows={5}
-            maxLength={10_000}
-            className="mt-1.5 w-full rounded-lg border border-line-control bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10"
-          />
-        </Field>
-
-        {files.length > 0 && (
-          <ul className="space-y-1.5">
-            {files.map((file, index) => (
-              <li
-                key={`${file.fileName}-${index}`}
-                className="flex items-center gap-2 rounded-lg bg-sunken px-3 py-2"
-              >
-                <Paperclip className="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden />
-                <span className="min-w-0 flex-1 truncate text-sm text-content-soft">{file.fileName}</span>
-                <span className="shrink-0 text-xs text-content-muted">
-                  {formatFileSize(estimateBytes(file.dataUrl))}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}
-                  className="shrink-0 rounded p-0.5 text-content-muted transition-colors hover:text-danger"
-                  aria-label={t('Gỡ tệp {name}', { name: file.fileName })}
-                >
-                  <X className="h-3.5 w-3.5" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <ErrorMessage>{error}</ErrorMessage>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <input
-              ref={fileInput}
-              type="file"
-              multiple
-              accept={ALLOWED_ATTACHMENT_MIME.join(',')}
-              onChange={(event) => void pickFiles(event.target.files)}
-              className="hidden"
-              id="post-attachments"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              icon={Paperclip}
-              onClick={() => fileInput.current?.click()}
-              disabled={files.length >= MAX_ATTACHMENTS_PER_POST}
+      {files.length > 0 && (
+        <ul className="space-y-1.5">
+          {files.map((file, index) => (
+            <li
+              key={`${file.fileName}-${index}`}
+              className="flex items-center gap-2 rounded-lg bg-sunken px-3 py-2"
             >
-              {t('Đính kèm')}
-            </Button>
-            <p className="mt-1.5 text-xs text-content-muted">
-              {t('Tối đa {n} tệp, mỗi tệp {size}KB. Nhận ảnh, PDF và TXT.', {
-                n: MAX_ATTACHMENTS_PER_POST,
-                size: Math.round(ATTACHMENT_MAX_BYTES / 1000),
-              })}
-            </p>
-          </div>
+              <Paperclip className="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden />
+              <span className="min-w-0 flex-1 truncate text-sm text-content-soft">{file.fileName}</span>
+              <span className="shrink-0 text-xs text-content-muted">
+                {formatFileSize(estimateBytes(file.dataUrl))}
+              </span>
+              <button
+                type="button"
+                onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}
+                className="shrink-0 rounded p-0.5 text-content-muted transition-colors hover:text-danger"
+                aria-label={t('Gỡ tệp {name}', { name: file.fileName })}
+              >
+                <X className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
-          <div className="flex gap-2">
-            <Button type="button" variant="ghost" onClick={onDone}>
-              {t('Huỷ')}
-            </Button>
-            <Button type="submit" loading={createPost.isPending}>
-              {t('Đăng bài')}
-            </Button>
-          </div>
+      <ErrorMessage>{error}</ErrorMessage>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            accept={ALLOWED_ATTACHMENT_MIME.join(',')}
+            onChange={(event) => void pickFiles(event.target.files)}
+            className="hidden"
+            id="post-attachments"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            icon={Paperclip}
+            onClick={() => fileInput.current?.click()}
+            disabled={files.length >= MAX_ATTACHMENTS_PER_POST}
+          >
+            {t('Đính kèm')}
+          </Button>
+          <p className="mt-1.5 text-xs text-content-muted">
+            {t('Tối đa {n} tệp, mỗi tệp {size}KB. Nhận ảnh, PDF và TXT.', {
+              n: MAX_ATTACHMENTS_PER_POST,
+              size: Math.round(ATTACHMENT_MAX_BYTES / 1000),
+            })}
+          </p>
         </div>
-      </form>
-    </Card>
+
+        <div className="flex gap-2">
+          <Button type="button" variant="ghost" onClick={onDone}>
+            {t('Huỷ')}
+          </Button>
+          <Button type="submit" loading={createPost.isPending}>
+            {t('Đăng bài')}
+          </Button>
+        </div>
+      </div>
+    </form>
   );
 }
 

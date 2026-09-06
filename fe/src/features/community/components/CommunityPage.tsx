@@ -11,6 +11,7 @@ import {
 } from '../../../shared/components/ui';
 import { AuthorLine, PostDetailView } from './PostDetailView';
 import { PostComposer } from './PostComposer';
+import { Modal } from '../../../shared/components/Modal';
 import { usePosts } from '../community.hooks';
 import { useT } from '../../../shared/i18n/language';
 
@@ -93,15 +94,26 @@ export function CommunityPage(): JSX.Element {
         title={t('Cộng đồng')}
         description={t('Đặt câu hỏi, chia sẻ kinh nghiệm học tiếng Anh với mọi người.')}
         action={
-          !composing && (
-            <Button icon={Plus} onClick={() => setComposing(true)}>
-              {t('Đăng bài')}
-            </Button>
-          )
+          <Button icon={Plus} onClick={() => setComposing(true)}>
+            {t('Đăng bài')}
+          </Button>
         }
       />
 
-      {composing && <PostComposer onDone={() => setComposing(false)} />}
+      {/*
+        Soạn bài trong hộp thoại thay vì chèn thẳng vào trang: ô soạn cao gần hết màn
+        hình nên khi mở, danh sách bài bị đẩy xuống dưới và người dùng mất chỗ đang đọc.
+      */}
+      <Modal
+        open={composing}
+        onClose={() => setComposing(false)}
+        title={t('Đăng bài viết')}
+        size="lg"
+        // Đang soạn dở mà bấm trượt ra nền là mất cả bài — chỉ đóng bằng nút hoặc Esc.
+        closeOnBackdrop={false}
+      >
+        <PostComposer onDone={() => setComposing(false)} />
+      </Modal>
 
       <Card>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">

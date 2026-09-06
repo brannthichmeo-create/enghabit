@@ -43,6 +43,7 @@ import { useT } from '../../../shared/i18n/language';
 import { usePosts } from '../../community/community.hooks';
 import { PostCard } from '../../community/components/CommunityPage';
 import { PostComposer } from '../../community/components/PostComposer';
+import { Modal } from '../../../shared/components/Modal';
 import { PostDetailView } from '../../community/components/PostDetailView';
 import {
   useAddMember,
@@ -209,14 +210,20 @@ function GroupFeed({ groupId }: { groupId: number }): JSX.Element {
   return (
     <div>
       <div className="mb-4">
-        {composing ? (
-          <PostComposer groupId={groupId} onDone={() => setComposing(false)} />
-        ) : (
-          <Button icon={Plus} onClick={() => setComposing(true)}>
-            {t('Đăng bài trong nhóm')}
-          </Button>
-        )}
+        <Button icon={Plus} onClick={() => setComposing(true)}>
+          {t('Đăng bài trong nhóm')}
+        </Button>
       </div>
+
+      <Modal
+        open={composing}
+        onClose={() => setComposing(false)}
+        title={t('Đăng bài trong nhóm')}
+        size="lg"
+        closeOnBackdrop={false}
+      >
+        <PostComposer groupId={groupId} onDone={() => setComposing(false)} />
+      </Modal>
 
       {posts.isLoading && <SkeletonList rows={3} />}
       {posts.isError && <ErrorMessage>{getErrorMessage(posts.error)}</ErrorMessage>}

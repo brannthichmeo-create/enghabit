@@ -1020,4 +1020,6 @@ export const EN: Dictionary = {
   'Bỏ tất cả bộ lọc ({n})': 'Clear all filters ({n})',
   'Các bộ lọc cộng dồn với nhau — bỏ bớt một cái hoặc đổi từ khoá.':
     'Filters stack on top of each other — drop one or change your search.',
+
+  'Đăng bài viết': 'New post',
 };
