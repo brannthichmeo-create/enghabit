@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Hash, Lock, Globe, Plus, Search, UserPlus, Users, X } from 'lucide-react';
+import { Compass, Hash, Lock, Globe, Plus, Search, UserPlus, Users, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   GROUP_CODE_LENGTH,
@@ -18,24 +18,36 @@ import {
   Field,
   Input,
   PageHeader,
-  SectionTitle,
+  Select,
   SkeletonList,
 } from '../../../shared/components/ui';
+import { Modal } from '../../../shared/components/Modal';
 import { useToast } from '../../../shared/components/Toast';
 import { useT } from '../../../shared/i18n/language';
 import { useCreateGroup, useGroupByCode, useGroupSearch, useJoinGroup, useMyGroups } from '../group.hooks';
 
+type Tab = 'mine' | 'discover';
+
+const TABS: { key: Tab; label: string; icon: typeof Users }[] = [
+  { key: 'mine', label: 'Nhóm của tôi', icon: Users },
+  { key: 'discover', label: 'Khám phá nhóm', icon: Compass },
+];
+
 /**
- * Trang nhóm lớp: nhóm của tôi, tìm nhóm công khai, và vào nhóm bằng mã 8 số.
+ * Trang nhóm lớp — hai tab: nhóm đã tham gia và nhóm công khai để khám phá.
  *
- * Ba việc gộp một trang vì chúng là ba lối vào cùng một đích. Tách thành ba route thì
- * người mới phải đoán xem mình cần trang nào trước khi biết nhóm mình muốn vào là loại gì.
+ * Chia tab vì hai việc này khác nhau về ý định: một bên là quay lại chỗ quen, một bên
+ * là đi tìm chỗ mới. Xếp chồng trên cùng một trang thì danh sách nhóm của mình bị đẩy
+ * xuống dưới kết quả tìm kiếm ngay khi nhóm nhiều lên.
+ *
+ * Vào nhóm bằng mã nằm trong hộp thoại riêng chứ không phải một mục trên trang: nó chỉ
+ * dùng khi đã có mã trong tay, mà lúc đó người dùng không cần nhìn thấy gì khác.
  */
 export function GroupsPage(): JSX.Element {
   const t = useT();
+  const [tab, setTab] = useState<Tab>('mine');
   const [creating, setCreating] = useState(false);
-
-  const myGroups = useMyGroups();
+  const [codeOpen, setCodeOpen] = useState(false);
 
   return (
     <div>
@@ -43,38 +55,305 @@ export function GroupsPage(): JSX.Element {
         title={t('Nhóm lớp')}
         description={t('Tạo nhóm để trao đổi nội bộ, hoặc tham gia nhóm đã có')}
         action={
-          <Button icon={creating ? X : Plus} variant={creating ? 'secondary' : 'primary'} onClick={() => setCreating((v) => !v)}>
-            {creating ? t('Đóng') : t('Tạo nhóm')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button icon={Hash} variant="secondary" onClick={() => setCodeOpen(true)}>
+              {t('Nhập ID nhóm')}
+            </Button>
+            <Button
+              icon={creating ? X : Plus}
+              variant={creating ? 'secondary' : 'primary'}
+              onClick={() => setCreating((v) => !v)}
+            >
+              {creating ? t('Đóng') : t('Tạo nhóm')}
+            </Button>
+          </div>
         }
       />
 
       {creating && <CreateGroupForm onDone={() => setCreating(false)} />}
 
-      <section className="mb-8">
-        <SectionTitle>{t('Nhóm của tôi')}</SectionTitle>
+      <div
+        className="mb-4 flex gap-1 rounded-lg bg-sunken p-1"
+        role="tablist"
+        aria-label={t('Loại danh sách')}
+      >
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={`flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm transition ${
+              tab === key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t(label)}
+          </button>
+        ))}
+      </div>
 
-        {myGroups.isLoading && <SkeletonList rows={2} />}
-        {myGroups.isError && <ErrorMessage>{getErrorMessage(myGroups.error)}</ErrorMessage>}
+      {tab === 'mine' ? <MyGroupsTab /> : <DiscoverTab onOpenCode={() => setCodeOpen(true)} />}
 
-        {myGroups.data?.length === 0 && (
-          <EmptyState
-            icon={Users}
-            title={t('Bạn chưa ở nhóm nào')}
-            description={t('Tạo một nhóm mới, hoặc tìm nhóm công khai bên dưới để xin vào.')}
-          />
-        )}
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          {myGroups.data?.map((group) => <GroupCard key={group.id} group={group} />)}
-        </div>
-      </section>
-
-      <JoinByCode />
-      <SearchGroups />
+      <JoinByCodeModal open={codeOpen} onClose={() => setCodeOpen(false)} />
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Tab "Nhóm của tôi"
+// ---------------------------------------------------------------------------
+
+type MineFilter = 'all' | 'member' | 'leader';
+
+const MINE_FILTERS: { value: MineFilter; label: string }[] = [
+  { value: 'all', label: 'Tất cả' },
+  { value: 'member', label: 'Là thành viên' },
+  { value: 'leader', label: 'Là trưởng nhóm' },
+];
+
+/**
+ * Nhóm đã tham gia, lọc theo vai trò của mình trong nhóm.
+ *
+ * Lọc ngay tại client: API `/groups/mine` vốn trả về đúng những nhóm của một người,
+ * số lượng nhỏ nên gọi lại máy chủ mỗi lần đổi bộ lọc chỉ làm danh sách nháy.
+ */
+function MyGroupsTab(): JSX.Element {
+  const t = useT();
+  const [filter, setFilter] = useState<MineFilter>('all');
+  const myGroups = useMyGroups();
+
+  const groups = (myGroups.data ?? []).filter((group) => {
+    if (filter === 'leader') return group.viewerState === GroupViewerState.LEADER;
+    if (filter === 'member') return group.viewerState === GroupViewerState.MEMBER;
+    return true;
+  });
+
+  return (
+    <section>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-sm text-on-page-soft">{t('Vai trò')}</span>
+        <div className="w-52">
+          <Select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as MineFilter)}
+            aria-label={t('Lọc theo vai trò trong nhóm')}
+          >
+            {MINE_FILTERS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {t(option.label)}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </div>
+
+      {myGroups.isLoading && <SkeletonList rows={2} />}
+      {myGroups.isError && <ErrorMessage>{getErrorMessage(myGroups.error)}</ErrorMessage>}
+
+      {myGroups.data?.length === 0 && (
+        <EmptyState
+          icon={Users}
+          title={t('Bạn chưa ở nhóm nào')}
+          description={t('Tạo một nhóm mới, hoặc sang tab Khám phá nhóm để xin vào một nhóm công khai.')}
+        />
+      )}
+
+      {/* Có nhóm nhưng bộ lọc không khớp cái nào — nói rõ là do bộ lọc, không phải chưa có nhóm. */}
+      {myGroups.data && myGroups.data.length > 0 && groups.length === 0 && (
+        <EmptyState
+          icon={Users}
+          title={
+            filter === 'leader'
+              ? t('Bạn chưa làm trưởng nhóm ở nhóm nào')
+              : t('Bạn là trưởng nhóm ở tất cả các nhóm của mình')
+          }
+          description={t('Chọn "Tất cả" để xem lại toàn bộ nhóm của bạn.')}
+        />
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {groups.map((group) => (
+          <GroupCard key={group.id} group={group} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tab "Khám phá nhóm"
+// ---------------------------------------------------------------------------
+
+type VisibilityFilter = 'all' | GroupVisibility;
+
+const VISIBILITY_FILTERS: { value: VisibilityFilter; label: string }[] = [
+  { value: 'all', label: 'Tất cả' },
+  { value: GroupVisibility.PUBLIC, label: 'Công khai' },
+  { value: GroupVisibility.PRIVATE, label: 'Riêng tư' },
+];
+
+/**
+ * Nhóm công khai trong hệ thống.
+ *
+ * Bộ lọc "Riêng tư" cố ý KHÔNG trả về nhóm nào: nhóm riêng tư không xuất hiện trong
+ * tìm kiếm là điều làm nên chữ "riêng tư" (xem `searchPublicGroups` ở BE). Vẫn để lựa
+ * chọn đó trong danh sách và giải thích tại chỗ, kèm lối đi đúng — nhập mã 8 số — vì
+ * người không tìm thấy nhóm riêng tư của mình sẽ tưởng hệ thống hỏng chứ không đoán
+ * được đây là chủ ý.
+ */
+function DiscoverTab({ onOpenCode }: { onOpenCode: () => void }): JSX.Element {
+  const t = useT();
+  const [input, setInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [visibility, setVisibility] = useState<VisibilityFilter>('all');
+
+  const onlyPrivate = visibility === GroupVisibility.PRIVATE;
+  const results = useGroupSearch({ search: search || undefined, page: 1, pageSize: 12 }, !onlyPrivate);
+
+  return (
+    <section>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <form
+          noValidate
+          className="flex min-w-[16rem] flex-1 gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSearch(input.trim());
+          }}
+        >
+          <div className="relative flex-1">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+              aria-hidden
+            />
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t('Tìm theo tên nhóm')}
+              className="!mt-0 pl-9"
+            />
+          </div>
+          <Button type="submit" variant="secondary">
+            {t('Tìm')}
+          </Button>
+        </form>
+
+        <div className="w-44">
+          <Select
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value as VisibilityFilter)}
+            aria-label={t('Lọc theo trạng thái nhóm')}
+          >
+            {VISIBILITY_FILTERS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {t(option.label)}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </div>
+
+      {onlyPrivate ? (
+        <EmptyState
+          icon={Lock}
+          title={t('Nhóm riêng tư không hiện ở đây')}
+          description={t('Đó là điểm khác biệt của nhóm riêng tư: chỉ vào được khi biết mã {n} số.', {
+            n: GROUP_CODE_LENGTH,
+          })}
+          action={
+            <Button icon={Hash} variant="secondary" onClick={onOpenCode}>
+              {t('Nhập ID nhóm')}
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          {results.isLoading && <SkeletonList rows={2} />}
+          {results.isError && <ErrorMessage>{getErrorMessage(results.error)}</ErrorMessage>}
+
+          {results.data?.items.length === 0 && (
+            <EmptyState
+              icon={Search}
+              title={t('Không có nhóm công khai nào khớp')}
+              description={t('Nhóm riêng tư không hiện ở đây — muốn vào thì cần mã 8 số.')}
+            />
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {results.data?.items.map((group) => <GroupCard key={group.id} group={group} />)}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Vào nhóm bằng mã
+// ---------------------------------------------------------------------------
+
+/** Hộp thoại tra nhóm bằng mã 8 số — cách duy nhất tìm ra nhóm riêng tư. */
+function JoinByCodeModal({ open, onClose }: { open: boolean; onClose: () => void }): JSX.Element {
+  const t = useT();
+  const [input, setInput] = useState('');
+  const [code, setCode] = useState<string | null>(null);
+
+  const found = useGroupByCode(code);
+
+  // Xoá cả ô nhập lẫn kết quả khi đóng: mở lại mà còn nhóm tra lần trước thì người dùng
+  // tưởng đó là kết quả của mã mình sắp gõ.
+  const close = (): void => {
+    setInput('');
+    setCode(null);
+    onClose();
+  };
+
+  return (
+    <Modal open={open} onClose={close} title={t('Nhập ID nhóm')} size="lg">
+      <form
+        noValidate
+        className="flex flex-wrap items-end gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setCode(input.trim());
+        }}
+      >
+        <div className="w-44">
+          <Field label={t('Mã nhóm')} hint={t('Gồm {n} chữ số', { n: GROUP_CODE_LENGTH })}>
+            <Input
+              value={input}
+              // inputMode numeric để bàn phím điện thoại mở sẵn bàn số
+              inputMode="numeric"
+              maxLength={GROUP_CODE_LENGTH}
+              placeholder="12345678"
+              className="tracking-[0.2em]"
+              autoFocus
+              onChange={(e) => setInput(e.target.value.replace(/\D/g, ''))}
+            />
+          </Field>
+        </div>
+        <Button type="submit" icon={Search} disabled={input.length !== GROUP_CODE_LENGTH} className="mb-0.5">
+          {t('Tìm')}
+        </Button>
+      </form>
+
+      {found.isFetching && <div className="mt-4"><SkeletonList rows={1} /></div>}
+      {found.isError && (
+        <p className="mt-3 text-sm text-danger">{t('Không tìm thấy nhóm nào có mã này')}</p>
+      )}
+      {found.data && !found.isFetching && (
+        <div className="mt-4">
+          <GroupCard group={found.data} />
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tạo nhóm
+// ---------------------------------------------------------------------------
 
 /** Ô tạo nhóm. Trạng thái công khai/riêng tư và phê duyệt đều là công tắc bật/tắt. */
 function CreateGroupForm({ onDone }: { onDone: () => void }): JSX.Element {
@@ -174,109 +453,9 @@ function CreateGroupForm({ onDone }: { onDone: () => void }): JSX.Element {
   );
 }
 
-/** Vào nhóm bằng mã 8 số — cách duy nhất tìm ra nhóm riêng tư. */
-function JoinByCode(): JSX.Element {
-  const t = useT();
-  const [input, setInput] = useState('');
-  const [code, setCode] = useState<string | null>(null);
-
-  const found = useGroupByCode(code);
-
-  return (
-    <section className="mb-8">
-      <SectionTitle>{t('Vào nhóm bằng mã')}</SectionTitle>
-      <Card>
-        <form noValidate
-          className="flex flex-wrap items-end gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setCode(input.trim());
-          }}
-        >
-          <div className="w-44">
-            <Field label={t('Mã nhóm')} hint={t('Gồm {n} chữ số', { n: GROUP_CODE_LENGTH })}>
-              <Input
-                value={input}
-                // inputMode numeric để bàn phím điện thoại mở sẵn bàn số
-                inputMode="numeric"
-                maxLength={GROUP_CODE_LENGTH}
-                placeholder="12345678"
-                className="tracking-[0.2em]"
-                onChange={(e) => setInput(e.target.value.replace(/\D/g, ''))}
-              />
-            </Field>
-          </div>
-          <Button type="submit" icon={Hash} disabled={input.length !== GROUP_CODE_LENGTH} className="mb-0.5">
-            {t('Tìm')}
-          </Button>
-        </form>
-
-        {found.isError && (
-          <p className="mt-3 text-sm text-danger">{t('Không tìm thấy nhóm nào có mã này')}</p>
-        )}
-        {found.data && (
-          <div className="mt-4">
-            <GroupCard group={found.data} />
-          </div>
-        )}
-      </Card>
-    </section>
-  );
-}
-
-/** Tìm nhóm công khai theo tên. Nhóm riêng tư không bao giờ hiện ở đây. */
-function SearchGroups(): JSX.Element {
-  const t = useT();
-  const [input, setInput] = useState('');
-  const [search, setSearch] = useState('');
-
-  const results = useGroupSearch({ search: search || undefined, page: 1, pageSize: 12 });
-
-  return (
-    <section>
-      <SectionTitle>{t('Tìm nhóm công khai')}</SectionTitle>
-
-      <form noValidate
-        className="mb-4 flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSearch(input.trim());
-        }}
-      >
-        <div className="relative flex-1">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
-            aria-hidden
-          />
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t('Tìm theo tên nhóm')}
-            className="!mt-0 pl-9"
-          />
-        </div>
-        <Button type="submit" variant="secondary">
-          {t('Tìm')}
-        </Button>
-      </form>
-
-      {results.isLoading && <SkeletonList rows={2} />}
-      {results.isError && <ErrorMessage>{getErrorMessage(results.error)}</ErrorMessage>}
-
-      {results.data?.items.length === 0 && (
-        <EmptyState
-          icon={Search}
-          title={t('Không có nhóm công khai nào khớp')}
-          description={t('Nhóm riêng tư không hiện ở đây — muốn vào thì cần mã 8 số.')}
-        />
-      )}
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        {results.data?.items.map((group) => <GroupCard key={group.id} group={group} />)}
-      </div>
-    </section>
-  );
-}
+// ---------------------------------------------------------------------------
+// Thẻ nhóm
+// ---------------------------------------------------------------------------
 
 /** Một thẻ nhóm. Nút bên phải đổi theo quan hệ của người xem với nhóm đó. */
 function GroupCard({ group }: { group: GroupSummary }): JSX.Element {
@@ -357,7 +536,7 @@ function GroupCard({ group }: { group: GroupSummary }): JSX.Element {
               )
             }
           >
-            {group.requireApproval ? t('Xin vào nhóm') : t('Vào nhóm')}
+            {t('Yêu cầu vào')}
           </Button>
         )}
       </div>
