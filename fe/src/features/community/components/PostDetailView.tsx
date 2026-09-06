@@ -173,7 +173,7 @@ function CommentSection({ post }: { post: PostDetail }): JSX.Element {
         {t('Bình luận ({n})', { n: post.comments.length })}
       </h2>
 
-      <form onSubmit={submit} className="mt-3 flex gap-2">
+      <form noValidate onSubmit={submit} className="mt-3 flex gap-2">
         <input
           value={body}
           onChange={(event) => setBody(event.target.value)}

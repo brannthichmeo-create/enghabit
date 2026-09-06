@@ -259,7 +259,7 @@ function MemberList({ group }: { group: GroupDetail }): JSX.Element {
     <div>
       {isLeader && (
         <Card className="mb-4">
-          <form onSubmit={submitAdd} className="flex flex-wrap items-end gap-3">
+          <form noValidate onSubmit={submitAdd} className="flex flex-wrap items-end gap-3">
             <div className="min-w-[240px] flex-1">
               <Field
                 label={t('Thêm thành viên')}

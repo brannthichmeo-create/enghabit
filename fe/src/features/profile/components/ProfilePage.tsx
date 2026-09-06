@@ -299,7 +299,7 @@ function ProfileForm(): JSX.Element {
     <Card>
       <h3 className="mb-4 font-semibold text-content">{t('Thông tin cá nhân')}</h3>
 
-      <form onSubmit={submit} className="space-y-4">
+      <form noValidate onSubmit={submit} className="space-y-4">
         <ErrorMessage>{error}</ErrorMessage>
 
         <Field label={t('Họ tên')}>
@@ -385,7 +385,7 @@ function PasswordForm(): JSX.Element {
     <Card>
       <h3 className="mb-4 font-semibold text-content">{t('Đổi mật khẩu')}</h3>
 
-      <form onSubmit={submit} className="space-y-4">
+      <form noValidate onSubmit={submit} className="space-y-4">
         <ErrorMessage>{error}</ErrorMessage>
 
         <Field label={t('Mật khẩu hiện tại')}>

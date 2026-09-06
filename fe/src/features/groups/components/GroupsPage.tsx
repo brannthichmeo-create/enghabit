@@ -114,7 +114,7 @@ function CreateGroupForm({ onDone }: { onDone: () => void }): JSX.Element {
 
   return (
     <Card className="mb-6">
-      <form onSubmit={submit} className="space-y-4">
+      <form noValidate onSubmit={submit} className="space-y-4">
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
         <Field label={t('Tên nhóm')}>
@@ -186,7 +186,7 @@ function JoinByCode(): JSX.Element {
     <section className="mb-8">
       <SectionTitle>{t('Vào nhóm bằng mã')}</SectionTitle>
       <Card>
-        <form
+        <form noValidate
           className="flex flex-wrap items-end gap-3"
           onSubmit={(e) => {
             e.preventDefault();
@@ -236,7 +236,7 @@ function SearchGroups(): JSX.Element {
     <section>
       <SectionTitle>{t('Tìm nhóm công khai')}</SectionTitle>
 
-      <form
+      <form noValidate
         className="mb-4 flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();

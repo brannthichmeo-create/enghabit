@@ -33,7 +33,7 @@ export function LoginPage(): JSX.Element {
 
   return (
     <AuthLayout>
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form noValidate onSubmit={handleSubmit} className="space-y-5">
         <div className="animate-enter-up">
           <h1 className="text-2xl font-bold tracking-tight text-content">{t('Chào mừng trở lại')}</h1>
           <p className="mt-1.5 text-sm text-content-muted">{t('Tiếp tục hành trình học tiếng Anh của bạn')}</p>

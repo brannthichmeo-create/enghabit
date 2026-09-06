@@ -107,17 +107,31 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
 export function Field({
   label,
   hint,
+  error,
   children,
 }: {
   label: string;
   hint?: string;
+  /**
+   * Lỗi của riêng ô này, hiện ngay dưới nó.
+   *
+   * Có lỗi thì THAY chỗ của `hint`: hai dòng chữ nhỏ chồng nhau dưới một ô nhập khiến
+   * người đọc phải tự đoán dòng nào là thứ cần sửa.
+   */
+  error?: string;
   children: ReactNode;
 }): JSX.Element {
   return (
     <label className="block">
       <span className="text-sm font-medium text-content-soft">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-content-muted">{hint}</span>}
+      {error ? (
+        <span className="mt-1 block text-xs text-danger" role="alert">
+          {error}
+        </span>
+      ) : (
+        hint && <span className="mt-1 block text-xs text-content-muted">{hint}</span>
+      )}
     </label>
   );
 }

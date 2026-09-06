@@ -394,7 +394,7 @@ function WarnForm({ groupId, onDone }: { groupId: number; onDone: () => void }):
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3 border-t border-line pt-4">
+    <form noValidate onSubmit={submit} className="space-y-3 border-t border-line pt-4">
       {error && <ErrorMessage>{error}</ErrorMessage>}
       <label className="block">
         <span className="text-sm font-medium text-content-soft">{t('Nội dung cảnh báo')}</span>
@@ -452,7 +452,7 @@ function BlockForm({ groupId, onDone }: { groupId: number; onDone: () => void })
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3 border-t border-line pt-4">
+    <form noValidate onSubmit={submit} className="space-y-3 border-t border-line pt-4">
       {error && <ErrorMessage>{error}</ErrorMessage>}
       <label className="block">
         <span className="text-sm font-medium text-content-soft">{t('Lý do chặn nhóm')}</span>

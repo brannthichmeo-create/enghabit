@@ -5,6 +5,7 @@ import {
   ATTACHMENT_MAX_BYTES,
   MAX_ATTACHMENTS_PER_POST,
   base64ByteLength,
+  createPostSchema,
   parseAttachmentDataUrl,
   type PostAttachmentInput,
 } from '@enghabit/shared';
@@ -39,6 +40,7 @@ export function PostComposer({
   const [body, setBody] = useState('');
   const [files, setFiles] = useState<PostAttachmentInput[]>([]);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const pickFiles = async (fileList: FileList | null): Promise<void> => {
     if (!fileList || fileList.length === 0) return;
@@ -70,6 +72,24 @@ export function PostComposer({
   const submit = (event: React.FormEvent): void => {
     event.preventDefault();
     setError('');
+    setFieldErrors({});
+
+    // Kiểm tra bằng CHÍNH schema dùng chung với backend, thay cho thuộc tính `required`
+    // của trình duyệt: thông báo do mình viết nên nói rõ thiếu bao nhiêu ký tự, hiện
+    // ngay dưới ô đúng ngôn ngữ đang chọn, và không bị chặn trên trình duyệt di động.
+    const parsed = createPostSchema.safeParse({
+      title: title.trim(),
+      body: body.trim(),
+      attachments: files,
+      ...(groupId ? { groupId } : {}),
+    });
+
+    if (!parsed.success) {
+      setFieldErrors(
+        Object.fromEntries(parsed.error.issues.map((issue) => [issue.path.join('.'), issue.message])),
+      );
+      return;
+    }
 
     createPost.mutate(
       { title: title.trim(), body: body.trim(), attachments: files, ...(groupId ? { groupId } : {}) },
@@ -88,27 +108,29 @@ export function PostComposer({
 
   return (
     <Card>
-      <form onSubmit={submit} className="space-y-4">
+      <form noValidate onSubmit={submit} className="space-y-4">
         <h2 className="font-semibold text-content">{t('Đặt câu hỏi hoặc chia sẻ')}</h2>
 
-        <Field label={t('Tiêu đề')}>
+        <Field label={t('Tiêu đề')} error={fieldErrors.title}>
           <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder={t('Ví dụ: Làm sao để nhớ từ vựng lâu?')}
             maxLength={200}
-            required
           />
         </Field>
 
-        <Field label={t('Nội dung')} hint={t('{n}/10000 ký tự', { n: body.length })}>
+        <Field
+          label={t('Nội dung')}
+          hint={t('{n}/10000 ký tự', { n: body.length })}
+          error={fieldErrors.body}
+        >
           <textarea
             value={body}
             onChange={(event) => setBody(event.target.value)}
             placeholder={t('Mô tả cụ thể giúp người khác trả lời dễ hơn.')}
             rows={5}
             maxLength={10_000}
-            required
             className="mt-1.5 w-full rounded-lg border border-line-control bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10"
           />
         </Field>

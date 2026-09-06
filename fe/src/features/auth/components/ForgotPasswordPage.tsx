@@ -86,7 +86,7 @@ export function ForgotPasswordPage(): JSX.Element {
   return (
     <AuthLayout>
       {approved ? (
-        <form onSubmit={submitNewPassword} className="space-y-5">
+        <form noValidate onSubmit={submitNewPassword} className="space-y-5">
           <Heading
             title={t('Đặt mật khẩu mới')}
             description={t('Yêu cầu của bạn đã được duyệt. Nhập mật khẩu mới để tiếp tục.')}
@@ -130,7 +130,7 @@ export function ForgotPasswordPage(): JSX.Element {
           <BackToLogin />
         </form>
       ) : (
-        <form
+        <form noValidate
           onSubmit={(e) => {
             e.preventDefault();
             submitLookup(false);

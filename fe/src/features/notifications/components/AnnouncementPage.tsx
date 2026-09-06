@@ -86,7 +86,7 @@ export function AnnouncementPage(): JSX.Element {
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <form onSubmit={submit}>
+        <form noValidate onSubmit={submit}>
           <Card>
             {validationError && <ErrorMessage>{validationError}</ErrorMessage>}
             {send.isError && <ErrorMessage>{getErrorMessage(send.error)}</ErrorMessage>}

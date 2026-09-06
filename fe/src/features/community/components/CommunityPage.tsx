@@ -68,7 +68,7 @@ export function CommunityPage(): JSX.Element {
 
       <Card>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          <form
+          <form noValidate
             onSubmit={(event) => {
               event.preventDefault();
               setSearch(searchInput.trim());

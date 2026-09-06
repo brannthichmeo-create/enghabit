@@ -108,7 +108,7 @@ function TopicForm(): JSX.Element {
 
   return (
     <Card>
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form noValidate onSubmit={handleSubmit} className="space-y-3">
         <ErrorMessage>{validationError ?? (createTopic.error ? getErrorMessage(createTopic.error) : null)}</ErrorMessage>
 
         <Field label={t('Tên chủ đề mới')}>
@@ -165,7 +165,7 @@ function VocabularyManager({ topicId }: { topicId: number }): JSX.Element {
   return (
     <div>
       <Card className="mb-4">
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form noValidate onSubmit={handleSubmit} className="space-y-3">
           <ErrorMessage>
             {validationError ?? (createVocabulary.error ? getErrorMessage(createVocabulary.error) : null)}
           </ErrorMessage>

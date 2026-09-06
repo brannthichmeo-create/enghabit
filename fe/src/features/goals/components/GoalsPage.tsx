@@ -151,7 +151,7 @@ function GoalForm({ onCreated }: { onCreated: () => void }): JSX.Element {
 
   return (
     <Card>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form noValidate onSubmit={handleSubmit} className="space-y-4">
         <ErrorMessage>{errorMessage}</ErrorMessage>
 
         <Field label={t('Loại mục tiêu')}>
