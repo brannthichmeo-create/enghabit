@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { useT } from '../i18n/language';
 
@@ -14,6 +14,51 @@ import { useT } from '../i18n/language';
  * phải viết lại bằng `::backdrop` — một bộ quy tắc riêng nằm ngoài Tailwind, dễ lệch
  * với phần còn lại của giao diện.
  */
+/**
+ * Sổ theo dõi các hộp thoại ĐANG MỞ, dùng để xếp tầng khi hộp thoại này chồng lên
+ * hộp thoại khác.
+ *
+ * Phải là sổ chung ở cấp module chứ không phải React context: hộp thoại xác nhận do
+ * `ConfirmProvider` dựng ở gốc cây, không nằm bên trong hộp thoại mà nó chồng lên —
+ * nên context của cây React không nhìn thấy quan hệ trên/dưới giữa hai cái.
+ */
+const openModals = new Set<number>();
+let lastModalId = 0;
+
+/**
+ * Tầng của hộp thoại: 1 là cái đầu tiên, 2 là cái mở chồng lên nó...
+ *
+ * Cần con số này vì z-index cố định làm hộp thoại mới nằm DƯỚI hộp thoại cũ: lớp nền
+ * mờ của nó bị khuất, người dùng thấy hai hộp thoại rõ như nhau và không biết cái nào
+ * đang chờ mình trả lời.
+ */
+function useModalLayer(open: boolean): number {
+  const [layer, setLayer] = useState(1);
+
+  useEffect(() => {
+    if (!open) return;
+
+    lastModalId += 1;
+    const id = lastModalId;
+    openModals.add(id);
+    setLayer(openModals.size);
+
+    return () => {
+      openModals.delete(id);
+      // Đóng hết thì đánh số lại từ đầu, tránh z-index lớn dần vô hạn sau nhiều lần mở.
+      if (openModals.size === 0) lastModalId = 0;
+    };
+  }, [open]);
+
+  return layer;
+}
+
+/**
+ * Mốc z-index của hộp thoại. Chọn 50 vì đó là giá trị cao nhất trong phần còn lại của
+ * giao diện (ngăn kéo điều hướng), nên hộp thoại đầu tiên đã nằm trên mọi thứ.
+ */
+const MODAL_Z_BASE = 50;
+
 /** Viết thành bảng tra thay vì ghép chuỗi điều kiện: Tailwind quét mã nguồn để sinh
  *  class, nên tên class phải xuất hiện NGUYÊN VẸN ở đâu đó trong file. */
 const SIZES = {
@@ -75,6 +120,7 @@ export function Modal({
 }): JSX.Element | null {
   const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
+  const layer = useModalLayer(open);
 
   // Đóng bằng phím Esc. Gắn ở `document` chứ không ở panel: người dùng có thể chưa
   // bấm vào đâu trong hộp thoại nên focus vẫn còn nằm ngoài nó.
@@ -112,11 +158,17 @@ export function Modal({
         hiệu ứng chứ không vỡ giao diện.
       */}
       <div
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        // z-index tính theo tầng chứ không cố định: nhờ vậy lớp nền của hộp thoại mới
+        // phủ lên CẢ hộp thoại đang mở phía dưới, làm mờ nó đi như mọi thứ khác.
+        style={{ zIndex: MODAL_Z_BASE + layer * 10 }}
         onClick={closeOnBackdrop ? onClose : undefined}
         aria-hidden
       />
-      <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="pointer-events-none fixed inset-0 flex items-center justify-center p-4"
+        style={{ zIndex: MODAL_Z_BASE + layer * 10 + 5 }}
+      >
         {/*
           `max-h-[85vh]` cộng cột flex: phần đầu và chân đứng yên, chỉ RUỘT cuộn. Để cả
           hộp thoại cuộn thì nút đóng trôi khỏi màn hình khi nội dung dài — đúng lúc
