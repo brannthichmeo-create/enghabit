@@ -19,6 +19,8 @@ import { AdminAccessPage } from '../features/admin/components/AdminAccessPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
 import { AdminRequestsPage } from '../features/admin/components/AdminRequestsPage';
 import { ForgotPasswordPage } from '../features/auth/components/ForgotPasswordPage';
+import { GroupsPage } from '../features/groups/components/GroupsPage';
+import { GroupDetailPage } from '../features/groups/components/GroupDetailPage';
 import { CommunityPage } from '../features/community/components/CommunityPage';
 import { NotificationsPage } from '../features/notifications/components/NotificationsPage';
 import { AnnouncementPage } from '../features/notifications/components/AnnouncementPage';
@@ -59,6 +61,8 @@ export function AppRoutes(): JSX.Element {
 
         {/* Trang cá nhân, thông báo và diễn đàn dùng chung cho cả hai vai trò */}
         <Route path="/community" element={<Feature name="Cộng đồng"><CommunityPage /></Feature>} />
+        <Route path="/groups" element={<Feature name="Nhóm lớp"><GroupsPage /></Feature>} />
+        <Route path="/groups/:id" element={<Feature name="Nhóm lớp"><GroupDetailPage /></Feature>} />
         <Route path="/profile" element={<Feature name="Trang cá nhân"><ProfilePage /></Feature>} />
         <Route path="/notifications" element={<Feature name="Thông báo"><NotificationsPage /></Feature>} />
 

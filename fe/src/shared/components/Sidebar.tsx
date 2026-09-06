@@ -12,6 +12,7 @@ import {
   ListChecks,
   LogOut,
   MessagesSquare,
+  UsersRound,
   Shield,
   Target,
   Trophy,
@@ -77,6 +78,7 @@ export function Sidebar({
     { to: '/quizzes', label: 'Quiz', icon: Shield },
     { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },
     { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
+    { to: '/groups', label: 'Nhóm lớp', icon: UsersRound },
     { to: '/notifications', label: 'Thông báo', icon: Bell, badge: unread.data },
   ];
 
@@ -98,6 +100,7 @@ export function Sidebar({
     { to: '/admin/requests', label: 'Quản lý yêu cầu', icon: Inbox },
     // Diễn đàn mở cho cả hai vai trò — quản trị viên vào để trả lời và kiểm duyệt.
     { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
+    { to: '/groups', label: 'Nhóm lớp', icon: UsersRound },
   ];
 
   return (

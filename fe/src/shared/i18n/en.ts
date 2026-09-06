@@ -544,7 +544,22 @@ export const EN: Dictionary = {
   'Đã khoá tài khoản và thu hồi phiên đăng nhập': 'Account locked and sessions revoked',
   'Mở khoá': 'Unlock',
   'Đã mở khoá tài khoản': 'Account unlocked',
-  'Vùng nguy hiểm': 'Danger zone',
+  // --- Hộp thoại chi tiết tài khoản (3 tab) ---
+  // 'Thông tin cá nhân' và 'Thống kê' đã có sẵn ở nơi khác. Riêng khoá này nằm trong
+  // mảng hằng số TABS nên script check:i18n không quét được — thêm tab mới phải tự
+  // cập nhật ở đây.
+  'Hoạt động gần đây': 'Recent activity',
+  'Phần thông tin': 'Section',
+  'Định danh': 'Identity',
+  'Email': 'Email',
+  'Các ô số liệu tính từ lúc tạo tài khoản đến hiện tại.':
+    'The figures below cover everything since the account was created.',
+  // ('Cơ cấu hoạt động' đã có ở màn Tổng quan hệ thống — dùng lại khoá đó.)
+  'Tần suất {n} ngày gần đây': 'Frequency over the last {n} days',
+  'Loại': 'Type',
+  'Chi tiết': 'Details',
+  'Chưa ghi nhận hoạt động nào cho tài khoản này.': 'No activity recorded for this account yet.',
+
   'Xoá tài khoản': 'Delete account',
   'Xoá vĩnh viễn {email}?\n\nToàn bộ {n} hoạt động, chuỗi ngày và tiến độ học sẽ mất và không khôi phục được. Nếu chỉ muốn chặn đăng nhập, hãy dùng "Khoá tài khoản".':
     'Permanently delete {email}?\n\nAll {n} activities, streaks and learning progress will be lost for good. If you only want to block sign-in, use "Lock account" instead.',
@@ -816,4 +831,96 @@ export const EN: Dictionary = {
   'Đã từ chối': 'Rejected',
   'Quản trị viên đã bị xoá': 'Deleted administrator',
   'Yêu cầu cấp lại mật khẩu': 'Password reset request',
+
+  // --- Nhóm lớp ---------------------------------------------------------------
+  'Nhóm lớp': 'Groups',
+  'Tạo nhóm để trao đổi nội bộ, hoặc tham gia nhóm đã có': 'Create a group to talk privately, or join an existing one',
+  'Nhóm của tôi': 'My groups',
+  'Bạn chưa ở nhóm nào': "You're not in any group yet",
+  'Tạo một nhóm mới, hoặc tìm nhóm công khai bên dưới để xin vào.':
+    'Create a new group, or find a public one below and ask to join.',
+  'Tạo nhóm': 'Create group',
+  'Tên nhóm': 'Group name',
+  'Ví dụ: Lớp tiếng Anh K65': 'For example: English class K65',
+  'Mô tả nhóm': 'Group description',
+  'Không bắt buộc — vài dòng để người khác biết nhóm này làm gì':
+    'Optional — a line or two so people know what this group is for',
+  'Nhóm công khai': 'Public group',
+  'Ai cũng tìm thấy nhóm này khi tìm theo tên.': 'Anyone can find this group by name.',
+  'Nhóm riêng tư: chỉ vào được nếu biết mã 8 số của nhóm.':
+    'Private group: only people with the 8-digit code can join.',
+  'Phê duyệt thành viên': 'Approve members',
+  'Người xin vào phải chờ trưởng nhóm duyệt.': 'People who ask to join wait for a leader to approve.',
+  'Ai có mã hoặc tìm thấy nhóm đều vào được ngay.': 'Anyone with the code or who finds the group joins straight away.',
+  'Đã tạo nhóm, mã nhóm là {code}': 'Group created, the code is {code}',
+
+  'Vào nhóm bằng mã': 'Join with a code',
+  'Mã nhóm': 'Group code',
+  'Gồm {n} chữ số': '{n} digits',
+  'Không tìm thấy nhóm nào có mã này': 'No group found with this code',
+  'Tìm nhóm công khai': 'Find a public group',
+  'Tìm theo tên nhóm': 'Search by group name',
+  'Không có nhóm công khai nào khớp': 'No public group matches',
+  'Nhóm riêng tư không hiện ở đây — muốn vào thì cần mã 8 số.':
+    'Private groups never show up here — you need the 8-digit code.',
+
+  'Công khai': 'Public',
+  'Riêng tư': 'Private',
+  'Trưởng nhóm': 'Leader',
+  'Bạn là trưởng nhóm': "You're a leader",
+  'Thành viên': 'Members',
+  '{n} thành viên': { one: '{n} member', other: '{n} members' },
+  '{n} bài đăng': { one: '{n} post', other: '{n} posts' },
+  '{n} chờ duyệt': { one: '{n} waiting', other: '{n} waiting' },
+  'Mở nhóm': 'Open group',
+  'Xin vào nhóm': 'Ask to join',
+  'Vào nhóm': 'Join group',
+  'Đang chờ trưởng nhóm duyệt': 'Waiting for a leader to approve',
+  'Đã vào nhóm': 'Joined the group',
+  'Đã gửi yêu cầu, chờ trưởng nhóm duyệt': 'Request sent, waiting for a leader to approve',
+
+  'Về danh sách nhóm': 'Back to groups',
+  'Bạn không xem được nhóm này': "You can't view this group",
+  'Nhóm không tồn tại, hoặc bạn chưa phải thành viên.': "The group doesn't exist, or you're not a member yet.",
+  'Bảng tin': 'Feed',
+  'Cài đặt': 'Settings',
+  'Đăng bài trong nhóm': 'Post in this group',
+  'Nhóm chưa có bài nào': 'No posts in this group yet',
+  'Đăng bài đầu tiên để bắt đầu trao đổi với cả nhóm.': 'Write the first post to get the group talking.',
+
+  'Thêm thành viên': 'Add member',
+  'Nhập tên tài khoản hoặc email của người đã có tài khoản':
+    'Enter the username or email of someone who already has an account',
+  'Thêm': 'Add',
+  'Đã thêm {name} vào nhóm': 'Added {name} to the group',
+  'Chuỗi': 'Streak',
+  'Phong trưởng nhóm': 'Make leader',
+  'Hạ quyền': 'Remove leader role',
+  'Xoá khỏi nhóm': 'Remove from group',
+  'Xoá {name} khỏi nhóm?': 'Remove {name} from the group?',
+
+  'Khi có người xin vào nhóm, yêu cầu sẽ hiện ở đây và bạn nhận được thông báo.':
+    "When someone asks to join, the request shows up here and you'll get a notification.",
+  'Duyệt': 'Approve',
+  'Đã duyệt': 'Approved',
+
+  'Đã lưu thông tin nhóm': 'Group details saved',
+  'Tắt thì nhóm biến mất khỏi ô tìm kiếm, chỉ vào được bằng mã {code}':
+    'Turn this off and the group disappears from search — only the code {code} gets people in',
+  'Tắt thì người tìm được nhóm sẽ vào thẳng, không cần bạn duyệt.':
+    'Turn this off and anyone who finds the group joins without your approval.',
+  'Vùng nguy hiểm': 'Danger zone',
+  'Xoá nhóm sẽ mất toàn bộ bài đăng và danh sách thành viên. Không khôi phục được.':
+    'Deleting the group destroys every post and the member list. This cannot be undone.',
+  'Xoá nhóm': 'Delete group',
+  'Xoá vĩnh viễn nhóm "{name}"?': 'Permanently delete the group "{name}"?',
+  'Đã xoá nhóm': 'Group deleted',
+  'Rời nhóm': 'Leave group',
+  'Rời khỏi nhóm "{name}"?': 'Leave the group "{name}"?',
+  'Đã rời nhóm': 'Left the group',
+
+  // Nhãn loại thông báo (notification-display.tsx)
+  'Yêu cầu vào nhóm': 'Join request',
+  'Được duyệt vào nhóm': 'Join approved',
+  'Yêu cầu vào nhóm bị từ chối': 'Join rejected',
 };
