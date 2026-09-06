@@ -23,6 +23,31 @@ Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có 
 - Xem bảng xếp hạng theo tuần/tháng/toàn thời gian, biết mình đứng thứ mấy trong số người học
 - Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user), cảnh báo chuỗi sắp đứt, chúc mừng đạt mục tiêu — xem trong chuông thông báo và trang `/notifications`
 
+### Nhóm lớp (mọi người dùng)
+
+Không gian trao đổi nội bộ do chính người học lập ra, tách hẳn khỏi diễn đàn Cộng đồng.
+
+- Ai cũng tạo được nhóm; người tạo là **trưởng nhóm** đầu tiên. Một nhóm có thể có nhiều
+  trưởng nhóm (mô hình quản trị viên của nhóm Messenger), phong/hạ quyền lẫn nhau được.
+- Nhóm **công khai** tìm được bằng tên; nhóm **riêng tư** chỉ vào được qua **mã 8 chữ số**
+  duy nhất. Mã sinh bằng `randomInt` của `node:crypto`, không dùng `Math.random` — mã là
+  thứ duy nhất bảo vệ nhóm riêng tư.
+- Trưởng nhóm bật/tắt **phê duyệt thành viên**: bật thì người xin vào phải chờ duyệt, tắt
+  thì vào thẳng. Duyệt hoặc từ chối đều sinh thông báo cho người xin.
+
+Ba quy tắc bắt buộc giữ khi sửa module này:
+
+- **Nhóm luôn còn ít nhất một trưởng nhóm.** `assertNotLastLeader` chặn mọi thao tác làm
+  mất trưởng nhóm cuối (hạ quyền, rời nhóm, bị xoá). Mất hết trưởng nhóm thì không ai
+  duyệt được yêu cầu và nhóm thành xác chết.
+- **Bài đăng của nhóm không bao giờ lọt ra diễn đàn chung.** `Post.groupId` null là bài
+  chung, có giá trị là bài nội bộ; `community.service` lọc `groupId: query.groupId ?? null`
+  và kiểm tra tư cách thành viên ở **cả năm** lối vào: danh sách, chi tiết bài, bình luận,
+  thả tim và **tải tệp đính kèm**. Thiếu một chỗ là rò rỉ nội dung nhóm riêng tư.
+- **Bài của nhóm dùng lại module community**, không dựng bảng bài viết thứ hai — nhờ vậy
+  tệp đính kèm, bình luận, thả tim chỉ có một bản triển khai. Khoá cache của FE
+  (`communityKeys.list`) **bắt buộc chứa `groupId`**, thiếu là hai bảng tin dùng chung ô cache.
+
 ### Chức năng cho quản trị viên
 
 Quản trị viên **vận hành hệ thống, không phải người học**: đăng nhập bằng tài khoản
