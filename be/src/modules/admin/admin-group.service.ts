@@ -30,7 +30,6 @@ import { toBlockInfo } from '../groups/group.service.js';
 
 const GROUP_INCLUDE = {
   _count: { select: { members: true, posts: true } },
-  createdBy: { select: { id: true, name: true, username: true } },
   blockedBy: { select: { name: true } },
 } satisfies Prisma.GroupInclude;
 
@@ -67,8 +66,8 @@ export async function listGroups(query: AdminGroupQueryInput): Promise<Paginated
   ]);
 
   const ids = groups.map((g) => g.id);
-  const [leaderCounts, pendingCounts, lastPosts] = await Promise.all([
-    countBy('leaders', ids),
+  const [leaders, pendingCounts, lastPosts] = await Promise.all([
+    leadersByGroup(ids),
     countBy('pending', ids),
     lastPostByGroup(ids),
   ]);
@@ -76,7 +75,7 @@ export async function listGroups(query: AdminGroupQueryInput): Promise<Paginated
   return {
     items: groups.map((group) => ({
       ...toRow(group),
-      leaderCount: leaderCounts.get(group.id) ?? 0,
+      leaders: leaders.get(group.id) ?? [],
       pendingCount: pendingCounts.get(group.id) ?? 0,
       lastPostAt: lastPosts.get(group.id) ?? null,
     })),
@@ -90,7 +89,7 @@ export async function getGroupDetail(groupId: number): Promise<AdminGroupDetail>
   const group = await prisma.group.findUnique({ where: { id: groupId }, include: GROUP_INCLUDE });
   if (!group) throw new NotFoundError('Không tìm thấy nhóm');
 
-  const [members, recentPosts, leaderCounts, pendingCounts, lastPosts] = await Promise.all([
+  const [members, recentPosts, leaders, pendingCounts, lastPosts] = await Promise.all([
     prisma.groupMember.findMany({
       where: { groupId },
       orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
@@ -114,14 +113,14 @@ export async function getGroupDetail(groupId: number): Promise<AdminGroupDetail>
       take: 10,
       select: { id: true, title: true, createdAt: true, author: { select: { name: true } } },
     }),
-    countBy('leaders', [groupId]),
+    leadersByGroup([groupId]),
     countBy('pending', [groupId]),
     lastPostByGroup([groupId]),
   ]);
 
   return {
     ...toRow(group),
-    leaderCount: leaderCounts.get(groupId) ?? 0,
+    leaders: leaders.get(groupId) ?? [],
     pendingCount: pendingCounts.get(groupId) ?? 0,
     lastPostAt: lastPosts.get(groupId) ?? null,
     members: members.map((m) => ({
@@ -238,7 +237,7 @@ async function notifyMembers(
 
 function toRow(
   group: Prisma.GroupGetPayload<{ include: typeof GROUP_INCLUDE }>,
-): Omit<AdminGroupRow, 'leaderCount' | 'pendingCount' | 'lastPostAt'> {
+): Omit<AdminGroupRow, 'leaders' | 'pendingCount' | 'lastPostAt'> {
   return {
     id: group.id,
     code: group.code,
@@ -249,23 +248,38 @@ function toRow(
     memberCount: group._count.members,
     postCount: group._count.posts,
     createdAt: group.createdAt.toISOString(),
-    createdBy: group.createdBy,
     block: toBlockInfo(group),
   };
 }
 
-/** Đếm gộp cho cả trang thay vì hỏi từng nhóm — 20 nhóm sẽ thành 40 truy vấn nếu hỏi lẻ. */
-async function countBy(kind: 'leaders' | 'pending', groupIds: number[]): Promise<Map<number, number>> {
+/**
+ * Trưởng nhóm hiện tại của từng nhóm, lấy một lần cho cả trang.
+ *
+ * Hỏi gộp thay vì hỏi từng nhóm: bảng 20 dòng sẽ thành 20 truy vấn nếu hỏi lẻ.
+ */
+async function leadersByGroup(
+  groupIds: number[],
+): Promise<Map<number, { id: number; name: string; username: string }[]>> {
   if (groupIds.length === 0) return new Map();
 
-  if (kind === 'leaders') {
-    const rows = await prisma.groupMember.groupBy({
-      by: ['groupId'],
-      where: { groupId: { in: groupIds }, role: GroupMemberRole.LEADER },
-      _count: { _all: true },
-    });
-    return new Map(rows.map((r) => [r.groupId, r._count._all]));
+  const rows = await prisma.groupMember.findMany({
+    where: { groupId: { in: groupIds }, role: GroupMemberRole.LEADER },
+    orderBy: { joinedAt: 'asc' },
+    select: { groupId: true, user: { select: { id: true, name: true, username: true } } },
+  });
+
+  const result = new Map<number, { id: number; name: string; username: string }[]>();
+  for (const row of rows) {
+    const list = result.get(row.groupId) ?? [];
+    list.push(row.user);
+    result.set(row.groupId, list);
   }
+  return result;
+}
+
+/** Đếm gộp cho cả trang thay vì hỏi từng nhóm. */
+async function countBy(kind: 'pending', groupIds: number[]): Promise<Map<number, number>> {
+  if (groupIds.length === 0) return new Map();
 
   const rows = await prisma.groupJoinRequest.groupBy({
     by: ['groupId'],

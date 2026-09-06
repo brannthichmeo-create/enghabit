@@ -940,9 +940,8 @@ export const EN: Dictionary = {
   'Nhiều bài đăng nhất': 'Most posts',
   'Không có nhóm nào khớp': 'No group matches',
   'Nhóm': 'Group',
-  'Người lập': 'Created by',
+  'Nhóm không còn trưởng nhóm': 'This group has no leader',
   'Bài đăng': 'Posts',
-  'Tài khoản đã xoá': 'Deleted account',
   'Xem': 'View',
   'Trang {page} / {total}': 'Page {page} of {total}',
 

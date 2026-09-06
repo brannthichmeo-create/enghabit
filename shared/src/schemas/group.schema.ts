@@ -171,9 +171,13 @@ export type WarnGroupInput = z.infer<typeof warnGroupSchema>;
 
 /** Một dòng trong bảng quản lý nhóm của quản trị viên. */
 export interface AdminGroupRow extends Omit<GroupSummary, 'viewerState' | 'pendingCount'> {
-  /** Người lập nhóm; null nếu tài khoản đã bị xoá. */
-  createdBy: { id: number; name: string; username: string } | null;
-  leaderCount: number;
+  /**
+   * Trưởng nhóm HIỆN TẠI, không phải người lập nhóm.
+   *
+   * Người lập có thể đã rời nhóm hoặc bị hạ quyền từ lâu; khi cần liên hệ về một vi
+   * phạm thì phải gọi đúng người đang điều hành. Mảng vì một nhóm có nhiều trưởng nhóm.
+   */
+  leaders: { id: number; name: string; username: string }[];
   pendingCount: number;
   lastPostAt: string | null;
 }

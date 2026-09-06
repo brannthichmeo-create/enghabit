@@ -142,7 +142,7 @@ export function AdminGroupsPage(): JSX.Element {
               <thead>
                 <tr className="border-b border-line text-left text-content-muted">
                   <th className="pb-2 font-medium">{t('Nhóm')}</th>
-                  <th className="pb-2 font-medium">{t('Người lập')}</th>
+                  <th className="pb-2 font-medium">{t('Trưởng nhóm')}</th>
                   <th className="pb-2 pr-6 text-right font-medium">{t('Thành viên')}</th>
                   <th className="pb-2 pr-6 text-right font-medium">{t('Bài đăng')}</th>
                   <th className="pb-2 font-medium">{t('Trạng thái')}</th>
@@ -202,13 +202,18 @@ function GroupRow({ group, onOpen }: { group: AdminGroupRow; onOpen: () => void 
         </button>
       </td>
       <td className="py-2.5 text-content-soft">
-        {group.createdBy ? (
-          <>
-            <span className="block">{group.createdBy.name}</span>
-            <span className="block text-xs text-content-muted">@{group.createdBy.username}</span>
-          </>
+        {group.leaders.length === 0 ? (
+          // Không nên xảy ra (luôn còn ít nhất một trưởng nhóm), nhưng nếu dữ liệu cũ
+          // lỡ rơi vào trạng thái này thì phải nhìn ra ngay chứ không hiện ô trống.
+          <span className="text-danger">{t('Nhóm không còn trưởng nhóm')}</span>
         ) : (
-          <span className="text-content-muted">{t('Tài khoản đã xoá')}</span>
+          <>
+            <span className="block">{group.leaders[0]?.name}</span>
+            <span className="block text-xs text-content-muted">
+              @{group.leaders[0]?.username}
+              {group.leaders.length > 1 && ` +${group.leaders.length - 1}`}
+            </span>
+          </>
         )}
       </td>
       <td className="py-2.5 pr-6 text-right tabular-nums text-content-soft">{group.memberCount}</td>
@@ -271,7 +276,6 @@ function GroupDetailModal({ groupId, onClose }: { groupId: number; onClose: () =
               value={group.visibility === GroupVisibility.PUBLIC ? t('Công khai') : t('Riêng tư')}
             />
             <Stat label={t('Thành viên')} value={String(group.memberCount)} />
-            <Stat label={t('Trưởng nhóm')} value={String(group.leaderCount)} />
             <Stat label={t('Bài đăng')} value={String(group.postCount)} />
             <Stat label={t('Chờ duyệt')} value={String(group.pendingCount)} />
             <Stat
