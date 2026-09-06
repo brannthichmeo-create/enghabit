@@ -12,6 +12,7 @@ import {
 import { AuthorLine, PostDetailView } from './PostDetailView';
 import { PostComposer } from './PostComposer';
 import { Modal } from '../../../shared/components/Modal';
+import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { usePosts } from '../community.hooks';
 import { useT } from '../../../shared/i18n/language';
 
@@ -48,9 +49,11 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 export function CommunityPage(): JSX.Element {
   const t = useT();
+  const confirm = useConfirm();
 
   const [openPostId, setOpenPostId] = useState<number | null>(null);
   const [composing, setComposing] = useState(false);
+  const [composerDirty, setComposerDirty] = useState(false);
   const [sort, setSort] = useState<PostQueryInput['sort']>('latest');
   const [filters, setFilters] = useState<Set<FilterKey>>(new Set());
   const [searchInput, setSearchInput] = useState('');
@@ -68,6 +71,25 @@ export function CommunityPage(): JSX.Element {
     ...(search ? { search } : {}),
   };
   const posts = usePosts(query);
+
+  /**
+   * Đóng ô soạn bài. Đang có chữ thì hỏi lại — nút ✕, phím Esc và nút Huỷ đều đi qua
+   * đây nên chỉ cần một chỗ canh.
+   */
+  const requestCloseComposer = async (): Promise<void> => {
+    if (composerDirty) {
+      const ok = await confirm({
+        title: t('Xác nhận hủy đăng bài?'),
+        message: t('Nội dung bạn đang soạn sẽ mất.'),
+        confirmLabel: t('Hủy đăng bài'),
+        cancelLabel: t('Tiếp tục soạn'),
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
+    setComposerDirty(false);
+    setComposing(false);
+  };
 
   const toggleFilter = (key: FilterKey): void => {
     setFilters((current) => {
@@ -106,13 +128,21 @@ export function CommunityPage(): JSX.Element {
       */}
       <Modal
         open={composing}
-        onClose={() => setComposing(false)}
+        onClose={() => void requestCloseComposer()}
         title={t('Đăng bài viết')}
         size="lg"
         // Đang soạn dở mà bấm trượt ra nền là mất cả bài — chỉ đóng bằng nút hoặc Esc.
         closeOnBackdrop={false}
       >
-        <PostComposer onDone={() => setComposing(false)} />
+        <PostComposer
+          onDone={() => {
+            // Đăng xong thì nội dung đã gửi đi rồi, đóng thẳng không hỏi lại.
+            setComposerDirty(false);
+            setComposing(false);
+          }}
+          onCancel={() => void requestCloseComposer()}
+          onDirtyChange={setComposerDirty}
+        />
       </Modal>
 
       <Card>

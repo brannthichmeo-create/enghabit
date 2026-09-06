@@ -1022,4 +1022,9 @@ export const EN: Dictionary = {
     'Filters stack on top of each other — drop one or change your search.',
 
   'Đăng bài viết': 'New post',
+
+  'Xác nhận hủy đăng bài?': 'Discard this post?',
+  'Nội dung bạn đang soạn sẽ mất.': "What you've written will be lost.",
+  'Hủy đăng bài': 'Discard',
+  'Tiếp tục soạn': 'Keep writing',
 };

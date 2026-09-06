@@ -189,7 +189,9 @@ export function GroupDetailPage(): JSX.Element {
 function GroupFeed({ groupId }: { groupId: number }): JSX.Element {
   const t = useT();
   const [composing, setComposing] = useState(false);
+  const [composerDirty, setComposerDirty] = useState(false);
   const [openPostId, setOpenPostId] = useState<number | null>(null);
+  const confirm = useConfirm();
 
   // Bảng tin nhóm không có bộ lọc riêng: bài trong nhóm ít, lọc thêm chỉ làm rối.
   const posts = usePosts({
@@ -202,6 +204,25 @@ function GroupFeed({ groupId }: { groupId: number }): JSX.Element {
     hasFiles: false,
     unanswered: false,
   });
+
+  /**
+   * Đóng ô soạn bài. Đang có chữ thì hỏi lại — nút ✕, phím Esc và nút Huỷ đều đi qua
+   * đây nên chỉ cần một chỗ canh.
+   */
+  const requestCloseComposer = async (): Promise<void> => {
+    if (composerDirty) {
+      const ok = await confirm({
+        title: t('Xác nhận hủy đăng bài?'),
+        message: t('Nội dung bạn đang soạn sẽ mất.'),
+        confirmLabel: t('Hủy đăng bài'),
+        cancelLabel: t('Tiếp tục soạn'),
+        tone: 'danger',
+      });
+      if (!ok) return;
+    }
+    setComposerDirty(false);
+    setComposing(false);
+  };
 
   if (openPostId !== null) {
     return <PostDetailView postId={openPostId} onBack={() => setOpenPostId(null)} />;
@@ -217,12 +238,20 @@ function GroupFeed({ groupId }: { groupId: number }): JSX.Element {
 
       <Modal
         open={composing}
-        onClose={() => setComposing(false)}
+        onClose={() => void requestCloseComposer()}
         title={t('Đăng bài trong nhóm')}
         size="lg"
         closeOnBackdrop={false}
       >
-        <PostComposer groupId={groupId} onDone={() => setComposing(false)} />
+        <PostComposer
+          groupId={groupId}
+          onDone={() => {
+            setComposerDirty(false);
+            setComposing(false);
+          }}
+          onCancel={() => void requestCloseComposer()}
+          onDirtyChange={setComposerDirty}
+        />
       </Modal>
 
       {posts.isLoading && <SkeletonList rows={3} />}

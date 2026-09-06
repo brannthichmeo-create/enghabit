@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Paperclip, X } from 'lucide-react';
 import {
   ALLOWED_ATTACHMENT_MIME,
@@ -25,9 +25,24 @@ import { useT } from '../../../shared/i18n/language';
  */
 export function PostComposer({
   onDone,
+  onCancel,
+  onDirtyChange,
   groupId,
 }: {
+  /** Gọi sau khi đăng THÀNH CÔNG — cha đóng hộp thoại, không hỏi lại. */
   onDone: () => void;
+  /**
+   * Người dùng bấm Huỷ. Tách khỏi `onDone` để cha biết đây là bỏ dở chứ không phải
+   * đăng xong: chỉ trường hợp này mới cần hỏi xác nhận.
+   */
+  onCancel: () => void;
+  /**
+   * Báo cha biết trong ô soạn đã có chữ hay chưa.
+   *
+   * Nội dung nằm trong component này, nhưng nút đóng (✕) và phím Esc lại do hộp thoại
+   * của cha giữ — không có đường báo ra thì cha đóng mà không biết mình đang xoá gì.
+   */
+  onDirtyChange?: (dirty: boolean) => void;
   /** Đăng vào nhóm này. Bỏ trống là đăng ở diễn đàn chung. */
   groupId?: number;
 }): JSX.Element {
@@ -41,6 +56,11 @@ export function PostComposer({
   const [files, setFiles] = useState<PostAttachmentInput[]>([]);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const isDirty = title.trim() !== '' || body.trim() !== '' || files.length > 0;
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const pickFiles = async (fileList: FileList | null): Promise<void> => {
     if (!fileList || fileList.length === 0) return;
@@ -189,7 +209,7 @@ export function PostComposer({
         </div>
 
         <div className="flex gap-2">
-          <Button type="button" variant="ghost" onClick={onDone}>
+          <Button type="button" variant="ghost" onClick={onCancel}>
             {t('Huỷ')}
           </Button>
           <Button type="submit" loading={createPost.isPending}>
