@@ -556,7 +556,6 @@ function StatsTab({ user }: { user: AdminUserDetail }): JSX.Element {
         <Stat label={t('Tổng hoạt động')} value={user.activityCount.toLocaleString(locale)} />
         <Stat label={t('Chuỗi hiện tại')} value={t('{n} ngày', { n: user.currentStreak })} />
         <Stat label={t('Chuỗi dài nhất')} value={t('{n} ngày', { n: user.longestStreak })} />
-        <Stat label={t('Lượt làm kiểm tra')} value={String(user.examAttempts)} />
         <Stat label={t('Thói quen')} value={String(user.habitCount)} />
         <Stat label={t('Mục tiêu')} value={String(user.goalCount)} />
         <Stat label={t('Ngày tạo')} value={formatDateTime(user.createdAt, t, locale)} />

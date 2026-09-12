@@ -7,7 +7,6 @@ import { DashboardPage } from '../features/statistics/components/DashboardPage';
 import { ReportPage } from '../features/statistics/components/ReportPage';
 import { HabitsPage } from '../features/habits/components/HabitsPage';
 import { GoalsPage } from '../features/goals/components/GoalsPage';
-import { PathPage } from '../features/lessons/components/PathPage';
 import { VocabularyPage } from '../features/vocabulary/components/VocabularyPage';
 import { FlashcardPage } from '../features/flashcards/components/FlashcardPage';
 import { LeaderboardPage } from '../features/leaderboard/components/LeaderboardPage';
@@ -51,7 +50,6 @@ export function AppRoutes(): JSX.Element {
         {/* --- Khu người học --- */}
         <Route path="/" element={<Learner name="Tổng quan"><DashboardPage /></Learner>} />
         <Route path="/report" element={<Learner name="Báo cáo"><ReportPage /></Learner>} />
-        <Route path="/learn" element={<Learner name="Học"><PathPage /></Learner>} />
         <Route path="/habits" element={<Learner name="Thói quen"><HabitsPage /></Learner>} />
         <Route path="/goals" element={<Learner name="Mục tiêu"><GoalsPage /></Learner>} />
         <Route path="/vocabulary" element={<Learner name="Từ vựng"><VocabularyPage /></Learner>} />

@@ -5,7 +5,6 @@ import { jobLogger } from '../lib/logger.js';
 import { toDbDate } from '../common/utils/db-date.js';
 import * as notificationService from '../modules/notifications/notification.service.js';
 import * as flashcardService from '../modules/flashcards/flashcard.service.js';
-import * as lessonService from '../modules/lessons/lesson.service.js';
 import { sendPush } from './onesignal.client.js';
 
 /**
@@ -170,21 +169,19 @@ async function sendDailyReminder(
   localDate: string,
   reminderId: number,
 ): Promise<boolean> {
-  const [dueCards, mistakes] = await Promise.all([
-    user.remindReviewDue ? flashcardService.countDueCards(user.id, user.timezone) : Promise.resolve(0),
-    lessonService.countMistakes(user.id),
-  ]);
+  // Module `lessons` đã bị gỡ để dựng lại, nên tạm thời không còn nguồn "từ sai chờ
+  // luyện lại". Khi dựng xong màn học mới, thêm lại một nhánh nữa ở đây trỏ tới nó.
+  const dueCards = user.remindReviewDue
+    ? await flashcardService.countDueCards(user.id, user.timezone)
+    : 0;
 
   const streak = user.streak?.currentStreak ?? 0;
   let body: string;
-  let link = '/learn';
+  let link = '/flashcards';
 
   if (dueCards > 0) {
     body = `Bạn có ${dueCards} thẻ tới hạn ôn hôm nay. Ôn xong là giữ được chuỗi.`;
     link = '/flashcards';
-  } else if (mistakes > 0) {
-    body = `Còn ${mistakes} từ bạn từng làm sai đang chờ luyện lại.`;
-    link = '/learn';
   } else if (streak > 0) {
     body = `Bạn đang có chuỗi ${streak} ngày. Học vài phút hôm nay để giữ chuỗi.`;
   } else {

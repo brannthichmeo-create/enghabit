@@ -5,7 +5,6 @@ import type { StatsRangeInput } from '@enghabit/shared';
 import { ActivityChart } from '../../../shared/components/ActivityChart';
 import { HeroCard } from './HeroCard';
 import { RewardsBar } from '../../rewards/components/RewardsBar';
-import { useMistakeCount } from '../../lessons/lesson.hooks';
 import { ActivityCalendarChart } from '../../../shared/components/ActivityCalendar';
 import { Card, ErrorState, ProgressBar, Skeleton } from '../../../shared/components/ui';
 import { getErrorMessage } from '../../../shared/lib/api-client';
@@ -67,7 +66,6 @@ export function DashboardPage(): JSX.Element {
   const goalProgress = useGoalProgress();
   const dueCount = useDueCount();
   const calendar = useActivityCalendar(calendarMonths);
-  const mistakeCount = useMistakeCount();
 
   const totalActivities = summary.data
     ? Object.values(summary.data.totals).reduce((sum, n) => sum + n, 0)
@@ -105,16 +103,10 @@ export function DashboardPage(): JSX.Element {
 
         <TodayCard
           dueCount={dueCount.data}
-          mistakeCount={mistakeCount.data}
-          loading={dueCount.isLoading || mistakeCount.isLoading}
-          errorMessage={
-            dueCount.isError || mistakeCount.isError
-              ? getErrorMessage(dueCount.error ?? mistakeCount.error)
-              : undefined
-          }
+          loading={dueCount.isLoading}
+          errorMessage={dueCount.isError ? getErrorMessage(dueCount.error) : undefined}
           onRetry={() => {
             void dueCount.refetch();
-            void mistakeCount.refetch();
           }}
         />
       </div>
@@ -240,13 +232,11 @@ function RangeTab({
  */
 function TodayCard({
   dueCount,
-  mistakeCount,
   loading,
   errorMessage,
   onRetry,
 }: {
   dueCount?: number;
-  mistakeCount?: number;
   loading: boolean;
   errorMessage?: string;
   onRetry?: () => void;
@@ -254,15 +244,18 @@ function TodayCard({
   const t = useT();
 
   /*
-    "Xong hết" chỉ được nói khi CẢ HAI số đã về và cùng bằng 0.
+    "Xong hết" chỉ được nói khi số đã về thật và bằng 0.
 
     Trước đây `done` tính từ `(count ?? 0) === 0`, nên lúc đang tải và cả lúc API hỏng
     (hai trường hợp `count` là `undefined`) thẻ đều tuyên bố "Bạn đã xong hết phần cần
     ôn" — nói với người dùng rằng họ không còn gì để học trong khi hệ thống không hề
     biết. Với một app xây thói quen thì đó là lỗi nặng hơn cả việc im lặng.
+
+    Trước đây thẻ này có hai việc (ôn thẻ và luyện từ sai). Module `lessons` đã bị gỡ
+    để dựng lại, nên tạm còn một việc.
   */
-  const known = dueCount !== undefined && mistakeCount !== undefined;
-  const done = known && dueCount === 0 && mistakeCount === 0;
+  const known = dueCount !== undefined;
+  const done = known && dueCount === 0;
 
   return (
     <Card className="flex h-full flex-col">
@@ -282,8 +275,7 @@ function TodayCard({
       )}
 
       {loading && !errorMessage && (
-        <div className="mt-4 space-y-2">
-          <Skeleton className="h-[62px] w-full" />
+        <div className="mt-4">
           <Skeleton className="h-[62px] w-full" />
         </div>
       )}
@@ -296,14 +288,6 @@ function TodayCard({
           count={dueCount}
           pending={t('{n} thẻ tới hạn', { n: dueCount ?? 0 })}
           cleared={t('Đã ôn hết hôm nay')}
-        />
-        <TaskRow
-          to="/learn"
-          icon={BookOpen}
-          title={t('Luyện lại từ sai')}
-          count={mistakeCount}
-          pending={t('{n} từ cần luyện', { n: mistakeCount ?? 0 })}
-          cleared={t('Không còn từ sai')}
         />
       </div>
     </Card>

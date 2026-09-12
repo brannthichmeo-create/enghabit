@@ -24,7 +24,6 @@ export const ADMIN_ROOT: Crumb = { label: 'Tổng quan hệ thống', to: '/admi
 const TRAILS: Record<string, Crumb[]> = {
   '/': [],
   '/report': [{ label: 'Báo cáo' }],
-  '/learn': [{ label: 'Học' }],
   '/vocabulary': [{ label: 'Từ vựng' }],
   '/flashcards': [{ label: 'Ôn tập' }],
   '/leaderboard': [{ label: 'Bảng xếp hạng' }],

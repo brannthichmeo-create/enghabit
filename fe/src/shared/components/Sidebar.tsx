@@ -23,7 +23,6 @@ import { UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLogout } from '../../features/auth/auth.hooks';
 import { useDueCount } from '../../features/flashcards/flashcard.hooks';
-import { useMistakeCount } from '../../features/lessons/lesson.hooks';
 import { useLevel } from '../../features/statistics/statistics.hooks';
 import { useUnreadCount } from '../../features/notifications/notification.hooks';
 import { useT } from '../i18n/language';
@@ -63,7 +62,6 @@ export function Sidebar({
   // tốn request và làm log server nhiễu.
   const isLearner = user?.role !== UserRole.ADMIN;
   const dueCount = useDueCount(isLearner);
-  const mistakeCount = useMistakeCount(isLearner);
   const level = useLevel(isLearner);
   const unread = useUnreadCount();
 
@@ -71,7 +69,6 @@ export function Sidebar({
 
   const mainItems: NavItem[] = [
     { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
-    { to: '/learn', label: 'Học', icon: GraduationCap, badge: mistakeCount.data },
     { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen },
     { to: '/flashcards', label: 'Ôn tập', icon: Layers, badge: dueCount.data },
     { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },

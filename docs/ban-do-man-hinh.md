@@ -27,7 +27,7 @@ Chia bốn mức, theo câu hỏi "cái này có địa chỉ riêng không":
 
 ## 1. Màn hình có URL riêng
 
-24 route. Nguồn: `fe/src/routes/AppRoutes.tsx`.
+23 route. Nguồn: `fe/src/routes/AppRoutes.tsx`.
 
 ### 1.1 Ngoài khung app (chưa đăng nhập)
 
@@ -45,7 +45,6 @@ Ba màn này **không** đi qua `AppLayout` nên không có sidebar và không c
 |---|---|---|---|---|
 | `/` | Tổng quan | `Learner` | `features/statistics/components/DashboardPage.tsx` | `statistics/statistics.api.ts` |
 | `/report` | Báo cáo | `Learner` | `features/statistics/components/ReportPage.tsx` | `statistics/statistics.api.ts` |
-| `/learn` | Học | `Learner` | `features/lessons/components/PathPage.tsx` | `lessons/lesson.api.ts` |
 | `/vocabulary` | Từ vựng | `Learner` | `features/vocabulary/components/VocabularyPage.tsx` | `vocabulary/vocabulary.api.ts` |
 | `/flashcards` | Ôn tập | `Learner` | `features/flashcards/components/FlashcardPage.tsx` | `flashcards/flashcard.api.ts` |
 | `/habits` | Thói quen | `Learner` | `features/habits/components/HabitsPage.tsx` | `habits/habit.api.ts` |
@@ -91,12 +90,11 @@ CLAUDE.md, màn phụ **không tra được từ bản đồ breadcrumb** nên p
 
 | Màn phụ | Mở từ | File | Có đặt breadcrumb? |
 |---|---|---|---|
-| Trình chơi bài học | `/learn` | `features/lessons/components/LessonPlayer.tsx` | Có — `useBreadcrumbTail(lesson.title)` |
-| Trình làm Kiểm tra | `/learn` | **Cùng file** `features/lessons/components/LessonPlayer.tsx`, tham số `mode="exam"` | Có |
 | Chi tiết bài viết | `/community` | `features/community/components/PostDetailView.tsx` | Có — tiêu đề bài viết |
 
-> Bài học và Kiểm tra **dùng chung một component**, phân biệt bằng tham số
-> `mode?: 'lesson' \| 'exam'`. Kiểm tra có tính giờ từng câu, bài học thì không.
+
+> Module `lessons` đã bị gỡ ngày 12/09/2026 để dựng lại, nên mục này hiện chỉ còn một
+> dòng. Dựng lại màn học thì bổ sung vào đây.
 
 ### 2.2 Hộp thoại
 
@@ -177,8 +175,6 @@ Chỉ dùng trong đúng một màn, không tái sử dụng nơi khác.
 | `community` | `features/community/components/PostComposer.tsx` | Form soạn bài |
 | `community` | `features/community/components/AttachmentView.tsx` | Xem tệp đính kèm |
 | `habits` | `features/habits/components/HabitForm.tsx` | Form thêm/sửa thói quen |
-| `lessons` | `features/lessons/components/ExerciseView.tsx` | Một câu bài tập (8 dạng) |
-| `lessons` | `features/lessons/components/AudioButton.tsx` | Nút phát âm thanh |
 | `notifications` | `features/notifications/components/NotificationBell.tsx` | Chuông trên thanh trên cùng |
 | `notifications` | `features/notifications/components/ReminderSettings.tsx` | Cấu hình lời nhắc, trong `/profile` |
 | `notifications` | `features/notifications/components/notification-display.tsx` | Bảng tra biểu tượng + nhãn theo loại |

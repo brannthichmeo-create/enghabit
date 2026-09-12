@@ -67,17 +67,6 @@ enum VocabLevel {
   ADVANCED
 }
 
-enum ExerciseType {
-  CHOOSE_MEANING
-  CHOOSE_WORD
-  MATCH_PAIRS
-  ARRANGE_WORDS
-  FILL_BLANK
-  TYPE_WORD
-  LISTEN_TYPE
-  LISTEN_CHOOSE
-}
-
 /// Loại thông báo trong ứng dụng. Thêm loại mới phải thêm cả ở shared/constants/enums.ts.
 enum NotificationType {
   /// Nhắc học hằng ngày theo giờ user đặt
@@ -181,10 +170,7 @@ model User {
   habits              Habit[]
   habitCheckIns       HabitCheckIn[]
   vocabProgress       UserVocabProgress[]
-  examAttempts        ExamAttempt[]
   activityLogs        ActivityLog[]
-  lessonProgress      LessonProgress[]
-  mistakes            Mistake[]
   streak              UserStreak?
   notificationSetting NotificationSetting?
   avatar              UserAvatar?
@@ -403,8 +389,6 @@ model Topic {
 
   createdBy      User?            @relation("TopicCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   vocabularies   Vocabulary[]
-  examAttempts   ExamAttempt[]
-  lessonProgress LessonProgress[]
 
   @@index([level])
   @@map("topics")
@@ -424,7 +408,6 @@ model Vocabulary {
 
   topic    Topic               @relation(fields: [topicId], references: [id], onDelete: Cascade)
   progress UserVocabProgress[]
-  mistakes Mistake[]
 
   @@index([topicId])
   @@map("vocabularies")
@@ -456,28 +439,6 @@ model UserVocabProgress {
 // ---------------------------------------------------------------------------
 // Kiểm tra (chế độ "Exam" trong module lessons — xem be/src/modules/lessons/exam.service.ts)
 // ---------------------------------------------------------------------------
-
-/// Lượt làm bài Kiểm tra của một chủ đề.
-///
-/// Đề bài KHÔNG lưu ở đây — sinh động từ toàn bộ Vocabulary của chủ đề mỗi lần vào,
-/// giống hệt cách bài học (LessonProgress) hoạt động. Bảng này chỉ ghi lại điểm số
-/// để tính "điểm cao nhất" và phục vụ ActivityLog QUIZ_COMPLETED.
-model ExamAttempt {
-  id      Int @id @default(autoincrement())
-  userId  Int @map("user_id")
-  topicId Int @map("topic_id")
-  correct Int
-  total   Int
-
-  completedAt DateTime @default(now()) @map("completed_at")
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
-
-  @@index([userId, completedAt])
-  @@index([topicId])
-  @@map("exam_attempts")
-}
 
 // ---------------------------------------------------------------------------
 // Hoạt động & streak
@@ -526,58 +487,6 @@ model UserStreak {
 // ---------------------------------------------------------------------------
 // Lộ trình học
 // ---------------------------------------------------------------------------
-
-/// Tiến độ từng bài học.
-///
-/// Nội dung bài học KHÔNG lưu ở đây — bài được sinh ra từ danh sách từ vựng của
-/// chủ đề theo quy tắc cố định (xem be/src/modules/lessons). Bảng này chỉ ghi
-/// user đã qua bài nào, nhờ vậy thêm từ vựng là lộ trình tự dài ra mà không cần migrate.
-model LessonProgress {
-  id      Int @id @default(autoincrement())
-  userId  Int @map("user_id")
-  topicId Int @map("topic_id")
-
-  /// Thứ tự bài trong chủ đề, bắt đầu từ 0.
-  lessonIndex Int @map("lesson_index")
-
-  /// Điểm cao nhất đã đạt, tính theo phần trăm.
-  bestScore Int @default(0) @map("best_score")
-
-  completedAt DateTime @default(now()) @map("completed_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, topicId, lessonIndex])
-  @@index([userId, topicId])
-  @@map("lesson_progress")
-}
-
-/// Từ mà user từng trả lời sai và chưa sửa được.
-///
-/// Đây là nguồn cho khu "Ôn lại câu sai". Một bản ghi tồn tại chừng nào user còn
-/// sai từ đó; trả lời đúng thì tăng timesCorrect, đủ ngưỡng thì xoá khỏi danh sách.
-model Mistake {
-  id           Int          @id @default(autoincrement())
-  userId       Int          @map("user_id")
-  vocabularyId Int          @map("vocabulary_id")
-  exerciseType ExerciseType @map("exercise_type")
-
-  timesWrong   Int @default(1) @map("times_wrong")
-  /// Số lần trả lời đúng liên tiếp sau lần sai gần nhất.
-  timesCorrect Int @default(0) @map("times_correct")
-
-  lastWrongAt DateTime @default(now()) @map("last_wrong_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, vocabularyId, exerciseType])
-  @@index([userId, lastWrongAt])
-  @@map("mistakes")
-}
 
 // ---------------------------------------------------------------------------
 // Thông báo

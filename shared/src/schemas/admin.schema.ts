@@ -89,7 +89,6 @@ export interface AdminUserDetail extends AdminUserRow {
   habitCount: number;
   goalCount: number;
   vocabLearned: number;
-  examAttempts: number;
   lastActivityDate: string | null;
 
   /** Số hoạt động theo từng loại, TOÀN THỜI GIAN kể từ lúc tạo tài khoản. */
