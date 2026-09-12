@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-10T18:08:54Z",
+  "title": "Design System: ENG//HABIT",
+  "extensions": {
+    "colorMeta": {
+      "sky-blue": {
+        "role": "primary",
+        "displayName": "Sky Blue",
+        "canonical": "#6090CF",
+        "tonalRamp": ["#0a1a2e", "#14315c", "#1e4e8c", "#3a6bb0", "#6090cf", "#96b8e0", "#c7dbf0", "#e8f1fc"]
+      },
+      "logo-gold": {
+        "role": "secondary",
+        "displayName": "Logo Gold",
+        "canonical": "#EAB22D",
+        "tonalRamp": ["#3d2900", "#6b4700", "#7d5900", "#b37f00", "#eab22d", "#f0c66b", "#f8e3b8", "#faf5e2"]
+      },
+      "ink-navy": {
+        "role": "neutral",
+        "displayName": "Ink Navy",
+        "canonical": "#18212E",
+        "tonalRamp": ["#0f1622", "#18212e", "#2a3a4d", "#44536a", "#7f93ab", "#b6c8de", "#d8e4f2", "#e7effa"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "One big number or one big word per screen — dashboard stats, the flashcard/exercise word, the auth headline. Never a page title." },
+      "headline": { "displayName": "Headline", "purpose": "Page-level <h1> via PageHeader, one per screen." },
+      "title": { "displayName": "Title", "purpose": "Section headers, card group titles, modal titles." },
+      "body": { "displayName": "Body", "purpose": "The workhorse size — most copy, labels, table cells, buttons, fields." },
+      "label": { "displayName": "Label", "purpose": "Meta text, timestamps, hints under fields. The floor for anything read as a sentence, including error text." },
+      "micro": { "displayName": "Micro", "purpose": "10px, only where the container physically cannot hold 12px: badge circles, avatar chips, fixed-size cells, chart ticks. Numbers and single glyphs, never phrases." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06)", "purpose": "Resting state for every Card — barely perceptible, paired with border-line." },
+      { "name": "card-hover", "value": "0 4px 8px rgb(16 24 40 / 0.06), 0 2px 4px rgb(16 24 40 / 0.04)", "purpose": "Only shadow that changes on interaction, for cards marked interactive." },
+      { "name": "sm", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "Small floating chips — brand-panel logo badge, minor icon containers. Most-used shadow step." },
+      { "name": "lg", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Popover menus — notification bell, language switcher, theme toggle dropdowns." },
+      { "name": "xl", "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)", "purpose": "Mobile navigation drawer — the single most elevated surface in the app." }
+    ],
+    "motion": [
+      { "name": "ease-entrance", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Exponential ease-out for elements entering the screen (enter-up, 500ms)." },
+      { "name": "duration-fast", "value": "150ms", "purpose": "Fade-in transitions." },
+      { "name": "duration-base", "value": "200ms", "purpose": "Slide-up transitions (dropdowns, error banners)." },
+      { "name": "duration-entrance", "value": "500ms", "purpose": "Staggered form-field entrance on auth screens." }
+    ],
+    "breakpoints": [
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action button — solid Sky Blue fill, dark text fixed in both themes.",
+      "html": "<button class=\"ds-btn-primary\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14M13 5l7 7-7 7\"/></svg>Đăng nhập</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: rgb(var(--brand)); color: #0F1B2E; border: none; border-radius: 8px; padding: 8px 16px; font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 0.15s ease; } .ds-btn-primary .ds-icon { width: 16px; height: 16px; } .ds-btn-primary:hover { background: rgb(var(--brand-strong)); } .ds-btn-primary:focus-visible { outline: 2px solid rgb(var(--brand-strong)); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet fill, bordered — the default for a non-primary action next to a primary one.",
+      "html": "<button class=\"ds-btn-secondary\">Huỷ</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; background: rgb(var(--surface)); color: rgb(var(--text-soft)); border: 1px solid rgb(var(--line)); border-radius: 8px; padding: 8px 16px; font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 0.15s ease; } .ds-btn-secondary:hover { background: rgb(var(--sunken)); } .ds-btn-secondary:focus-visible { outline: 2px solid rgb(var(--brand-strong)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Icon Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Icon-only, no fill at rest — top-bar controls (notifications, theme, language).",
+      "html": "<button class=\"ds-btn-ghost\" aria-label=\"Thông báo\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9\"/><path d=\"M13.73 21a2 2 0 0 1-3.46 0\"/></svg></button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: transparent; border: none; border-radius: 8px; color: rgb(var(--on-page-muted)); cursor: pointer; transition: background-color 0.15s ease, color 0.15s ease; } .ds-btn-ghost .ds-icon { width: 16px; height: 16px; } .ds-btn-ghost:hover { background: rgb(var(--hover)); color: rgb(var(--on-page)); } .ds-btn-ghost:focus-visible { outline: 2px solid rgb(var(--brand-strong)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labeled input with a leading icon — the shape every auth and form field shares.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Email hoặc tên tài khoản</span><div class=\"ds-field-wrap\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21c0-4 4-7 8-7s8 3 8 7\"/></svg><input class=\"ds-input\" type=\"text\" placeholder=\"ban@example.com\"/></div></label>",
+      "css": ".ds-field { display: block; font-family: Inter, system-ui, sans-serif; } .ds-field-label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: rgb(var(--text-soft)); } .ds-field-wrap { position: relative; } .ds-field-wrap .ds-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: rgb(var(--text-muted)); pointer-events: none; } .ds-input { width: 100%; box-sizing: border-box; border: 1px solid rgb(var(--line-control)); border-radius: 8px; background: rgb(var(--surface)); padding: 10px 12px 10px 36px; font-size: 14px; color: rgb(var(--text)); outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease; } .ds-input::placeholder { color: rgb(var(--text-muted)); } .ds-input:focus { border-color: rgb(var(--brand)); box-shadow: 0 0 0 4px rgb(var(--brand) / 0.1); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The standard content surface — white, bordered, barely-there shadow.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Chuỗi ngày học</h3><p class=\"ds-card-body\">7 ngày liên tiếp — đừng để đứt hôm nay.</p></div>",
+      "css": ".ds-card { background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06); font-family: Inter, system-ui, sans-serif; } .ds-card-title { margin: 0 0 6px; font-size: 18px; font-weight: 600; color: rgb(var(--text)); } .ds-card-body { margin: 0; font-size: 14px; color: rgb(var(--text-soft)); }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Rounded-full status chip — soft tone background, solid tone text. Five tones exist (slate/green/brand/amber/red); brand shown here.",
+      "html": "<span class=\"ds-badge\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2l2.9 6.9 7.1.6-5.4 4.6 1.7 6.9L12 17l-6.3 4 1.7-6.9L2 9.5l7.1-.6z\"/></svg>7 ngày</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 9999px; padding: 2px 8px; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; background: rgb(var(--brand-soft)); color: rgb(var(--brand-strong)); } .ds-badge .ds-icon { width: 12px; height: 12px; }"
+    },
+    {
+      "name": "Sidebar Navigation Item",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Default vs. active state for a sidebar destination — soft-fill active, not a pill or border stripe.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/></svg>Tổng quan</a><a class=\"ds-nav-item\" href=\"#\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z\"/></svg>Học</a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; width: 200px; font-family: Inter, system-ui, sans-serif; } .ds-nav-item { display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 8px 10px; font-size: 14px; font-weight: 500; text-decoration: none; color: rgb(var(--on-page-soft)); transition: background-color 0.15s ease, color 0.15s ease; } .ds-nav-item .ds-icon { width: 18px; height: 18px; } .ds-nav-item:hover { background: rgb(var(--hover)); color: rgb(var(--on-page)); } .ds-nav-item-active { background: rgb(var(--brand-soft)); color: rgb(var(--brand-strong)); }"
+    },
+    {
+      "name": "Top-Bar Stat Chip",
+      "kind": "custom",
+      "refersTo": "chip-stat",
+      "description": "Signature component: coins/streak/level pill on the system background — bordered and transparent, unlike a card-based Badge, because it sits directly on the pastel/navy page rather than inside a white card.",
+      "html": "<span class=\"ds-stat-chip\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M12 8v4l2.5 1.5\"/></svg>120</span>",
+      "css": ".ds-stat-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgb(var(--line-on-page)); border-radius: 9999px; padding: 4px 8px; font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; color: rgb(var(--on-page-soft)); } .ds-stat-chip .ds-icon { width: 14px; height: 14px; color: rgb(var(--accent)); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calm Sky",
+    "overview": "ENG//HABIT is a habit-tracking layer wrapped around English vocabulary practice — the product bet is that people don't lack study material, they lack a reason to come back tomorrow. The interface earns that trust by staying out of the way: a pastel sky-blue system page, white cards with a visible border instead of a dramatic shadow, one restrained blue for action and one warm gold borrowed from the mascot logo for the rare moment that deserves it (a streak flame, a first-place rank, a coin). Nothing here is trying to look like a game with flashing rewards — the calm is the point, because a habit tool that spikes your pulse every time you open it is a habit tool people quit.\n\nDensity is real: this is an Operate-mode app (dashboards, lists, forms, a sidebar with eight destinations), and text-sm/text-xs carry almost the entire UI. The one place the system allows itself a big moment is a single large number or a single large word — a stat on a dashboard, a vocabulary word mid-drill — never a decorative headline.\n\nConfirmed anti-references: not the saturated, effects-heavy gamification look of Duolingo-style language apps (loud color, constant motion cues); not a cold, colorless enterprise-gray look either. The gold accent exists specifically so the app isn't just blue and white.",
+    "keyCharacteristics": [
+      "Pastel sky-blue system background in light mode, dark navy (never pure black) in dark mode",
+      "White/near-black cards separated from the page by a border, not by elevation",
+      "One brand blue for action + one gold accent for reward moments; no third UI hue",
+      "Two parallel neutral-text scales (in-card vs. on-page) kept deliberately separate",
+      "Short, simple motion — a slide or fade under 500ms, nothing playing on a loop except two slow-drifting background blobs on the auth screen"
+    ],
+    "rules": [
+      { "name": "The Two Neutrals Rule", "body": "There are two parallel gray-blue text scales, not one: content* (text inside white cards) and on-page* (text directly on the pastel/navy system background — sidebar, top bar, page titles). In dark mode the two are byte-identical at every tier, because both backgrounds are dark and the palette deliberately shares steps; in light mode only the soft and muted tiers differ, by ~3% lightness, to hold contrast against a pastel page slightly darker than a white card. Picking the wrong one is close to invisible today — the split earns its keep against the next background change, not this one.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "Logo Gold is the only warm color in the interface. It marks reward and rank, nothing else. A second accent hue would blur which moments are actually meant to feel earned.", "section": "colors" },
+      { "name": "The Categorical Split Rule", "body": "Chart series colors and the activity-calendar heat scale are a deliberately separate palette from the UI colors above — validated for colorblind distinction and monotonic brightness, with a fixed series order that must never be reshuffled to \"match the brand better.\"", "section": "colors" },
+      { "name": "The One Big Thing Rule", "body": "Display size appears once per screen at most, on a single number or word — never as a decorative headline treatment. If a screen wants to feel calm rather than loud, only one element gets to be large.", "section": "typography" },
+      { "name": "The Micro-Is-Earned Rule", "body": "10px is allowed only when the container is fixed and genuinely too small for 12px — badge circles, avatar chips, fixed-size cells, chart ticks. It is never the answer to \"this text felt too heavy\": that is what content-muted is for. If a phrase someone has to read is at 10px, that is a bug, not a style choice — an error message at 10px was exactly the defect this rule was written after.", "section": "typography" },
+      { "name": "The Border-Over-Bounce Rule", "body": "Never ship a card, modal, or panel that relies on shadow alone to read as separate from the page. Pair every elevated surface with border-line (or border-line-page for chrome on the system background).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do pair every card/panel/modal with border-line — never ship elevation by shadow alone.",
+      "Do use content* tokens for text inside white cards and on-page* tokens for text on the sidebar/top-bar/system background — they are not interchangeable, even where they look similar in light mode.",
+      "Do keep Logo Gold reserved for reward/rank moments (streak, XP, rank #1) — not as a general second accent color.",
+      "Do use border-line-control (not border-line-strong, which is decorative-only) as the resting border on any form control.",
+      "Do keep Display-size type to one element per screen — a single stat or a single word."
+    ],
+    "donts": [
+      "Don't introduce a third UI accent hue beyond Sky Blue and Logo Gold.",
+      "Don't use gradients, pure-black backgrounds, or hard offset \"neobrutalist\" shadows — none of those appear anywhere in the current system.",
+      "Don't reach for rounded-full on anything that isn't conceptually round/pill-shaped (avatars, badges, icon-only circular buttons) — regular controls stay rounded-lg.",
+      "Don't rely on color alone to signal a state change (e.g. streak alive vs. broken) — pair it with an accessible name or visible text, not just an icon tint.",
+      "Don't animate more than one authored moment per view; the two slow background blobs on the auth screen are the ceiling for ambient motion, not a starting point to build on."
+    ]
+  }
+}
