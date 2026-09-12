@@ -22,7 +22,7 @@ import {
 } from '../../../shared/components/ui';
 import { Modal } from '../../../shared/components/Modal';
 import { useToast } from '../../../shared/components/Toast';
-import { useT } from '../../../shared/i18n/language';
+import { useLocale, useT } from '../../../shared/i18n/language';
 import {
   useAdminGroup,
   useAdminGroups,
@@ -239,6 +239,7 @@ function GroupRow({ group, onOpen }: { group: AdminGroupRow; onOpen: () => void 
 /** Hồ sơ một nhóm kèm ba thao tác quản trị. */
 function GroupDetailModal({ groupId, onClose }: { groupId: number; onClose: () => void }): JSX.Element {
   const t = useT();
+  const locale = useLocale();
   const toast = useToast();
   const detail = useAdminGroup(groupId);
 
@@ -262,7 +263,7 @@ function GroupDetailModal({ groupId, onClose }: { groupId: number; onClose: () =
               <p className="mt-1 text-sm text-content-soft">{group.block.reason}</p>
               <p className="mt-1 text-xs text-content-muted">
                 {t('Chặn lúc {time}', {
-                  time: new Date(group.block.blockedAt).toLocaleString('vi-VN'),
+                  time: new Date(group.block.blockedAt).toLocaleString(locale),
                 })}
                 {group.block.blockedBy ? ` · ${group.block.blockedBy}` : ''}
               </p>
@@ -284,7 +285,7 @@ function GroupDetailModal({ groupId, onClose }: { groupId: number; onClose: () =
             />
             <Stat
               label={t('Bài mới nhất')}
-              value={group.lastPostAt ? new Date(group.lastPostAt).toLocaleDateString('vi-VN') : '—'}
+              value={group.lastPostAt ? new Date(group.lastPostAt).toLocaleDateString(locale) : '—'}
             />
           </dl>
 
@@ -330,7 +331,7 @@ function GroupDetailModal({ groupId, onClose }: { groupId: number; onClose: () =
                   <li key={post.id} className="flex flex-wrap items-baseline gap-x-2">
                     <span className="text-content">{post.title}</span>
                     <span className="text-xs text-content-muted">
-                      {post.authorName} · {new Date(post.createdAt).toLocaleDateString('vi-VN')}
+                      {post.authorName} · {new Date(post.createdAt).toLocaleDateString(locale)}
                     </span>
                   </li>
                 ))}

@@ -154,7 +154,7 @@ export function NotificationsPage(): JSX.Element {
             {t('Trước')}
           </Button>
           <span className="text-sm tabular-nums text-on-page-muted">
-            Trang {page} / {totalPages}
+            {t('Trang {page} / {total}', { page, total: totalPages })}
           </span>
           <Button
             variant="secondary"
@@ -162,7 +162,7 @@ export function NotificationsPage(): JSX.Element {
             disabled={page >= totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
-            Sau
+            {t('Sau')}
           </Button>
         </div>
       )}

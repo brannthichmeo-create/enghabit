@@ -2,7 +2,7 @@ import { Flame, Sparkles, Target, Trophy } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { LevelSummary, StreakSummary } from '@enghabit/shared';
-import { Skeleton } from '../../../shared/components/ui';
+import { ErrorState, Skeleton } from '../../../shared/components/ui';
 import { useT } from '../../../shared/i18n/language';
 
 /**
@@ -23,16 +23,40 @@ export function HeroCard({
   streak,
   level,
   loading,
+  errorMessage,
+  onRetry,
   children,
 }: {
   streak?: StreakSummary;
   level?: LevelSummary;
   loading: boolean;
+  /** Lời giải thích khi không tải được chuỗi/cấp độ. Có giá trị nghĩa là đã hỏng. */
+  errorMessage?: string;
+  onRetry?: () => void;
   /** Dải phần thưởng (điểm danh, nhiệm vụ, vật phẩm giữ chuỗi). */
   children?: ReactNode;
 }): JSX.Element {
   const t = useT();
-  if (loading || !streak || !level) return <Skeleton className="h-[268px] w-full" />;
+
+  if (loading) return <Skeleton className="h-[268px] w-full" />;
+
+  /*
+    Hỏng thì nói hỏng, KHÔNG để nguyên khung xám.
+
+    Trước đây mọi trường hợp thiếu dữ liệu đều trả `Skeleton`, nên khi API chuỗi/cấp độ
+    lỗi thì thẻ này nhấp nháy vĩnh viễn — và vì dải phần thưởng là `children` của nó,
+    cả phần điểm danh cũng biến mất theo dù API phần thưởng vẫn chạy tốt.
+
+    Nay dải thưởng vẫn được vẽ: một API hỏng không được kéo theo phần còn lại.
+  */
+  if (errorMessage || !streak || !level) {
+    return (
+      <section className="flex h-full flex-col gap-4 overflow-hidden rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+        <ErrorState message={errorMessage ?? t('Không tải được chuỗi ngày và cấp độ')} onRetry={onRetry} />
+        {children}
+      </section>
+    );
+  }
 
   const alive = streak.isAlive;
 

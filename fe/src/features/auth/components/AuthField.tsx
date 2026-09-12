@@ -1,5 +1,5 @@
 import { Eye, EyeOff, type LucideIcon } from 'lucide-react';
-import { useState, type InputHTMLAttributes } from 'react';
+import { useId, useState, type InputHTMLAttributes } from 'react';
 import { useT } from '../../../shared/i18n/language';
 
 /**
@@ -16,6 +16,9 @@ interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function AuthField({ label, icon: Icon, error, hint, ...props }: AuthFieldProps): JSX.Element {
+  const noteId = useId();
+  const hasNote = Boolean(error || hint);
+
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-content-soft">{label}</span>
@@ -28,6 +31,7 @@ export function AuthField({ label, icon: Icon, error, hint, ...props }: AuthFiel
         <input
           {...props}
           aria-invalid={error ? true : undefined}
+          aria-describedby={hasNote ? noteId : undefined}
           className={`w-full rounded-lg border bg-surface py-2.5 pl-9 pr-3 text-sm text-content outline-none transition-colors placeholder:text-content-muted ${
             error
               ? 'border-danger/60 focus:border-danger focus:ring-4 focus:ring-danger/10'
@@ -37,9 +41,15 @@ export function AuthField({ label, icon: Icon, error, hint, ...props }: AuthFiel
       </div>
 
       {error ? (
-        <span className="mt-1.5 block text-xs text-danger">{error}</span>
+        <span id={noteId} className="mt-1.5 block text-xs text-danger">
+          {error}
+        </span>
       ) : (
-        hint && <span className="mt-1.5 block text-xs text-content-muted">{hint}</span>
+        hint && (
+          <span id={noteId} className="mt-1.5 block text-xs text-content-muted">
+            {hint}
+          </span>
+        )
       )}
     </label>
   );
@@ -55,6 +65,8 @@ export function PasswordField({
 }: AuthFieldProps): JSX.Element {
   const t = useT();
   const [visible, setVisible] = useState(false);
+  const noteId = useId();
+  const hasNote = Boolean(error || hint);
 
   return (
     <label className="block">
@@ -69,10 +81,11 @@ export function PasswordField({
           {...props}
           type={visible ? 'text' : 'password'}
           aria-invalid={error ? true : undefined}
+          aria-describedby={hasNote ? noteId : undefined}
           className={`w-full rounded-lg border bg-surface py-2.5 pl-9 pr-10 text-sm text-content outline-none transition-colors placeholder:text-content-muted ${
             error
               ? 'border-danger/60 focus:border-danger focus:ring-4 focus:ring-danger/10'
-              : 'border-line-strong focus:border-brand focus:ring-4 focus:ring-brand/10'
+              : 'border-line-control focus:border-brand focus:ring-4 focus:ring-brand/10'
           }`}
         />
         <button
@@ -86,9 +99,15 @@ export function PasswordField({
       </div>
 
       {error ? (
-        <span className="mt-1.5 block text-xs text-danger">{error}</span>
+        <span id={noteId} className="mt-1.5 block text-xs text-danger">
+          {error}
+        </span>
       ) : (
-        hint && <span className="mt-1.5 block text-xs text-content-muted">{hint}</span>
+        hint && (
+          <span id={noteId} className="mt-1.5 block text-xs text-content-muted">
+            {hint}
+          </span>
+        )
       )}
     </label>
   );

@@ -113,6 +113,8 @@ export interface PathTopic {
   level: string;
   lessons: LessonSummary[];
   completedLessons: number;
+  /** Điểm phần trăm cao nhất đạt được ở bài Kiểm tra của chủ đề này; null nếu chưa làm lần nào. */
+  bestExamScore: number | null;
 }
 
 export interface LessonDetail {
@@ -131,8 +133,10 @@ export interface LessonDetail {
  * quyết định mình đúng hay sai, vì kết quả đó ảnh hưởng tới streak và thống kê.
  */
 export const submitLessonSchema = z.object({
-  topicId: idSchema,
-  index: z.number().int().min(0),
+  // 0 = bài luyện "Ôn lại từ sai" (getMistakePractice trả topicId giả 0, không gắn chủ đề nào).
+  topicId: z.number().int().min(0),
+  // -1 = "Ôn lại từ sai" (không phải một bài thật nên không có thứ tự).
+  index: z.number().int().min(-1),
   answers: z
     .array(
       z.object({
@@ -148,6 +152,19 @@ export const submitLessonSchema = z.object({
     .min(1, 'Phải có ít nhất một câu trả lời'),
 });
 export type SubmitLessonInput = z.infer<typeof submitLessonSchema>;
+
+/**
+ * Nộp bài Kiểm tra (chế độ "Exam", xem be/src/modules/lessons/exam.service.ts).
+ *
+ * Không có `index` như bài học thường — Kiểm tra không phải một bước có thứ tự trên lộ
+ * trình, chỉ gắn với một chủ đề. Dùng lại đúng schema `answers` của submitLessonSchema để
+ * không định nghĩa hai lần.
+ */
+export const submitExamSchema = z.object({
+  topicId: idSchema,
+  answers: submitLessonSchema.shape.answers,
+});
+export type SubmitExamInput = z.infer<typeof submitExamSchema>;
 
 export interface LessonResult {
   correct: number;

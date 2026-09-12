@@ -34,19 +34,38 @@ export function TrendChart({
   const [hovered, setHovered] = useState<string | null>(null);
 
   const max = Math.max(1, ...points.map((p) => p.primary));
-  const ceiling = Math.ceil(max / 5) * 5 || 5;
+
+  // Trần luôn là số CHẴN, vì trục chỉ có ba mốc [0, trần/2, trần] và các đại lượng ở
+  // đây đều là số đếm — làm tròn theo bội số 5 như bản cũ thì max = 15 cho ra mốc giữa
+  // "7,5 hoạt động", một con số không tồn tại.
+  const ceiling = Math.max(2, Math.ceil(max / 2) * 2);
+  const step = labelStep(points.length);
   const active = points.find((p) => p.date === hovered) ?? points[points.length - 1];
   const barColor = tone === 'danger' ? 'bg-danger' : 'bg-brand';
 
   return (
     <div>
       <div className="flex gap-3">
+        {/*
+          Nhãn trục tung phải nằm TRONG khung, không được thò ra ngoài.
+
+          `bottom: B%` đặt MÉP DƯỚI của nhãn ở mốc B, nên nhãn trên cùng (B = 100%)
+          nằm trọn phía trên khung; `-translate-y-1/2` của bản cũ còn đẩy nó lên thêm
+          nửa dòng nữa, thành ra nó đè lên tiêu đề mục phía trên.
+
+          Dịch xuống đúng bằng tỉ lệ của chính mốc đó là vừa khít: mốc trên cùng dịch
+          100% (tụt hẳn xuống dưới đường kẻ), mốc giữa dịch 50% (canh giữa đường kẻ),
+          mốc 0 không dịch (nằm ngay trên đường đáy).
+        */}
         <div className="relative w-8 shrink-0" style={{ height: CHART_HEIGHT }}>
           {[0, ceiling / 2, ceiling].map((value) => (
             <span
               key={value}
-              className="absolute right-0 -translate-y-1/2 text-[10px] tabular-nums text-content-muted"
-              style={{ bottom: `${(value / ceiling) * 100}%` }}
+              className="absolute right-0 text-[10px] tabular-nums text-content-muted"
+              style={{
+                bottom: `${(value / ceiling) * 100}%`,
+                transform: `translateY(${(value / ceiling) * 100}%)`,
+              }}
             >
               {value}
             </span>
@@ -86,6 +105,24 @@ export function TrendChart({
               </div>
             ))}
           </div>
+
+          {/*
+            Trục hoành. Dùng ĐÚNG cấu trúc flex của hàng cột phía trên (`flex-1` cộng
+            `gap-[3px]`) nên mỗi nhãn tự nằm thẳng dưới cột của nó, không cần tính toạ độ.
+
+            `aria-hidden`: mỗi cột đã có `aria-label` đầy đủ ngày tháng rồi, để trình đọc
+            màn hình đọc thêm dãy ngày trần trụi này chỉ làm nhiễu.
+          */}
+          <div className="mt-1.5 flex gap-[3px]" aria-hidden>
+            {points.map((point, index) => (
+              <div
+                key={point.date}
+                className="min-w-0 flex-1 whitespace-nowrap text-center text-[10px] tabular-nums text-content-muted"
+              >
+                {isLabelled(index, points.length, step) ? formatAxisDate(point.date) : ''}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -110,10 +147,44 @@ export function TrendChart({
   );
 }
 
+/** Số nhãn trục hoành hiển thị được mà không chồng lên nhau, ở bề ngang thường gặp. */
+const MAX_AXIS_LABELS = 10;
+
+/** Cứ mấy cột thì ghi một nhãn. 10 ngày ghi đủ; 90 ngày thì cách 9 cột một nhãn. */
+function labelStep(count: number): number {
+  return Math.max(1, Math.ceil(count / MAX_AXIS_LABELS));
+}
+
+/**
+ * Đếm NGƯỢC từ cột cuối, không phải xuôi từ cột đầu.
+ *
+ * Nhờ vậy cột mới nhất — cột người ta nhìn trước tiên — luôn có nhãn, và khoảng cách
+ * giữa các nhãn vẫn đều. Đếm xuôi thì cột cuối chỉ có nhãn khi số cột chia hết cho
+ * bước nhảy, tức là hên xui.
+ */
+function isLabelled(index: number, count: number, step: number): boolean {
+  return (count - 1 - index) % step === 0;
+}
+
+/**
+ * Ngày trên trục hoành, luôn `dd/MM`.
+ *
+ * Cắt thẳng từ chuỗi `YYYY-MM-DD` chứ không qua `new Date`: chuỗi này là NGÀY LOCAL
+ * của người dùng, không phải một mốc thời gian. Đưa qua Date rồi format sẽ dịch theo
+ * múi giờ của trình duyệt — máy ở múi giờ âm sẽ hiện lùi một ngày.
+ */
+function formatAxisDate(date: string): string {
+  const [, month, day] = date.split('-');
+  return `${day}/${month}`;
+}
+
 function formatDate(date: string, locale: string): string {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'numeric',
+    // Đọc lại đúng múi giờ đã dùng lúc dựng Date ở trên. Thiếu dòng này thì trình
+    // duyệt format theo múi giờ máy: máy ở UTC-5 sẽ hiện ngày 05 cho chuỗi "…-06".
+    timeZone: 'UTC',
   });
 }

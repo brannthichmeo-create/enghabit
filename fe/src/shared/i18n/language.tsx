@@ -36,6 +36,30 @@ export const LOCALES: Record<Language, string> = {
 
 const STORAGE_KEY = 'enghabit-language';
 
+/**
+ * Tiêu đề tab và thẻ mô tả.
+ *
+ * Hai thứ này nằm cứng trong `index.html` và không nơi nào trong `src` ghi đè, nên
+ * trước đây tab trình duyệt vẫn tiếng Việt kể cả khi giao diện đã sang tiếng Anh.
+ * Không đưa vào `en.ts` được: `t()` chỉ chạy trong component, còn đây là thẻ `<head>`.
+ *
+ * Các thẻ `og:*` trong `index.html` thì KHÔNG sửa được ở đây — trình thu thập của
+ * Facebook/Zalo đọc HTML thô, không chạy JavaScript. Muốn đúng ngôn ngữ thì phải
+ * render phía máy chủ, nằm ngoài phạm vi bản SPA hiện tại.
+ */
+const DOCUMENT_META: Record<Language, { title: string; description: string }> = {
+  vi: {
+    title: 'ENG//HABIT — Xây dựng thói quen học tiếng Anh',
+    description:
+      'Ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh: học từ vựng, ôn flashcard, làm kiểm tra và theo dõi chuỗi ngày học.',
+  },
+  en: {
+    title: 'ENG//HABIT — Build an English learning habit',
+    description:
+      'An app that helps you build and keep an English learning habit: learn vocabulary, review flashcards, take exams and track your streak.',
+  },
+};
+
 /** Giá trị thay vào chỗ trống `{tên}` của câu. */
 export type TranslateParams = Record<string, string | number>;
 
@@ -103,6 +127,14 @@ export function LanguageProvider({ children }: { children: ReactNode }): JSX.Ele
     // Thuộc tính lang của trang: trình đọc màn hình và tính năng dịch của trình duyệt
     // dựa vào đây, không dựa vào chữ đang hiện.
     document.documentElement.lang = language;
+
+    // Tiêu đề tab và thẻ mô tả nằm cứng trong index.html nên trước đây luôn là tiếng
+    // Việt kể cả khi giao diện đã sang tiếng Anh. Đặt lại ở đây vì đây là chỗ duy nhất
+    // biết ngôn ngữ hiện tại.
+    document.title = DOCUMENT_META[language].title;
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute('content', DOCUMENT_META[language].description);
 
     try {
       localStorage.setItem(STORAGE_KEY, language);

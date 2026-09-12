@@ -18,7 +18,7 @@ import {
 export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   [GoalType.VOCAB_PER_DAY]: 'Số từ vựng học mỗi ngày',
   [GoalType.MINUTES_PER_DAY]: 'Số lượt ôn tập mỗi ngày',
-  [GoalType.LESSONS_PER_WEEK]: 'Số bài quiz mỗi tuần',
+  [GoalType.LESSONS_PER_WEEK]: 'Số bài kiểm tra mỗi tuần',
   [GoalType.STREAK_TARGET]: 'Chuỗi ngày học liên tiếp',
 };
 
@@ -42,7 +42,7 @@ export const VOCAB_LEVEL_LABELS: Record<VocabLevel, string> = {
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   [ActivityType.VOCAB_LEARNED]: 'Học từ vựng',
   [ActivityType.FLASHCARD_REVIEWED]: 'Ôn flashcard',
-  [ActivityType.QUIZ_COMPLETED]: 'Làm quiz',
+  [ActivityType.QUIZ_COMPLETED]: 'Làm kiểm tra',
   [ActivityType.HABIT_CHECKIN]: 'Check-in thói quen',
 };
 

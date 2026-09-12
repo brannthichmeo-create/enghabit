@@ -1,34 +1,49 @@
-import { useState } from 'react';
-import { ArrowRight, Check, RotateCw, X } from 'lucide-react';
-import { ExerciseType, type Exercise, type LessonDetail, type LessonResult, type SubmitLessonInput } from '@enghabit/shared';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Check, Clock, RotateCw, X } from 'lucide-react';
+import {
+  EXAM_QUESTION_SECONDS,
+  ExerciseType,
+  type Exercise,
+  type LessonDetail,
+  type LessonResult,
+  type SubmitLessonInput,
+} from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, Card, ErrorMessage } from '../../../shared/components/ui';
 import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
-import { useSubmitLesson } from '../lesson.hooks';
+import type { LessonSubmitAdapter } from '../lesson.hooks';
 import { ExerciseView, type AnswerValue } from './ExerciseView';
 import { useT } from '../../../shared/i18n/language';
 
 /**
  * Màn hình làm bài: đi qua từng câu, cuối cùng nộp cả bài để backend chấm.
  *
+ * Dùng chung cho cả bài học lẫn Kiểm tra ("Exam" kiểu OpenQuiz.ai) — hai chế độ khác
+ * nhau ở NƠI nộp bài (payload khác hình dạng, xem `LessonSubmitAdapter`) và ở việc
+ * Kiểm tra có tính giờ từng câu, nhưng cách chơi từng câu là một, không chép lại UI.
+ *
  * Không chấm từng câu ngay khi trả lời vì đáp án đúng không được gửi xuống client —
  * đổi lại người học thấy toàn bộ kết quả một lần ở cuối, kèm chỗ nào sai.
  */
 export function LessonPlayer({
   lesson,
+  mode = 'lesson',
+  submit,
   onExit,
   onFinished,
 }: {
   lesson: LessonDetail;
+  mode?: 'lesson' | 'exam';
+  submit: LessonSubmitAdapter;
   onExit: () => void;
   onFinished?: (result: LessonResult) => void;
 }): JSX.Element {
   const t = useT();
-  const submit = useSubmitLesson();
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<SubmitLessonInput['answers']>([]);
   const [current, setCurrent] = useState<AnswerValue | null>(null);
   const [result, setResult] = useState<LessonResult | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(EXAM_QUESTION_SECONDS);
 
   // Màn làm bài không có URL riêng nên phải tự nối cấp cuối vào breadcrumb
   useBreadcrumbTail(lesson.title);
@@ -36,14 +51,9 @@ export function LessonPlayer({
   const exercise = lesson.exercises[index];
   const isLast = index === lesson.exercises.length - 1;
 
-  if (result) {
-    return <ResultView lesson={lesson} result={result} onExit={onExit} />;
-  }
-
-  if (!exercise) return <ErrorMessage>{t('Bài học không có câu hỏi nào')}</ErrorMessage>;
-
-  const handleNext = (): void => {
-    if (!current) return;
+  /** Gộp đáp án hiện có vào bài nộp rồi sang câu tiếp / nộp cả bài nếu là câu cuối. */
+  const submitAnswer = (answer: AnswerValue | null): void => {
+    if (!exercise) return;
 
     const next = [
       ...answers,
@@ -51,7 +61,7 @@ export function LessonPlayer({
         exerciseId: exercise.id,
         vocabularyId: exercise.vocabularyId,
         type: exercise.type,
-        ...current,
+        ...answer,
       },
     ];
     setAnswers(next);
@@ -62,16 +72,47 @@ export function LessonPlayer({
       return;
     }
 
-    submit.mutate(
-      { topicId: lesson.topicId, index: lesson.index, answers: next },
-      {
-        onSuccess: (data) => {
-          setResult(data);
-          onFinished?.(data);
-        },
-      },
-    );
+    submit.run(next, (data) => {
+      setResult(data);
+      onFinished?.(data);
+    });
   };
+
+  const handleNext = (): void => {
+    if (!current) return;
+    submitAnswer(current);
+  };
+
+  // Hết giờ thì tự nộp câu đó dù chưa chọn xong — bỏ trống tính là sai, không chặn bài lại.
+  const handleTimeoutRef = useRef<() => void>(() => {});
+  handleTimeoutRef.current = () => submitAnswer(current);
+
+  // Đếm giờ mỗi câu, chỉ bật ở chế độ Kiểm tra. Đặt TRƯỚC mọi early-return bên dưới
+  // để không phá quy tắc "hook nào cũng phải chạy ở mọi lần render".
+  useEffect(() => {
+    if (mode !== 'exam' || !exercise || result) return undefined;
+
+    setSecondsLeft(EXAM_QUESTION_SECONDS);
+    const interval = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(interval);
+          handleTimeoutRef.current();
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ cần chạy lại khi đổi câu
+  }, [exercise?.id, mode, result]);
+
+  if (result) {
+    return <ResultView lesson={lesson} result={result} mode={mode} onExit={onExit} />;
+  }
+
+  if (!exercise) return <ErrorMessage>{t('Bài học không có câu hỏi nào')}</ErrorMessage>;
 
   const progress = (index / lesson.exercises.length) * 100;
 
@@ -96,6 +137,17 @@ export function LessonPlayer({
         <span className="shrink-0 text-sm tabular-nums text-content-muted">
           {index + 1}/{lesson.exercises.length}
         </span>
+
+        {mode === 'exam' && (
+          <span
+            className={`flex shrink-0 items-center gap-1 text-sm font-medium tabular-nums ${
+              secondsLeft <= 5 ? 'text-danger' : 'text-content-muted'
+            }`}
+          >
+            <Clock className="h-3.5 w-3.5" aria-hidden />
+            {secondsLeft}s
+          </span>
+        )}
       </div>
 
       {submit.isError && (
@@ -130,15 +182,18 @@ export function LessonPlayer({
 function ResultView({
   lesson,
   result,
+  mode,
   onExit,
 }: {
   lesson: LessonDetail;
   result: LessonResult;
+  mode: 'lesson' | 'exam';
   onExit: () => void;
 }): JSX.Element {
   const t = useT();
   const wrongIds = new Set(result.details.filter((d) => !d.isCorrect).map((d) => d.exerciseId));
   const wrongExercises = lesson.exercises.filter((e) => wrongIds.has(e.id));
+  const isExam = mode === 'exam';
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -159,14 +214,18 @@ function ResultView({
           {result.correct}/{result.total}
         </p>
         <p className="mt-1 text-sm text-content-muted">
-          {result.passed
-            ? t('Đạt {percent}% — bạn đã qua bài này', { percent: result.percentage })
-            : t('Đạt {percent}% — cần đúng từ 70% để qua bài', { percent: result.percentage })}
+          {isExam
+            ? result.passed
+              ? t('Đạt {percent}% — kiến thức chủ đề này khá vững', { percent: result.percentage })
+              : t('Đạt {percent}% — nên ôn lại thêm rồi kiểm tra lại', { percent: result.percentage })
+            : result.passed
+              ? t('Đạt {percent}% — bạn đã qua bài này', { percent: result.percentage })
+              : t('Đạt {percent}% — cần đúng từ 70% để qua bài', { percent: result.percentage })}
         </p>
 
         <div className="mt-5 flex justify-center gap-2">
-          <Button onClick={onExit} variant={result.passed ? 'primary' : 'secondary'}>
-            {result.passed ? t('Về lộ trình') : t('Quay lại')}
+          <Button onClick={onExit} variant={isExam || result.passed ? 'primary' : 'secondary'}>
+            {isExam ? t('Về lộ trình') : result.passed ? t('Về lộ trình') : t('Quay lại')}
           </Button>
         </div>
       </Card>

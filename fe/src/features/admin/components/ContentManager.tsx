@@ -56,7 +56,7 @@ export function ContentManager(): JSX.Element {
                   onClick={async () => {
                     const ok = await confirm({
                       title: t('Xoá chủ đề "{name}"?', { name: topic.name }),
-                      message: t('Toàn bộ từ vựng và quiz thuộc chủ đề này sẽ mất theo.'),
+                      message: t('Toàn bộ từ vựng và lịch sử kiểm tra thuộc chủ đề này sẽ mất theo.'),
                       confirmLabel: t('Xoá chủ đề'),
                       tone: 'danger',
                     });

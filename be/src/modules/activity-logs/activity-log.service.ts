@@ -20,7 +20,7 @@ import { createNotification } from '../notifications/notification.service.js';
 /**
  * Nơi DUY NHẤT ghi ActivityLog và cập nhật UserStreak.
  *
- * Mọi module khác (habits, flashcards, quizzes, vocabulary) phải gọi `recordActivity()`
+ * Mọi module khác (habits, flashcards, lessons, vocabulary) phải gọi `recordActivity()`
  * thay vì tự ghi vào DB — nếu không sẽ có nhiều cách ghi log khác nhau và streak sẽ sai
  * (xem CLAUDE.md > Quy tắc tái sử dụng code).
  */
@@ -28,9 +28,9 @@ import { createNotification } from '../notifications/notification.service.js';
 export interface RecordActivityInput {
   userId: number;
   type: ActivityType;
-  /** Id bản ghi liên quan: vocabularyId, quizId, habitId... */
+  /** Id bản ghi liên quan: vocabularyId, topicId, habitId... */
   refId?: number;
-  /** Giá trị định lượng: số từ, số phút, điểm quiz. Mặc định 1. */
+  /** Giá trị định lượng: số từ, số phút, điểm kiểm tra. Mặc định 1. */
   value?: number;
   /** Timezone của user — bắt buộc để tính đúng localDate. */
   timezone: string;
@@ -145,7 +145,7 @@ async function notifyAchievedGoals(
 const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   VOCAB_PER_DAY: 'Số từ vựng mỗi ngày',
   MINUTES_PER_DAY: 'Số lượt ôn tập mỗi ngày',
-  LESSONS_PER_WEEK: 'Số bài quiz mỗi tuần',
+  LESSONS_PER_WEEK: 'Số bài kiểm tra mỗi tuần',
   STREAK_TARGET: 'Chuỗi ngày học liên tiếp',
 };
 

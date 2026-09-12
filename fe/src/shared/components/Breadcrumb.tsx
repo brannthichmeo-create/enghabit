@@ -12,7 +12,7 @@ import { useT } from '../i18n/language';
  * Vẽ một lần trong `AppLayout` cho mọi màn hình, dữ liệu lấy từ bản đồ route ở
  * `shared/lib/breadcrumbs.ts` — trang không phải tự dựng breadcrumb của mình.
  *
- * Màn hình phụ nằm TRONG một route (làm quiz, làm bài học) không có URL riêng nên
+ * Màn hình phụ nằm TRONG một route (làm kiểm tra, làm bài học) không có URL riêng nên
  * không tra được từ bản đồ; những màn đó gọi `useBreadcrumbTail('Tên màn')` để nối
  * thêm một cấp.
  *

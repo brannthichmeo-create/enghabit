@@ -15,8 +15,11 @@ import type { Vocabulary } from '@prisma/client';
  * nằm lẫn trong các lựa chọn, còn việc chấm do backend làm khi nhận bài nộp.
  */
 
-/** Bộ sinh số giả ngẫu nhiên có hạt giống, để cùng một bài học luôn ra cùng đề. */
-function seededRandom(seed: number): () => number {
+/**
+ * Bộ sinh số giả ngẫu nhiên có hạt giống, để cùng một bài học luôn ra cùng đề.
+ * Export để exam.service.ts dùng lại đúng một cách xáo trộn khi chọn từ cho bài Kiểm tra.
+ */
+export function seededRandom(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
     state = (state * 1664525 + 1013904223) >>> 0;
@@ -24,7 +27,7 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-function shuffle<T>(items: T[], rand: () => number): T[] {
+export function shuffle<T>(items: T[], rand: () => number): T[] {
   const result = [...items];
   for (let i = result.length - 1; i > 0; i -= 1) {
     const j = Math.floor(rand() * (i + 1));

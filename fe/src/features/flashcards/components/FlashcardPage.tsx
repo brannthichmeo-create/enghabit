@@ -15,11 +15,23 @@ import { useT } from '../../../shared/i18n/language';
  */
 
 /** 4 mức đánh giá, xếp từ quên tới nhớ rõ. Màu đi kèm nhãn chữ nên không phụ thuộc màu để hiểu. */
+/**
+ * Bốn mức nhớ. Chữ trên nút luôn là `on-fill`, nên nền BẮT BUỘC đủ đậm để chữ đạt 4.5:1 ở
+ * cả hai chế độ — đã đo: 6.02 / 6.36 / 8.32 / 5.23 (sáng) và 6.07 / 10.10 / 10.78 / 7.02 (tối).
+ *
+ * Ba điều đã sửa ở đây, đừng vô tình làm lại:
+ *   - `bg-brand` + chữ trắng chỉ đạt 3.29. Nút nền brand phải dùng chữ tối `on-brand`
+ *     (xem docs/color-rules.md); muốn giữ chữ trắng thì phải hạ xuống `brand-strong`.
+ *   - `bg-series-flashcard` là màu CHUỖI BIỂU ĐỒ, không phải màu giao diện (R23) — và
+ *     chữ trắng trên nó chỉ đạt 3.20.
+ *   - Hover bằng `/85` làm nút "Rất dễ" tụt còn 3.90. `brightness-95` giữ được ≥ 5.51
+ *     ở mọi tổ hợp vì nó làm ĐẬM nền chứ không pha loãng vào nền thẻ.
+ */
 const RATINGS = [
-  { quality: ReviewQuality.BLACKOUT, label: 'Quên rồi', hint: 'Ôn lại ngày mai', className: 'bg-danger hover:bg-danger/85' },
-  { quality: ReviewQuality.CORRECT_HARD, label: 'Khó nhớ', hint: 'Ôn lại sớm', className: 'bg-series-flashcard hover:opacity-90' },
-  { quality: ReviewQuality.CORRECT, label: 'Nhớ được', hint: 'Giãn cách bình thường', className: 'bg-brand hover:bg-brand-strong' },
-  { quality: ReviewQuality.PERFECT, label: 'Rất dễ', hint: 'Giãn cách dài hơn', className: 'bg-success hover:bg-success/85' },
+  { quality: ReviewQuality.BLACKOUT, label: 'Quên rồi', hint: 'Ôn lại ngày mai', className: 'bg-danger' },
+  { quality: ReviewQuality.CORRECT_HARD, label: 'Khó nhớ', hint: 'Ôn lại sớm', className: 'bg-accent-ink' },
+  { quality: ReviewQuality.CORRECT, label: 'Nhớ được', hint: 'Giãn cách bình thường', className: 'bg-brand-strong' },
+  { quality: ReviewQuality.PERFECT, label: 'Rất dễ', hint: 'Giãn cách dài hơn', className: 'bg-success' },
 ];
 
 export function FlashcardPage(): JSX.Element {
@@ -156,10 +168,12 @@ export function FlashcardPage(): JSX.Element {
                 key={rating.quality}
                 onClick={() => handleRate(rating.quality)}
                 disabled={submitReview.isPending}
-                className={`flex flex-col items-center rounded-xl px-2 py-3 text-on-fill transition-colors disabled:opacity-50 ${rating.className}`}
+                className={`flex flex-col items-center rounded-xl px-2 py-3 text-on-fill transition-[filter] hover:brightness-95 disabled:opacity-50 ${rating.className}`}
               >
                 <span className="text-sm font-medium">{t(rating.label)}</span>
-                <span className="mt-0.5 text-[10px] text-on-fill/75">{t(rating.hint)}</span>
+                {/* Không pha mờ dòng này: 12px ở 75% tụt xuống 3.7–4.4 trên chính nền nút.
+                    Phân cấp đã đủ nhờ cỡ chữ và độ đậm của nhãn phía trên. */}
+                <span className="mt-0.5 text-xs">{t(rating.hint)}</span>
               </button>
             ))}
           </div>

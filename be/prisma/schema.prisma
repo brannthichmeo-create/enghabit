@@ -181,7 +181,7 @@ model User {
   habits              Habit[]
   habitCheckIns       HabitCheckIn[]
   vocabProgress       UserVocabProgress[]
-  quizAttempts        QuizAttempt[]
+  examAttempts        ExamAttempt[]
   activityLogs        ActivityLog[]
   lessonProgress      LessonProgress[]
   mistakes            Mistake[]
@@ -403,7 +403,7 @@ model Topic {
 
   createdBy      User?            @relation("TopicCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   vocabularies   Vocabulary[]
-  quizzes        Quiz[]
+  examAttempts   ExamAttempt[]
   lessonProgress LessonProgress[]
 
   @@index([level])
@@ -454,60 +454,29 @@ model UserVocabProgress {
 }
 
 // ---------------------------------------------------------------------------
-// Quiz
+// Kiểm tra (chế độ "Exam" trong module lessons — xem be/src/modules/lessons/exam.service.ts)
 // ---------------------------------------------------------------------------
 
-model Quiz {
-  id      Int    @id @default(autoincrement())
-  topicId Int    @map("topic_id")
-  title   String @db.VarChar(200)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  topic     Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  questions QuizQuestion[]
-  attempts  QuizAttempt[]
-
-  @@index([topicId])
-  @@map("quizzes")
-}
-
-model QuizQuestion {
-  id           Int    @id @default(autoincrement())
-  quizId       Int    @map("quiz_id")
-  questionText String @map("question_text") @db.VarChar(1000)
-
-  /// Mảng chuỗi lựa chọn, lưu JSON.
-  options Json
-
-  /// Chỉ số đáp án đúng trong mảng options. Không bao giờ trả về cho client trước khi nộp bài.
-  correctIndex Int @map("correct_index")
-
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-
-  @@index([quizId])
-  @@map("quiz_questions")
-}
-
-model QuizAttempt {
-  id     Int @id @default(autoincrement())
-  userId Int @map("user_id")
-  quizId Int @map("quiz_id")
-  score  Int
-  total  Int
-
-  /// Chi tiết câu trả lời, lưu JSON để không phải thêm bảng phụ cho quy mô này.
-  answers Json
+/// Lượt làm bài Kiểm tra của một chủ đề.
+///
+/// Đề bài KHÔNG lưu ở đây — sinh động từ toàn bộ Vocabulary của chủ đề mỗi lần vào,
+/// giống hệt cách bài học (LessonProgress) hoạt động. Bảng này chỉ ghi lại điểm số
+/// để tính "điểm cao nhất" và phục vụ ActivityLog QUIZ_COMPLETED.
+model ExamAttempt {
+  id      Int @id @default(autoincrement())
+  userId  Int @map("user_id")
+  topicId Int @map("topic_id")
+  correct Int
+  total   Int
 
   completedAt DateTime @default(now()) @map("completed_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
   @@index([userId, completedAt])
-  @@index([quizId])
-  @@map("quiz_attempts")
+  @@index([topicId])
+  @@map("exam_attempts")
 }
 
 // ---------------------------------------------------------------------------
@@ -521,10 +490,10 @@ model ActivityLog {
   userId Int          @map("user_id")
   type   ActivityType
 
-  /// Id của bản ghi liên quan (vocabularyId, quizId, habitId...). Không ràng buộc FK vì đa hình.
+  /// Id của bản ghi liên quan (vocabularyId, topicId, habitId...). Không ràng buộc FK vì đa hình.
   refId Int? @map("ref_id")
 
-  /// Giá trị định lượng của hoạt động: số từ đã học, số phút, điểm quiz...
+  /// Giá trị định lượng của hoạt động: số từ đã học, số phút, điểm kiểm tra...
   value Int @default(1)
 
   /// Thời điểm UTC.

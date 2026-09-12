@@ -10,7 +10,7 @@ import { z } from 'zod';
  *                 thứ hạng nói một nẻo".
  *  - `activities` tổng số lượt hoạt động — cho người chăm chỉ làm nhiều việc nhỏ (ôn
  *                 flashcard, check-in) một chỗ để so tài, vì XP thiên vị hoạt động nặng
- *                 điểm (một bài quiz = 20 XP = năm lượt ôn thẻ).
+ *                 điểm (một bài kiểm tra = 20 XP = năm lượt ôn thẻ).
  *
  * Cả hai cách đều xem được theo tuần, tháng hoặc toàn thời gian — `metric` và `range`
  * là hai trục độc lập, không phải bốn bảng cố định.

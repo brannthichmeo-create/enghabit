@@ -27,11 +27,11 @@ const TRAILS: Record<string, Crumb[]> = {
   '/learn': [{ label: 'Học' }],
   '/vocabulary': [{ label: 'Từ vựng' }],
   '/flashcards': [{ label: 'Ôn tập' }],
-  '/quizzes': [{ label: 'Quiz' }],
   '/leaderboard': [{ label: 'Bảng xếp hạng' }],
   '/habits': [{ label: 'Thói quen' }],
   '/goals': [{ label: 'Mục tiêu' }],
   '/community': [{ label: 'Cộng đồng' }],
+  '/groups': [{ label: 'Nhóm lớp' }],
   '/profile': [{ label: 'Trang cá nhân' }],
   '/notifications': [{ label: 'Thông báo' }],
 
@@ -40,6 +40,7 @@ const TRAILS: Record<string, Crumb[]> = {
   '/admin/access': [{ label: 'Lượt truy cập' }],
   '/admin/content': [{ label: 'Nội dung học tập' }],
   '/admin/announcements': [{ label: 'Gửi thông báo' }],
+  '/admin/groups': [{ label: 'Quản lý nhóm' }],
   '/admin/requests': [{ label: 'Quản lý yêu cầu' }],
 };
 
@@ -53,6 +54,15 @@ export function crumbsForPath(pathname: string, isAdmin: boolean): Crumb[] {
   const root = isAdmin ? ADMIN_ROOT : LEARNER_ROOT;
   // Bỏ dấu "/" thừa ở cuối để "/habits/" và "/habits" cùng tra được một dòng
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+
+  // `/groups/:id` là route có URL riêng nhưng mang id động nên không tra thẳng
+  // được từ bản đồ tĩnh — đây là route ID động DUY NHẤT của app, nên xử lý riêng
+  // một trường hợp thay vì dựng cả cơ chế khớp mẫu cho một route chưa ai dùng thêm.
+  // Trang tự nối thêm tên nhóm bằng `useBreadcrumbTail`.
+  if (path !== '/groups' && path.startsWith('/groups/')) {
+    return [root, ...(TRAILS['/groups'] ?? [])];
+  }
+
   const trail = TRAILS[path] ?? [];
 
   return [root, ...trail];

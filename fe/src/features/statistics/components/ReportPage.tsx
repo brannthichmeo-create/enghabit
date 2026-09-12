@@ -367,7 +367,7 @@ function ActivitySection({ report }: { report: LearningReport }): JSX.Element {
         />
         <StatTile
           icon={Shield}
-          label={t('Bài quiz')}
+          label={t('Bài kiểm tra')}
           value={report.totals[ActivityType.QUIZ_COMPLETED]}
         />
         <StatTile

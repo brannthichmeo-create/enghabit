@@ -157,7 +157,7 @@ export function AnnouncementPage(): JSX.Element {
                 <p className="mt-0.5 text-xs text-content-soft">
                   {body || t('Nội dung thông báo sẽ hiện ở đây.')}
                 </p>
-                <p className="mt-0.5 text-[11px] text-content-muted">{timeAgo(new Date().toISOString(), t, locale)}</p>
+                <p className="mt-0.5 text-xs text-content-muted">{timeAgo(new Date().toISOString(), t, locale)}</p>
               </div>
             </div>
 

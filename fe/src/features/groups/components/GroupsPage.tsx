@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Compass, Hash, Lock, Globe, Plus, Search, UserPlus, Users, X } from 'lucide-react';
+import { Check, Compass, Copy, Delete, Hash, Lock, Globe, Plus, Search, UserPlus, Users, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   GROUP_CODE_LENGTH,
@@ -57,7 +57,7 @@ export function GroupsPage(): JSX.Element {
         action={
           <div className="flex flex-wrap gap-2">
             <Button icon={Hash} variant="secondary" onClick={() => setCodeOpen(true)}>
-              {t('Nhập ID nhóm')}
+              {t('Nhập mã nhóm')}
             </Button>
             <Button
               icon={creating ? X : Plus}
@@ -248,6 +248,15 @@ function DiscoverTab(): JSX.Element {
 // Vào nhóm bằng mã
 // ---------------------------------------------------------------------------
 
+/** Bàn phím số: hàng cuối chừa ô trống bên trái để 0 nằm giữa, xoá nằm phải — đúng
+ *  cách bố trí bàn số quen thuộc (điện thoại, ATM...). */
+const KEYPAD_ROWS: (string | 'backspace' | null)[][] = [
+  ['7', '8', '9'],
+  ['4', '5', '6'],
+  ['1', '2', '3'],
+  [null, '0', 'backspace'],
+];
+
 /** Hộp thoại tra nhóm bằng mã 8 số — cách duy nhất tìm ra nhóm riêng tư. */
 function JoinByCodeModal({ open, onClose }: { open: boolean; onClose: () => void }): JSX.Element {
   const t = useT();
@@ -264,38 +273,111 @@ function JoinByCodeModal({ open, onClose }: { open: boolean; onClose: () => void
     onClose();
   };
 
+  const appendDigit = (digit: string): void => {
+    setInput((prev) => (prev.length >= GROUP_CODE_LENGTH ? prev : prev + digit));
+  };
+
   return (
-    <Modal open={open} onClose={close} title={t('Nhập ID nhóm')} size="lg">
+    <Modal open={open} onClose={close} title={t('Nhập mã nhóm')} size="md">
+      {/*
+        Toàn khối căn giữa trong một cột hẹp: modal "lg" cũ để hàng ô-nhập + nút "Tìm" nằm
+        lệch trái giữa một hộp thoại rộng, thừa hẳn một mảng trống bên phải.
+
+        Dòng 8 ô chữ số rộng bằng cả cột (`max-w-xs`) để mỗi ô đủ to đọc được; bàn số và
+        nút "Tìm" thì hẹp lại còn 220px cho vừa tay bấm — hai khối không dùng chung một
+        bề ngang, cùng `items-center` của cột cha sẽ tự canh giữa cho cả hai.
+      */}
       <form
         noValidate
-        className="flex flex-wrap items-end gap-3"
+        className="mx-auto flex max-w-xs flex-col items-center"
         onSubmit={(e) => {
           e.preventDefault();
-          setCode(input.trim());
+          if (input.length === GROUP_CODE_LENGTH) setCode(input);
         }}
       >
-        <div className="w-44">
-          <Field label={t('Mã nhóm')} hint={t('Gồm {n} chữ số', { n: GROUP_CODE_LENGTH })}>
-            <Input
-              value={input}
-              // inputMode numeric để bàn phím điện thoại mở sẵn bàn số
-              inputMode="numeric"
-              maxLength={GROUP_CODE_LENGTH}
-              placeholder="12345678"
-              className="tracking-[0.2em]"
-              autoFocus
-              onChange={(e) => setInput(e.target.value.replace(/\D/g, ''))}
-            />
-          </Field>
+        {/* Ô nhập thật — ẩn khỏi mắt nhưng vẫn giữ bàn phím vật lý dùng được, không chỉ
+            bấm bằng bàn số ảo bên dưới mới gõ được. */}
+        <label className="sr-only" htmlFor="group-code-input">
+          {t('Mã nhóm')}
+        </label>
+        <input
+          id="group-code-input"
+          value={input}
+          inputMode="numeric"
+          maxLength={GROUP_CODE_LENGTH}
+          autoFocus
+          onChange={(e) => setInput(e.target.value.replace(/\D/g, '').slice(0, GROUP_CODE_LENGTH))}
+          className="sr-only"
+        />
+
+        {/*
+          Từng chữ số đã gõ, một ô riêng — để biết đang gõ tới số thứ mấy trong 8 số.
+          Lưới `grid-cols-8` thay vì flex: flex co 8 ô cố định bề ngang vào vừa cột hẹp
+          của bàn số bên dưới làm chúng bị bóp mỏng dính; lưới chia đều theo bề ngang
+          THẬT của dòng này nên mỗi ô luôn đủ rộng, không phụ thuộc bàn số bên dưới.
+        */}
+        <div className="grid w-full grid-cols-8 gap-1.5" aria-hidden>
+          {Array.from({ length: GROUP_CODE_LENGTH }, (_, i) => (
+            <div
+              key={i}
+              className={`flex h-12 items-center justify-center rounded-lg border text-lg font-semibold tabular-nums ${
+                i < input.length
+                  ? 'border-brand bg-brand-soft text-brand-strong'
+                  : 'border-line text-content-muted'
+              }`}
+            >
+              {input[i] ?? ''}
+            </div>
+          ))}
         </div>
-        <Button type="submit" icon={Search} disabled={input.length !== GROUP_CODE_LENGTH} className="mb-0.5">
+        <p className="mt-2 text-center text-xs text-content-muted">
+          {t('Gồm {n} chữ số', { n: GROUP_CODE_LENGTH })}
+        </p>
+
+        <div className="mt-4 flex w-[220px] flex-col gap-2">
+          {KEYPAD_ROWS.map((row, rowIndex) => (
+            <div key={rowIndex} className="flex gap-2">
+              {row.map((key, keyIndex) => {
+                if (key === null) return <div key={keyIndex} className="flex-1" />;
+
+                if (key === 'backspace') {
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setInput((prev) => prev.slice(0, -1))}
+                      disabled={input.length === 0}
+                      aria-label={t('Xoá một chữ số')}
+                      className="flex flex-1 items-center justify-center rounded-xl border border-line-control bg-surface py-2.5 text-content-soft transition-colors hover:border-brand hover:bg-sunken disabled:opacity-40"
+                    >
+                      <Delete className="h-4 w-4" aria-hidden />
+                    </button>
+                  );
+                }
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => appendDigit(key)}
+                    className="flex-1 rounded-xl border border-line-control bg-surface py-2.5 text-lg font-medium text-content transition-colors hover:border-brand hover:bg-sunken"
+                  >
+                    {key}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        <Button type="submit" icon={Search} disabled={input.length !== GROUP_CODE_LENGTH} className="mt-4 w-[220px]">
           {t('Tìm')}
         </Button>
       </form>
 
       {found.isFetching && <div className="mt-4"><SkeletonList rows={1} /></div>}
       {found.isError && (
-        <p className="mt-3 text-sm text-danger">{t('Không tìm thấy nhóm nào có mã này')}</p>
+        <p className="mt-3 text-center text-sm text-danger">{t('Không tìm thấy nhóm nào có mã này')}</p>
       )}
       {found.data && !found.isFetching && (
         <div className="mt-4">
@@ -313,7 +395,6 @@ function JoinByCodeModal({ open, onClose }: { open: boolean; onClose: () => void
 /** Ô tạo nhóm. Trạng thái công khai/riêng tư và phê duyệt đều là công tắc bật/tắt. */
 function CreateGroupForm({ onDone }: { onDone: () => void }): JSX.Element {
   const t = useT();
-  const toast = useToast();
   const createGroup = useCreateGroup();
 
   const [name, setName] = useState('');
@@ -321,6 +402,10 @@ function CreateGroupForm({ onDone }: { onDone: () => void }): JSX.Element {
   const [isPublic, setIsPublic] = useState(true);
   const [requireApproval, setRequireApproval] = useState(true);
   const [error, setError] = useState('');
+  // Mã 8 số vừa sinh ra là chìa khoá DUY NHẤT vào nhóm riêng tư — hiện trong hộp
+  // thoại phải tự tay đóng thay vì toast tự biến mất sau 3.5s, nếu không người tạo
+  // nhóm không kịp chép lại là mất luôn cách duy nhất mời người khác vào.
+  const [createdCode, setCreatedCode] = useState<string | null>(null);
 
   const submit = (event: FormEvent): void => {
     event.preventDefault();
@@ -338,16 +423,23 @@ function CreateGroupForm({ onDone }: { onDone: () => void }): JSX.Element {
     }
 
     createGroup.mutate(parsed.data, {
-      onSuccess: (group) => {
-        toast.success(t('Đã tạo nhóm, mã nhóm là {code}', { code: group.code }));
-        onDone();
-      },
+      onSuccess: (group) => setCreatedCode(group.code),
       onError: (err) => setError(getErrorMessage(err)),
     });
   };
 
   return (
     <Card className="mb-6">
+      {createdCode && (
+        <GroupCreatedModal
+          code={createdCode}
+          onClose={() => {
+            setCreatedCode(null);
+            onDone();
+          }}
+        />
+      )}
+
       <form noValidate onSubmit={submit} className="space-y-4">
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
@@ -405,6 +497,66 @@ function CreateGroupForm({ onDone }: { onDone: () => void }): JSX.Element {
         </div>
       </form>
     </Card>
+  );
+}
+
+/**
+ * Hộp thoại xác nhận ngay sau khi tạo nhóm — hiện mã 8 số và bắt đóng tay, không bấm
+ * ra ngoài được (`closeOnBackdrop={false}`). Đây là LẦN DUY NHẤT mã hiện to trên màn
+ * hình mà không phải tự tìm lại trong huy hiệu của nhóm; trước đây chỉ có một dòng
+ * toast tự biến mất sau 3.5 giây, không kịp chép cho ai chưa quen thao tác nhanh.
+ */
+function GroupCreatedModal({ code, onClose }: { code: string; onClose: () => void }): JSX.Element {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+
+  const copy = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Trình duyệt chặn clipboard (vd tab không được cấp quyền) — mã vẫn đọc được
+      // bằng mắt, chỉ mất mỗi nút chép nhanh.
+    }
+  };
+
+  return (
+    <Modal open onClose={onClose} closeOnBackdrop={false} title={t('Đã tạo nhóm')}>
+      <p>
+        {t(
+          'Đây là mã 8 số duy nhất để mời người khác vào nhóm riêng tư này — chép lại trước khi đóng, màn hình sau sẽ không hiện lại mã này.',
+        )}
+      </p>
+
+      <div className="mt-4 flex items-center justify-center gap-1.5" aria-hidden>
+        {code.split('').map((digit, i) => (
+          <div
+            key={i}
+            className="flex h-12 w-9 items-center justify-center rounded-lg border border-brand bg-brand-soft text-lg font-semibold tabular-nums text-brand-strong"
+          >
+            {digit}
+          </div>
+        ))}
+      </div>
+      <p className="sr-only" role="status">
+        {t('Mã nhóm: {code}', { code })}
+      </p>
+
+      <Button
+        type="button"
+        variant="secondary"
+        icon={copied ? Check : Copy}
+        onClick={() => void copy()}
+        className="mt-4 w-full justify-center"
+      >
+        {copied ? t('Đã chép') : t('Chép mã')}
+      </Button>
+
+      <Button type="button" onClick={onClose} className="mt-2 w-full justify-center">
+        {t('Đã lưu mã, đóng')}
+      </Button>
+    </Modal>
   );
 }
 

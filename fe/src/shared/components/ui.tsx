@@ -1,5 +1,6 @@
-import { Loader2, type LucideIcon } from 'lucide-react';
+import { Loader2, RotateCcw, type LucideIcon } from 'lucide-react';
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import { useT } from '../i18n/language';
 
 /**
  * Bộ UI cơ bản dùng chung cho mọi feature.
@@ -153,6 +154,40 @@ export function ErrorMessage({ children }: { children: ReactNode }): JSX.Element
     <p className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger" role="alert">
       {children}
     </p>
+  );
+}
+
+/**
+ * Khối nội dung tải hỏng, kèm lối thoát.
+ *
+ * Khác `ErrorMessage` (một dòng chữ đỏ): dùng khi cả một thẻ/danh sách không có dữ liệu
+ * để vẽ. Bắt buộc nói RÕ hỏng gì (`getErrorMessage`) và cho bấm thử lại — không có nút
+ * này thì người dùng chỉ còn cách tải lại cả trang, và phần lớn sẽ bỏ đi thay vì làm vậy.
+ *
+ * Tuyệt đối không thay khối này bằng trạng thái rỗng: "chưa có gì" và "không tải được"
+ * là hai chuyện khác nhau, gộp lại là nói dối người dùng.
+ */
+export function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}): JSX.Element {
+  const t = useT();
+
+  return (
+    <div
+      className="rounded-lg border border-danger/40 bg-danger-soft px-3 py-4 text-center"
+      role="alert"
+    >
+      <p className="text-sm text-danger">{message}</p>
+      {onRetry && (
+        <Button variant="secondary" size="sm" icon={RotateCcw} onClick={onRetry} className="mt-2.5">
+          {t('Thử lại')}
+        </Button>
+      )}
+    </div>
   );
 }
 

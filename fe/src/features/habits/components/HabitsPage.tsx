@@ -179,7 +179,7 @@ function WeekStrip({ checkedDates }: { checkedDates: string[] }): JSX.Element {
             >
               {isDone && <Check className="h-3 w-3" aria-hidden />}
             </div>
-            <span className={`text-[9px] ${isToday ? 'font-medium text-content-soft' : 'text-content-muted'}`}>
+            <span className={`text-[10px] ${isToday ? 'font-medium text-content-soft' : 'text-content-muted'}`}>
               {weekday}
             </span>
           </div>

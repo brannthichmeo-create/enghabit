@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ActivityType, UserRole, UserStatus } from '../constants/enums.js';
 import type { PublicUser } from './auth.schema.js';
+import type { DailyStat } from './statistics.schema.js';
 
 /**
  * Schema & type cho khu vực quản trị.
@@ -42,14 +43,71 @@ export interface AdminUserRow extends PublicUser {
 }
 
 /** Hồ sơ chi tiết một người dùng, mở từ danh sách. */
+/**
+ * Số ngày biểu đồ tần suất của trang quản trị nhìn lại, TÍNH CẢ hôm nay.
+ *
+ * Ngày hôm nay là ngày đang chạy dở: cột cuối chỉ tính tới thời điểm hiện tại nên
+ * thường thấp hơn các cột trước, đó là đúng chứ không phải tụt hoạt động.
+ *
+ * Để 10 chứ không phải 30: trong hộp thoại rộng ~900px, 30 cột thành những vạch mảnh
+ * dính nhau và ngày nào cũng như ngày nào. 10 cột đọc được từng ngày một.
+ */
+export const ADMIN_USER_TREND_DAYS = 10;
+
+/**
+ * Một dòng trên nhật ký hoạt động của tài khoản.
+ *
+ * Union CÓ NHÃN chứ không phải một kiểu phẳng gộp mọi cột: hai bảng nguồn
+ * (`login_events` và `activity_logs`) không dùng chung cột nào ngoài thời điểm, nên
+ * gộp phẳng sẽ ra một kiểu mà nửa số trường luôn null và người đọc phải tự đoán
+ * trường nào đi với trường nào.
+ *
+ * `key` là chuỗi chứ không phải số: hai bảng đánh id riêng nên id 5 tồn tại ở cả hai,
+ * dùng thẳng làm khoá React sẽ trùng.
+ */
+export type AdminUserEvent =
+  | {
+      key: string;
+      /** ISO datetime, giờ máy chủ. */
+      at: string;
+      kind: 'LOGIN';
+      success: boolean;
+      reason: string | null;
+      ipAddress: string | null;
+    }
+  | {
+      key: string;
+      at: string;
+      kind: 'ACTIVITY';
+      type: ActivityType;
+      /** Giá trị định lượng: số từ, điểm kiểm tra… */
+      value: number;
+    };
+
 export interface AdminUserDetail extends AdminUserRow {
   longestStreak: number;
   habitCount: number;
   goalCount: number;
   vocabLearned: number;
-  quizAttempts: number;
+  examAttempts: number;
   lastActivityDate: string | null;
-  recentLogins: LoginEventRow[];
+
+  /** Số hoạt động theo từng loại, TOÀN THỜI GIAN kể từ lúc tạo tài khoản. */
+  activityByType: Record<ActivityType, number>;
+
+  /**
+   * Tần suất `ADMIN_USER_TREND_DAYS` ngày gần nhất, kèm cả ngày không học (giá trị 0)
+   * để biểu đồ không bị co lại và nói dối về mật độ hoạt động.
+   */
+  activityTrend: DailyStat[];
+
+  /**
+   * Nhật ký gộp đăng nhập + hoạt động học, mới nhất trước.
+   *
+   * Thay cho `recentLogins` cũ: hai danh sách rời khiến người xem phải tự ghép hai
+   * mốc thời gian trong đầu để biết "đăng nhập xong thì làm gì".
+   */
+  recentEvents: AdminUserEvent[];
 }
 
 // --- Lượt truy cập ---
@@ -110,8 +168,6 @@ export interface SystemOverview {
   content: {
     topics: number;
     vocabulary: number;
-    quizzes: number;
-    quizQuestions: number;
   };
   activity: {
     total: number;

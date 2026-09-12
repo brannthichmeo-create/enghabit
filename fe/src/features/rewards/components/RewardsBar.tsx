@@ -37,14 +37,14 @@ export function RewardsBar(): JSX.Element | null {
         <button
           onClick={() => setShowMissions((open) => !open)}
           aria-expanded={showMissions}
-          className={`flex items-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition-colors ${
+          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
             claimable
               ? 'border-accent bg-accent-soft text-accent-ink'
               : 'border-line text-content-soft hover:bg-hover'
           }`}
         >
           <Target className="h-4 w-4 shrink-0" aria-hidden />
-          NHIỆM VỤ
+          {t('Nhiệm vụ')}
           <span className="tabular-nums">
             {claimedCount}/{missions.length}
           </span>
@@ -61,7 +61,7 @@ export function RewardsBar(): JSX.Element | null {
         (xem CLAUDE.md), một cú bấm nút không phải là học.
       */}
       <p className="text-xs text-content-muted">
-        {t('Xu không tính vào chuỗi ngày. Muốn giữ chuỗi, hãy học một bài, ôn thẻ, làm quiz hoặc check-in một thói quen.')}
+        {t('Xu không tính vào chuỗi ngày. Muốn giữ chuỗi, hãy học một bài, ôn thẻ, làm kiểm tra hoặc check-in một thói quen.')}
       </p>
 
       {showMissions && (
@@ -84,13 +84,23 @@ function CheckInButton({ claimed, reward }: { claimed: boolean; reward: number }
 
   if (claimed) {
     return (
-      <span className="flex items-center gap-2 rounded-xl border-2 border-success/40 bg-success-soft px-4 py-3 text-sm font-semibold text-success">
+      <span className="flex items-center gap-2 rounded-lg border border-success/40 bg-success-soft px-3 py-2 text-sm font-medium text-success">
         <Check className="h-4 w-4 shrink-0" aria-hidden />
-        {t('ĐÃ NHẬN XU HÔM NAY')}
+        {t('Đã nhận xu hôm nay')}
       </span>
     );
   }
 
+  /*
+    KHÔNG dùng `bg-brand` ở đây. Nút "Học" trong `HeroCard` cách nút này 16px trong cùng
+    một thẻ; cho cả hai cùng nền thương hiệu, cùng chữ hoa, cùng bề rộng thì hai việc
+    hoàn toàn khác nhau trông y hệt nhau — và người dùng đã hiểu nhầm đúng như vậy
+    (xem đoạn giải thích ngay dưới dải này). Điểm danh nhận xu KHÔNG ghi `ActivityLog`,
+    không phải hoạt động học, nên nó không được tranh nhấn mạnh với nút học.
+
+    Vàng `accent` mới là màu phần thưởng theo DESIGN.md; để nó mang trạng thái
+    "có thể nhận" là đủ nổi mà không cần hét.
+  */
   return (
     <button
       onClick={() =>
@@ -100,10 +110,10 @@ function CheckInButton({ claimed, reward }: { claimed: boolean; reward: number }
         })
       }
       disabled={checkIn.isPending}
-      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-strong disabled:opacity-60"
+      className="flex items-center gap-2 rounded-lg border border-accent bg-accent-soft px-3 py-2 text-sm font-medium text-accent-ink transition-colors hover:brightness-95 disabled:opacity-60"
     >
       <Coins className="h-4 w-4 shrink-0" aria-hidden />
-      {t('NHẬN {n} XU MỖI NGÀY', { n: reward })}
+      {t('Nhận {n} xu hôm nay', { n: reward })}
     </button>
   );
 }
@@ -134,11 +144,11 @@ function FreezeControl({
       : t('Mua 1 vật phẩm với {price} xu', { price: freeze.price });
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border-2 border-line px-4 py-2">
+    <div className="flex items-center gap-3 rounded-lg border border-line px-3 py-1.5">
       <span className="flex items-center gap-2">
         <Snowflake className="h-4 w-4 shrink-0 text-brand-strong" aria-hidden />
         <span>
-          <span className="block text-[11px] leading-tight text-content-muted">{t('Giữ chuỗi')}</span>
+          <span className="block text-xs leading-tight text-content-muted">{t('Giữ chuỗi')}</span>
           <span className="block text-sm font-bold tabular-nums leading-tight text-content">
             {freeze.available}
           </span>
@@ -159,7 +169,7 @@ function FreezeControl({
           })
         }
       >
-        MUA
+        {t('Mua')}
       </Button>
     </div>
   );

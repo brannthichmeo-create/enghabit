@@ -1,6 +1,5 @@
 import {
   ActivityType,
-  ExerciseType,
   LESSON_PASS_RATIO,
   WORDS_PER_LESSON,
   type LessonDetail,
@@ -9,11 +8,11 @@ import {
   type PathTopic,
   type SubmitLessonInput,
 } from '@enghabit/shared';
-import type { Prisma, Vocabulary } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { NotFoundError } from '../../common/errors/app-error.js';
 import { recordActivity } from '../activity-logs/activity-log.service.js';
 import { generateLessonExercises } from './exercise-generator.js';
+import { grade, updateMistakes } from './grading.js';
 
 /**
  * Lộ trình học và bài tập.
@@ -25,18 +24,28 @@ import { generateLessonExercises } from './exercise-generator.js';
 
 /** Lộ trình đầy đủ: các chủ đề, mỗi chủ đề gồm danh sách bài và trạng thái mở khoá. */
 export async function getPath(userId: number): Promise<PathTopic[]> {
-  const [topics, progress] = await Promise.all([
+  const [topics, progress, examAttempts] = await Promise.all([
     prisma.topic.findMany({
       orderBy: [{ level: 'asc' }, { id: 'asc' }],
       include: { vocabularies: { select: { id: true }, orderBy: { id: 'asc' } } },
     }),
     prisma.lessonProgress.findMany({ where: { userId } }),
+    prisma.examAttempt.findMany({ where: { userId }, select: { topicId: true, correct: true, total: true } }),
   ]);
 
   const progressKey = (topicId: number, index: number): string => `${topicId}:${index}`;
   const progressMap = new Map(
     progress.map((p) => [progressKey(p.topicId, p.lessonIndex), p.bestScore]),
   );
+
+  // Điểm Kiểm tra cao nhất từng chủ đề — không có bảng tổng hợp riêng, gộp từ ExamAttempt lúc đọc.
+  const bestExamScoreByTopic = new Map<number, number>();
+  for (const attempt of examAttempts) {
+    if (attempt.total === 0) continue;
+    const percentage = Math.round((attempt.correct / attempt.total) * 100);
+    const current = bestExamScoreByTopic.get(attempt.topicId) ?? -1;
+    if (percentage > current) bestExamScoreByTopic.set(attempt.topicId, percentage);
+  }
 
   return topics.map((topic) => {
     const lessonCount = Math.ceil(topic.vocabularies.length / WORDS_PER_LESSON);
@@ -71,6 +80,7 @@ export async function getPath(userId: number): Promise<PathTopic[]> {
       level: topic.level,
       lessons,
       completedLessons,
+      bestExamScore: bestExamScoreByTopic.get(topic.id) ?? null,
     };
   });
 }
@@ -168,82 +178,6 @@ export async function submitLesson(
     details: details.map(({ exerciseId, isCorrect }) => ({ exerciseId, isCorrect })),
     nextLesson,
   };
-}
-
-/** So khớp đáp án với dữ liệu từ vựng, theo từng dạng bài. */
-function grade(answer: SubmitLessonInput['answers'][number], vocabulary: Vocabulary): boolean {
-  switch (answer.type) {
-    case ExerciseType.CHOOSE_MEANING:
-    case ExerciseType.LISTEN_CHOOSE:
-      return normalize(answer.value) === normalize(vocabulary.meaning);
-
-    case ExerciseType.CHOOSE_WORD:
-    case ExerciseType.FILL_BLANK:
-    case ExerciseType.TYPE_WORD:
-    case ExerciseType.LISTEN_TYPE:
-      return normalize(answer.value) === normalize(vocabulary.word);
-
-    case ExerciseType.ARRANGE_WORDS: {
-      const expected = normalize((vocabulary.example ?? '').replace(/[.!?]$/, ''));
-      return normalize(answer.value) === expected;
-    }
-
-    case ExerciseType.MATCH_PAIRS:
-      // Đúng khi mọi cặp đều nối từ với chính nghĩa của nó
-      return (answer.pairs ?? []).length > 0 && (answer.pairs ?? []).every((p) => p.wordId === p.meaningId);
-
-    default:
-      return false;
-  }
-}
-
-/** Bỏ hoa/thường, dấu câu và khoảng trắng thừa để so khớp không quá khắt khe. */
-function normalize(value: string | undefined): string {
-  return (value ?? '')
-    .toLowerCase()
-    .replace(/[.,!?;:"']/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
- * Cập nhật danh sách lỗi sai.
- * Sai thì thêm/tăng; đúng thì tăng bộ đếm đúng, đủ 2 lần đúng thì coi như đã sửa được và xoá.
- */
-const CORRECT_TO_CLEAR = 2;
-
-async function updateMistakes(
-  tx: Prisma.TransactionClient,
-  userId: number,
-  details: { vocabularyId: number; type: ExerciseType; isCorrect: boolean }[],
-): Promise<void> {
-  for (const detail of details) {
-    const where = {
-      userId_vocabularyId_exerciseType: {
-        userId,
-        vocabularyId: detail.vocabularyId,
-        exerciseType: detail.type,
-      },
-    };
-
-    if (!detail.isCorrect) {
-      await tx.mistake.upsert({
-        where,
-        create: { userId, vocabularyId: detail.vocabularyId, exerciseType: detail.type },
-        update: { timesWrong: { increment: 1 }, timesCorrect: 0, lastWrongAt: new Date() },
-      });
-      continue;
-    }
-
-    const existing = await tx.mistake.findUnique({ where });
-    if (!existing) continue;
-
-    if (existing.timesCorrect + 1 >= CORRECT_TO_CLEAR) {
-      await tx.mistake.delete({ where: { id: existing.id } });
-    } else {
-      await tx.mistake.update({ where: { id: existing.id }, data: { timesCorrect: { increment: 1 } } });
-    }
-  }
 }
 
 async function findNextLesson(

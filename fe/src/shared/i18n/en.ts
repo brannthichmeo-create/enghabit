@@ -19,7 +19,7 @@ export const EN: Dictionary = {
   'Học': 'Learn',
   'Từ vựng': 'Vocabulary',
   'Ôn tập': 'Review',
-  'Quiz': 'Quiz',
+  'Kiểm tra': 'Exam',
   'Thông báo': 'Notifications',
   'Thói quen': 'Habits',
   'Mục tiêu': 'Goals',
@@ -65,8 +65,6 @@ export const EN: Dictionary = {
   'Chuỗi ngày học — đã đứt': 'Learning streak — broken',
   'Cấp {level} · {xp} XP': 'Level {level} · {xp} XP',
   'Thống kê': 'Statistics',
-  'Bài học': 'Lesson',
-  'Flashcard': 'Flashcards',
   'Quản lý tài khoản': 'Account management',
   'Không tìm thấy trang': 'Page not found',
 
@@ -156,13 +154,11 @@ export const EN: Dictionary = {
   '12 tháng': '12 months',
   'Hoạt động theo ngày': 'Daily activity',
   'Khoảng thời gian': 'Time range',
-  'Không tải được thống kê': 'Could not load statistics',
   '90 ngày gần đây': 'Last 90 days',
   'Lịch học cả năm': 'A full year of learning',
   'Bấm vào một ngày để xem hôm đó bạn đã học gì. Ô càng đậm là học càng nhiều.':
     'Tap any day to see what you did. The darker the cell, the more you studied.',
   'Phạm vi lịch': 'Calendar range',
-  'Không tải được lịch học': 'Could not load the calendar',
   'Tiến độ mục tiêu': 'Goal progress',
   'Quản lý': 'Manage',
 
@@ -189,6 +185,25 @@ export const EN: Dictionary = {
   'Bấm vào một ô để xem ngày đó': 'Tap a cell to see that day',
   'Ít': 'Less',
   'Nhiều': 'More',
+
+  // Nhãn thứ và tháng của lịch hoạt động (mảng hằng số trong ActivityCalendar.tsx,
+  // dịch tại chỗ hiển thị). Không dấu nên script soát chữ Việt không quét được.
+  'T2': 'Mon',
+  'T4': 'Wed',
+  'T6': 'Fri',
+  'CN': 'Sun',
+  'Th1': 'Jan',
+  'Th2': 'Feb',
+  'Th3': 'Mar',
+  'Th4': 'Apr',
+  'Th5': 'May',
+  'Th6': 'Jun',
+  'Th7': 'Jul',
+  'Th8': 'Aug',
+  'Th9': 'Sep',
+  'Th10': 'Oct',
+  'Th11': 'Nov',
+  'Th12': 'Dec',
   'Chọn một cột để xem chi tiết từng ngày': 'Pick a column to see that day in detail',
   'Chưa có dữ liệu hoạt động.': 'No activity data yet.',
 
@@ -283,26 +298,16 @@ export const EN: Dictionary = {
     'You reviewed {n} words. It has been recorded in your streak.',
   'Tải phiên mới': 'Load a new session',
 
-  // --- Quiz --------------------------------------------------------------------------
-  'Kiểm tra kiến thức': 'Test your knowledge',
-  'Làm quiz để củng cố những gì đã học': 'Take a quiz to reinforce what you have learned',
-  'Chưa có bài quiz nào': 'No quizzes yet',
+  // --- Chung cho bài học / Kiểm tra ----------------------------------------------------
   'Quản trị viên cần thêm nội dung': 'An administrator needs to add content',
-  '{n} câu hỏi': { one: '{n} question', other: '{n} questions' },
-  'Bắt đầu làm': 'Start',
-  'Lịch sử làm bài': 'Attempt history',
-  'Không tải được đề bài': 'Could not load the quiz',
-  'Đã trả lời {answered} / {total} câu': 'Answered {answered} of {total}',
   'Thoát': 'Exit',
-  'Câu {n}.': 'Q{n}.',
-  'Hãy trả lời tất cả các câu trước khi nộp': 'Answer every question before submitting',
   'Kết quả': 'Result',
   'Đạt {percent}%': 'Scored {percent}%',
-  'Chi tiết đáp án': 'Answer details',
-  'Bạn chọn:': 'You chose:',
-  'Đáp án đúng:': 'Correct answer:',
   'Tổng điểm': 'Total score',
-  'Bài quiz': 'Quiz',
+  'Bài kiểm tra': 'Exams',
+  'Không tải được đề kiểm tra': 'Could not load the exam',
+  'Đạt {percent}% — kiến thức chủ đề này khá vững': 'Scored {percent}% — you know this topic well',
+  'Đạt {percent}% — nên ôn lại thêm rồi kiểm tra lại': 'Scored {percent}% — review a bit more, then try again',
 
   // --- Thói quen ---------------------------------------------------------------------
   'Thói quen học tập': 'Learning habits',
@@ -354,7 +359,7 @@ export const EN: Dictionary = {
   'Hoàn thành': 'Completed',
   'Số từ vựng học mỗi ngày': 'Words learned per day',
   'Số lượt ôn tập mỗi ngày': 'Reviews per day',
-  'Số bài quiz mỗi tuần': 'Quizzes per week',
+  'Số bài kiểm tra mỗi tuần': 'Exams per week',
   'Chuỗi ngày học liên tiếp': 'Consecutive learning days',
   'Mỗi ngày': 'Daily',
   'Mỗi tuần': 'Weekly',
@@ -496,12 +501,11 @@ export const EN: Dictionary = {
   'Quản trị viên': 'Administrator',
   'Người học': 'Learner',
   'Chủ đề': 'Topics',
-  'Câu hỏi quiz': 'Quiz questions',
   'Lượt hoạt động': 'Activity events',
-  'Lượt làm quiz': 'Quiz attempts',
+  'Lượt làm kiểm tra': 'Exam attempts',
   'Học từ vựng': 'Vocabulary learned',
   'Ôn flashcard': 'Flashcards reviewed',
-  'Làm quiz': 'Quizzes taken',
+  'Làm kiểm tra': 'Exams taken',
   'Check-in thói quen': 'Habit check-ins',
 
   // --- Quản trị: tài khoản ----------------------------------------------------------------------
@@ -600,8 +604,6 @@ export const EN: Dictionary = {
   'Đang thêm...': 'Adding...',
   'Chọn một chủ đề': 'Pick a topic',
   'Chọn chủ đề bên trái để quản lý từ vựng': 'Pick a topic on the left to manage its vocabulary',
-  'Xoá chủ đề "{name}"? Toàn bộ từ vựng và quiz thuộc chủ đề sẽ mất.':
-    'Delete the topic "{name}"? All of its vocabulary and quizzes go with it.',
   'Thêm từ mới': 'Add a word',
   'Thêm từ vựng': 'Add vocabulary',
   'Từ': 'Word',
@@ -852,11 +854,18 @@ export const EN: Dictionary = {
   'Phê duyệt thành viên': 'Approve members',
   'Người xin vào phải chờ trưởng nhóm duyệt.': 'People who ask to join wait for a leader to approve.',
   'Ai có mã hoặc tìm thấy nhóm đều vào được ngay.': 'Anyone with the code or who finds the group joins straight away.',
-  'Đã tạo nhóm, mã nhóm là {code}': 'Group created, the code is {code}',
+  'Đã tạo nhóm': 'Group created',
+  'Đây là mã 8 số duy nhất để mời người khác vào nhóm riêng tư này — chép lại trước khi đóng, màn hình sau sẽ không hiện lại mã này.':
+    "This is the only 8-digit code to invite people into this private group — copy it before closing, you won't see it shown like this again.",
+  'Mã nhóm: {code}': 'Group code: {code}',
+  'Chép mã': 'Copy code',
+  'Đã chép': 'Copied',
+  'Đã lưu mã, đóng': "I've saved it, close",
 
   'Vào nhóm bằng mã': 'Join with a code',
   'Mã nhóm': 'Group code',
   'Gồm {n} chữ số': '{n} digits',
+  'Xoá một chữ số': 'Delete one digit',
   'Không tìm thấy nhóm nào có mã này': 'No group found with this code',
   'Tìm nhóm công khai': 'Find a public group',
   'Tìm theo tên nhóm': 'Search by group name',
@@ -896,6 +905,9 @@ export const EN: Dictionary = {
   'Chuỗi': 'Streak',
   'Phong trưởng nhóm': 'Make leader',
   'Hạ quyền': 'Remove leader role',
+  'Hạ quyền trưởng nhóm của {name}?': "Remove {name}'s leader role?",
+  '{name} sẽ không còn quản trị được nhóm này nữa. Có thể phong lại bất cứ lúc nào.':
+    "{name} will no longer be able to manage this group. You can make them a leader again anytime.",
   'Xoá khỏi nhóm': 'Remove from group',
   'Xoá {name} khỏi nhóm?': 'Remove {name} from the group?',
 
@@ -1009,8 +1021,8 @@ export const EN: Dictionary = {
     'All {n} activities, the streak and every bit of learning progress will be gone for good. To block sign-in only, use "Lock account" instead.',
   'Xoá chủ đề': 'Delete topic',
   'Xoá chủ đề "{name}"?': 'Delete the topic "{name}"?',
-  'Toàn bộ từ vựng và quiz thuộc chủ đề này sẽ mất theo.':
-    'Every word and quiz under this topic goes with it.',
+  'Toàn bộ từ vựng và lịch sử kiểm tra thuộc chủ đề này sẽ mất theo.':
+    'Every word and exam history under this topic goes with it.',
 
   // --- Bộ lọc diễn đàn ---------------------------------------------------------
   'Lọc': 'Filter',
@@ -1035,17 +1047,20 @@ export const EN: Dictionary = {
   'Học ngay': 'Start learning',
 
   // --- Xu và chuỗi ngày là hai thứ khác nhau ---
-  'NHẬN {n} XU MỖI NGÀY': 'CLAIM {n} COINS TODAY',
-  'ĐÃ NHẬN XU HÔM NAY': 'COINS CLAIMED TODAY',
-  'Xu không tính vào chuỗi ngày. Muốn giữ chuỗi, hãy học một bài, ôn thẻ, làm quiz hoặc check-in một thói quen.':
-    'Coins do not count toward your streak. To keep it alive, study a lesson, review cards, take a quiz or check in a habit.',
+  'Nhận {n} xu hôm nay': 'Claim {n} coins today',
+  'Đã nhận xu hôm nay': 'Coins claimed today',
+  // 'Nhiệm vụ' và 'Mua' đã có ở khối chung phía trên — dùng lại, không khai lần hai.
+  'Xu không tính vào chuỗi ngày. Muốn giữ chuỗi, hãy học một bài, ôn thẻ, làm kiểm tra hoặc check-in một thói quen.':
+    'Coins do not count toward your streak. To keep it alive, study a lesson, review cards, take an exam or check in a habit.',
+  'Không tải được chuỗi ngày và cấp độ': 'Could not load your streak and level',
+  'Đang xem bạn còn việc gì…': 'Checking what you have left…',
   'Hôm nay đã được tính': "Today already counts",
   'Hôm nay chưa được tính — học một bài để giữ chuỗi':
     "Today doesn't count yet — study something to keep the streak",
 
   // --- Nhóm lớp: hai tab, bộ lọc và vào nhóm bằng mã ---
   'Khám phá nhóm': 'Discover groups',
-  'Nhập ID nhóm': 'Enter group ID',
+  'Nhập mã nhóm': 'Enter group code',
   'Yêu cầu vào': 'Ask to join',
   'Là thành viên': 'Member',
   'Là trưởng nhóm': 'Group leader',

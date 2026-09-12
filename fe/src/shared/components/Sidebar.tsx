@@ -13,7 +13,6 @@ import {
   LogOut,
   MessagesSquare,
   UsersRound,
-  Shield,
   Target,
   Trophy,
   Users,
@@ -75,7 +74,6 @@ export function Sidebar({
     { to: '/learn', label: 'Học', icon: GraduationCap, badge: mistakeCount.data },
     { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen },
     { to: '/flashcards', label: 'Ôn tập', icon: Layers, badge: dueCount.data },
-    { to: '/quizzes', label: 'Quiz', icon: Shield },
     { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },
     { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
     { to: '/groups', label: 'Nhóm lớp', icon: UsersRound },
@@ -115,7 +113,7 @@ export function Sidebar({
       <nav className="flex-1 overflow-y-auto px-2.5 pb-2">
         {isAdmin ? (
           <>
-            <GroupLabel collapsed={collapsed}>{t('Quản trị')}</GroupLabel>
+            <GroupLabel collapsed={collapsed}>{'Quản trị'}</GroupLabel>
             <ul className="space-y-0.5">
               {adminItems.map((item) => (
                 <li key={item.to}>
@@ -134,7 +132,7 @@ export function Sidebar({
               ))}
             </ul>
 
-            <GroupLabel collapsed={collapsed}>{t('Duy trì')}</GroupLabel>
+            <GroupLabel collapsed={collapsed}>{'Duy trì'}</GroupLabel>
             <ul className="space-y-0.5">
               {habitItems.map((item) => (
                 <li key={item.to}>
@@ -248,7 +246,7 @@ function GroupLabel({ children, collapsed }: { children: string; collapsed: bool
   if (collapsed) return <div className="my-2 border-t border-line-page" />;
 
   return (
-    <p className="mb-1 mt-4 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-on-page-muted">
+    <p className="mb-1 mt-4 px-2.5 text-xs font-semibold uppercase tracking-wider text-on-page-muted">
       {t(children)}
     </p>
   );
@@ -299,7 +297,7 @@ export function Avatar({
         </span>
       )}
       {level !== undefined && (
-        <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface bg-accent px-1 text-[9px] font-bold leading-[14px] text-on-brand">
+        <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface bg-accent px-1 text-[10px] font-bold leading-[14px] text-on-brand">
           {level}
         </span>
       )}

@@ -6,8 +6,6 @@ import {
   adminUserQuerySchema,
   blockGroupSchema,
   createAnnouncementSchema,
-  createQuizQuestionSchema,
-  createQuizSchema,
   createTopicSchema,
   createVocabularySchema,
   rejectResetRequestSchema,
@@ -19,8 +17,6 @@ import {
   warnGroupSchema,
   type BlockGroupInput,
   type CreateAnnouncementInput,
-  type CreateQuizInput,
-  type CreateQuizQuestionInput,
   type CreateTopicInput,
   type CreateVocabularyInput,
   type RejectResetRequestInput,
@@ -259,33 +255,6 @@ adminRoutes.delete(
   '/vocabulary/:id',
   asyncHandler(async (req, res) => {
     await adminService.deleteVocabulary(parseId(req.params.id));
-    res.status(204).send();
-  }),
-);
-
-// --- Quiz ---
-adminRoutes.post(
-  '/quizzes',
-  validateBody(createQuizSchema),
-  asyncHandler(async (req, res) => {
-    res.status(201).json(await adminService.createQuiz(req.body as CreateQuizInput));
-  }),
-);
-
-adminRoutes.post(
-  '/quizzes/:id/questions',
-  validateBody(createQuizQuestionSchema),
-  asyncHandler(async (req, res) => {
-    res
-      .status(201)
-      .json(await adminService.addQuizQuestion(parseId(req.params.id), req.body as CreateQuizQuestionInput));
-  }),
-);
-
-adminRoutes.delete(
-  '/questions/:id',
-  asyncHandler(async (req, res) => {
-    await adminService.deleteQuizQuestion(parseId(req.params.id));
     res.status(204).send();
   }),
 );

@@ -11,7 +11,7 @@ import { ActivityType } from '../constants/enums.js';
 /**
  * XP cho mỗi loại hoạt động.
  *
- * Chênh lệch phản ánh công sức bỏ ra: làm xong một bài quiz tốn nhiều thời gian
+ * Chênh lệch phản ánh công sức bỏ ra: làm xong một bài kiểm tra tốn nhiều thời gian
  * và trí lực hơn nhiều so với lật một thẻ flashcard.
  */
 export const XP_PER_ACTIVITY: Record<ActivityType, number> = {

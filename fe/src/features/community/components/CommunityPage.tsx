@@ -20,7 +20,7 @@ import { useT } from '../../../shared/i18n/language';
  * Diễn đàn Cộng đồng.
  *
  * Một route duy nhất `/community`; xem chi tiết một bài là đổi trạng thái trong trang
- * chứ không đổi URL — cùng cách làm với màn chơi quiz và học bài (xem CLAUDE.md).
+ * chứ không đổi URL — cùng cách làm với màn làm Kiểm tra và học bài (xem CLAUDE.md).
  *
  * Mở cho cả người học lẫn quản trị viên: đây là nơi trao đổi chung, không phải màn
  * hình học tập, nên không bọc route guard `Learner`.

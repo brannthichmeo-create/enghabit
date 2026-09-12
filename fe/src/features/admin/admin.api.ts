@@ -7,8 +7,6 @@ import type {
   AdminUserDetail,
   AdminUserQueryInput,
   AdminUserRow,
-  CreateQuizInput,
-  CreateQuizQuestionInput,
   CreateTopicInput,
   CreateVocabularyInput,
   LoginEventRow,
@@ -88,16 +86,6 @@ export async function createVocabulary(input: CreateVocabularyInput): Promise<Vo
 
 export async function deleteVocabulary(id: number): Promise<void> {
   await apiClient.delete(`/admin/vocabulary/${id}`);
-}
-
-export async function createQuiz(input: CreateQuizInput): Promise<{ id: number; title: string }> {
-  const { data } = await apiClient.post<{ id: number; title: string }>('/admin/quizzes', input);
-  return data;
-}
-
-export async function addQuizQuestion(quizId: number, input: CreateQuizQuestionInput): Promise<{ id: number }> {
-  const { data } = await apiClient.post<{ id: number }>(`/admin/quizzes/${quizId}/questions`, input);
-  return data;
 }
 
 // --- Yêu cầu cấp lại mật khẩu ---

@@ -26,7 +26,7 @@ import { getLevelsFor } from '../statistics/statistics.service.js';
  *  - XP: dùng đúng `xpFromActivityCounts` của `shared/level` để thứ hạng không bao giờ
  *    mâu thuẫn với cấp độ hiện trên trang cá nhân.
  *  - Số hoạt động: tổng lượt bất kể loại, không quy đổi qua XP — người ôn nhiều
- *    flashcard nhỏ có chỗ so tài với người làm ít quiz nặng điểm hơn.
+ *    flashcard nhỏ có chỗ so tài với người làm ít bài kiểm tra nặng điểm hơn.
  *
  * MỘT truy vấn `groupBy` tính đủ cả hai con số cho mọi người dùng; `metric` chỉ quyết
  * định thứ tự sắp xếp phía sau, không đổi câu truy vấn.

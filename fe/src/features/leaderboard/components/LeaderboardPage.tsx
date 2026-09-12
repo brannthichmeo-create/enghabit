@@ -17,7 +17,7 @@ import { useLeaderboard } from '../leaderboard.hooks';
  * - **Điểm học tập (XP):** cùng công thức với cấp độ ở trang cá nhân, nên không bao
  *   giờ có chuyện "cấp của tôi nói một đằng, thứ hạng nói một nẻo".
  * - **Hoạt động:** tổng số lượt bất kể loại, không quy đổi qua XP. XP thiên vị hoạt
- *   động nặng điểm (một quiz = 20 XP = năm lượt ôn thẻ), nên đây là chỗ để người ôn
+ *   động nặng điểm (một bài kiểm tra = 20 XP = năm lượt ôn thẻ), nên đây là chỗ để người ôn
  *   đều đặn nhiều việc nhỏ so tài mà không bị lép vế.
  *
  * Cấp độ hiện cạnh tên luôn là cấp độ của CẢ HÀNH TRÌNH, không đổi theo hai trục lọc
@@ -278,7 +278,7 @@ function PodiumCard({
       <p className="mt-1 text-xs text-content-muted">{t('Cấp {n}', { n: entry.level })}</p>
 
       <p className="mt-2.5 text-2xl font-bold leading-none tabular-nums text-content">{stat.value}</p>
-      <p className="text-[11px] text-content-muted">{stat.unit}</p>
+      <p className="text-xs text-content-muted">{stat.unit}</p>
 
       <p className="mt-2 flex items-center justify-center gap-1 text-xs text-content-muted">
         <Flame className="h-3 w-3 shrink-0" aria-hidden />
@@ -320,7 +320,7 @@ function Row({ entry, metric }: { entry: LeaderboardEntry; metric: LeaderboardMe
 
       <span className="shrink-0 text-right">
         <span className="block text-lg font-bold tabular-nums text-content">{stat.value}</span>
-        <span className="block text-[11px] text-content-muted">{stat.unit}</span>
+        <span className="block text-xs text-content-muted">{stat.unit}</span>
       </span>
     </div>
   );

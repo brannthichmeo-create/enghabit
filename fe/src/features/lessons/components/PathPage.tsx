@@ -1,11 +1,19 @@
 import { useState } from 'react';
-import { Check, Lock, Play, RotateCw, Sparkles } from 'lucide-react';
+import { Check, ClipboardCheck, Lock, Play, RotateCw, Sparkles } from 'lucide-react';
 import type { LessonSummary, PathTopic } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Badge, Button, Card, EmptyState, ErrorMessage, PageHeader, SkeletonList } from '../../../shared/components/ui';
 import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import type { VocabLevel } from '@enghabit/shared';
-import { useLesson, useMistakeCount, useMistakePractice, usePath } from '../lesson.hooks';
+import {
+  useExam,
+  useExamSubmit,
+  useLesson,
+  useLessonSubmit,
+  useMistakeCount,
+  useMistakePractice,
+  usePath,
+} from '../lesson.hooks';
 import { LessonPlayer } from './LessonPlayer';
 import { useT } from '../../../shared/i18n/language';
 
@@ -20,9 +28,11 @@ export function PathPage(): JSX.Element {
   const mistakeCount = useMistakeCount();
   const [active, setActive] = useState<{ topicId: number; index: number } | null>(null);
   const [practicing, setPracticing] = useState(false);
+  const [examTopicId, setExamTopicId] = useState<number | null>(null);
 
   if (practicing) return <MistakePractice onExit={() => setPracticing(false)} />;
   if (active) return <ActiveLesson {...active} onExit={() => setActive(null)} />;
+  if (examTopicId !== null) return <ActiveExam topicId={examTopicId} onExit={() => setExamTopicId(null)} />;
 
   return (
     <div>
@@ -61,7 +71,7 @@ export function PathPage(): JSX.Element {
 
       <div className="space-y-4">
         {path.data?.map((topic) => (
-          <TopicRow key={topic.topicId} topic={topic} onStart={setActive} />
+          <TopicRow key={topic.topicId} topic={topic} onStart={setActive} onStartExam={setExamTopicId} />
         ))}
       </div>
     </div>
@@ -71,12 +81,16 @@ export function PathPage(): JSX.Element {
 function TopicRow({
   topic,
   onStart,
+  onStartExam,
 }: {
   topic: PathTopic;
   onStart: (lesson: { topicId: number; index: number }) => void;
+  onStartExam: (topicId: number) => void;
 }): JSX.Element {
   const t = useT();
   const allDone = topic.completedLessons === topic.lessons.length && topic.lessons.length > 0;
+  // Phải học ít nhất 1 bài trong chủ đề mới có gì để Kiểm tra.
+  const canTakeExam = topic.completedLessons > 0;
 
   return (
     <Card>
@@ -99,10 +113,23 @@ function TopicRow({
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {topic.lessons.map((lesson) => (
           <LessonNode key={lesson.index} lesson={lesson} onStart={onStart} />
         ))}
+
+        {canTakeExam && (
+          <button
+            onClick={() => onStartExam(topic.topicId)}
+            className="flex h-[68px] w-[92px] flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-accent/50 text-accent-ink transition-colors hover:bg-accent-soft"
+          >
+            <ClipboardCheck className="h-4 w-4" aria-hidden />
+            <span className="text-xs font-medium">{t('Kiểm tra')}</span>
+            {topic.bestExamScore !== null && (
+              <span className="text-xs tabular-nums">{topic.bestExamScore}%</span>
+            )}
+          </button>
+        )}
       </div>
     </Card>
   );
@@ -143,7 +170,7 @@ function LessonNode({
     >
       {lesson.isCompleted ? <Check className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
       <span className="text-xs font-medium">{lesson.title}</span>
-      {lesson.bestScore !== null && <span className="text-[10px] tabular-nums">{lesson.bestScore}%</span>}
+      {lesson.bestScore !== null && <span className="text-xs tabular-nums">{lesson.bestScore}%</span>}
     </button>
   );
 }
@@ -159,17 +186,33 @@ function ActiveLesson({
 }): JSX.Element {
   const t = useT();
   const lesson = useLesson(topicId, index);
+  const submit = useLessonSubmit(topicId, index);
 
   if (lesson.isLoading) return <SkeletonList rows={2} />;
   if (lesson.isError) return <ErrorMessage>{getErrorMessage(lesson.error)}</ErrorMessage>;
   if (!lesson.data) return <ErrorMessage>{t('Không tải được bài học')}</ErrorMessage>;
 
-  return <LessonPlayer lesson={lesson.data} onExit={onExit} />;
+  return <LessonPlayer lesson={lesson.data} submit={submit} onExit={onExit} />;
+}
+
+function ActiveExam({ topicId, onExit }: { topicId: number; onExit: () => void }): JSX.Element {
+  const t = useT();
+  const exam = useExam(topicId);
+  const submit = useExamSubmit(topicId);
+
+  if (exam.isLoading) return <SkeletonList rows={2} />;
+  if (exam.isError) return <ErrorMessage>{getErrorMessage(exam.error)}</ErrorMessage>;
+  if (!exam.data) return <ErrorMessage>{t('Không tải được đề kiểm tra')}</ErrorMessage>;
+
+  return <LessonPlayer lesson={exam.data} mode="exam" submit={submit} onExit={onExit} />;
 }
 
 function MistakePractice({ onExit }: { onExit: () => void }): JSX.Element {
   const t = useT();
   const practice = useMistakePractice(true);
+  // Chưa tải xong thì dùng tạm topicId=0/index=-1 — đúng giá trị getMistakePractice trả
+  // về, và adapter chỉ thực sự được gọi (submit.run) sau khi practice.data đã có.
+  const submit = useLessonSubmit(practice.data?.topicId ?? 0, practice.data?.index ?? -1);
 
   if (practice.isLoading) return <SkeletonList rows={2} />;
 
@@ -191,5 +234,5 @@ function MistakePractice({ onExit }: { onExit: () => void }): JSX.Element {
     );
   }
 
-  return <LessonPlayer lesson={practice.data} onExit={onExit} />;
+  return <LessonPlayer lesson={practice.data} submit={submit} onExit={onExit} />;
 }

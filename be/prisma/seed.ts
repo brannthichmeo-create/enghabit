@@ -10,8 +10,8 @@ import {
   PrismaClient,
   type Prisma,
 } from '@prisma/client';
-import { computeStreak, initialSrsState, reviewCard, toLocalDate, ReviewQuality } from '@enghabit/shared';
-import { TOPICS, buildMeaningQuestions } from './seed-data/content.js';
+import { EXAM_WORD_COUNT, computeStreak, initialSrsState, reviewCard, toLocalDate, ReviewQuality } from '@enghabit/shared';
+import { TOPICS } from './seed-data/content.js';
 import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
 
 /**
@@ -93,7 +93,7 @@ async function upsertUser(email: string, name: string, password: string, role: U
   });
 }
 
-/** Tạo chủ đề, từ vựng và quiz. Trả về map tên chủ đề → danh sách id từ vựng. */
+/** Tạo chủ đề và từ vựng. Trả về map tên chủ đề → danh sách id từ vựng. */
 async function seedContent(adminId: number): Promise<Map<string, number[]>> {
   const result = new Map<string, number[]>();
 
@@ -117,27 +117,6 @@ async function seedContent(adminId: number): Promise<Map<string, number[]>> {
       vocabularyIds.push(vocabulary.id);
     }
     result.set(topicSeed.name, vocabularyIds);
-
-    const quizTitle = `Kiểm tra: ${topicSeed.name}`;
-    const existingQuiz = await prisma.quiz.findFirst({ where: { topicId: topic.id, title: quizTitle } });
-    if (!existingQuiz) {
-      await prisma.quiz.create({
-        data: {
-          topicId: topic.id,
-          title: quizTitle,
-          questions: {
-            create: [
-              ...buildMeaningQuestions(topicSeed.words, 4),
-              ...topicSeed.contextQuestions,
-            ].map((q) => ({
-              questionText: q.questionText,
-              options: q.options,
-              correctIndex: q.correctIndex,
-            })),
-          },
-        },
-      });
-    }
   }
 
   return result;
@@ -163,7 +142,7 @@ async function seedLearnerData(userId: number, vocabByTopic: Map<string, number[
 
   await seedActivityHistory(userId, habits, learnedVocabIds);
   await seedVocabProgress(userId, learnedVocabIds);
-  await seedQuizAttempts(userId);
+  await seedExamAttempts(userId, vocabByTopic);
   await recomputeStreak(userId);
 }
 
@@ -390,7 +369,7 @@ async function seedCommunity(adminId: number, learnerId: number): Promise<void> 
  * hoạt động thì ai cũng ở cấp 1 và nhãn cấp độ trở nên vô nghĩa.
  *
  * Nhẹ hơn hẳn `seedActivityHistory` của người dùng demo: chỉ có học từ và ôn tập, đủ
- * để ra cấp độ và có mặt trên bảng xếp hạng, không cần thói quen hay bài quiz.
+ * để ra cấp độ và có mặt trên bảng xếp hạng, không cần thói quen hay bài kiểm tra.
  */
 async function seedMemberActivity(
   userId: number,
@@ -476,7 +455,7 @@ async function seedHabits(userId: number) {
     { name: 'Học 10 từ vựng mới', frequency: HabitFrequency.DAILY, reminderTime: '20:00', customDays: undefined },
     { name: 'Ôn flashcard 15 phút', frequency: HabitFrequency.DAILY, reminderTime: '21:00', customDays: undefined },
     {
-      name: 'Làm 1 bài quiz',
+      name: 'Làm 1 bài kiểm tra',
       frequency: HabitFrequency.CUSTOM,
       reminderTime: '19:30',
       customDays: [2, 4, 6] as Prisma.InputJsonValue,
@@ -554,7 +533,7 @@ async function seedActivityHistory(
       });
     }
 
-    // Check-in thói quen: 2 thói quen hằng ngày, thói quen quiz thì cách ngày.
+    // Check-in thói quen: 2 thói quen hằng ngày, thói quen kiểm tra thì cách ngày.
     const habitsToCheckIn = offset % 3 === 0 ? habits : habits.slice(0, 2);
     for (const habit of habitsToCheckIn) {
       logs.push({
@@ -607,47 +586,41 @@ async function seedVocabProgress(userId: number, vocabularyIds: number[]): Promi
   console.log(`  Đã tạo tiến độ SRS cho ${rows.length} từ vựng`);
 }
 
-async function seedQuizAttempts(userId: number): Promise<void> {
-  const quizzes = await prisma.quiz.findMany({ include: { questions: { select: { id: true, correctIndex: true } } } });
+/**
+ * Vài lượt làm Kiểm tra mẫu, để trang thống kê/leaderboard có số ngay từ đầu.
+ * Không còn bảng Quiz để lấy đề — chỉ cần ước lượng `total` như một đề thật sự sẽ
+ * sinh ra (xem generateLessonExercises: ~2 bài mỗi từ + 1 bài ghép cặp cuối).
+ */
+async function seedExamAttempts(userId: number, vocabByTopic: Map<string, number[]>): Promise<void> {
+  const topics = await prisma.topic.findMany({ where: { name: { in: [...vocabByTopic.keys()] } } });
 
-  const attempts: Prisma.QuizAttemptCreateManyInput[] = [];
+  const attempts: Prisma.ExamAttemptCreateManyInput[] = [];
   const logs: Prisma.ActivityLogCreateManyInput[] = [];
 
-  quizzes.slice(0, 4).forEach((quiz, index) => {
+  topics.slice(0, 4).forEach((topic, index) => {
+    const wordCount = Math.min(EXAM_WORD_COUNT, vocabByTopic.get(topic.name)?.length ?? 0);
+    if (wordCount === 0) return;
+
     const offset = [2, 6, 13, 20][index] ?? 2;
-    const total = quiz.questions.length;
+    const total = wordCount * 2 + (wordCount >= 3 ? 1 : 0);
     // Điểm tăng dần theo thời gian để biểu đồ tiến bộ có xu hướng đi lên.
-    const score = Math.min(total, Math.max(1, total - (index % 3)));
+    const correct = Math.min(total, Math.max(1, total - (index % 3)));
 
-    const answers = quiz.questions.map((q, qi) => ({
-      questionId: q.id,
-      selectedIndex: qi < score ? q.correctIndex : (q.correctIndex + 1) % 4,
-      correctIndex: q.correctIndex,
-      isCorrect: qi < score,
-    }));
-
-    attempts.push({
-      userId,
-      quizId: quiz.id,
-      score,
-      total,
-      answers,
-      completedAt: instantAtOffset(offset, 21),
-    });
+    attempts.push({ userId, topicId: topic.id, correct, total, completedAt: instantAtOffset(offset, 21) });
 
     logs.push({
       userId,
       type: ActivityType.QUIZ_COMPLETED,
-      refId: quiz.id,
-      value: score,
+      refId: topic.id,
+      value: correct,
       occurredAt: instantAtOffset(offset, 21),
       localDate: dateAtOffset(offset),
     });
   });
 
-  await prisma.quizAttempt.createMany({ data: attempts });
+  await prisma.examAttempt.createMany({ data: attempts });
   await prisma.activityLog.createMany({ data: logs });
-  console.log(`  Đã tạo ${attempts.length} lượt làm quiz`);
+  console.log(`  Đã tạo ${attempts.length} lượt làm kiểm tra`);
 }
 
 /** Tính lại streak từ ActivityLog — đúng cách hệ thống làm khi chạy thật. */
@@ -700,12 +673,11 @@ function dateAtOffsetLocal(offset: number): string {
 }
 
 async function printSummary(): Promise<void> {
-  const [users, topics, vocab, quizzes, questions, logs, posts, comments] = await Promise.all([
+  const [users, topics, vocab, examAttempts, logs, posts, comments] = await Promise.all([
     prisma.user.count(),
     prisma.topic.count(),
     prisma.vocabulary.count(),
-    prisma.quiz.count(),
-    prisma.quizQuestion.count(),
+    prisma.examAttempt.count(),
     prisma.activityLog.count(),
     prisma.post.count(),
     prisma.postComment.count(),
@@ -713,7 +685,7 @@ async function printSummary(): Promise<void> {
 
   console.log('\nSeed hoàn tất.');
   console.log(`  ${users} người dùng | ${topics} chủ đề | ${vocab} từ vựng`);
-  console.log(`  ${quizzes} quiz (${questions} câu hỏi) | ${logs} hoạt động`);
+  console.log(`  ${examAttempts} lượt làm kiểm tra | ${logs} hoạt động`);
   console.log(`  ${posts} bài diễn đàn (${comments} bình luận)`);
   console.log('\nTài khoản đăng nhập:');
   console.log('  admin@enghabit.com  / A1234567   (quản trị viên)');

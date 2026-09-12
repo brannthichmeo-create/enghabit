@@ -305,6 +305,18 @@
     outline-offset: 2px;
   }
 
+  /* Bôi đen chọn chữ và con trỏ nhập liệu theo đúng màu thương hiệu, thay vì
+     màu xanh mặc định của trình duyệt — tránh lệch tông ngay trong ô nhập. */
+  ::selection {
+    background-color: rgb(var(--brand-soft));
+    color: rgb(var(--text));
+  }
+
+  input,
+  textarea {
+    caret-color: rgb(var(--brand-strong));
+  }
+
   /*
    * Ẩn nút hiện mật khẩu và nút xoá có sẵn của Edge/IE.
    * App đã có nút hiện/ẩn riêng — để cả hai sẽ hiện hai con mắt cạnh nhau.

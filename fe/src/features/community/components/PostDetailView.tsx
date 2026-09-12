@@ -20,8 +20,8 @@ import { useLocale, useT } from '../../../shared/i18n/language';
 /**
  * Chi tiết một bài viết kèm bình luận.
  *
- * Nằm TRONG route `/community` chứ không có URL riêng — cùng cách làm với màn chơi
- * quiz và màn học bài (xem CLAUDE.md). Breadcrumb nối thêm một cấp bằng
+ * Nằm TRONG route `/community` chứ không có URL riêng — cùng cách làm với màn làm
+ * Kiểm tra và màn học bài (xem CLAUDE.md). Breadcrumb nối thêm một cấp bằng
  * `useBreadcrumbTail`, hook tự gỡ khi rời màn.
  */
 export function PostDetailView({

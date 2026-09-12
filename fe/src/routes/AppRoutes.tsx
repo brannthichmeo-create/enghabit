@@ -10,7 +10,6 @@ import { GoalsPage } from '../features/goals/components/GoalsPage';
 import { PathPage } from '../features/lessons/components/PathPage';
 import { VocabularyPage } from '../features/vocabulary/components/VocabularyPage';
 import { FlashcardPage } from '../features/flashcards/components/FlashcardPage';
-import { QuizzesPage } from '../features/quizzes/components/QuizzesPage';
 import { LeaderboardPage } from '../features/leaderboard/components/LeaderboardPage';
 import { ProfilePage } from '../features/profile/components/ProfilePage';
 import { AdminOverviewPage } from '../features/admin/components/AdminOverviewPage';
@@ -50,14 +49,13 @@ export function AppRoutes(): JSX.Element {
 
       <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
         {/* --- Khu người học --- */}
-        <Route path="/" element={<Learner name="Thống kê"><DashboardPage /></Learner>} />
+        <Route path="/" element={<Learner name="Tổng quan"><DashboardPage /></Learner>} />
         <Route path="/report" element={<Learner name="Báo cáo"><ReportPage /></Learner>} />
-        <Route path="/learn" element={<Learner name="Bài học"><PathPage /></Learner>} />
+        <Route path="/learn" element={<Learner name="Học"><PathPage /></Learner>} />
         <Route path="/habits" element={<Learner name="Thói quen"><HabitsPage /></Learner>} />
         <Route path="/goals" element={<Learner name="Mục tiêu"><GoalsPage /></Learner>} />
         <Route path="/vocabulary" element={<Learner name="Từ vựng"><VocabularyPage /></Learner>} />
-        <Route path="/flashcards" element={<Learner name="Flashcard"><FlashcardPage /></Learner>} />
-        <Route path="/quizzes" element={<Learner name="Quiz"><QuizzesPage /></Learner>} />
+        <Route path="/flashcards" element={<Learner name="Ôn tập"><FlashcardPage /></Learner>} />
         <Route path="/leaderboard" element={<Learner name="Bảng xếp hạng"><LeaderboardPage /></Learner>} />
 
         {/* Trang cá nhân, thông báo và diễn đàn dùng chung cho cả hai vai trò */}
@@ -69,7 +67,7 @@ export function AppRoutes(): JSX.Element {
 
         {/* --- Khu quản trị --- */}
         <Route path="/admin" element={<Admin name="Tổng quan hệ thống"><AdminOverviewPage /></Admin>} />
-        <Route path="/admin/users" element={<Admin name="Quản lý tài khoản"><AdminUsersPage /></Admin>} />
+        <Route path="/admin/users" element={<Admin name="Tài khoản"><AdminUsersPage /></Admin>} />
         <Route path="/admin/access" element={<Admin name="Lượt truy cập"><AdminAccessPage /></Admin>} />
         <Route path="/admin/content" element={<Admin name="Nội dung học tập"><AdminContentPage /></Admin>} />
         <Route path="/admin/groups" element={<Admin name="Quản lý nhóm"><AdminGroupsPage /></Admin>} />

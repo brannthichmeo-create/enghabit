@@ -1,16 +1,17 @@
 import {
+  ADMIN_USER_TREND_DAYS,
   ActivityType,
   UserRole,
   UserStatus,
+  addDays,
   toLocalDate,
   type AccessLogQueryInput,
   type AccessOverview,
   type AccessPoint,
   type AdminUserDetail,
   type AdminUserQueryInput,
+  type AdminUserEvent,
   type AdminUserRow,
-  type CreateQuizInput,
-  type CreateQuizQuestionInput,
   type CreateVocabularyInput,
   type LoginEventRow,
   type Paginated,
@@ -21,6 +22,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { BadRequestError, NotFoundError } from '../../common/errors/app-error.js';
 import { toPublicUser } from '../auth/auth.service.js';
+import * as statisticsService from '../statistics/statistics.service.js';
 
 /**
  * Nghiệp vụ quản trị — góc nhìn vận hành hệ thống, không phải góc nhìn người học.
@@ -116,7 +118,7 @@ export async function getUserDetail(userId: number): Promise<AdminUserDetail> {
           activityLogs: true,
           habits: true,
           goals: true,
-          quizAttempts: true,
+          examAttempts: true,
           refreshTokens: { where: { revokedAt: null, expiresAt: { gt: new Date() } } },
         },
       },
@@ -124,8 +126,15 @@ export async function getUserDetail(userId: number): Promise<AdminUserDetail> {
   });
   if (!user) throw new NotFoundError('Không tìm thấy người dùng');
 
-  const [vocabLearned, lastActivity, recentLogins] = await Promise.all([
-    prisma.activityLog.count({ where: { userId, type: ActivityType.VOCAB_LEARNED } }),
+  // Biểu đồ tần suất tính theo múi giờ CỦA NGƯỜI ĐƯỢC XEM, không phải của quản trị
+  // viên đang xem: "ngày học" là ngày của họ. Dùng lại getDailyStats của module
+  // statistics thay vì viết truy vấn riêng — hai chỗ group khác nhau là hai chỗ để
+  // số liệu lệch (xem CLAUDE.md > Quy tắc tái sử dụng code).
+  const today = toLocalDate(new Date(), user.timezone);
+  const from = addDays(today, -(ADMIN_USER_TREND_DAYS - 1));
+
+  const [byType, lastActivity, logins, activities, activityTrend] = await Promise.all([
+    prisma.activityLog.groupBy({ by: ['type'], where: { userId }, _count: { _all: true } }),
     prisma.activityLog.findFirst({
       where: { userId },
       orderBy: { localDate: 'desc' },
@@ -134,10 +143,27 @@ export async function getUserDetail(userId: number): Promise<AdminUserDetail> {
     prisma.loginEvent.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      take: 10,
-      include: { user: { select: { name: true } } },
+      take: RECENT_EVENTS_PER_SOURCE,
+      select: { id: true, createdAt: true, success: true, reason: true, ipAddress: true },
     }),
+    prisma.activityLog.findMany({
+      where: { userId },
+      orderBy: { occurredAt: 'desc' },
+      take: RECENT_EVENTS_PER_SOURCE,
+      select: { id: true, occurredAt: true, type: true, value: true },
+    }),
+    statisticsService.getDailyStats(userId, from, today),
   ]);
+
+  // Đếm theo loại phải phủ ĐỦ mọi giá trị của enum, kể cả loại chưa từng xuất hiện:
+  // groupBy chỉ trả về loại có ít nhất một bản ghi, để nguyên thì giao diện hiện
+  // undefined thay vì số 0.
+  const activityByType = Object.fromEntries(
+    Object.values(ActivityType).map((type) => [
+      type,
+      byType.find((r) => r.type === type)?._count._all ?? 0,
+    ]),
+  ) as Record<ActivityType, number>;
 
   return {
     ...toPublicUser(user),
@@ -147,11 +173,52 @@ export async function getUserDetail(userId: number): Promise<AdminUserDetail> {
     longestStreak: user.streak?.longestStreak ?? 0,
     habitCount: user._count.habits,
     goalCount: user._count.goals,
-    vocabLearned,
-    quizAttempts: user._count.quizAttempts,
+    vocabLearned: activityByType[ActivityType.VOCAB_LEARNED],
+    examAttempts: user._count.examAttempts,
     lastActivityDate: lastActivity ? toLocalDate(lastActivity.localDate, 'UTC') : null,
-    recentLogins: recentLogins.map(toLoginEventRow),
+    activityByType,
+    activityTrend,
+    recentEvents: mergeEvents(logins, activities),
   };
+}
+
+/**
+ * Lấy ĐỦ SỐ CUỐI CÙNG từ mỗi nguồn rồi mới cắt sau khi trộn.
+ *
+ * Hai hằng này phải BẰNG NHAU, không được lấy ít hơn ở mỗi nguồn cho tiết kiệm. Lý do:
+ * cả 30 sự kiện gần nhất hoàn toàn có thể đến từ một nguồn duy nhất — người đăng nhập
+ * hỏng mật khẩu 30 lần liên tiếp, hoặc học một mạch 30 lượt trong buổi tối. Lấy 25 mỗi
+ * bên thì đúng trường hợp đó sẽ mất 5 sự kiện mới nhất và thay bằng 5 sự kiện cũ hơn
+ * của nguồn kia — sai một cách rất khó nhận ra, vì danh sách vẫn đủ 30 dòng.
+ */
+const RECENT_EVENTS_TOTAL = 30;
+const RECENT_EVENTS_PER_SOURCE = RECENT_EVENTS_TOTAL;
+
+function mergeEvents(
+  logins: { id: number; createdAt: Date; success: boolean; reason: string | null; ipAddress: string | null }[],
+  activities: { id: number; occurredAt: Date; type: ActivityType; value: number }[],
+): AdminUserEvent[] {
+  const events: AdminUserEvent[] = [
+    ...logins.map((l) => ({
+      // Tiền tố nguồn vì hai bảng đánh id riêng — id 5 tồn tại ở cả hai.
+      key: `login:${l.id}`,
+      at: l.createdAt.toISOString(),
+      kind: 'LOGIN' as const,
+      success: l.success,
+      reason: l.reason,
+      ipAddress: l.ipAddress,
+    })),
+    ...activities.map((a) => ({
+      key: `activity:${a.id}`,
+      at: a.occurredAt.toISOString(),
+      kind: 'ACTIVITY' as const,
+      type: a.type,
+      value: a.value,
+    })),
+  ];
+
+  events.sort((a, b) => b.at.localeCompare(a.at));
+  return events.slice(0, RECENT_EVENTS_TOTAL);
 }
 
 /**
@@ -356,8 +423,6 @@ export async function getSystemOverview(): Promise<SystemOverview> {
     newLast30Days,
     topics,
     vocabulary,
-    quizzes,
-    quizQuestions,
     activityTotal,
     activityLast7Days,
     loginsLast7Days,
@@ -371,8 +436,6 @@ export async function getSystemOverview(): Promise<SystemOverview> {
     prisma.user.count({ where: { createdAt: { gte: day30 } } }),
     prisma.topic.count(),
     prisma.vocabulary.count(),
-    prisma.quiz.count(),
-    prisma.quizQuestion.count(),
     prisma.activityLog.count(),
     prisma.activityLog.count({ where: { occurredAt: { gte: day7 } } }),
     prisma.loginEvent.count({ where: { success: true, createdAt: { gte: day7 } } }),
@@ -405,7 +468,7 @@ export async function getSystemOverview(): Promise<SystemOverview> {
       activeLast30Days,
       retention7Days: total === 0 ? 0 : Math.round((activeLast7Days / total) * 100),
     },
-    content: { topics, vocabulary, quizzes, quizQuestions },
+    content: { topics, vocabulary },
     activity: { total: activityTotal, last7Days: activityLast7Days, byType, daily },
     access: { loginsLast7Days, failedLast7Days, activeSessions },
     system: {
@@ -515,23 +578,4 @@ export async function updateVocabulary(vocabularyId: number, input: UpdateVocabu
 
 export async function deleteVocabulary(vocabularyId: number): Promise<void> {
   await prisma.vocabulary.delete({ where: { id: vocabularyId } });
-}
-
-export async function createQuiz(input: CreateQuizInput) {
-  return prisma.quiz.create({ data: input });
-}
-
-export async function addQuizQuestion(quizId: number, input: CreateQuizQuestionInput) {
-  return prisma.quizQuestion.create({
-    data: {
-      quizId,
-      questionText: input.questionText,
-      options: input.options,
-      correctIndex: input.correctIndex,
-    },
-  });
-}
-
-export async function deleteQuizQuestion(questionId: number): Promise<void> {
-  await prisma.quizQuestion.delete({ where: { id: questionId } });
 }

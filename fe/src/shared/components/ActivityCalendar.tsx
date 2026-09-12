@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { CalendarDays } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addDays, type ActivityCalendar as CalendarData, type CalendarDay } from '@enghabit/shared';
-import { useT } from '../../shared/i18n/language';
+import { useLocale, useT } from '../../shared/i18n/language';
 
 /**
  * Biểu đồ lịch kiểu GitHub: mỗi ô là một ngày, càng đậm là học càng nhiều.
@@ -59,6 +59,7 @@ interface Week {
 
 export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Element {
   const t = useT();
+  const locale = useLocale();
   const [hovered, setHovered] = useState<CalendarDay | null>(null);
   // Ngày được bấm chọn. Cần riêng khỏi `hovered` vì trên màn hình cảm ứng không có
   // hover — không có cái này thì nửa số người dùng không xem được chi tiết ngày nào.
@@ -141,7 +142,7 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
                         onClick={() => setPinned((current) => (current === day.date ? null : day.date))}
                         aria-label={`${day.date}: ${t('{n} hoạt động', { n: day.count })}`}
                         aria-pressed={pinned === day.date}
-                        title={`${formatDate(day.date)} — ${t('{n} hoạt động', { n: day.count })}`}
+                        title={`${formatDate(day.date, locale)} — ${t('{n} hoạt động', { n: day.count })}`}
                         // Viền quanh ô HÔM NAY để người xem định vị được mình đang ở
                         // đâu trên dải ngày — không có mốc này thì phải đếm ngược từ
                         // nhãn tháng mới biết ô cuối là ngày nào.
@@ -172,7 +173,7 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
         <p className="min-h-[18px] text-xs text-content-muted">
           {shown ? (
             <>
-              <span className="font-medium text-content-soft">{formatDate(shown.date)}</span>
+              <span className="font-medium text-content-soft">{formatDate(shown.date, locale)}</span>
               {shown.count > 0 ? ` — ${t('{n} hoạt động', { n: shown.count })}` : ` — ${t('không học')}`}
             </>
           ) : (
@@ -205,6 +206,10 @@ function Legend(): JSX.Element {
 }
 
 function WeekdayLabels(): JSX.Element {
+  // Nhãn khai báo trong mảng hằng số nên dịch tại CHỖ HIỂN THỊ (xem CLAUDE.md).
+  // Ô trống là khoảng cách cố ý giữa các thứ — không đưa chuỗi rỗng qua `t()`.
+  const t = useT();
+
   return (
     <div className="flex shrink-0 flex-col gap-[3px]" style={{ width: LABEL_COL }}>
       {WEEKDAY_LABELS.map((label, i) => (
@@ -213,7 +218,7 @@ function WeekdayLabels(): JSX.Element {
           className="text-[10px] leading-none text-content-muted"
           style={{ height: CELL, lineHeight: `${CELL}px` }}
         >
-          {label}
+          {label ? t(label) : ''}
         </span>
       ))}
     </div>
@@ -222,6 +227,8 @@ function WeekdayLabels(): JSX.Element {
 
 /** Nhãn tháng đặt tại tuần đầu tiên thuộc tháng đó, canh theo đúng cột. */
 function MonthLabels({ weeks }: { weeks: Week[] }): JSX.Element {
+  // Như `WeekdayLabels`: nhãn nằm trong mảng hằng số, dịch ở chỗ hiển thị.
+  const t = useT();
   const labels: { index: number; text: string }[] = [];
   let lastMonth = -1;
 
@@ -250,7 +257,7 @@ function MonthLabels({ weeks }: { weeks: Week[] }): JSX.Element {
           className="absolute text-[10px] font-medium leading-none text-content-muted"
           style={{ left: label.index * (CELL + GAP) }}
         >
-          {label.text}
+          {label.text ? t(label.text) : ''}
         </span>
       ))}
     </div>
@@ -301,8 +308,9 @@ function monthOf(date: string): number {
   return Number(date.slice(5, 7)) - 1;
 }
 
-function formatDate(date: string): string {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString('vi-VN', {
+/** Hàm thường nên không gọi hook được — nhận `locale` qua tham số (xem CLAUDE.md). */
+function formatDate(date: string, locale: string): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'numeric',

@@ -556,7 +556,7 @@ function StatsTab({ user }: { user: AdminUserDetail }): JSX.Element {
         <Stat label={t('Tổng hoạt động')} value={user.activityCount.toLocaleString(locale)} />
         <Stat label={t('Chuỗi hiện tại')} value={t('{n} ngày', { n: user.currentStreak })} />
         <Stat label={t('Chuỗi dài nhất')} value={t('{n} ngày', { n: user.longestStreak })} />
-        <Stat label={t('Lượt làm quiz')} value={String(user.quizAttempts)} />
+        <Stat label={t('Lượt làm kiểm tra')} value={String(user.examAttempts)} />
         <Stat label={t('Thói quen')} value={String(user.habitCount)} />
         <Stat label={t('Mục tiêu')} value={String(user.goalCount)} />
         <Stat label={t('Ngày tạo')} value={formatDateTime(user.createdAt, t, locale)} />
@@ -585,7 +585,7 @@ function StatsTab({ user }: { user: AdminUserDetail }): JSX.Element {
 /**
  * Tab Hoạt động gần đây — nhật ký gộp đăng nhập và hoạt động học, mới nhất trước.
  *
- * Gộp một bảng chứ không tách hai: chuỗi "đăng nhập lúc 9h rồi làm quiz lúc 9h05" chỉ
+ * Gộp một bảng chứ không tách hai: chuỗi "đăng nhập lúc 9h rồi làm kiểm tra lúc 9h05" chỉ
  * đọc ra được khi hai loại nằm chung một trục thời gian.
  */
 function EventsTab({ events }: { events: AdminUserEvent[] }): JSX.Element {
@@ -715,7 +715,7 @@ export function Pagination({
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
       >
-        Sau
+        {t('Sau')}
       </Button>
     </div>
   );

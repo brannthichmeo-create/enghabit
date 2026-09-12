@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Trạng thái dự án
 
-Đã scaffold xong nền tảng: `shared` (enum, Zod schema, SM-2, streak, phần thưởng — có test), `be` (Express + Prisma + đầy đủ module auth/goals/habits/topics/flashcards/lessons/quizzes/statistics/notifications/rewards/leaderboard/admin, cron nhắc nhở + cron vật phẩm giữ chuỗi), `fe` (React + Vite + Tailwind, auth + dashboard thống kê). `mobile` chưa scaffold.
+Đã scaffold xong nền tảng: `shared` (enum, Zod schema, SM-2, streak, phần thưởng — có test), `be` (Express + Prisma + đầy đủ module auth/goals/habits/topics/flashcards/lessons/statistics/notifications/rewards/leaderboard/admin, cron nhắc nhở + cron vật phẩm giữ chuỗi), `fe` (React + Vite + Tailwind, auth + dashboard thống kê). `mobile` chưa scaffold.
 
-Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có sẵn API backend và khuôn mẫu ở `fe/src/features/auth` + `fe/src/features/statistics` để làm theo.
+Các feature FE còn lại (habits, goals, flashcards, admin) đã có sẵn API backend và khuôn mẫu ở `fe/src/features/auth` + `fe/src/features/statistics` để làm theo.
 
 ## Tổng quan hệ thống
 
@@ -17,11 +17,34 @@ Các feature FE còn lại (habits, goals, flashcards, quizzes, admin) đã có 
 - Thiết lập mục tiêu học (số từ/ngày, số phút/ngày, số bài/tuần, streak N ngày)
 - Tạo và quản lý thói quen học tập (tần suất daily/weekly/custom), check-in hoàn thành
 - Học từ vựng theo chủ đề, ôn tập bằng flashcard (spaced repetition)
-- Làm quiz kiểm tra kiến thức
+- Làm Kiểm tra để tự đánh giá lại kiến thức của cả một chủ đề (xem mục "Kiểm tra" dưới `lessons`)
 - Xem chuỗi ngày học liên tiếp (streak), tỷ lệ hoàn thành thói quen, thống kê theo ngày/tuần/tháng
 - Điểm danh mỗi ngày nhận xu, làm ba nhiệm vụ ngày, mua vật phẩm giữ chuỗi để không mất streak khi lỡ nghỉ một hôm
 - Xem bảng xếp hạng theo tuần/tháng/toàn thời gian, biết mình đứng thứ mấy trong số người học
 - Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user), cảnh báo chuỗi sắp đứt, chúc mừng đạt mục tiêu — xem trong chuông thông báo và trang `/notifications`
+
+### Kiểm tra (chế độ "Exam" trong module `lessons`)
+
+Từng có module `quizzes` riêng (admin gõ tay từng câu MCQ cố định) — đã **bỏ hẳn**, gộp vào
+`lessons` theo triết lý của OpenQuiz.ai: không có đề cố định do ai soạn sẵn, mọi phiên luyện
+tập đều sinh động từ chính kho từ vựng và trạng thái học của người đó.
+
+- Đề Kiểm tra sinh từ **toàn bộ từ vựng của một chủ đề** (không chỉ một bài như lộ trình
+  thường), ưu tiên từ đang có trong bảng `Mistake` của user rồi mới lấp đầy ngẫu nhiên —
+  xem `be/src/modules/lessons/exam.service.ts`. Dùng lại nguyên `generateLessonExercises`
+  của `exercise-generator.ts`, **không** có bộ sinh bài tập riêng cho Kiểm tra.
+- Có tính giờ từng câu (`EXAM_QUESTION_SECONDS` ở `shared/constants/exercise.ts`) — hết giờ
+  tự nộp câu đó, bỏ trống thì tính sai. Đây là điểm khác bài học thường (không tính giờ).
+- **Không mở khoá/gate gì cả** — khác `LessonProgress`, làm Kiểm tra không ảnh hưởng lộ
+  trình. Chỉ lưu điểm vào bảng `ExamAttempt` (tối giản, không lưu đề) để hiện điểm cao nhất
+  cạnh nút "Kiểm tra" trên mỗi chủ đề.
+- Trả lời sai ở Kiểm tra cũng cập nhật `Mistake` giống hệt bài học — chỉ MỘT nơi theo dõi
+  lỗi sai cho cả hai luồng, dùng chung `be/src/modules/lessons/grading.ts`.
+- Vẫn ghi `ActivityLog` loại `QUIZ_COMPLETED` (không đổi tên enum) — `GOAL_ACTIVITY_TYPE`
+  và `XP_PER_ACTIVITY` ở `shared/` đã gắn với giá trị này, đổi sẽ vỡ mục tiêu "số bài kiểm
+  tra mỗi tuần" và cách tính XP.
+- **Không dựng lại module `quizzes` hay bảng `Quiz`/`QuizQuestion`/`QuizAttempt`** nếu cần
+  thêm tính năng liên quan tới kiểm tra kiến thức — mở rộng `exam.service.ts` thay vào đó.
 
 ### Nhóm lớp (mọi người dùng)
 
@@ -113,7 +136,7 @@ thấy một dãy số 0 vô nghĩa và tưởng hệ thống đếm sai:
 
 ```
 enghabit/
-├── fe/                # Web (React + Vite) — features/{auth,goals,habits,vocabulary,flashcards,quizzes,statistics,notifications,admin}/
+├── fe/                # Web (React + Vite) — features/{auth,goals,habits,vocabulary,flashcards,lessons,statistics,notifications,admin}/
 ├── be/                # Backend (Node + Prisma) — modules/{...cùng tên feature với fe...}/
 ├── mobile/            # React Native (Expo) — thêm sau, cùng tên feature
 ├── shared/            # @enghabit/shared: schemas (Zod), constants/enum, srs/ (SM-2), streak/ (tính streak)
@@ -124,7 +147,7 @@ enghabit/
 Bên trong `be/src/modules/<feature>/`: `routes.ts → controller.ts → service.ts → schema.ts`.
 Bên trong `fe/src/features/<feature>/`: `components/`, `hooks/`, `api.ts`, `types.ts`.
 
-Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `lessons`, `quizzes`, `statistics`, `notifications`, `rewards`, `leaderboard`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
+Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `lessons`, `statistics`, `notifications`, `rewards`, `leaderboard`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
 
 **Hai quy ước bắt buộc khi scaffold:**
 
@@ -322,7 +345,7 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - Query param kiểu boolean **không dùng `z.coerce.boolean()`**: query string luôn là chuỗi và `Boolean('false') === true`, nên bộ lọc sẽ luôn bật. Dùng `z.preprocess` so khớp `'true'`/`'1'` (xem `notificationQuerySchema`).
 - Mọi route `/admin/*` bắt buộc đi qua role-guard middleware.
 - **Và ngược lại: module học tập chặn `requireRole(UserRole.USER)` ngay ở tầng router** —
-  `rewards`, `lessons`, `flashcards`, `quizzes`, `habits`, `goals`, `statistics`, cùng
+  `rewards`, `lessons`, `flashcards`, `habits`, `goals`, `statistics`, cùng
   `/notifications/settings`. Ẩn trên giao diện là chưa đủ: token admin gọi thẳng API vẫn
   điểm danh lấy xu hay ghi `ActivityLog` được. Hai ngoại lệ cố ý mở cho cả hai vai trò:
   `/topics` (khu quản trị đọc để quản lý nội dung) và danh sách `/notifications` (quản trị
@@ -344,7 +367,7 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - Streak "tự nhiên còn" dù có ngày nghỉ: xem `streak_freezes` — rất có thể một vật phẩm đã bù ngày đó (job chạy 30 phút một lượt). Đây là hành vi đúng, không phải bug.
 - Không nhận được xu: kiểm tra `coin_transactions` theo `dedupe_key` của ngày đó. Trùng khoá nghĩa là đã nhận rồi, API trả lỗi 409 chứ không cộng thêm lần nữa.
 - Test đặt cạnh file nguồn trong cùng thư mục module (`*.test.ts`), không gom vào thư mục `tests/` tách biệt.
-- FE: mỗi feature lớn (`flashcards`, `quizzes`...) có Error Boundary cục bộ, tránh lỗi 1 feature làm crash toàn app.
+- FE: mỗi feature lớn (`flashcards`, `lessons`...) có Error Boundary cục bộ, tránh lỗi 1 feature làm crash toàn app.
 - Debug cron/notification: xem log riêng của `be/src/jobs`, không lẫn với log của module `notifications` (module này giữ **nội dung và lưu trữ** thông báo + cấu hình nhắc nhở, nhưng **không chứa lịch trình gửi**).
 - Không nhận được nhắc nhở: kiểm tra theo thứ tự (1) `notification_settings.is_enabled` — công tắc tổng, tắt là im hết; (2) bảng `reminders`: có mốc nào `is_enabled` và `days_of_week` chứa thứ hôm nay không; (3) `User.timezone` — giờ nhắc tính theo giờ user, không phải giờ máy chủ; (4) hôm đó user đã có `ActivityLog` chưa (đã học thì hệ thống cố ý im lặng); (5) bảng `notifications` xem `dedupe_key` (`DAILY_REMINDER:<reminderId>:<local_date>`) của ngày đó đã tồn tại chưa.
 
@@ -357,7 +380,7 @@ Format bắt buộc:
 ```
 
 - **`Hành_động`**: một trong `Them` (thêm mới), `Sua` (sửa lỗi), `Capnhat` (cập nhật/chỉnh sửa logic có sẵn), `Xoa` (xoá), `Taicautruc` (refactor), `Taillieu` (docs), `Kiemthu` (test).
-- **`Tên_module`**: `<app>-<module>` theo đúng tên đã quy ước ở trên, vd `BE-Habits`, `FE-Flashcards`, `Shared-Srs`, `Mobile-Quizzes`. Nếu đụng nhiều module, nối bằng dấu `+`: `BE-Habits+FE-Habits`.
+- **`Tên_module`**: `<app>-<module>` theo đúng tên đã quy ước ở trên, vd `BE-Habits`, `FE-Flashcards`, `Shared-Srs`, `Mobile-Lessons`. Nếu đụng nhiều module, nối bằng dấu `+`: `BE-Habits+FE-Habits`.
 - **`Tên_tính_năng`**: tên cụ thể của tính năng trong module đó, vd `CheckIn`, `TinhLichOn`, `ThongKeTuan` — không để trống, không viết chung chung như `Code`, `Logic`.
 - **`Mô_tả_cập_nhật_ngắn`**: một câu ngắn gọn mô tả đã làm gì, viết thường có dấu, không lặp lại tên tính năng.
 

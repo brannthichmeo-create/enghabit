@@ -1,10 +1,18 @@
 import { Router } from 'express';
-import { UserRole, practiceMistakesSchema, submitLessonSchema, type SubmitLessonInput } from '@enghabit/shared';
+import {
+  UserRole,
+  practiceMistakesSchema,
+  submitExamSchema,
+  submitLessonSchema,
+  type SubmitExamInput,
+  type SubmitLessonInput,
+} from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
 import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
 import { getValidatedQuery, validateBody, validateQuery } from '../../common/middlewares/validate.js';
 import { BadRequestError } from '../../common/errors/app-error.js';
 import * as lessonService from './lesson.service.js';
+import * as examService from './exam.service.js';
 
 export const lessonRoutes: Router = Router();
 
@@ -46,6 +54,27 @@ lessonRoutes.get(
   asyncHandler(async (req, res) => {
     const { limit } = getValidatedQuery(req, practiceMistakesSchema);
     res.json(await lessonService.getMistakePractice(currentUser(req).id, limit));
+  }),
+);
+
+/**
+ * Chế độ "Kiểm tra": đề tự sinh từ CẢ chủ đề, ưu tiên từ đang sai (xem exam.service.ts).
+ * Đặt TRƯỚC route bắt-tất-cả `/:topicId/:index` bên dưới — nếu không, Express sẽ khớp
+ * nhầm "exam" vào tham số `:topicId` của route đó.
+ */
+lessonRoutes.get(
+  '/exam/:topicId',
+  asyncHandler(async (req, res) => {
+    res.json(await examService.getTopicExam(currentUser(req).id, parseId(req.params.topicId)));
+  }),
+);
+
+lessonRoutes.post(
+  '/exam/submit',
+  validateBody(submitExamSchema),
+  asyncHandler(async (req, res) => {
+    const user = currentUser(req);
+    res.json(await examService.submitExam(user.id, user.timezone, req.body as SubmitExamInput));
   }),
 );
 

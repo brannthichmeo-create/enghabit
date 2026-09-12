@@ -153,8 +153,6 @@ export function AdminOverviewPage(): JSX.Element {
           <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-line pt-4 text-sm">
             <Pair label={t('Chủ đề')} value={data.content.topics} icon={BookOpen} />
             <Pair label={t('Từ vựng')} value={data.content.vocabulary} />
-            <Pair label={t('Bài quiz')} value={data.content.quizzes} />
-            <Pair label={t('Câu hỏi quiz')} value={data.content.quizQuestions} />
           </dl>
         </Card>
       </div>

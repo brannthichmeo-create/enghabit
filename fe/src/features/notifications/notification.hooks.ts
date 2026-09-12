@@ -46,13 +46,22 @@ export function useUnreadCount(enabled = true): UseQueryResult<number> {
   });
 }
 
+/**
+ * Danh sách thông báo.
+ *
+ * `enabled` để chuông trên thanh trên cùng chỉ tải khi người dùng mở nó ra — cùng khuôn
+ * với `useUnreadCount`, `useStreak`, `useLevel`. Thiếu tham số này thì mọi phiên đều tải
+ * sẵn một danh sách cho cái menu chưa ai bấm vào.
+ */
 export function useNotifications(
   query: Partial<NotificationQueryInput>,
+  enabled = true,
 ): UseQueryResult<Paginated<NotificationRow>> {
   return useQuery({
     queryKey: notificationKeys.list(query),
     queryFn: () => notificationApi.listNotifications(query),
     placeholderData: (previous) => previous,
+    enabled,
   });
 }
 

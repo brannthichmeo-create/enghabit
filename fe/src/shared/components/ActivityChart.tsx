@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ActivityType, type DailyStat } from '@enghabit/shared';
-import { useT } from '../../shared/i18n/language';
+import { useLocale, useT } from '../../shared/i18n/language';
 
 /**
  * Biểu đồ cột chồng: mỗi ngày một cột, chia theo loại hoạt động.
@@ -22,7 +22,7 @@ interface Series {
 const SERIES: Series[] = [
   { key: 'vocabLearned', label: 'Từ vựng', color: 'var(--series-vocab)', type: ActivityType.VOCAB_LEARNED },
   { key: 'flashcardsReviewed', label: 'Ôn tập', color: 'var(--series-flashcard)', type: ActivityType.FLASHCARD_REVIEWED },
-  { key: 'quizzesCompleted', label: 'Quiz', color: 'var(--series-quiz)', type: ActivityType.QUIZ_COMPLETED },
+  { key: 'quizzesCompleted', label: 'Kiểm tra', color: 'var(--series-quiz)', type: ActivityType.QUIZ_COMPLETED },
   { key: 'habitCheckIns', label: 'Thói quen', color: 'var(--series-habit)', type: ActivityType.HABIT_CHECKIN },
 ];
 
@@ -179,10 +179,11 @@ function DayColumn({
 
 function DayDetail({ day }: { day: DailyStat }): JSX.Element {
   const t = useT();
+  const locale = useLocale();
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
       <span className="text-xs font-medium text-content-soft">
-        {new Date(`${day.date}T00:00:00Z`).toLocaleDateString('vi-VN', {
+        {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(locale, {
           weekday: 'long',
           day: 'numeric',
           month: 'numeric',

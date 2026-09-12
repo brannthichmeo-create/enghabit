@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import type { NotificationRow } from '@enghabit/shared';
 import { useMarkAllRead, useMarkRead, useNotifications, useUnreadCount } from '../notification.hooks';
 import { displayFor, timeAgo } from './notification-display';
+import { ErrorMessage } from '../../../shared/components/ui';
+import { getErrorMessage } from '../../../shared/lib/api-client';
 import { useLocale, useT } from '../../../shared/i18n/language';
 
 /**
@@ -20,7 +22,9 @@ export function NotificationBell(): JSX.Element {
   const navigate = useNavigate();
 
   const unread = useUnreadCount();
-  const list = useNotifications(open ? { page: 1, pageSize: 8 } : {});
+  // Chỉ tải khi chuông được mở. Trước đây truyền query rỗng lúc đóng, nhưng hook không
+  // có cờ `enabled` nên nó vẫn gọi API ngay từ lúc vào app cho một menu chưa ai bấm.
+  const list = useNotifications({ page: 1, pageSize: 8 }, open);
   const markRead = useMarkRead();
   const markAllRead = useMarkAllRead();
 
@@ -88,7 +92,16 @@ export function NotificationBell(): JSX.Element {
           <div className="max-h-[380px] overflow-y-auto">
             {list.isLoading && <p className="px-3 py-6 text-center text-sm text-content-muted">{t('Đang tải…')}</p>}
 
-            {list.data?.items.length === 0 && (
+            {/* Không có nhánh này thì tải hỏng = panel trắng trơn: `data` rỗng nên cả
+                dòng "chưa có thông báo" lẫn danh sách đều không hiện, người dùng tưởng
+                mình hết thông báo chứ không biết là lỗi mạng. */}
+            {list.isError && (
+              <div className="px-3 py-3">
+                <ErrorMessage>{getErrorMessage(list.error)}</ErrorMessage>
+              </div>
+            )}
+
+            {list.data?.items.length === 0 && !list.isError && (
               <p className="px-3 py-8 text-center text-sm text-content-muted">
                 {t('Chưa có thông báo nào. Nhắc nhở học sẽ xuất hiện ở đây.')}
               </p>
@@ -118,7 +131,7 @@ export function NotificationBell(): JSX.Element {
                           )}
                         </span>
                         <span className="mt-0.5 block text-xs text-content-soft">{notification.body}</span>
-                        <span className="mt-0.5 block text-[11px] text-content-muted">
+                        <span className="mt-0.5 block text-xs text-content-muted">
                           {timeAgo(notification.createdAt, t, locale)}
                         </span>
                       </span>

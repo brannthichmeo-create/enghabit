@@ -85,10 +85,10 @@ function ListenView({
                 setSelected(option);
                 onAnswer({ value: option });
               }}
-              className={`rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed ${
+              className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed ${
                 selected === option
                   ? 'border-brand bg-brand-soft text-brand-strong'
-                  : 'border-line hover:border-line-strong'
+                  : 'border-line-control hover:border-brand'
               }`}
             >
               {option}
@@ -161,10 +161,10 @@ function ChoiceView({
               setSelected(option);
               onAnswer({ value: option });
             }}
-            className={`rounded-xl border-2 px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed ${
+            className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed ${
               selected === option
                 ? 'border-brand bg-brand-soft text-brand-strong'
-                : 'border-line hover:border-line-strong'
+                : 'border-line-control hover:border-brand'
             }`}
           >
             {option}
@@ -211,7 +211,7 @@ function ArrangeView({
               key={`${tokenIndex}-${position}`}
               disabled={locked}
               onClick={() => update(picked.filter((_, i) => i !== position))}
-              className="rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-sm shadow-sm"
+              className="rounded-lg border border-line-control bg-surface px-3 py-1.5 text-sm shadow-sm"
             >
               {exercise.tokens[tokenIndex]}
             </button>
@@ -234,7 +234,7 @@ function ArrangeView({
               key={index}
               disabled={locked}
               onClick={() => update([...picked, index])}
-              className="rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-sm transition-colors hover:border-brand"
+              className="rounded-lg border border-line-control bg-surface px-3 py-1.5 text-sm transition-colors hover:border-brand"
             >
               {token}
             </button>
@@ -327,12 +327,12 @@ function MatchView({
               key={word.id}
               disabled={locked || matchedWords.has(word.id)}
               onClick={() => setActiveWord(word.id)}
-              className={`w-full rounded-xl border-2 px-3 py-2.5 text-sm transition-colors ${
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm transition-colors ${
                 matchedWords.has(word.id)
                   ? 'border-success/40 bg-success-soft text-success'
                   : activeWord === word.id
                     ? 'border-brand bg-brand-soft text-brand-strong'
-                    : 'border-line hover:border-line-strong'
+                    : 'border-line-control hover:border-brand'
               }`}
             >
               {word.text}
@@ -346,10 +346,10 @@ function MatchView({
               key={meaning.id}
               disabled={locked || matchedMeanings.has(meaning.id) || activeWord === null}
               onClick={() => selectMeaning(meaning.id)}
-              className={`w-full rounded-xl border-2 px-3 py-2.5 text-sm transition-colors disabled:opacity-60 ${
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm transition-colors disabled:opacity-60 ${
                 matchedMeanings.has(meaning.id)
                   ? 'border-success/40 bg-success-soft text-success'
-                  : 'border-line hover:border-line-strong'
+                  : 'border-line-control hover:border-brand'
               }`}
             >
               {meaning.text}

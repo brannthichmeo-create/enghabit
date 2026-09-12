@@ -42,3 +42,14 @@ export const WORDS_PER_LESSON = 4;
 
 /** Số câu đúng tối thiểu (trên tổng số) để coi là qua bài. */
 export const LESSON_PASS_RATIO = 0.7;
+
+/**
+ * Số từ vựng lấy vào một bài Kiểm tra (chế độ "Exam" kiểu OpenQuiz).
+ *
+ * Rộng hơn hẳn một bài học (`WORDS_PER_LESSON`) vì Kiểm tra kiểm tra lại CẢ chủ đề,
+ * không phải một lát cắt nhỏ — xem `be/src/modules/lessons/exam.service.ts`.
+ */
+export const EXAM_WORD_COUNT = 8;
+
+/** Số giây cho mỗi câu trong bài Kiểm tra — hết giờ thì tự nộp câu đó (tính sai nếu bỏ trống). */
+export const EXAM_QUESTION_SECONDS = 20;

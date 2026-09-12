@@ -7,7 +7,8 @@ import { HeroCard } from './HeroCard';
 import { RewardsBar } from '../../rewards/components/RewardsBar';
 import { useMistakeCount } from '../../lessons/lesson.hooks';
 import { ActivityCalendarChart } from '../../../shared/components/ActivityCalendar';
-import { Card, ProgressBar, Skeleton } from '../../../shared/components/ui';
+import { Card, ErrorState, ProgressBar, Skeleton } from '../../../shared/components/ui';
+import { getErrorMessage } from '../../../shared/lib/api-client';
 import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useGoalProgress } from '../../goals/goal.hooks';
@@ -84,12 +85,38 @@ export function DashboardPage(): JSX.Element {
       {/* Hàng 1 — thẻ mở đầu chiếm 2/3, việc cần làm 1/3 */}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <HeroCard streak={streak.data} level={level.data} loading={streak.isLoading || level.isLoading}>
+          <HeroCard
+            streak={streak.data}
+            level={level.data}
+            loading={streak.isLoading || level.isLoading}
+            errorMessage={
+              streak.isError || level.isError
+                ? getErrorMessage(streak.error ?? level.error)
+                : undefined
+            }
+            onRetry={() => {
+              void streak.refetch();
+              void level.refetch();
+            }}
+          >
             <RewardsBar />
           </HeroCard>
         </div>
 
-        <TodayCard dueCount={dueCount.data} mistakeCount={mistakeCount.data} />
+        <TodayCard
+          dueCount={dueCount.data}
+          mistakeCount={mistakeCount.data}
+          loading={dueCount.isLoading || mistakeCount.isLoading}
+          errorMessage={
+            dueCount.isError || mistakeCount.isError
+              ? getErrorMessage(dueCount.error ?? mistakeCount.error)
+              : undefined
+          }
+          onRetry={() => {
+            void dueCount.refetch();
+            void mistakeCount.refetch();
+          }}
+        />
       </div>
 
       {/* Hàng 2 — biểu đồ chiếm 2/3, mục tiêu 1/3 */}
@@ -132,13 +159,18 @@ export function DashboardPage(): JSX.Element {
 
             {summary.isLoading && <Skeleton className="h-[248px] w-full" />}
             {summary.isError && (
-              <p className="py-8 text-center text-sm text-danger">{t('Không tải được thống kê')}</p>
+              <ErrorState message={getErrorMessage(summary.error)} onRetry={() => void summary.refetch()} />
             )}
             {summary.data && <ActivityChart data={summary.data.daily} />}
           </Card>
         </div>
 
-        <GoalCard goals={goalProgress.data} loading={goalProgress.isLoading} />
+        <GoalCard
+          goals={goalProgress.data}
+          loading={goalProgress.isLoading}
+          errorMessage={goalProgress.isError ? getErrorMessage(goalProgress.error) : undefined}
+          onRetry={() => void goalProgress.refetch()}
+        />
       </div>
 
       {/* Hàng 3 — lịch học trải hết chiều ngang vì nó là một dải dài theo thời gian */}
@@ -166,7 +198,9 @@ export function DashboardPage(): JSX.Element {
         </div>
 
         {calendar.isLoading && <Skeleton className="h-[150px] w-full" />}
-        {calendar.isError && <p className="py-6 text-center text-sm text-danger">{t('Không tải được lịch học')}</p>}
+        {calendar.isError && (
+          <ErrorState message={getErrorMessage(calendar.error)} onRetry={() => void calendar.refetch()} />
+        )}
         {calendar.data && <ActivityCalendarChart data={calendar.data} />}
       </Card>
     </div>
@@ -207,12 +241,28 @@ function RangeTab({
 function TodayCard({
   dueCount,
   mistakeCount,
+  loading,
+  errorMessage,
+  onRetry,
 }: {
   dueCount?: number;
   mistakeCount?: number;
+  loading: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
 }): JSX.Element {
   const t = useT();
-  const done = (dueCount ?? 0) === 0 && (mistakeCount ?? 0) === 0;
+
+  /*
+    "Xong hết" chỉ được nói khi CẢ HAI số đã về và cùng bằng 0.
+
+    Trước đây `done` tính từ `(count ?? 0) === 0`, nên lúc đang tải và cả lúc API hỏng
+    (hai trường hợp `count` là `undefined`) thẻ đều tuyên bố "Bạn đã xong hết phần cần
+    ôn" — nói với người dùng rằng họ không còn gì để học trong khi hệ thống không hề
+    biết. Với một app xây thói quen thì đó là lỗi nặng hơn cả việc im lặng.
+  */
+  const known = dueCount !== undefined && mistakeCount !== undefined;
+  const done = known && dueCount === 0 && mistakeCount === 0;
 
   return (
     <Card className="flex h-full flex-col">
@@ -222,10 +272,23 @@ function TodayCard({
       </div>
 
       <p className="mt-0.5 text-sm text-content-muted">
-        {done ? t('Bạn đã xong hết phần cần ôn.') : t('Làm tiếp từ chỗ đang dở.')}
+        {!known ? t('Đang xem bạn còn việc gì…') : done ? t('Bạn đã xong hết phần cần ôn.') : t('Làm tiếp từ chỗ đang dở.')}
       </p>
 
-      <div className="mt-4 space-y-2">
+      {errorMessage && (
+        <div className="mt-4">
+          <ErrorState message={errorMessage} onRetry={onRetry} />
+        </div>
+      )}
+
+      {loading && !errorMessage && (
+        <div className="mt-4 space-y-2">
+          <Skeleton className="h-[62px] w-full" />
+          <Skeleton className="h-[62px] w-full" />
+        </div>
+      )}
+
+      <div className={`mt-4 space-y-2 ${loading || errorMessage ? 'hidden' : ''}`}>
         <TaskRow
           to="/flashcards"
           icon={Layers}
@@ -296,9 +359,13 @@ function TaskRow({
 function GoalCard({
   goals,
   loading,
+  errorMessage,
+  onRetry,
 }: {
   goals?: { goalId: number; type: keyof typeof GOAL_TYPE_LABELS; currentValue: number; targetValue: number; completionRate: number; isCompleted: boolean }[];
   loading: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
 }): JSX.Element {
   const t = useT();
 
@@ -316,7 +383,15 @@ function GoalCard({
 
       {loading && <Skeleton className="mt-4 h-24 w-full" />}
 
-      {!loading && (!goals || goals.length === 0) && (
+      {/* Lỗi đi TRƯỚC trạng thái rỗng: người có 5 mục tiêu mà request rớt thì trước đây
+          bị báo "Bạn chưa đặt mục tiêu nào" — sai sự thật, và còn mời họ đặt lại. */}
+      {!loading && errorMessage && (
+        <div className="mt-4">
+          <ErrorState message={errorMessage} onRetry={onRetry} />
+        </div>
+      )}
+
+      {!loading && !errorMessage && (!goals || goals.length === 0) && (
         <div className="mt-4 flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-line px-4 py-6 text-center">
           <p className="text-sm text-content-soft">{t('Bạn chưa đặt mục tiêu nào')}</p>
           <Link to="/goals" className="mt-1 text-xs font-medium text-brand-strong hover:underline">

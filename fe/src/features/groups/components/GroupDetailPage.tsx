@@ -39,7 +39,8 @@ import {
 } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/Toast';
 import { useConfirm } from '../../../shared/components/ConfirmDialog';
-import { useT } from '../../../shared/i18n/language';
+import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
+import { useLocale, useT } from '../../../shared/i18n/language';
 import { usePosts } from '../../community/community.hooks';
 import { PostCard } from '../../community/components/CommunityPage';
 import { PostComposer } from '../../community/components/PostComposer';
@@ -67,12 +68,18 @@ type Tab = 'feed' | 'members' | 'requests' | 'settings';
  */
 export function GroupDetailPage(): JSX.Element {
   const t = useT();
+  const locale = useLocale();
   const navigate = useNavigate();
   const params = useParams();
   const groupId = Number(params.id);
 
   const [tab, setTab] = useState<Tab>('feed');
   const group = useGroup(Number.isInteger(groupId) && groupId > 0 ? groupId : null);
+
+  // `/groups/:id` mang id động nên không tra được từ bản đồ breadcrumb tĩnh — nối
+  // thêm tên nhóm vào đây. `null` khi chưa có dữ liệu (đang tải/lỗi) để không hiện
+  // tạm một cấp rỗng rồi mới đổi thành tên thật.
+  useBreadcrumbTail(group.data?.name ?? null);
 
   if (group.isLoading) return <SkeletonList rows={4} />;
 
@@ -115,7 +122,7 @@ export function GroupDetailPage(): JSX.Element {
           <p className="mt-2 text-sm text-content-soft">{data.block.reason}</p>
           <p className="mt-3 border-t border-line pt-3 text-xs text-content-muted">
             {t('Bị chặn lúc {time} bởi quản trị viên. Liên hệ quản trị viên nếu bạn cho rằng có nhầm lẫn.', {
-              time: new Date(data.block.blockedAt).toLocaleString('vi-VN'),
+              time: new Date(data.block.blockedAt).toLocaleString(locale),
             })}
           </p>
         </Card>
@@ -136,10 +143,9 @@ export function GroupDetailPage(): JSX.Element {
 
   return (
     <div>
-      <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/groups')} className="mb-2">
-        {t('Nhóm lớp')}
-      </Button>
-
+      {/* Không tự chèn nút "về danh sách" ở đây nữa — breadcrumb của khung app đã
+          làm việc đó (xem `useBreadcrumbTail` ở trên), đặt cả hai thành hai lối
+          quay lại chồng lên nhau ngay trên PageHeader. */}
       <PageHeader
         title={data.name}
         description={data.description ?? undefined}
@@ -277,6 +283,7 @@ function GroupFeed({ groupId }: { groupId: number }): JSX.Element {
 /** Danh sách thành viên. Trưởng nhóm thấy thêm nút phong quyền và xoá khỏi nhóm. */
 function MemberList({ group }: { group: GroupDetail }): JSX.Element {
   const t = useT();
+  const locale = useLocale();
   const confirm = useConfirm();
   const toast = useToast();
   const isLeader = group.viewerState === GroupViewerState.LEADER;
@@ -359,7 +366,7 @@ function MemberList({ group }: { group: GroupDetail }): JSX.Element {
                   )}
                 </td>
                 <td className="py-2.5 pr-6 text-right tabular-nums text-content-soft">
-                  {member.activityCount.toLocaleString('vi-VN')}
+                  {member.activityCount.toLocaleString(locale)}
                 </td>
                 <td className="py-2.5 tabular-nums text-content-soft">
                   {t('{n} ngày', { n: member.currentStreak })}
@@ -372,19 +379,32 @@ function MemberList({ group }: { group: GroupDetail }): JSX.Element {
                         size="sm"
                         icon={Crown}
                         loading={updateRole.isPending && updateRole.variables?.userId === member.userId}
-                        onClick={() =>
+                        onClick={async () => {
+                          // Phong trưởng nhóm là thao tác cộng thêm, ít rủi ro — làm ngay.
+                          // Hạ quyền thì xác nhận, giống hệt mức an toàn của "Xoá khỏi
+                          // nhóm" ngay dưới: cả hai đều lấy đi quyền của một ai đó.
+                          const demoting = member.role === GroupMemberRole.LEADER;
+                          if (demoting) {
+                            const ok = await confirm({
+                              title: t('Hạ quyền trưởng nhóm của {name}?', { name: member.name }),
+                              message: t(
+                                '{name} sẽ không còn quản trị được nhóm này nữa. Có thể phong lại bất cứ lúc nào.',
+                                { name: member.name },
+                              ),
+                              confirmLabel: t('Hạ quyền'),
+                              tone: 'danger',
+                            });
+                            if (!ok) return;
+                          }
                           updateRole.mutate(
                             {
                               groupId: group.id,
                               userId: member.userId,
-                              role:
-                                member.role === GroupMemberRole.LEADER
-                                  ? GroupMemberRole.MEMBER
-                                  : GroupMemberRole.LEADER,
+                              role: demoting ? GroupMemberRole.MEMBER : GroupMemberRole.LEADER,
                             },
                             { onError: (err) => toast.error(getErrorMessage(err)) },
-                          )
-                        }
+                          );
+                        }}
                       >
                         {member.role === GroupMemberRole.LEADER ? t('Hạ quyền') : t('Phong trưởng nhóm')}
                       </Button>
@@ -446,6 +466,13 @@ function RequestList({ group }: { group: GroupDetail }): JSX.Element {
     );
   };
 
+  // Khoá cả hai nút của ĐÚNG hàng đang xử lý — bấm nhanh Duyệt rồi Từ chối trên cùng
+  // một yêu cầu khi request đầu chưa xong không được đi tiếp; các hàng khác vẫn bấm
+  // được bình thường. Chỉ nút vừa bấm hiện spinner, nút còn lại chỉ mờ đi.
+  const isBusyFor = (userId: number): boolean => decide.isPending && decide.variables?.userId === userId;
+  const isLoadingFor = (userId: number, approve: boolean): boolean =>
+    isBusyFor(userId) && decide.variables?.approve === approve;
+
   return (
     <div className="space-y-2">
       {group.pendingRequests.map((request) => (
@@ -459,10 +486,23 @@ function RequestList({ group }: { group: GroupDetail }): JSX.Element {
               )}
             </div>
             <div className="flex gap-2">
-              <Button size="sm" icon={Check} onClick={() => act(request.userId, true)}>
+              <Button
+                size="sm"
+                icon={Check}
+                loading={isLoadingFor(request.userId, true)}
+                disabled={isBusyFor(request.userId)}
+                onClick={() => act(request.userId, true)}
+              >
                 {t('Duyệt')}
               </Button>
-              <Button size="sm" variant="secondary" icon={X} onClick={() => act(request.userId, false)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={X}
+                loading={isLoadingFor(request.userId, false)}
+                disabled={isBusyFor(request.userId)}
+                onClick={() => act(request.userId, false)}
+              >
                 {t('Từ chối')}
               </Button>
             </div>

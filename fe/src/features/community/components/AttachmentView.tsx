@@ -75,7 +75,7 @@ function AttachmentImage({ attachment }: { attachment: PostAttachmentInfo }): JS
     return (
       <span className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-lg border border-line bg-sunken text-content-muted">
         <ImageOff className="h-5 w-5" aria-hidden />
-        <span className="text-[10px]">{t('Không tải được ảnh')}</span>
+        <span className="text-xs">{t('Không tải được ảnh')}</span>
       </span>
     );
   }

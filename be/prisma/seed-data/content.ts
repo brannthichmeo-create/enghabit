@@ -1,10 +1,13 @@
 import { VocabLevel } from '@prisma/client';
 
 /**
- * Nội dung học tập mẫu: chủ đề, từ vựng và câu hỏi quiz.
+ * Nội dung học tập mẫu: chủ đề và từ vựng.
  *
  * Tách khỏi seed.ts để seed.ts chỉ lo logic ghi DB, còn nội dung sửa ở đây —
  * dễ thêm chủ đề mới mà không đụng vào code.
+ *
+ * Không còn câu hỏi quiz soạn tay ở đây: đề Kiểm tra (chế độ "Exam") giờ sinh tự động
+ * từ chính từ vựng bên dưới, xem be/src/modules/lessons/exam.service.ts.
  */
 
 export interface WordSeed {
@@ -14,19 +17,11 @@ export interface WordSeed {
   example: string;
 }
 
-export interface QuestionSeed {
-  questionText: string;
-  options: string[];
-  correctIndex: number;
-}
-
 export interface TopicSeed {
   name: string;
   description: string;
   level: VocabLevel;
   words: WordSeed[];
-  /** Câu hỏi tình huống viết tay. Câu hỏi hỏi nghĩa được sinh tự động từ danh sách từ. */
-  contextQuestions: QuestionSeed[];
 }
 
 export const TOPICS: TopicSeed[] = [
@@ -44,18 +39,6 @@ export const TOPICS: TopicSeed[] = [
       { word: 'borrow', meaning: 'mượn', phonetic: '/ˈbɒroʊ/', example: 'Can I borrow your pen for a moment?' },
       { word: 'schedule', meaning: 'lịch trình', phonetic: '/ˈskedʒuːl/', example: 'My schedule is quite full this week.' },
     ],
-    contextQuestions: [
-      {
-        questionText: 'Bạn đến muộn một cuộc họp. Câu nào phù hợp nhất để nói khi vừa bước vào?',
-        options: ['I apologise for being late.', 'I borrow being late.', 'I schedule being late.', 'I greeting being late.'],
-        correctIndex: 0,
-      },
-      {
-        questionText: 'Chọn câu đúng ngữ pháp: "Could I ___ your umbrella?"',
-        options: ['borrow', 'borrowing', 'borrowed', 'borrows'],
-        correctIndex: 0,
-      },
-    ],
   },
   {
     name: 'Business English',
@@ -70,18 +53,6 @@ export const TOPICS: TopicSeed[] = [
       { word: 'recruit', meaning: 'tuyển dụng', phonetic: '/rɪˈkruːt/', example: 'We plan to recruit five engineers.' },
       { word: 'agenda', meaning: 'chương trình nghị sự', phonetic: '/əˈdʒendə/', example: 'The agenda was sent before the meeting.' },
       { word: 'outsource', meaning: 'thuê ngoài', phonetic: '/ˈaʊtsɔːrs/', example: 'They outsource customer support.' },
-    ],
-    contextQuestions: [
-      {
-        questionText: 'Trong email công việc, "Please find the ___ attached" thường đi với từ nào khi gửi yêu cầu thanh toán?',
-        options: ['invoice', 'agenda', 'revenue', 'deadline'],
-        correctIndex: 0,
-      },
-      {
-        questionText: '"We need to ___ the terms before signing." — từ nào phù hợp nhất?',
-        options: ['negotiate', 'recruit', 'outsource', 'apologise'],
-        correctIndex: 0,
-      },
     ],
   },
   {
@@ -98,18 +69,6 @@ export const TOPICS: TopicSeed[] = [
       { word: 'currency', meaning: 'tiền tệ', phonetic: '/ˈkʌrənsi/', example: 'You can exchange currency at the airport.' },
       { word: 'destination', meaning: 'điểm đến', phonetic: '/ˌdestɪˈneɪʃn/', example: 'Our final destination is Da Nang.' },
     ],
-    contextQuestions: [
-      {
-        questionText: 'Ở quầy làm thủ tục sân bay, nhân viên yêu cầu xem giấy tờ gì để lên máy bay?',
-        options: ['boarding pass', 'itinerary', 'currency', 'luggage'],
-        correctIndex: 0,
-      },
-      {
-        questionText: '"The flight was delayed" nghĩa là gì?',
-        options: ['Chuyến bay bị hoãn', 'Chuyến bay đã hạ cánh', 'Chuyến bay bị huỷ', 'Chuyến bay cất cánh sớm'],
-        correctIndex: 0,
-      },
-    ],
   },
   {
     name: 'Technology & Internet',
@@ -124,18 +83,6 @@ export const TOPICS: TopicSeed[] = [
       { word: 'bandwidth', meaning: 'băng thông', phonetic: '/ˈbændwɪdθ/', example: 'Video calls use a lot of bandwidth.' },
       { word: 'update', meaning: 'bản cập nhật', phonetic: '/ˈʌpdeɪt/', example: 'A security update is available.' },
       { word: 'device', meaning: 'thiết bị', phonetic: '/dɪˈvaɪs/', example: 'You can use the app on any device.' },
-    ],
-    contextQuestions: [
-      {
-        questionText: 'Để bảo vệ dữ liệu khỏi bị đọc trộm, người ta thường làm gì với dữ liệu đó?',
-        options: ['encrypt it', 'download it', 'browse it', 'update it'],
-        correctIndex: 0,
-      },
-      {
-        questionText: '"Keep a ___ of your files in case the laptop breaks."',
-        options: ['backup', 'bandwidth', 'browser', 'password'],
-        correctIndex: 0,
-      },
     ],
   },
   {
@@ -152,38 +99,5 @@ export const TOPICS: TopicSeed[] = [
       { word: 'framework', meaning: 'khung lý thuyết', phonetic: '/ˈfreɪmwɜːrk/', example: 'We adopted a theoretical framework.' },
       { word: 'limitation', meaning: 'hạn chế', phonetic: '/ˌlɪmɪˈteɪʃn/', example: 'One limitation is the small sample size.' },
     ],
-    contextQuestions: [
-      {
-        questionText: 'Phần nào của bài nghiên cứu trình bày cách thu thập và phân tích dữ liệu?',
-        options: ['methodology', 'hypothesis', 'limitation', 'framework'],
-        correctIndex: 0,
-      },
-      {
-        questionText: '"The results were statistically ___." — từ nào đúng?',
-        options: ['significant', 'empirical', 'conclude', 'framework'],
-        correctIndex: 0,
-      },
-    ],
   },
 ];
-
-/**
- * Sinh câu hỏi "từ này nghĩa là gì" cho một chủ đề.
- * Đáp án nhiễu lấy từ nghĩa của các từ khác cùng chủ đề — sát thực tế hơn là nhiễu bịa.
- */
-export function buildMeaningQuestions(words: WordSeed[], count: number): QuestionSeed[] {
-  return words.slice(0, count).map((word, index) => {
-    const distractors = words
-      .filter((w) => w.word !== word.word)
-      .map((w) => w.meaning)
-      // Xoay điểm bắt đầu theo index để mỗi câu có bộ nhiễu khác nhau.
-      .slice(index % 3, (index % 3) + 3);
-
-    const options = [word.meaning, ...distractors];
-    return {
-      questionText: `"${word.word}" có nghĩa là gì?`,
-      options,
-      correctIndex: 0,
-    };
-  });
-}
