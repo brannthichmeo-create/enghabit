@@ -12,8 +12,11 @@
     "lint": "pnpm -r lint",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "db:migrate": "pnpm --filter @enghabit/be db:migrate",
+    "db:deploy": "pnpm --filter @enghabit/be db:deploy",
     "db:studio": "pnpm --filter @enghabit/be db:studio",
-    "db:seed": "pnpm --filter @enghabit/be db:seed"
+    "db:seed": "pnpm --filter @enghabit/be db:seed",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "sync": "pnpm install && pnpm build:shared && pnpm db:deploy && pnpm --filter @enghabit/be db:generate"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

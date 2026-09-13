@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Chạy tự động sau mỗi `git pull` / `git merge`.
+#
+# Mục đích: đưa máy đang làm việc về đúng trạng thái của commit vừa kéo về —
+# thư viện, bản build của `shared`, và schema database. Không có hook này thì
+# sau khi pull một commit có migration mới, backend sẽ chạy với schema cũ và
+# báo lỗi cột không tồn tại — lỗi đó không nói gì về nguyên nhân thật.
+#
+# Bật hook (mỗi máy làm một lần):  pnpm hooks:install
+#
+# Hook CỐ Ý không chạy seed. Seed ghi đè dữ liệu mẫu, chạy tự động sau mỗi lần
+# pull là cách nhanh nhất để mất dữ liệu bạn vừa tạo tay để thử.
+
+FROM=$(git rev-parse HEAD@{1} 2>/dev/null) || exit 0
+TO=$(git rev-parse HEAD)
+
+[ "$FROM" = "$TO" ] && exit 0
+
+# Trả về true nếu có file khớp mẫu $1 thay đổi giữa hai commit.
+changed() {
+  git diff --name-only "$FROM" "$TO" | grep -Eq "$1"
+}
+
+if changed '(^|/)package\.json$|^pnpm-lock\.yaml$|^pnpm-workspace\.yaml$'; then
+  echo "[sync] Dependencies đổi — pnpm install"
+  pnpm install --frozen-lockfile || echo "[sync] CẢNH BÁO: pnpm install thất bại"
+fi
+
+# `be` và `fe` import từ bản dist của shared, không import file nguồn.
+# Quên build lại thì hai app vẫn chạy nhưng dùng logic cũ — không có lỗi nào hiện ra.
+if changed '^shared/'; then
+  echo "[sync] shared/ đổi — build lại"
+  pnpm build:shared || echo "[sync] CẢNH BÁO: build:shared thất bại"
+fi
+
+if changed '^be/prisma/'; then
+  echo "[sync] Schema đổi — áp migration"
+  # `migrate deploy`, KHÔNG phải `migrate dev`: dev được phép xoá và tạo lại
+  # database khi thấy lệch, chạy tự động là mất sạch dữ liệu local.
+  if pnpm --filter @enghabit/be db:deploy; then
+    pnpm --filter @enghabit/be db:generate || echo "[sync] CẢNH BÁO: prisma generate thất bại"
+  else
+    echo "[sync] CẢNH BÁO: không áp được migration."
+    echo "[sync] Bật MySQL rồi chạy tay: pnpm db:deploy"
+  fi
+fi
+
+echo "[sync] Xong."

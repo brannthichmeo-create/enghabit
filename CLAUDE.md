@@ -223,9 +223,14 @@ Vật phẩm giữ chuỗi (`streak_freezes`) là ngoại lệ duy nhất đư�
 - **Database và toàn bộ bảng dùng charset `utf8mb4`** (collation `utf8mb4_unicode_ci`). Bắt buộc, vì dữ liệu có tiếng Việt có dấu và có thể có emoji — phát hiện muộn sẽ phải migrate lại toàn bộ dữ liệu.
 - Repo chỉ commit `be/.env.example` (giá trị mẫu, không có secret thật). File `.env` thật nằm trong `.gitignore`, tuyệt đối không commit.
 - Mỗi môi trường một connection string riêng, không dùng chung DB giữa các môi trường:
-  - `local`: MySQL chạy qua Docker (`mysql:8`) hoặc cài local, dữ liệu test/dev
-  - `staging`/`production`: MySQL hosted (Railway/Clever Cloud), connection string cấu hình qua biến môi trường trên nền tảng deploy, không đặt trong file commit lên git
-- **Đổi schema** chỉ được thực hiện qua `prisma migrate dev` (local) và `prisma migrate deploy` (staging/production) — không sửa tay bảng/cột trực tiếp trên MySQL, kể cả qua GUI.
+  - `dev`: hai cách, chọn theo số máy cùng làm (xem `README.md` > Bước 4)
+    - **Database `enghabit_dev` trên cùng service Aiven** — nhiều máy dùng chung một bộ dữ liệu. Đặt `connection_limit=3` vì trần 76 kết nối giờ chia cho nhiều máy cộng với Render.
+    - **MySQL local** qua Docker (`mysql:8`) hoặc XAMPP — mỗi máy một bộ dữ liệu riêng, chạy được khi không có mạng.
+  - `production`: database `defaultdb` trên Aiven, connection string cấu hình qua biến môi trường trên Render, không đặt trong file commit lên git
+- **`defaultdb` và `enghabit_dev` phải tách bạch.** Dev và production ở chung service Aiven (gói free chỉ cho một service mỗi loại) nhưng **không được** chung database: máy dev ghi vào `defaultdb` là ghi thẳng vào dữ liệu người dùng thật, và một lần `migrate` chạy nhầm là đổi schema production.
+- **Đổi schema** chỉ được thực hiện qua `prisma migrate dev` (chỉ khi DB dev là MySQL local) và `prisma migrate deploy` (mọi trường hợp còn lại) — không sửa tay bảng/cột trực tiếp trên MySQL, kể cả qua GUI.
+- **Không chạy `prisma migrate dev` lên database dùng chung.** `migrate dev` được phép xoá và tạo lại database khi thấy lệch; trên DB dùng chung là xoá sạch dữ liệu của mọi máy. Dùng `pnpm db:deploy`.
+- **Đồng bộ máy sau `git pull` do hook `.githooks/post-merge` lo** — tự chạy `pnpm install`, `build:shared`, `migrate deploy`, `prisma generate` tuỳ theo commit đụng vào đâu. Mỗi máy bật một lần bằng `pnpm hooks:install`. Hook cố ý **không** chạy seed, vì seed đặt lại dữ liệu mẫu về trạng thái gốc.
 - `prisma migrate deploy` **chạy tự động trong bước deploy của CI**, không ai chạy tay lên production — chạy tay dễ bị quên và làm schema production lệch với code.
 - **Quy ước đặt tên:** model trong Prisma dùng `PascalCase` số ít (`ActivityLog`), nhưng bắt buộc `@@map` sang tên bảng `snake_case` số nhiều (`activity_logs`) và `@map` cho cột (`local_date`). Không có quy ước này, tên trong code và tên nhìn thấy trong DBeaver sẽ khác nhau, gây nhầm lẫn khi debug.
 - **Bật Prisma query log ở môi trường dev** (`log: ['query', 'error', 'warn']`) để thấy SQL thật sinh ra — cần thiết khi truy vết sai lệch số liệu thống kê. Production chỉ log `error`, `warn`.

@@ -1,12 +1,9 @@
-# ENG//HABIT
+# ENGHABIT
 
 Ứng dụng hỗ trợ xây dựng và duy trì thói quen học tiếng Anh — học từ vựng, ôn flashcard,
 làm quiz, theo dõi chuỗi ngày học và thống kê tiến độ.
 
-Hướng dẫn dưới đây viết cho người **chưa từng lập trình**, trên máy **Windows**. Mỗi bước
-ghi rõ mở phần mềm nào, bấm vào đâu, gõ phím gì. Tổng cộng khoảng **15–20 phút**.
 
----
 
 ## Vài quy ước đọc hướng dẫn
 
@@ -126,9 +123,74 @@ chữ `enghabit` ở cuối là đúng.
 
 ---
 
-## Bước 4 — Bật database và tạo kho dữ liệu
+## Bước 4 — Chuẩn bị database
 
-> **Phần mềm dùng:** XAMPP Control Panel, sau đó là trình duyệt web
+Chọn **một** trong hai cách. Đọc bảng rồi quyết, vì Bước 5 điền khác nhau.
+
+| Tiêu chí | Cách A — dùng chung trên Aiven | Cách B — database riêng bằng XAMPP |
+|---|---|---|
+| Dữ liệu giữa các máy | **Giống nhau tức thì** | Mỗi máy một bộ riêng |
+| Cần cài XAMPP | Không | Có |
+| Cần mạng | Có — mất mạng là không chạy được | Không |
+| Rủi ro | Máy nào xoá nhầm là mất ở mọi máy | Không ảnh hưởng máy khác |
+
+**Nhiều máy cùng làm một dự án → chọn A.** Một máy duy nhất, hoặc hay làm khi không có
+mạng → chọn B.
+
+Chọn A thì làm mục 4A rồi bỏ qua 4.1 và 4.2. Chọn B thì bỏ qua 4A.
+
+---
+
+### 4A. Cách A — tạo database dùng chung trên Aiven
+
+Làm **một lần** trên máy chính. Các máy khác chỉ cần chuỗi kết nối ở mục 4A.3.
+
+Chưa có service Aiven thì dựng trước theo [docs/aiven-setup.md](docs/aiven-setup.md).
+
+#### 4A.1. Tạo database riêng cho việc phát triển
+
+Trong Aiven Console → service `enghabit-db` → tab **Databases** → **Create database**,
+đặt tên `enghabit_dev`.
+
+> **Đừng dùng chung `defaultdb` với Render.** `defaultdb` là database production. Máy dev
+> ghi vào đó là ghi thẳng vào dữ liệu thật của người dùng, và `prisma migrate deploy` chạy
+> từ một máy dev sẽ đổi schema production. Hai database tách bạch không tốn thêm đồng nào —
+> gói free giới hạn một *service*, không giới hạn số database bên trong.
+
+#### 4A.2. Kiểm tra bảng mã
+
+Aiven tạo database mới theo mặc định của service. Xác nhận là `utf8mb4`, nếu không thì
+tiếng Việt sẽ thành `?????`. Chạy ở mục 6 sau khi đã có file `.env`:
+
+```powershell
+echo "SELECT @@character_set_database;" | pnpm --filter @enghabit/be exec prisma db execute --stdin --url "$env:DATABASE_URL"
+```
+
+#### 4A.3. Chuỗi kết nối
+
+Lấy Host, Port, Password ở tab **Overview** của service. Ghép thành:
+
+```text
+mysql://avnadmin:MẬT_KHẨU@HOST:PORT/enghabit_dev?connection_limit=3&connect_timeout=15
+```
+
+Ba chỗ dễ sai:
+
+- **Port không phải 3306** — Aiven dùng cổng ngẫu nhiên
+- **Bỏ `ssl-mode=REQUIRED`** mà Aiven cho sẵn — đó là tham số của MySQL CLI, Prisma không
+  hiểu. Kết nối vẫn mã hoá vì Aiven bắt buộc TLS
+- **`connection_limit=3`**, không phải 5 — gói free cho tối đa 76 kết nối, mà giờ chia cho
+  nhiều máy dev cộng với Render cộng với Prisma Studio. Chạm trần thì lỗi báo ra là
+  `Too many connections`, rất khó đoán nguyên nhân
+
+#### 4A.4. Đưa chuỗi này cho các máy khác
+
+Chuỗi có mật khẩu quản trị toàn database. File `.env` nằm trong `.gitignore` nên **không
+đi theo `git pull`** — phải truyền tay. Đừng dán vào chat nhóm hay ảnh chụp màn hình.
+
+Xong mục 4A thì **nhảy thẳng tới Bước 5**.
+
+---
 
 ### 4.1. Bật hai dịch vụ
 
@@ -177,7 +239,15 @@ Trong cửa sổ **Notepad**:
 
 1. Tìm dòng bắt đầu bằng `DATABASE_URL`, khoảng dòng thứ 9 từ trên xuống
 2. Bôi đen **toàn bộ dòng đó** rồi bấm `Delete` để xoá
-3. Chép dòng dưới đây vào đúng chỗ vừa xoá:
+3. Chép dòng ứng với cách bạn đã chọn ở Bước 4 vào đúng chỗ vừa xoá:
+
+**Cách A — dùng chung trên Aiven.** Thay ba chỗ in hoa bằng giá trị ở mục 4A.3:
+
+```ini
+DATABASE_URL="mysql://avnadmin:MẬT_KHẨU@HOST:PORT/enghabit_dev?connection_limit=3&connect_timeout=15"
+```
+
+**Cách B — XAMPP trên máy này:**
 
 ```ini
 DATABASE_URL="mysql://root:@localhost:3306/enghabit?connection_limit=5"
@@ -211,8 +281,13 @@ pnpm build:shared
 Lệnh 3 — tạo toàn bộ bảng trong database:
 
 ```powershell
-pnpm db:migrate
+pnpm db:deploy
 ```
+
+> **Cách A: dùng `pnpm db:deploy`, tuyệt đối không dùng `pnpm db:migrate`.**
+> `db:migrate` gọi `prisma migrate dev`, và `migrate dev` được phép **xoá rồi tạo lại**
+> database khi thấy lệch. Trên database dùng chung, một lần chạy nhầm là xoá sạch dữ liệu
+> của mọi máy. `db:migrate` chỉ dành cho Cách B, và chỉ khi bạn đang tự sửa schema.
 
 Lệnh 4 — nạp dữ liệu mẫu:
 
@@ -220,8 +295,13 @@ Lệnh 4 — nạp dữ liệu mẫu:
 pnpm db:seed
 ```
 
+> **Cách A: chỉ chạy lệnh 4 một lần, trên máy chính.** Database dùng chung nên máy thứ hai
+> chạy lại là ghi đè lên dữ liệu mẫu mà mọi máy đang dùng. Seed idempotent nên không nhân
+> đôi dữ liệu, nhưng nó **đặt lại** các bản ghi mẫu về trạng thái gốc — mất mọi chỉnh sửa
+> bạn đã làm lên chúng. Máy thứ hai trở đi bỏ qua lệnh này, dữ liệu đã có sẵn trên server.
+
 Sau lệnh 4, màn hình hiện dòng *Seed hoàn tất* kèm danh sách tài khoản. Lúc này database
-đã có 3 tài khoản, 5 chủ đề, 40 từ vựng, 5 bài quiz và 45 ngày lịch sử học mẫu.
+đã có 3 tài khoản, 5 chủ đề, 40 từ vựng và 45 ngày lịch sử học mẫu.
 
 ---
 
@@ -292,10 +372,68 @@ Bước 1–6 chỉ làm một lần duy nhất. Lần sau còn 3 việc, mất 
 
 1. Mở **XAMPP Control Panel** → bấm **Start** ở dòng **MySQL**
    *(không cần Apache, trừ khi muốn mở lại phpMyAdmin)*
+   **Cách A bỏ qua bước này** — database chạy trên Aiven, chỉ cần có mạng
 2. Mở **hai cửa sổ PowerShell**, ở mỗi cửa sổ gõ `cd $HOME\Desktop\enghabit`, rồi:
    - Cửa sổ 1 gõ `pnpm dev:be`
    - Cửa sổ 2 gõ `pnpm dev:fe`
 3. Mở trình duyệt vào `localhost:5173`
+
+---
+
+## Cập nhật khi máy chính có bản mới
+
+Kéo code mới về thì **database không tự đổi theo**. Commit mới có thể thêm bảng hoặc thêm
+cột; chạy code mới trên database cũ sẽ báo lỗi cột không tồn tại, và thông báo lỗi đó
+không nói gì về nguyên nhân thật.
+
+### Bật một lần duy nhất trên mỗi máy
+
+```powershell
+pnpm hooks:install
+```
+
+Lệnh này bảo git dùng các hook nằm trong thư mục `.githooks` của dự án.
+
+### Từ đó về sau
+
+```powershell
+git pull
+```
+
+Chỉ một lệnh. Sau khi kéo code về, hook `post-merge` tự kiểm tra xem commit mới đụng vào
+những gì rồi chạy đúng phần cần chạy:
+
+| Commit mới đụng vào | Hook tự chạy |
+|---|---|
+| `package.json`, `pnpm-lock.yaml` | `pnpm install` |
+| `shared/` | `pnpm build:shared` |
+| `be/prisma/` | `prisma migrate deploy` + `prisma generate` |
+
+Không đụng gì thì hook không chạy gì, `git pull` xong ngay.
+
+> **Database phải kết nối được lúc `git pull`.** Cách A cần có mạng; Cách B cần bật MySQL
+> trong XAMPP. Không kết nối được thì hook in `CẢNH BÁO: không áp được migration` — không
+> sao cả, nối lại rồi chạy `pnpm db:deploy` là xong.
+
+**Cách A — database dùng chung.** Máy nào pull trước sẽ áp migration; các máy pull sau nhận
+`No pending migrations to apply` và bỏ qua. Đó là hành vi đúng, không phải lỗi. Nhưng có
+một hệ quả thật: **schema đổi ngay khi một máy pull, kể cả máy khác chưa pull.** Máy chưa
+pull đang chạy code cũ trên schema mới, và sẽ lỗi cột không tồn tại. Cả nhóm nên pull cùng
+lúc khi commit mới có đụng `be/prisma/`.
+
+Hook **cố ý không chạy seed**. Seed ghi đè dữ liệu mẫu; chạy tự động sau mỗi lần pull là
+cách nhanh nhất để mất dữ liệu bạn vừa tạo tay để thử. Muốn nạp lại dữ liệu mẫu thì tự
+gọi `pnpm db:seed`.
+
+### Máy vừa clone về, hoặc hook báo lỗi
+
+Một lệnh làm hết mọi thứ:
+
+```powershell
+pnpm sync
+```
+
+Tương đương `pnpm install` + `pnpm build:shared` + `pnpm db:deploy` + `prisma generate`.
 
 ---
 
@@ -304,7 +442,10 @@ Bước 1–6 chỉ làm một lần duy nhất. Lần sau còn 3 việc, mất 
 | Màn hình hiện gì | Nguyên nhân | Làm gì |
 |---|---|---|
 | `pnpm : not recognized` | Chưa cài pnpm, hoặc cài xong chưa mở lại cửa sổ | Đóng PowerShell, mở lại theo Bước 2, gõ `npm install -g pnpm` |
-| `Can't reach database server` | Chưa bật MySQL | Mở XAMPP Control Panel, bấm **Start** ở dòng **MySQL** |
+| `Can't reach database server` | **Cách B:** chưa bật MySQL. **Cách A:** mất mạng, sai host/port, hoặc service Aiven đang ngủ | Cách B: mở XAMPP, bấm **Start** ở dòng **MySQL**. Cách A: kiểm tra mạng, mở Aiven Console xem service có **Running** không — nhớ port **không phải 3306** |
+| `Too many connections` | Cách A: nhiều máy cộng Render cộng Prisma Studio vượt trần 76 kết nối | Đóng bớt Prisma Studio; kiểm `connection_limit=3` có trong `DATABASE_URL` không |
+| `Error opening a TLS connection: unknown Cert Authority` | Cách A: có `sslaccept=strict` mà thiếu `sslcert` | Bỏ `sslaccept=strict` khỏi `DATABASE_URL` — Aiven đã bắt buộc TLS sẵn |
+| `Unknown database 'enghabit_dev'` | Cách A: chưa tạo database ở mục 4A.1 | Vào Aiven Console → tab **Databases** → **Create database** |
 | `Unknown database 'enghabit'` | Chưa tạo database | Làm lại mục 4.2 |
 | `Access denied for user 'root'` | Dòng `DATABASE_URL` sai | Làm lại Bước 5, chép đúng nguyên dòng |
 | `Port 4000 is already in use` | Đang có một cửa sổ chạy `pnpm dev:be` rồi | Tìm cửa sổ đó, bấm `Ctrl` + `C` |

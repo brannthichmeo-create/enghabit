@@ -1,0 +1,4 @@
+# Git hook là shell script, bắt buộc xuống dòng kiểu LF.
+# Checkout ra CRLF trên Windows thì shell đọc ký tự `\r` thành một phần của lệnh và
+# báo `\r: command not found` — thông báo đó không nói gì về nguyên nhân thật.
+.githooks/* text eol=lf
