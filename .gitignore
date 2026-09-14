@@ -28,6 +28,9 @@ Thumbs.db
 package-lock.json
 yarn.lock
 
+# Vercel CLI — chứa project id và bản sao biến môi trường tải về từ `vercel pull`
+.vercel
+
 # Build tool caches
 .vite/
 coverage/

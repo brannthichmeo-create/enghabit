@@ -58,23 +58,31 @@ pnpm --filter @enghabit/be db:seed
 
 ## 3. Frontend — Vercel
 
-```bash
-cd fe
-npx vercel login      # cần thao tác trên trình duyệt
-npx vercel link
-npx vercel env add VITE_API_URL production   # nhập URL backend, vd https://enghabit-api.onrender.com
-npx vercel --prod
-```
+**Root Directory để nguyên thư mục gốc của repo, KHÔNG đặt là `fe`.** Vercel không cho
+truy cập file nằm ngoài Root Directory và **không cho dùng `..` để đi lên**. Đặt `fe` thì
+build không thấy `shared/`, `pnpm-workspace.yaml` hay `pnpm-lock.yaml`.
 
-Hoặc qua giao diện web: **Import Project** → chọn repo → đặt **Root Directory** là `fe` → thêm biến `VITE_API_URL`.
+Toàn bộ cấu hình build nằm trong [`vercel.json`](../vercel.json) ở thư mục gốc, nên trên
+bảng điều khiển chỉ cần làm hai việc:
 
-Vì đây là monorepo pnpm, phần **Build Command** phải build `shared` trước:
+1. **Add New → Project** → import repo → **Root Directory** để trống (thư mục gốc)
+2. **Environment Variables** → thêm `VITE_API_URL` = URL backend, vd
+   `https://enghabit-api.onrender.com`
+   - Chỉ tên miền gốc: **không** `/api/v1`, **không** dấu `/` cuối — `fe/src/shared/lib/config.ts` tự nối
+   - Vite nướng biến này vào file JS lúc build, nên phải đặt **trước** khi bấm Deploy
 
-```
-cd .. && pnpm install --prod=false && pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/fe build
-```
+**Không bật Override cho Install Command.** Vercel tự chọn pnpm theo `lockfileVersion` của
+`pnpm-lock.yaml` — bản 9.0 ra pnpm 9 hoặc 10. Nhưng khi bạn tự khai một lệnh install kiểu
+`pnpm install`, Vercel dùng **bản pnpm cũ nhất có trong máy build, tức pnpm 6**, và pnpm 6
+không đọc được lockfile 9.0. Muốn ghim đúng `pnpm@9.15.4` của `packageManager` thì thêm
+biến môi trường `ENABLE_EXPERIMENTAL_COREPACK=1` thay vì override install command.
 
-Output Directory: `dist`
+Install mặc định của Vercel **có** cài devDependencies, nên không cần `--prod=false` như
+bên Render.
+
+`vercel.json` cũng khai `rewrites` cho SPA — thiếu nó thì bấm `F5` ở `/statistics` sẽ ra
+404. Chuỗi regex trong đó phải viết `\\.` (escape hai lần), vì `\.` không phải escape hợp
+lệ trong JSON và cả file sẽ hỏng.
 
 ## 4. Nối hai đầu lại
 

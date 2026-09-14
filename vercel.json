@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/fe build",
+  "outputDirectory": "fe/dist",
+  "rewrites": [
+    {
+      "source": "/((?!assets/|.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
