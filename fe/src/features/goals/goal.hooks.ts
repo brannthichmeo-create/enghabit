@@ -13,8 +13,9 @@ export function useGoals(): UseQueryResult<Goal[]> {
   return useQuery({ queryKey: goalKeys.list(), queryFn: goalApi.listGoals });
 }
 
-export function useGoalProgress(): UseQueryResult<GoalProgress[]> {
-  return useQuery({ queryKey: goalKeys.progress(), queryFn: goalApi.getProgress });
+/** `enabled` để trang chủ khỏi gọi khi quản trị viên đã tắt tính năng Mục tiêu. */
+export function useGoalProgress(enabled = true): UseQueryResult<GoalProgress[]> {
+  return useQuery({ queryKey: goalKeys.progress(), queryFn: goalApi.getProgress, enabled });
 }
 
 export function useCreateGoal(): UseMutationResult<Goal, Error, CreateGoalInput> {

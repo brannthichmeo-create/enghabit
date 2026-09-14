@@ -41,6 +41,7 @@ const TRAILS: Record<string, Crumb[]> = {
   '/admin/announcements': [{ label: 'Gửi thông báo' }],
   '/admin/groups': [{ label: 'Quản lý nhóm' }],
   '/admin/requests': [{ label: 'Quản lý yêu cầu' }],
+  '/admin/features': [{ label: 'Quản lý tính năng' }],
 };
 
 /**

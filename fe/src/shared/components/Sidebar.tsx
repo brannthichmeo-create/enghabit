@@ -14,12 +14,14 @@ import {
   MessagesSquare,
   UsersRound,
   Target,
+  ToggleRight,
   Trophy,
   Users,
   type LucideIcon,
 } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
-import { UserRole } from '@enghabit/shared';
+import { FeatureKey, UserRole, type FeatureFlagMap } from '@enghabit/shared';
+import { useFeatureFlags, useFeatureQueryEnabled } from '../../features/feature-flags/feature-flag.hooks';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLogout } from '../../features/auth/auth.hooks';
 import { useDueCount } from '../../features/flashcards/flashcard.hooks';
@@ -43,6 +45,8 @@ interface NavItem {
   icon: LucideIcon;
   /** Số việc còn tồn, hiện thành nhãn nhỏ bên phải. */
   badge?: number;
+  /** Mục biến mất khi quản trị viên tắt tính năng này. Không có nghĩa là luôn hiện. */
+  flag?: FeatureKey;
 }
 
 export function Sidebar({
@@ -61,27 +65,39 @@ export function Sidebar({
   // Quản trị viên không học nên không gọi các API của người học — gọi rồi bỏ đi chỉ
   // tốn request và làm log server nhiễu.
   const isLearner = user?.role !== UserRole.ADMIN;
-  const dueCount = useDueCount(isLearner);
+  const reviewEnabled = useFeatureQueryEnabled(FeatureKey.FLASHCARDS);
+  const flags = useFeatureFlags();
+  // Ôn tập đã tắt thì không hỏi số thẻ tới hạn: một request chắc chắn nhận 404. Chờ
+  // biết chắc trạng thái rồi mới gọi, nên dùng useFeatureQueryEnabled chứ không phải
+  // bản đồ `flags` (bản đồ mặc định bật khi chưa biết, hợp cho hiển thị chứ không hợp
+  // cho request).
+  const dueCount = useDueCount(isLearner && reviewEnabled);
   const level = useLevel(isLearner);
   const unread = useUnreadCount();
 
   const isAdmin = !isLearner;
 
-  const mainItems: NavItem[] = [
-    { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
-    { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen },
-    { to: '/flashcards', label: 'Ôn tập', icon: Layers, badge: dueCount.data },
-    { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },
-    { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
-    { to: '/groups', label: 'Nhóm lớp', icon: UsersRound },
-    { to: '/notifications', label: 'Thông báo', icon: Bell, badge: unread.data },
-  ];
+  const mainItems: NavItem[] = visibleItems(
+    [
+      { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
+      { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen, flag: FeatureKey.VOCABULARY },
+      { to: '/flashcards', label: 'Ôn tập', icon: Layers, badge: dueCount.data, flag: FeatureKey.FLASHCARDS },
+      { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy, flag: FeatureKey.LEADERBOARD },
+      { to: '/community', label: 'Cộng đồng', icon: MessagesSquare, flag: FeatureKey.COMMUNITY },
+      { to: '/groups', label: 'Nhóm lớp', icon: UsersRound, flag: FeatureKey.GROUPS },
+      { to: '/notifications', label: 'Thông báo', icon: Bell, badge: unread.data },
+    ],
+    flags,
+  );
 
-  const habitItems: NavItem[] = [
-    { to: '/habits', label: 'Thói quen', icon: ListChecks },
-    { to: '/goals', label: 'Mục tiêu', icon: Target },
-    { to: '/report', label: 'Báo cáo', icon: ChartColumn },
-  ];
+  const habitItems: NavItem[] = visibleItems(
+    [
+      { to: '/habits', label: 'Thói quen', icon: ListChecks, flag: FeatureKey.HABITS },
+      { to: '/goals', label: 'Mục tiêu', icon: Target, flag: FeatureKey.GOALS },
+      { to: '/report', label: 'Báo cáo', icon: ChartColumn, flag: FeatureKey.REPORT },
+    ],
+    flags,
+  );
 
   /** Quản trị viên vận hành hệ thống, không đi học — nên thấy đúng bộ mục của mình. */
   const adminItems: NavItem[] = [
@@ -93,6 +109,7 @@ export function Sidebar({
     // Nhãn phải GIỐNG HỆT `name` của route và nhãn trong TRAILS (xem CLAUDE.md) —
     // một màn hình chỉ có một tên, và chỉ cần một khoá dịch.
     { to: '/admin/requests', label: 'Quản lý yêu cầu', icon: Inbox },
+    { to: '/admin/features', label: 'Quản lý tính năng', icon: ToggleRight },
     // Diễn đàn mở cho cả hai vai trò — quản trị viên vào để trả lời và kiểm duyệt.
     { to: '/admin/groups', label: 'Quản lý nhóm', icon: UsersRound },
     { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
@@ -129,14 +146,20 @@ export function Sidebar({
               ))}
             </ul>
 
-            <GroupLabel collapsed={collapsed}>{'Duy trì'}</GroupLabel>
-            <ul className="space-y-0.5">
-              {habitItems.map((item) => (
-                <li key={item.to}>
-                  <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
-                </li>
-              ))}
-            </ul>
+            {/* Tắt cả ba tính năng của nhóm thì ẩn luôn nhãn nhóm — một tiêu đề đứng
+                trơ không có mục nào dưới trông như giao diện vỡ. */}
+            {habitItems.length > 0 && (
+              <>
+                <GroupLabel collapsed={collapsed}>{'Duy trì'}</GroupLabel>
+                <ul className="space-y-0.5">
+                  {habitItems.map((item) => (
+                    <li key={item.to}>
+                      <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </>
         )}
       </nav>
@@ -187,6 +210,11 @@ export function Sidebar({
       </button>
     </div>
   );
+}
+
+/** Bỏ các mục thuộc tính năng đã tắt. Mục không gắn cờ thì luôn giữ. */
+function visibleItems(items: NavItem[], flags: FeatureFlagMap): NavItem[] {
+  return items.filter((item) => !item.flag || flags[item.flag]);
 }
 
 function Item({

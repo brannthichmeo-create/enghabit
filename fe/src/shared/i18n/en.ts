@@ -1070,4 +1070,49 @@ export const EN: Dictionary = {
   'Chọn "Tất cả" để xem lại toàn bộ nhóm của bạn.': 'Pick "All" to see every group you belong to.',
   'Tạo một nhóm mới, hoặc sang tab Khám phá nhóm để xin vào một nhóm công khai.':
     'Create a group, or open the Discover groups tab to ask to join a public one.',
+
+  // --- Quản lý tính năng (khu quản trị) ---
+  // Nhãn và mô tả của từng tính năng nằm trong bảng dữ liệu FEATURES ở
+  // shared/src/constants/features.ts nên script soát dịch không quét được — thêm nhãn
+  // mới ở đó thì phải tự thêm bản dịch xuống đây.
+  'Quản lý tính năng': 'Feature management',
+  'Bật hoặc tắt từng tính năng cho toàn bộ người học':
+    'Turn each feature on or off for every learner',
+  'Thay đổi có hiệu lực trong vòng 30 giây. Tắt tính năng không xoá dữ liệu đã có của người học.':
+    'Changes take effect within 30 seconds. Turning a feature off does not delete any learner data.',
+  'Tính năng của người học': 'Learner features',
+  'Phải bật {others} trước': 'Turn on {others} first',
+  'Bật bởi {name} lúc {time}': 'Turned on by {name} at {time}',
+  'Tắt bởi {name} lúc {time}': 'Turned off by {name} at {time}',
+  'Tắt {name}?': 'Turn off {name}?',
+  'Tắt tính năng': 'Turn off',
+  'Người học sẽ không còn thấy mục này. Dữ liệu đã có vẫn giữ nguyên.':
+    'Learners will no longer see this section. Existing data stays untouched.',
+  '{count} người học đã dùng tính năng này trong 7 ngày qua.':
+    '{count} learners used this feature in the last 7 days.',
+  'Các tính năng sau sẽ tắt theo: {others}': 'These features will be turned off too: {others}',
+  'Đã bật {name}': '{name} is on',
+  'Đã tắt {name}': '{name} is off',
+  'Đã tắt {name}, kèm theo: {others}': '{name} is off, along with: {others}',
+
+  // Nhãn và mô tả của danh mục tính năng
+  'Phần thưởng': 'Rewards',
+  'Học từ mới theo chủ đề. Tắt thì cả phần Ôn tập cũng dừng theo.':
+    'Learn new words by topic. Turning this off stops Review as well.',
+  'Ôn lại từ đã học bằng flashcard theo lịch lặp lại ngắt quãng.':
+    'Review learned words with flashcards on a spaced-repetition schedule.',
+  'Tự đặt thói quen học và điểm danh hoàn thành mỗi ngày.':
+    'Set your own study habits and check in each day.',
+  'Đặt mục tiêu số từ, số phút hoặc độ dài chuỗi ngày học.':
+    'Set targets for words, minutes or streak length.',
+  'Thống kê chi tiết theo ngày, tuần, tháng. Trang Tổng quan không bị ảnh hưởng.':
+    'Detailed daily, weekly and monthly statistics. The Dashboard is not affected.',
+  'So thứ hạng với người học khác theo tuần, tháng và toàn thời gian.':
+    'Compare your rank with other learners weekly, monthly and all-time.',
+  'Diễn đàn chung. Tắt thì các nhóm lớp cũng dừng theo vì dùng chung bài đăng.':
+    'The shared forum. Turning it off stops groups too, since they share the same posts.',
+  'Người học tự lập nhóm và trao đổi riêng trong nhóm.':
+    'Learners create their own groups and talk privately inside them.',
+  'Điểm danh nhận xu, nhiệm vụ ngày và vật phẩm giữ chuỗi. Nằm trong trang Tổng quan.':
+    'Daily check-in coins, daily missions and streak freezes. Lives on the Dashboard.',
 };

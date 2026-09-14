@@ -1,10 +1,11 @@
 import { Coins, Flame, Menu, Sparkles, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { UserRole } from '@enghabit/shared';
+import { FeatureKey, UserRole } from '@enghabit/shared';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLevel, useStreak } from '../../features/statistics/statistics.hooks';
 import { useRewards } from '../../features/rewards/rewards.hooks';
+import { useFeatureQueryEnabled } from '../../features/feature-flags/feature-flag.hooks';
 import { NotificationBell } from '../../features/notifications/components/NotificationBell';
 import { useT } from '../i18n/language';
 import { Breadcrumb, BreadcrumbProvider } from './Breadcrumb';
@@ -147,12 +148,17 @@ function QuickStats(): JSX.Element | null {
   const isLearner = user?.role !== UserRole.ADMIN;
   const streak = useStreak(isLearner);
   const level = useLevel(isLearner);
-  const rewards = useRewards(isLearner);
+  // Tắt Phần thưởng thì không gọi API của nó: request chắc chắn nhận 404. Chờ biết
+  // chắc trạng thái rồi mới gọi — chưa biết mà gọi lạc quan là một lỗi 404 trong
+  // console mỗi lần mở app.
+  const rewardsEnabled = useFeatureQueryEnabled(FeatureKey.REWARDS);
+  const rewards = useRewards(isLearner && rewardsEnabled);
 
   if (!isLearner) return null;
 
   return (
     <div className="flex items-center gap-1.5">
+      {rewardsEnabled && (
       <Link
         to="/"
         className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft transition-colors hover:border-on-page-muted"
@@ -161,6 +167,7 @@ function QuickStats(): JSX.Element | null {
         <Coins className="h-3.5 w-3.5 text-accent" aria-hidden />
         {rewards.data?.coins ?? 0}
       </Link>
+      )}
 
       <span
         className="inline-flex items-center gap-1 rounded-full border border-line-page px-2 py-1 text-xs font-medium tabular-nums text-on-page-soft"

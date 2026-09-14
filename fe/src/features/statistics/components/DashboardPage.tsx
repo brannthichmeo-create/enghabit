@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, CalendarCheck, ChevronRight, Layers, Target } from 'lucide-react';
-import type { StatsRangeInput } from '@enghabit/shared';
+import { FeatureKey, type StatsRangeInput } from '@enghabit/shared';
 import { ActivityChart } from '../../../shared/components/ActivityChart';
 import { HeroCard } from './HeroCard';
 import { RewardsBar } from '../../rewards/components/RewardsBar';
@@ -12,6 +12,7 @@ import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useGoalProgress } from '../../goals/goal.hooks';
 import { useDueCount } from '../../flashcards/flashcard.hooks';
+import { useFeatureFlags, useFeatureQueryEnabled } from '../../feature-flags/feature-flag.hooks';
 import { useActivityCalendar, useLevel, useStatsSummary, useStreak } from '../statistics.hooks';
 import { useT } from '../../../shared/i18n/language';
 
@@ -63,8 +64,21 @@ export function DashboardPage(): JSX.Element {
     trong cache của TanStack Query.
   */
   const level = useLevel();
-  const goalProgress = useGoalProgress();
-  const dueCount = useDueCount();
+
+  /*
+    Quản trị viên tắt được từng tính năng (xem /admin/features). Ở đây phải lọc theo cờ
+    chứ không chỉ ẩn khối: gọi API của tính năng đã tắt chỉ nhận về 404, vừa tốn request
+    vừa làm khối đó hiện ra thông báo lỗi đỏ giữa trang chủ.
+  */
+  const flags = useFeatureFlags();
+  const reviewEnabled = flags[FeatureKey.FLASHCARDS];
+  const goalsEnabled = flags[FeatureKey.GOALS];
+  const rewardsEnabled = flags[FeatureKey.REWARDS];
+
+  // Hiển thị dùng cờ lạc quan ở trên; REQUEST thì chờ biết chắc, nếu không mỗi lần mở
+  // trang chủ sẽ có một 404 cho tính năng đang tắt.
+  const goalProgress = useGoalProgress(useFeatureQueryEnabled(FeatureKey.GOALS));
+  const dueCount = useDueCount(useFeatureQueryEnabled(FeatureKey.FLASHCARDS));
   const calendar = useActivityCalendar(calendarMonths);
 
   const totalActivities = summary.data
@@ -80,9 +94,14 @@ export function DashboardPage(): JSX.Element {
         <p className="mt-1 text-sm text-on-page-muted">{t('Cùng xem tiến độ học tập của bạn hôm nay')}</p>
       </div>
 
-      {/* Hàng 1 — thẻ mở đầu chiếm 2/3, việc cần làm 1/3 */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      {/*
+        Hàng 1 — thẻ mở đầu chiếm 2/3, việc cần làm 1/3.
+
+        Tắt Ôn tập thì thẻ "Việc hôm nay" biến mất và thẻ mở đầu chiếm trọn hàng: một ô
+        trống cạnh nó chỉ làm trang trông như đang hỏng.
+      */}
+      <div className={`grid gap-4 ${reviewEnabled ? 'lg:grid-cols-3' : ''}`}>
+        <div className={reviewEnabled ? 'lg:col-span-2' : ''}>
           <HeroCard
             streak={streak.data}
             level={level.data}
@@ -97,23 +116,25 @@ export function DashboardPage(): JSX.Element {
               void level.refetch();
             }}
           >
-            <RewardsBar />
+            {rewardsEnabled && <RewardsBar />}
           </HeroCard>
         </div>
 
-        <TodayCard
-          dueCount={dueCount.data}
-          loading={dueCount.isLoading}
-          errorMessage={dueCount.isError ? getErrorMessage(dueCount.error) : undefined}
-          onRetry={() => {
-            void dueCount.refetch();
-          }}
-        />
+        {reviewEnabled && (
+          <TodayCard
+            dueCount={dueCount.data}
+            loading={dueCount.isLoading}
+            errorMessage={dueCount.isError ? getErrorMessage(dueCount.error) : undefined}
+            onRetry={() => {
+              void dueCount.refetch();
+            }}
+          />
+        )}
       </div>
 
-      {/* Hàng 2 — biểu đồ chiếm 2/3, mục tiêu 1/3 */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      {/* Hàng 2 — biểu đồ chiếm 2/3, mục tiêu 1/3. Tắt Mục tiêu thì biểu đồ chiếm cả hàng. */}
+      <div className={`grid gap-4 ${goalsEnabled ? 'lg:grid-cols-3' : ''}`}>
+        <div className={goalsEnabled ? 'lg:col-span-2' : ''}>
           <Card className="h-full">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -157,12 +178,14 @@ export function DashboardPage(): JSX.Element {
           </Card>
         </div>
 
-        <GoalCard
-          goals={goalProgress.data}
-          loading={goalProgress.isLoading}
-          errorMessage={goalProgress.isError ? getErrorMessage(goalProgress.error) : undefined}
-          onRetry={() => void goalProgress.refetch()}
-        />
+        {goalsEnabled && (
+          <GoalCard
+            goals={goalProgress.data}
+            loading={goalProgress.isLoading}
+            errorMessage={goalProgress.isError ? getErrorMessage(goalProgress.error) : undefined}
+            onRetry={() => void goalProgress.refetch()}
+          />
+        )}
       </div>
 
       {/* Hàng 3 — lịch học trải hết chiều ngang vì nó là một dải dài theo thời gian */}

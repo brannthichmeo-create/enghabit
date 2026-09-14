@@ -99,6 +99,7 @@ Quản trị viên **vận hành hệ thống, không phải người học**: �
 - **Quản lý yêu cầu** (`/admin/requests`) — duyệt hoặc từ chối (kèm lý do) yêu cầu cấp lại mật khẩu; tab Nhật ký ghi ai xử lý, lúc nào, vì sao
 - **Lượt truy cập** (`/admin/access`) — nhật ký đăng nhập (cả lần thất bại), lượt truy cập theo ngày, phiên đang mở
 - **Nội dung học tập** (`/admin/content`) — chủ đề, từ vựng
+- **Quản lý tính năng** (`/admin/features`) — bật/tắt từng tính năng của người học
 
 Ba quy tắc an toàn bắt buộc giữ khi sửa module này (đã cài trong `admin.service.ts`):
 không tự hạ quyền/khoá/xoá chính mình, không xoá hay hạ quyền **quản trị viên hoạt
@@ -112,6 +113,34 @@ chỉ đi qua màn "Quản lý yêu cầu": quản trị viên **duyệt**, còn
 dùng đặt. Hai lý do: giữ cả hai đường là hai cách làm cùng một việc, và đường cũ là cách
 duy nhất khiến quản trị viên **biết** mật khẩu của người dùng rồi phải tự tìm kênh báo lại.
 Toàn bộ luồng mô tả trong `docs/luong-quen-mat-khau.md` — đọc file đó trước khi sửa.
+
+### Quản lý tính năng (`/admin/features`)
+
+Quản trị viên bật/tắt từng tính năng của người học bằng công tắc. Tắt thì mục biến mất
+khỏi sidebar và gõ thẳng URL ra trang 404. Toàn bộ thiết kế:
+`docs/ke-hoach-quan-ly-tinh-nang.md` — đọc trước khi sửa.
+
+Sáu quyết định bắt buộc giữ:
+
+- **Danh mục ở `shared/src/constants/features.ts`, trạng thái ở bảng `feature_flags`.**
+  Thêm tính năng mới là thêm code, không phải thêm dòng DB. Chuyển danh mục xuống DB thì
+  deploy xong tính năng mới sẽ im lặng không chạy vì quên chèn dòng ở production.
+- **Thiếu dòng trong `feature_flags` nghĩa là BẬT.** Đừng đổi thành mặc định tắt.
+- **`requireFeature` trả 404, không trả 403** — với người học, tính năng đã tắt là không
+  tồn tại, không phải "có nhưng bạn không được phép". Guard gắn ở chỗ mount router trong
+  `app.ts`; riêng `REPORT` gắn trên đúng route `/statistics/report` vì trang Tổng quan
+  luôn phải chạy.
+- **Không có cờ cho `auth`, `admin`, `profile`, `notifications` và trang Tổng quan.** Tắt
+  được chúng là tự khoá cửa nhà mình.
+- **`/topics` và `/community` có `adminBypass`.** Hai nhánh này dùng chung hai vai trò:
+  tắt Từ vựng không được làm quản trị viên mất khả năng soạn nội dung, tắt Cộng đồng
+  không được khoá luôn người kiểm duyệt.
+- **Tắt là đảo ngược được.** Không dọn `ActivityLog`, không xoá `Goal`/`Habit`, không
+  tính lại streak — bật lại là người học thấy lại đúng chỗ đang dở.
+
+Ở FE có ba mức dùng cờ, đừng lẫn: hiển thị (`useFeature`) mặc định BẬT khi chưa biết để
+giao diện không nháy; gọi API (`useFeatureQueryEnabled`) thì CHỜ biết chắc; chặn route
+(`Gated`) thì chưa biết là chưa vẽ gì.
 
 **Quản trị viên KHÔNG có tính năng của người học**: không cấp độ, không XP, không chuỗi
 ngày, không phần thưởng, không nhắc nhở học tập. Route guard `Learner` đã chặn các màn
@@ -153,7 +182,7 @@ enghabit/
 Bên trong `be/src/modules/<feature>/`: `routes.ts → controller.ts → service.ts → schema.ts`.
 Bên trong `fe/src/features/<feature>/`: `components/`, `hooks/`, `api.ts`, `types.ts`.
 
-Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `statistics`, `notifications`, `rewards`, `leaderboard`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
+Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `statistics`, `notifications`, `rewards`, `leaderboard`, `feature-flags`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
 
 **Hai quy ước bắt buộc khi scaffold:**
 

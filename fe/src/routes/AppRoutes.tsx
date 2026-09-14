@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { UserRole } from '@enghabit/shared';
+import { FeatureKey, UserRole } from '@enghabit/shared';
 import { useAuthStore } from '../features/auth/auth.store';
+import { useFeatureFlagsQuery } from '../features/feature-flags/feature-flag.hooks';
 import { LoginPage } from '../features/auth/components/LoginPage';
 import { RegisterPage } from '../features/auth/components/RegisterPage';
 import { DashboardPage } from '../features/statistics/components/DashboardPage';
@@ -17,6 +18,7 @@ import { AdminAccessPage } from '../features/admin/components/AdminAccessPage';
 import { AdminGroupsPage } from '../features/admin/components/AdminGroupsPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
 import { AdminRequestsPage } from '../features/admin/components/AdminRequestsPage';
+import { AdminFeaturesPage } from '../features/feature-flags/components/AdminFeaturesPage';
 import { ForgotPasswordPage } from '../features/auth/components/ForgotPasswordPage';
 import { GroupsPage } from '../features/groups/components/GroupsPage';
 import { GroupDetailPage } from '../features/groups/components/GroupDetailPage';
@@ -49,17 +51,35 @@ export function AppRoutes(): JSX.Element {
       <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
         {/* --- Khu người học --- */}
         <Route path="/" element={<Learner name="Tổng quan"><DashboardPage /></Learner>} />
-        <Route path="/report" element={<Learner name="Báo cáo"><ReportPage /></Learner>} />
-        <Route path="/habits" element={<Learner name="Thói quen"><HabitsPage /></Learner>} />
-        <Route path="/goals" element={<Learner name="Mục tiêu"><GoalsPage /></Learner>} />
-        <Route path="/vocabulary" element={<Learner name="Từ vựng"><VocabularyPage /></Learner>} />
-        <Route path="/flashcards" element={<Learner name="Ôn tập"><FlashcardPage /></Learner>} />
-        <Route path="/leaderboard" element={<Learner name="Bảng xếp hạng"><LeaderboardPage /></Learner>} />
+        <Route path="/report" element={<Gated flag={FeatureKey.REPORT} name="Báo cáo"><ReportPage /></Gated>} />
+        <Route path="/habits" element={<Gated flag={FeatureKey.HABITS} name="Thói quen"><HabitsPage /></Gated>} />
+        <Route path="/goals" element={<Gated flag={FeatureKey.GOALS} name="Mục tiêu"><GoalsPage /></Gated>} />
+        <Route
+          path="/vocabulary"
+          element={<Gated flag={FeatureKey.VOCABULARY} name="Từ vựng"><VocabularyPage /></Gated>}
+        />
+        <Route
+          path="/flashcards"
+          element={<Gated flag={FeatureKey.FLASHCARDS} name="Ôn tập"><FlashcardPage /></Gated>}
+        />
+        <Route
+          path="/leaderboard"
+          element={<Gated flag={FeatureKey.LEADERBOARD} name="Bảng xếp hạng"><LeaderboardPage /></Gated>}
+        />
 
         {/* Trang cá nhân, thông báo và diễn đàn dùng chung cho cả hai vai trò */}
-        <Route path="/community" element={<Feature name="Cộng đồng"><CommunityPage /></Feature>} />
-        <Route path="/groups" element={<Learner name="Nhóm lớp"><GroupsPage /></Learner>} />
-        <Route path="/groups/:id" element={<Learner name="Nhóm lớp"><GroupDetailPage /></Learner>} />
+        {/* Diễn đàn: tắt Cộng đồng thì người học mất lối vào, nhưng quản trị viên vẫn
+            vào được để kiểm duyệt — khoá cả người dọn là bỏ lại đúng đống bài cần dọn
+            mà không ai vào dọn được (API cũng cho admin đi qua, xem app.ts). */}
+        <Route
+          path="/community"
+          element={<Gated flag={FeatureKey.COMMUNITY} adminBypass name="Cộng đồng"><CommunityPage /></Gated>}
+        />
+        <Route path="/groups" element={<Gated flag={FeatureKey.GROUPS} name="Nhóm lớp"><GroupsPage /></Gated>} />
+        <Route
+          path="/groups/:id"
+          element={<Gated flag={FeatureKey.GROUPS} name="Nhóm lớp"><GroupDetailPage /></Gated>}
+        />
         <Route path="/profile" element={<Feature name="Trang cá nhân"><ProfilePage /></Feature>} />
         <Route path="/notifications" element={<Feature name="Thông báo"><NotificationsPage /></Feature>} />
 
@@ -70,6 +90,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/admin/content" element={<Admin name="Nội dung học tập"><AdminContentPage /></Admin>} />
         <Route path="/admin/groups" element={<Admin name="Quản lý nhóm"><AdminGroupsPage /></Admin>} />
         <Route path="/admin/requests" element={<Admin name="Quản lý yêu cầu"><AdminRequestsPage /></Admin>} />
+        <Route path="/admin/features" element={<Admin name="Quản lý tính năng"><AdminFeaturesPage /></Admin>} />
         <Route
           path="/admin/announcements"
           element={<Admin name="Gửi thông báo"><AnnouncementPage /></Admin>}
@@ -87,6 +108,54 @@ export function AppRoutes(): JSX.Element {
 
 function Feature({ name, children }: { name: string; children: JSX.Element }): JSX.Element {
   return <FeatureErrorBoundary feature={name}>{children}</FeatureErrorBoundary>;
+}
+
+/**
+ * Trang thuộc một tính năng bật/tắt được từ /admin/features.
+ *
+ * Tắt thì hiện ĐÚNG trang 404 sẵn có, không `Navigate` về "/": đẩy lặng lẽ về trang chủ
+ * khiến người dùng tưởng mình bấm hụt. Cũng không dựng một màn "tính năng đã tắt" riêng
+ * — vừa đỡ một màn hình phải dịch, vừa không nói cho người dùng biết hệ thống có tính
+ * năng đó nhưng đang tắt, thông tin chỉ khiến họ đi hỏi tại sao.
+ *
+ * Bọc NGOÀI `Learner` nên quản trị viên vào các trang học vẫn bị đưa về /admin như cũ,
+ * bất kể cờ bật hay tắt.
+ */
+function Gated({
+  flag,
+  name,
+  adminBypass = false,
+  children,
+}: {
+  flag: FeatureKey;
+  name: string;
+  /** Trang dùng chung hai vai trò mà quản trị viên vẫn phải vào được khi đã tắt. */
+  adminBypass?: boolean;
+  children: JSX.Element;
+}): JSX.Element | null {
+  const user = useAuthStore((s) => s.user);
+  const flags = useFeatureFlagsQuery();
+
+  if (adminBypass && user?.role === UserRole.ADMIN) return <Feature name={name}>{children}</Feature>;
+
+  /*
+    Chưa biết trạng thái thì chưa vẽ gì.
+
+    Khác với sidebar (mặc định coi là bật để mục không nháy): ở đây vẽ lạc quan nghĩa là
+    dựng hẳn màn hình của tính năng đang tắt, nó kịp gọi API và nhận về 404, rồi mới bị
+    thay bằng trang 404 — người dùng thấy trang chớp một cái, còn console có một lỗi đỏ
+    không phải lỗi thật.
+  */
+  if (!flags.data) return null;
+
+  if (!flags.data[flag]) {
+    return (
+      <Feature name="Không tìm thấy trang">
+        <NotFoundPage />
+      </Feature>
+    );
+  }
+  return <Learner name={name}>{children}</Learner>;
 }
 
 /** Trang học tập — quản trị viên bị đưa về khu quản trị của họ. */

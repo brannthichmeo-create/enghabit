@@ -20,15 +20,21 @@ import { useT } from '../i18n/language';
  * không dùng `content*` — xem `docs/color-rules.md`.
  */
 
+interface Tail {
+  label: string;
+  /** Bỏ hết các cấp tra từ đường dẫn, chỉ giữ mục gốc rồi tới cấp này. */
+  replaceTrail: boolean;
+}
+
 interface TailContextValue {
-  tail: string | null;
-  setTail: (value: string | null) => void;
+  tail: Tail | null;
+  setTail: (value: Tail | null) => void;
 }
 
 const TailContext = createContext<TailContextValue | null>(null);
 
 export function BreadcrumbProvider({ children }: { children: ReactNode }): JSX.Element {
-  const [tail, setTail] = useState<string | null>(null);
+  const [tail, setTail] = useState<Tail | null>(null);
   const value = useMemo(() => ({ tail, setTail }), [tail]);
 
   return <TailContext.Provider value={value}>{children}</TailContext.Provider>;
@@ -37,16 +43,20 @@ export function BreadcrumbProvider({ children }: { children: ReactNode }): JSX.E
 /**
  * Nối thêm một cấp cuối vào breadcrumb, dành cho màn hình phụ không có URL riêng.
  * Truyền `null` hoặc rời màn hình thì cấp đó tự biến mất.
+ *
+ * `replaceTrail` cho trang 404: đường dẫn vẫn tra ra tên một màn hình (vd /flashcards →
+ * "Ôn tập") nhưng màn hình đó chính là thứ KHÔNG tồn tại, nên giữ lại tên nó trên
+ * breadcrumb là nói với người dùng rằng họ đang ở trong một trang không có.
  */
-export function useBreadcrumbTail(label: string | null): void {
+export function useBreadcrumbTail(label: string | null, replaceTrail = false): void {
   const ctx = useContext(TailContext);
   const setTail = ctx?.setTail;
 
   useEffect(() => {
     if (!setTail) return;
-    setTail(label);
+    setTail(label === null ? null : { label, replaceTrail });
     return () => setTail(null);
-  }, [label, setTail]);
+  }, [label, replaceTrail, setTail]);
 }
 
 export function Breadcrumb(): JSX.Element | null {
@@ -56,9 +66,11 @@ export function Breadcrumb(): JSX.Element | null {
   const tail = useContext(TailContext)?.tail ?? null;
 
   // Mục từ bản đồ route dịch được; cấp cuối do màn hình phụ đặt là dữ liệu động nên giữ nguyên.
+  const trail = crumbsForPath(location.pathname, user?.role === UserRole.ADMIN);
   const items: (Crumb & { dynamic?: boolean })[] = [
-    ...crumbsForPath(location.pathname, user?.role === UserRole.ADMIN),
-    ...(tail ? [{ label: tail, dynamic: true }] : []),
+    // `replaceTrail` giữ lại đúng mục gốc (phần tử đầu) rồi nối thẳng cấp cuối.
+    ...(tail?.replaceTrail ? trail.slice(0, 1) : trail),
+    ...(tail ? [{ label: tail.label, dynamic: true }] : []),
   ];
 
   // Chỉ có mỗi mục gốc thì breadcrumb không nói thêm điều gì — bỏ hẳn cho gọn.

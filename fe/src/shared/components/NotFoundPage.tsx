@@ -22,8 +22,14 @@ export function NotFoundPage(): JSX.Element {
   const navigate = useNavigate();
   const user = useCurrentUser();
 
-  // Route này không có đường dẫn cố định nên breadcrumb phải tự nối cấp cuối.
-  useBreadcrumbTail(t('Không tìm thấy trang'));
+  /*
+    Route này không có đường dẫn cố định nên breadcrumb phải tự nối cấp cuối.
+
+    `replaceTrail` vì trang 404 còn hiện ra ở một đường dẫn CÓ trong bản đồ: tính năng bị
+    quản trị viên tắt (xem `Gated` trong AppRoutes). Giữ lại tên màn hình đó trên
+    breadcrumb là nói với người dùng rằng họ đang ở trong một trang không tồn tại.
+  */
+  useBreadcrumbTail(t('Không tìm thấy trang'), true);
 
   const home = user?.role === UserRole.ADMIN ? '/admin' : '/';
 
