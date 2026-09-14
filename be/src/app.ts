@@ -5,9 +5,11 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { FeatureKey } from '@enghabit/shared';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFoundHandler } from './common/middlewares/error-handler.js';
+import { requireAuth } from './common/middlewares/auth-guard.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { goalRoutes } from './modules/goals/goal.routes.js';
 import { habitRoutes } from './modules/habits/habit.routes.js';
@@ -18,6 +20,8 @@ import { notificationRoutes } from './modules/notifications/notification.routes.
 import { rewardsRoutes } from './modules/rewards/rewards.routes.js';
 import { leaderboardRoutes } from './modules/leaderboard/leaderboard.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
+import { featureRoutes } from './modules/feature-flags/feature.routes.js';
+import { requireFeature } from './modules/feature-flags/feature.guard.js';
 import { groupRoutes } from './modules/groups/group.routes.js';
 import { communityRoutes } from './modules/community/community.routes.js';
 
@@ -64,17 +68,40 @@ export function createApp(): Express {
 
   const api = express.Router();
   api.use('/auth', authRoutes);
-  api.use('/goals', goalRoutes);
-  api.use('/habits', habitRoutes);
-  api.use('/topics', topicRoutes);
-  api.use('/flashcards', flashcardRoutes);
+  api.use('/features', featureRoutes);
+
+  /*
+    Các nhánh dưới đây tắt được từ /admin/features. `requireFeature` trả 404 nên với
+    người học, tính năng đã tắt là không tồn tại — ẩn mục trên sidebar là chưa đủ, token
+    người học gọi thẳng API vẫn ghi ActivityLog và vẫn nhận xu.
+
+    `requireAuth` phải đứng TRƯỚC guard vì nhánh /topics cần biết vai trò để cho quản
+    trị viên đi qua. Các router con vẫn giữ requireAuth/requireRole của chúng — gọi hai
+    lần vô hại, còn bỏ đi là tạo ra endpoint hở nếu sau này ai đó mount lại chỗ khác.
+
+    /statistics KHÔNG có guard ở đây: trang Tổng quan luôn phải chạy. Riêng nhánh con
+    /statistics/report chịu cờ REPORT, gắn trong statistics.routes.ts.
+  */
+  api.use('/goals', requireAuth, requireFeature(FeatureKey.GOALS), goalRoutes);
+  api.use('/habits', requireAuth, requireFeature(FeatureKey.HABITS), habitRoutes);
+  // Quản trị viên vẫn đọc /topics để quản lý nội dung ở /admin/content.
+  api.use('/topics', requireAuth, requireFeature(FeatureKey.VOCABULARY, { adminBypass: true }), topicRoutes);
+  api.use('/flashcards', requireAuth, requireFeature(FeatureKey.FLASHCARDS), flashcardRoutes);
   api.use('/statistics', statisticsRoutes);
   api.use('/notifications', notificationRoutes);
-  api.use('/rewards', rewardsRoutes);
-  api.use('/leaderboard', leaderboardRoutes);
+  api.use('/rewards', requireAuth, requireFeature(FeatureKey.REWARDS), rewardsRoutes);
+  api.use('/leaderboard', requireAuth, requireFeature(FeatureKey.LEADERBOARD), leaderboardRoutes);
   api.use('/admin', adminRoutes);
-  api.use('/community', communityRoutes);
-  api.use('/groups', groupRoutes);
+  /*
+    Bài đăng của nhóm dùng chung module community, nên tắt Cộng đồng là nhóm lớp mất
+    luôn bảng tin — vì vậy GROUPS phụ thuộc COMMUNITY trong danh mục ở shared.
+
+    adminBypass như /topics: diễn đàn mở cho cả hai vai trò và quản trị viên vào đó để
+    kiểm duyệt. Tắt diễn đàn rồi khoá luôn người kiểm duyệt là bỏ lại đúng đống bài
+    cần dọn mà không ai vào dọn được.
+  */
+  api.use('/community', requireAuth, requireFeature(FeatureKey.COMMUNITY, { adminBypass: true }), communityRoutes);
+  api.use('/groups', requireAuth, requireFeature(FeatureKey.GROUPS), groupRoutes);
 
   app.use('/api/v1', api);
 

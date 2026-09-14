@@ -10,7 +10,14 @@ import {
   PrismaClient,
   type Prisma,
 } from '@prisma/client';
-import { computeStreak, initialSrsState, reviewCard, toLocalDate, ReviewQuality } from '@enghabit/shared';
+import {
+  FEATURES,
+  computeStreak,
+  initialSrsState,
+  reviewCard,
+  toLocalDate,
+  ReviewQuality,
+} from '@enghabit/shared';
 import { TOPICS } from './seed-data/content.js';
 import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
 
@@ -52,8 +59,27 @@ async function main(): Promise<void> {
   await seedLoginHistory([admin.id, learner.id]);
   await seedNotifications(learner.id);
   await seedCommunity(admin.id, learner.id);
+  await seedFeatureFlags();
 
   await printSummary();
+}
+
+/**
+ * Một dòng bật sẵn cho mỗi tính năng, để màn /admin/features có dữ liệu đẹp ngay sau
+ * khi clone.
+ *
+ * Đây là tiện nghi, KHÔNG phải điều kiện để chạy: thiếu dòng thì service coi là bật
+ * (xem be/src/modules/features/feature.service.ts). Vì vậy `create` mà không `update` —
+ * chạy lại seed không được bật lại tính năng quản trị viên đã cố ý tắt.
+ */
+async function seedFeatureFlags(): Promise<void> {
+  for (const feature of FEATURES) {
+    await prisma.featureFlag.upsert({
+      where: { key: feature.key },
+      create: { key: feature.key, isEnabled: true },
+      update: {},
+    });
+  }
 }
 
 /**

@@ -8,6 +8,9 @@ import {
   createAnnouncementSchema,
   createTopicSchema,
   createVocabularySchema,
+  featureKeyParamSchema,
+  updateFeatureFlagSchema,
+  type UpdateFeatureFlagInput,
   rejectResetRequestSchema,
   resetRequestQuerySchema,
   updateTopicSchema,
@@ -29,7 +32,8 @@ import {
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
 import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
 import { getValidatedQuery, validateBody, validateQuery } from '../../common/middlewares/validate.js';
-import { BadRequestError } from '../../common/errors/app-error.js';
+import { BadRequestError, NotFoundError } from '../../common/errors/app-error.js';
+import * as featureService from '../feature-flags/feature.service.js';
 import * as notificationService from '../notifications/notification.service.js';
 import * as passwordResetService from '../auth/password-reset.service.js';
 import * as topicService from '../topics/topic.service.js';
@@ -256,6 +260,31 @@ adminRoutes.delete(
   asyncHandler(async (req, res) => {
     await adminService.deleteVocabulary(parseId(req.params.id));
     res.status(204).send();
+  }),
+);
+
+// --- Quản lý tính năng ---
+//
+// Phần ĐỌC cho client nằm ở module features (GET /features). Phần ghi đặt ở đây vì mọi
+// route /admin/* đã đi qua role-guard sẵn — không dựng thêm một lối vào có quyền quản
+// trị ở module khác.
+adminRoutes.get(
+  '/features',
+  asyncHandler(async (_req, res) => {
+    res.json(await featureService.listForAdmin());
+  }),
+);
+
+adminRoutes.patch(
+  '/features/:key',
+  validateBody(updateFeatureFlagSchema),
+  asyncHandler(async (req, res) => {
+    const parsed = featureKeyParamSchema.safeParse(req.params);
+    // Khoá lạ là 404 chứ không 400: tính năng đó không tồn tại trong danh mục.
+    if (!parsed.success) throw new NotFoundError('Không có tính năng này');
+
+    const { isEnabled } = req.body as UpdateFeatureFlagInput;
+    res.json(await featureService.setEnabled(parsed.data.key, isEnabled, currentUser(req).id));
   }),
 );
 

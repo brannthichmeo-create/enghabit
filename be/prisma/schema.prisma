@@ -197,6 +197,9 @@ model User {
   /// Yêu cầu mà người này (quản trị viên) đã duyệt hoặc từ chối
   reviewedResetRequests PasswordResetRequest[] @relation("ResetReviewer")
 
+  /// Các tính năng mà người này (quản trị viên) bật/tắt gần nhất
+  featureFlagChanges FeatureFlag[] @relation("FeatureFlagUpdatedBy")
+
   @@map("users")
 }
 
@@ -850,4 +853,36 @@ model StreakFreeze {
   @@unique([userId, usedOnDate])
   @@index([userId])
   @@map("streak_freezes")
+}
+
+/// Trạng thái bật/tắt của MỘT tính năng người học.
+///
+/// Bảng này CHỈ giữ trạng thái. Danh sách "hệ thống có những tính năng nào" nằm ở
+/// shared/src/constants/features.ts, trong mã nguồn — vì thêm tính năng mới là thêm
+/// code chứ không phải thêm một dòng dữ liệu.
+///
+/// THIẾU DÒNG NGHĨA LÀ BẬT. Nhờ vậy deploy bản có tính năng mới là nó chạy ngay,
+/// không cần seed hay migration dữ liệu; và dòng mang `key` lạ còn sót từ bản cũ chỉ
+/// bị bỏ qua khi đọc chứ không gây lỗi.
+///
+/// Tắt tính năng KHÔNG đụng tới dữ liệu người học: ActivityLog, Goal, Habit,
+/// UserVocabProgress giữ nguyên, bật lại là thấy lại đúng chỗ đang dở. Cùng tinh thần
+/// với khoá tài khoản và chặn nhóm — đảo ngược được, khác hẳn với xoá.
+model FeatureFlag {
+  id Int @id @default(autoincrement())
+
+  /// Khớp FeatureKey ở shared/constants/features.ts
+  key String @unique @db.VarChar(50)
+
+  isEnabled Boolean @default(true) @map("is_enabled")
+
+  /// Quản trị viên đổi lần gần nhất. SetNull vì xoá một tài khoản quản trị không được
+  /// phép kéo theo trạng thái tính năng của cả hệ thống.
+  updatedById Int?  @map("updated_by_id")
+  updatedBy   User? @relation("FeatureFlagUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([updatedById])
+  @@map("feature_flags")
 }

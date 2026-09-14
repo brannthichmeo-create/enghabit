@@ -6,6 +6,7 @@ export * from './vocabulary.schema.js';
 export * from './statistics.schema.js';
 export * from './notification.schema.js';
 export * from './admin.schema.js';
+export * from './feature.schema.js';
 export * from './password-reset.schema.js';
 export * from './rewards.schema.js';
 export * from './leaderboard.schema.js';
