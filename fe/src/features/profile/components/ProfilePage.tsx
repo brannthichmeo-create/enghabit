@@ -24,6 +24,7 @@ import {
   Field,
   Input,
   PageHeader,
+  PasswordInput,
   ProgressBar,
   SectionTitle,
   Skeleton,
@@ -389,8 +390,7 @@ function PasswordForm(): JSX.Element {
         <ErrorMessage>{error}</ErrorMessage>
 
         <Field label={t('Mật khẩu hiện tại')}>
-          <Input
-            type="password"
+          <PasswordInput
             value={form.currentPassword}
             onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
             autoComplete="current-password"
@@ -398,8 +398,7 @@ function PasswordForm(): JSX.Element {
         </Field>
 
         <Field label={t('Mật khẩu mới')} hint={t('Ít nhất 8 ký tự, gồm cả chữ và số')}>
-          <Input
-            type="password"
+          <PasswordInput
             value={form.newPassword}
             onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
             autoComplete="new-password"
@@ -407,8 +406,7 @@ function PasswordForm(): JSX.Element {
         </Field>
 
         <Field label={t('Nhập lại mật khẩu mới')}>
-          <Input
-            type="password"
+          <PasswordInput
             value={form.confirm}
             onChange={(e) => setForm({ ...form, confirm: e.target.value })}
             autoComplete="new-password"

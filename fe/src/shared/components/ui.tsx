@@ -1,4 +1,5 @@
-import { Loader2, RotateCcw, type LucideIcon } from 'lucide-react';
+import { Eye, EyeOff, Loader2, RotateCcw, type LucideIcon } from 'lucide-react';
+import { useState } from 'react';
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
 import { useT } from '../i18n/language';
 
@@ -142,6 +143,48 @@ const CONTROL_CLASS =
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>): JSX.Element {
   return <input {...props} className={`${CONTROL_CLASS} ${props.className ?? ''}`} />;
+}
+
+/**
+ * Ô mật khẩu kèm nút hiện/ẩn.
+ *
+ * Gõ mù một chuỗi không đọc lại được là lý do phổ biến nhất khiến người dùng nhập sai
+ * rồi phải gõ lại từ đầu — nhất là ô "nhập lại mật khẩu mới".
+ *
+ * Nút là `type="button"`: trong một `form`, nút không khai kiểu mặc định là `submit`,
+ * nên bấm để xem mật khẩu sẽ gửi luôn cả biểu mẫu.
+ *
+ * Bản của màn đăng nhập (`features/auth/components/AuthField`) là một thứ khác: nó tự
+ * vẽ cả nhãn và icon bên trái cho bố cục riêng của màn đó. Ô này chỉ là `Input`, dùng
+ * bên trong `Field` như mọi ô khác của app.
+ */
+export function PasswordInput(props: InputHTMLAttributes<HTMLInputElement>): JSX.Element {
+  const t = useT();
+  const [visible, setVisible] = useState(false);
+
+  return (
+    // `relative` bọc riêng ô nhập, không bọc cả `Field` — nút phải neo theo ô, nếu neo
+    // theo cả khối thì nhãn và dòng gợi ý sẽ kéo nó lệch khỏi giữa ô.
+    <span className="relative block">
+      <input
+        {...props}
+        type={visible ? 'text' : 'password'}
+        // Chừa chỗ bên phải cho nút, nếu không chữ dài sẽ chạy xuống dưới biểu tượng.
+        className={`${CONTROL_CLASS} pr-10 ${props.className ?? ''}`}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        // `mt-1.5` của CONTROL_CLASS đẩy ô xuống, nên tâm nút phải bù lại đúng chừng đó.
+        className="absolute right-2 top-1/2 mt-[3px] -translate-y-1/2 rounded p-1.5 text-content-muted transition-colors hover:text-content-soft"
+        aria-label={visible ? t('Ẩn mật khẩu') : t('Hiện mật khẩu')}
+      >
+        {/* Biểu tượng nói TRẠNG THÁI đang có, không nói hành động sắp xảy ra: mắt mở =
+            đang hiện, mắt gạch chéo = đang ẩn. Mặc định là ẩn. */}
+        {visible ? <Eye className="h-4 w-4" aria-hidden /> : <EyeOff className="h-4 w-4" aria-hidden />}
+      </button>
+    </span>
+  );
 }
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>): JSX.Element {

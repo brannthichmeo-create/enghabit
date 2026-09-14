@@ -94,7 +94,9 @@ export function PasswordField({
           className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-content-muted transition-colors hover:text-content-soft"
           aria-label={visible ? t('Ẩn mật khẩu') : t('Hiện mật khẩu')}
         >
-          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {/* Cùng quy ước với `PasswordInput` ở shared/components/ui: biểu tượng nói
+              trạng thái đang có, mắt mở = đang hiện, mắt gạch chéo = đang ẩn. */}
+          {visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </button>
       </div>
 
