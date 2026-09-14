@@ -27,23 +27,32 @@ trình, cộng thêm lần `migrate deploy` lúc khởi động là đủ chạm
 ## 2. Backend — Render
 
 1. Tạo tài khoản tại [render.com](https://render.com), kết nối repo GitHub
-2. **New → Web Service**, chọn repo `enghabit`
-3. Render sẽ đọc `render.yaml` ở thư mục gốc
-4. Vào tab **Environment**, thêm các biến sau:
+2. **New → Blueprint**, chọn repo `enghabit` — đúng mục này, Render chỉ đọc `render.yaml`
+   qua luồng Blueprint. Chọn **Web Service** thì phải tự nhập `buildCommand` và
+   `startCommand` bằng tay.
+3. Vào tab **Environment**, thêm các biến sau:
 
 | Biến | Giá trị |
 |---|---|
-| `DATABASE_URL` | Chuỗi kết nối Aiven ở bước 1 |
+| `DATABASE_URL` | Chuỗi Aiven trỏ vào **`defaultdb`** — không phải `enghabit_dev` của máy dev |
 | `CORS_ORIGIN` | Tên miền Vercel, vd `https://enghabit.vercel.app` |
 | `JWT_ACCESS_SECRET` | Chuỗi ngẫu nhiên ≥32 ký tự |
 | `JWT_REFRESH_SECRET` | Chuỗi ngẫu nhiên khác, ≥32 ký tự |
 | `ENABLE_REMINDER_JOB` | `false` |
 
-Sinh chuỗi ngẫu nhiên: `openssl rand -hex 32`
+Sinh chuỗi ngẫu nhiên: `openssl rand -hex 32`, hoặc trên Windows:
 
-Sau khi deploy xong, chạy seed **một lần** qua tab Shell của Render:
+```powershell
+node -e "const c=require('crypto');console.log(c.randomBytes(32).toString('hex'))"
+```
 
-```bash
+Hai secret này phải **khác** secret của môi trường dev.
+
+Sau khi deploy xong, chạy seed **một lần từ máy của bạn**, trỏ vào `defaultdb`.
+Gói free của Render **không có tab Shell**, nên không chạy được từ trên đó:
+
+```powershell
+$env:DATABASE_URL = "mysql://avnadmin:MẬT_KHẨU@HOST:PORT/defaultdb?connection_limit=5&connect_timeout=15"
 pnpm --filter @enghabit/be db:seed
 ```
 
@@ -62,7 +71,7 @@ Hoặc qua giao diện web: **Import Project** → chọn repo → đặt **Root
 Vì đây là monorepo pnpm, phần **Build Command** phải build `shared` trước:
 
 ```
-cd .. && pnpm install && pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/fe build
+cd .. && pnpm install --prod=false && pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/fe build
 ```
 
 Output Directory: `dist`

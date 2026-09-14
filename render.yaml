@@ -8,12 +8,27 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/be build
+    # Hai chỗ trong lệnh này không được bỏ:
+    #
+    # `--install-directory "$HOME/.bin"` — `corepack enable` trần sẽ ghi symlink vào
+    # /usr/bin, mà thư mục đó chỉ đọc trên Render và đã có sẵn pnpm. Lỗi báo ra là
+    # "EROFS: read-only file system, unlink '/usr/bin/pnpm'". Vẫn cần corepack chứ
+    # không dùng thẳng pnpm của Render: lockfile là lockfileVersion 9.0 nên bắt buộc
+    # pnpm 9+, còn corepack lấy đúng bản ghi ở "packageManager" của package.json.
+    #
+    # `--prod=false` — NODE_ENV=production ở dưới làm pnpm bỏ qua devDependencies,
+    # mà build cần tsup, typescript và prisma. Thiếu cờ này thì build đỏ với
+    # "tsup: not found" ngay bước đầu.
+    buildCommand: mkdir -p "$HOME/.bin" && corepack enable --install-directory "$HOME/.bin" && export PATH="$HOME/.bin:$PATH" && pnpm install --frozen-lockfile --prod=false && pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/be build
     startCommand: pnpm --filter @enghabit/be start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      # Corepack hỏi xác nhận trước khi tải pnpm về lần đầu. Build chạy không có
+      # bàn phím nên câu hỏi đó chỉ làm treo hoặc dừng build.
+      - key: COREPACK_ENABLE_DOWNLOAD_PROMPT
+        value: "0"
       # Các biến còn lại đặt trong bảng điều khiển Render, KHÔNG ghi vào file này:
       #   DATABASE_URL      chuỗi kết nối Aiven, kèm ?connection_limit=5&connect_timeout=15
       #                     (xem docs/aiven-setup.md — đừng thêm sslaccept=strict nếu thiếu ca.pem)
