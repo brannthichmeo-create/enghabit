@@ -11,7 +11,7 @@ import { getErrorMessage } from '../../../shared/lib/api-client';
 import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useGoalProgress } from '../../goals/goal.hooks';
-import { useDueCount } from '../../flashcards/flashcard.hooks';
+import { useDueCount } from '../../study/study.hooks';
 import { useFeatureFlags, useFeatureQueryEnabled } from '../../feature-flags/feature-flag.hooks';
 import { useActivityCalendar, useLevel, useStatsSummary, useStreak } from '../statistics.hooks';
 import { useT } from '../../../shared/i18n/language';
@@ -274,8 +274,8 @@ function TodayCard({
     ôn" — nói với người dùng rằng họ không còn gì để học trong khi hệ thống không hề
     biết. Với một app xây thói quen thì đó là lỗi nặng hơn cả việc im lặng.
 
-    Trước đây thẻ này có hai việc (ôn thẻ và luyện từ sai). Module `lessons` đã bị gỡ
-    để dựng lại, nên tạm còn một việc.
+    Số việc là thẻ cần ôn hôm nay: tới hạn cộng quá hạn, trên mọi bộ người học còn
+    truy cập được.
   */
   const known = dueCount !== undefined;
   const done = known && dueCount === 0;
@@ -305,11 +305,11 @@ function TodayCard({
 
       <div className={`mt-4 space-y-2 ${loading || errorMessage ? 'hidden' : ''}`}>
         <TaskRow
-          to="/flashcards"
+          to="/review"
           icon={Layers}
-          title={t('Ôn flashcard')}
+          title={t('Ôn tập')}
           count={dueCount}
-          pending={t('{n} thẻ tới hạn', { n: dueCount ?? 0 })}
+          pending={t('{n} thẻ cần ôn', { n: dueCount ?? 0 })}
           cleared={t('Đã ôn hết hôm nay')}
         />
       </div>

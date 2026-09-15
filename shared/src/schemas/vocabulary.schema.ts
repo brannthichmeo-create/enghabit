@@ -1,6 +1,10 @@
 import { z } from 'zod';
-import { ReviewQuality, VocabLevel } from '../constants/enums.js';
+import { VocabLevel } from '../constants/enums.js';
 import { idSchema } from './common.schema.js';
+
+/**
+ * Soạn bộ thẻ "Hệ thống" ở khu quản trị. Bộ người học tự tạo dùng study-set.schema.ts.
+ */
 
 export const createTopicSchema = z.object({
   name: z.string().trim().min(1, 'Tên chủ đề không được để trống').max(120),
@@ -24,16 +28,3 @@ export type CreateVocabularyInput = z.infer<typeof createVocabularySchema>;
 
 export const updateVocabularySchema = createVocabularySchema.partial().omit({ topicId: true });
 export type UpdateVocabularyInput = z.infer<typeof updateVocabularySchema>;
-
-/** Đánh dấu đã học một từ — đưa từ đó vào danh sách ôn tập SRS. */
-export const learnVocabularySchema = z.object({
-  vocabularyId: idSchema,
-});
-export type LearnVocabularyInput = z.infer<typeof learnVocabularySchema>;
-
-/** Gửi kết quả một lần ôn flashcard. */
-export const reviewFlashcardSchema = z.object({
-  vocabularyId: idSchema,
-  quality: z.nativeEnum(ReviewQuality),
-});
-export type ReviewFlashcardInput = z.infer<typeof reviewFlashcardSchema>;

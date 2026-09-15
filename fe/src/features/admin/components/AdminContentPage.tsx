@@ -9,7 +9,7 @@ export function AdminContentPage(): JSX.Element {
     <div>
       <PageHeader
         title={t('Nội dung học tập')}
-        description={t('Chủ đề và từ vựng dùng chung cho mọi người học')}
+        description={t('Bộ thẻ Hệ thống dùng chung cho mọi người học')}
       />
       <ContentManager />
     </div>

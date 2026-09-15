@@ -14,8 +14,7 @@ import {
 } from '../../../shared/components/ui';
 import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
-import { useTopics, useTopicVocabulary } from '../../vocabulary/vocabulary.hooks';
-import { useCreateTopic, useCreateVocabulary, useDeleteTopic } from '../admin.hooks';
+import { useCreateTopic, useCreateVocabulary, useDeleteTopic, useTopics, useTopicVocabulary } from '../admin.hooks';
 import { useT } from '../../../shared/i18n/language';
 
 /** Quản lý chủ đề và từ vựng. Chọn một chủ đề để thêm/xem từ trong chủ đề đó. */
@@ -56,7 +55,7 @@ export function ContentManager(): JSX.Element {
                   onClick={async () => {
                     const ok = await confirm({
                       title: t('Xoá chủ đề "{name}"?', { name: topic.name }),
-                      message: t('Toàn bộ từ vựng và lịch sử kiểm tra thuộc chủ đề này sẽ mất theo.'),
+                      message: t('Toàn bộ từ vựng, tiến độ và lịch sử ôn của người học trên chủ đề này sẽ mất theo.'),
                       confirmLabel: t('Xoá chủ đề'),
                       tone: 'danger',
                     });

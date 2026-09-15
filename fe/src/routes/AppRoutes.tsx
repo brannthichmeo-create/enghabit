@@ -8,8 +8,10 @@ import { DashboardPage } from '../features/statistics/components/DashboardPage';
 import { ReportPage } from '../features/statistics/components/ReportPage';
 import { HabitsPage } from '../features/habits/components/HabitsPage';
 import { GoalsPage } from '../features/goals/components/GoalsPage';
-import { VocabularyPage } from '../features/vocabulary/components/VocabularyPage';
-import { FlashcardPage } from '../features/flashcards/components/FlashcardPage';
+import { LibraryPage } from '../features/library/components/LibraryPage';
+import { StudySetDetailPage } from '../features/library/components/StudySetDetailPage';
+import { LearnPage } from '../features/study/components/LearnPage';
+import { ReviewPage } from '../features/study/components/ReviewPage';
 import { LeaderboardPage } from '../features/leaderboard/components/LeaderboardPage';
 import { ProfilePage } from '../features/profile/components/ProfilePage';
 import { AdminOverviewPage } from '../features/admin/components/AdminOverviewPage';
@@ -18,6 +20,7 @@ import { AdminAccessPage } from '../features/admin/components/AdminAccessPage';
 import { AdminGroupsPage } from '../features/admin/components/AdminGroupsPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
 import { AdminRequestsPage } from '../features/admin/components/AdminRequestsPage';
+import { AdminStudySetsPage } from '../features/admin/components/AdminStudySetsPage';
 import { AdminFeaturesPage } from '../features/feature-flags/components/AdminFeaturesPage';
 import { ForgotPasswordPage } from '../features/auth/components/ForgotPasswordPage';
 import { GroupsPage } from '../features/groups/components/GroupsPage';
@@ -54,14 +57,13 @@ export function AppRoutes(): JSX.Element {
         <Route path="/report" element={<Gated flag={FeatureKey.REPORT} name="Báo cáo"><ReportPage /></Gated>} />
         <Route path="/habits" element={<Gated flag={FeatureKey.HABITS} name="Thói quen"><HabitsPage /></Gated>} />
         <Route path="/goals" element={<Gated flag={FeatureKey.GOALS} name="Mục tiêu"><GoalsPage /></Gated>} />
+        <Route path="/library" element={<Gated flag={FeatureKey.VOCABULARY} name="Thư viện"><LibraryPage /></Gated>} />
         <Route
-          path="/vocabulary"
-          element={<Gated flag={FeatureKey.VOCABULARY} name="Từ vựng"><VocabularyPage /></Gated>}
+          path="/library/:id"
+          element={<Gated flag={FeatureKey.VOCABULARY} name="Thư viện"><StudySetDetailPage /></Gated>}
         />
-        <Route
-          path="/flashcards"
-          element={<Gated flag={FeatureKey.FLASHCARDS} name="Ôn tập"><FlashcardPage /></Gated>}
-        />
+        <Route path="/learn" element={<Gated flag={FeatureKey.LEARN} name="Học"><LearnPage /></Gated>} />
+        <Route path="/review" element={<Gated flag={FeatureKey.FLASHCARDS} name="Ôn tập"><ReviewPage /></Gated>} />
         <Route
           path="/leaderboard"
           element={<Gated flag={FeatureKey.LEADERBOARD} name="Bảng xếp hạng"><LeaderboardPage /></Gated>}
@@ -89,6 +91,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/admin/access" element={<Admin name="Lượt truy cập"><AdminAccessPage /></Admin>} />
         <Route path="/admin/content" element={<Admin name="Nội dung học tập"><AdminContentPage /></Admin>} />
         <Route path="/admin/groups" element={<Admin name="Quản lý nhóm"><AdminGroupsPage /></Admin>} />
+        <Route path="/admin/study-sets" element={<Admin name="Kiểm duyệt bộ thẻ"><AdminStudySetsPage /></Admin>} />
         <Route path="/admin/requests" element={<Admin name="Quản lý yêu cầu"><AdminRequestsPage /></Admin>} />
         <Route path="/admin/features" element={<Admin name="Quản lý tính năng"><AdminFeaturesPage /></Admin>} />
         <Route

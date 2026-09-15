@@ -9,6 +9,9 @@ import type {
   AdminGroupDetail,
   AdminGroupQueryInput,
   AdminGroupRow,
+  AdminStudySetDetail,
+  AdminStudySetReportQueryInput,
+  AdminStudySetReportRow,
   AccessLogQueryInput,
   AccessOverview,
   AdminUserDetail,
@@ -25,12 +28,15 @@ import type {
   UserRole,
   UserStatus,
 } from '@enghabit/shared';
-import { vocabularyKeys } from '../vocabulary/vocabulary.hooks';
-import type { Topic, Vocabulary } from '../vocabulary/vocabulary.api';
 import * as adminApi from './admin.api';
+import type { Topic, Vocabulary } from './admin.api';
 
 export const adminKeys = {
   all: ['admin'] as const,
+  topics: () => ['admin', 'topics'] as const,
+  topicVocabulary: (topicId: number) => ['admin', 'topic-vocabulary', topicId] as const,
+  studySetReports: (query: Partial<AdminStudySetReportQueryInput>) => ['admin', 'study-set-reports', query] as const,
+  studySet: (id: number) => ['admin', 'study-set', id] as const,
   groups: (query: Partial<AdminGroupQueryInput>) => ['admin', 'groups', query] as const,
   group: (id: number) => ['admin', 'group', id] as const,
   overview: () => ['admin', 'overview'] as const,
@@ -144,7 +150,19 @@ function useAdminMutation<TData, TVariables>(
   });
 }
 
-// --- Nội dung học tập: đụng cả dữ liệu phía người học nên invalidate thêm vocabularyKeys ---
+// --- Nội dung học tập: đụng cả dữ liệu phía người học nên invalidate thêm thư viện ---
+
+export function useTopics(): UseQueryResult<Topic[]> {
+  return useQuery({ queryKey: adminKeys.topics(), queryFn: adminApi.listTopics });
+}
+
+export function useTopicVocabulary(topicId: number | null): UseQueryResult<Vocabulary[]> {
+  return useQuery({
+    queryKey: adminKeys.topicVocabulary(topicId ?? 0),
+    queryFn: () => adminApi.listVocabularyByTopic(topicId as number),
+    enabled: topicId !== null,
+  });
+}
 
 export function useCreateTopic(): UseMutationResult<Topic, Error, CreateTopicInput> {
   return useContentMutation(adminApi.createTopic);
@@ -166,7 +184,7 @@ function useContentMutation<TData, TVariables>(
     mutationFn,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.all });
-      void queryClient.invalidateQueries({ queryKey: vocabularyKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['library'] });
     },
   });
 }
@@ -209,4 +227,36 @@ export function useBlockGroup(): UseMutationResult<
 
 export function useUnblockGroup(): UseMutationResult<AdminGroupDetail, Error, number> {
   return useAdminMutation(adminApi.unblockGroup);
+}
+
+// --- Kiểm duyệt bộ thẻ ---
+
+export function useStudySetReports(
+  query: Partial<AdminStudySetReportQueryInput>,
+): UseQueryResult<Paginated<AdminStudySetReportRow>> {
+  return useQuery({
+    queryKey: adminKeys.studySetReports(query),
+    queryFn: () => adminApi.listStudySetReports(query),
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useAdminStudySet(setId: number | null): UseQueryResult<AdminStudySetDetail> {
+  return useQuery({
+    queryKey: adminKeys.studySet(setId ?? 0),
+    queryFn: () => adminApi.getStudySet(setId as number),
+    enabled: setId !== null,
+  });
+}
+
+export function useDismissStudySetReport(): UseMutationResult<void, Error, number> {
+  return useAdminMutation(adminApi.dismissStudySetReport);
+}
+
+export function useBlockStudySet(): UseMutationResult<AdminStudySetDetail, Error, { setId: number; reason: string }> {
+  return useAdminMutation(({ setId, reason }) => adminApi.blockStudySet(setId, reason));
+}
+
+export function useUnblockStudySet(): UseMutationResult<AdminStudySetDetail, Error, number> {
+  return useAdminMutation(adminApi.unblockStudySet);
 }

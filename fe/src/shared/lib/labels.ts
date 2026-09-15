@@ -18,7 +18,7 @@ import {
 export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   [GoalType.VOCAB_PER_DAY]: 'Số từ vựng học mỗi ngày',
   [GoalType.MINUTES_PER_DAY]: 'Số lượt ôn tập mỗi ngày',
-  [GoalType.LESSONS_PER_WEEK]: 'Số bài kiểm tra mỗi tuần',
+  [GoalType.LESSONS_PER_WEEK]: 'Số phiên học mỗi tuần',
   [GoalType.STREAK_TARGET]: 'Chuỗi ngày học liên tiếp',
 };
 

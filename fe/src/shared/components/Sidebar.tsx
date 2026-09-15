@@ -4,9 +4,11 @@ import {
   BookOpen,
   ChartColumn,
   ChevronLeft,
+  Flag,
   GraduationCap,
   Inbox,
   Layers,
+  Library,
   LayoutDashboard,
   Megaphone,
   ListChecks,
@@ -24,7 +26,7 @@ import { FeatureKey, UserRole, type FeatureFlagMap } from '@enghabit/shared';
 import { useFeatureFlags, useFeatureQueryEnabled } from '../../features/feature-flags/feature-flag.hooks';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLogout } from '../../features/auth/auth.hooks';
-import { useDueCount } from '../../features/flashcards/flashcard.hooks';
+import { useDueCount } from '../../features/study/study.hooks';
 import { useLevel } from '../../features/statistics/statistics.hooks';
 import { useUnreadCount } from '../../features/notifications/notification.hooks';
 import { useT } from '../i18n/language';
@@ -80,8 +82,9 @@ export function Sidebar({
   const mainItems: NavItem[] = visibleItems(
     [
       { to: '/', label: 'Tổng quan', icon: LayoutDashboard },
-      { to: '/vocabulary', label: 'Từ vựng', icon: BookOpen, flag: FeatureKey.VOCABULARY },
-      { to: '/flashcards', label: 'Ôn tập', icon: Layers, badge: dueCount.data, flag: FeatureKey.FLASHCARDS },
+      { to: '/library', label: 'Thư viện', icon: Library, flag: FeatureKey.VOCABULARY },
+      { to: '/learn', label: 'Học', icon: GraduationCap, flag: FeatureKey.LEARN },
+      { to: '/review', label: 'Ôn tập', icon: Layers, badge: dueCount.data, flag: FeatureKey.FLASHCARDS },
       { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy, flag: FeatureKey.LEADERBOARD },
       { to: '/community', label: 'Cộng đồng', icon: MessagesSquare, flag: FeatureKey.COMMUNITY },
       { to: '/groups', label: 'Nhóm lớp', icon: UsersRound, flag: FeatureKey.GROUPS },
@@ -112,6 +115,7 @@ export function Sidebar({
     { to: '/admin/features', label: 'Quản lý tính năng', icon: ToggleRight },
     // Diễn đàn mở cho cả hai vai trò — quản trị viên vào để trả lời và kiểm duyệt.
     { to: '/admin/groups', label: 'Quản lý nhóm', icon: UsersRound },
+    { to: '/admin/study-sets', label: 'Kiểm duyệt bộ thẻ', icon: Flag },
     { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
   ];
 

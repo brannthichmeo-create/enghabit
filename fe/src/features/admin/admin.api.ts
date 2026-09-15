@@ -2,6 +2,10 @@ import type {
   AdminGroupDetail,
   AdminGroupQueryInput,
   AdminGroupRow,
+  AdminStudySetDetail,
+  AdminStudySetReportQueryInput,
+  AdminStudySetReportRow,
+  VocabLevel,
   AccessLogQueryInput,
   AccessOverview,
   AdminUserDetail,
@@ -19,9 +23,27 @@ import type {
   UserStatus,
 } from '@enghabit/shared';
 import { apiClient } from '../../shared/lib/api-client';
-import type { Topic, Vocabulary } from '../vocabulary/vocabulary.api';
 
 /** Lời gọi API của khu quản trị. Mọi endpoint đều nằm sau role-guard ADMIN ở backend. */
+
+/** Bộ thẻ "Hệ thống" do quản trị viên soạn. Bộ người học tự tạo không hiện ở đây. */
+export interface Topic {
+  id: number;
+  name: string;
+  description: string | null;
+  level: VocabLevel;
+  vocabularyCount: number;
+}
+
+export interface Vocabulary {
+  id: number;
+  topicId: number;
+  word: string;
+  meaning: string;
+  phonetic: string | null;
+  example: string | null;
+  audioUrl: string | null;
+}
 
 export async function getSystemOverview(): Promise<SystemOverview> {
   const { data } = await apiClient.get<SystemOverview>('/admin/overview');
@@ -69,6 +91,16 @@ export async function listLoginEvents(
 }
 
 // --- Nội dung học tập ---
+
+export async function listTopics(): Promise<Topic[]> {
+  const { data } = await apiClient.get<Topic[]>('/topics');
+  return data;
+}
+
+export async function listVocabularyByTopic(topicId: number): Promise<Vocabulary[]> {
+  const { data } = await apiClient.get<Vocabulary[]>(`/topics/${topicId}/vocabulary`);
+  return data;
+}
 
 export async function createTopic(input: CreateTopicInput): Promise<Topic> {
   const { data } = await apiClient.post<Topic>('/admin/topics', input);
@@ -138,5 +170,35 @@ export async function blockGroup(groupId: number, reason: string): Promise<Admin
 
 export async function unblockGroup(groupId: number): Promise<AdminGroupDetail> {
   const { data } = await apiClient.post<AdminGroupDetail>(`/admin/groups/${groupId}/unblock`);
+  return data;
+}
+
+// --- Kiểm duyệt bộ thẻ ---
+
+export async function listStudySetReports(
+  query: Partial<AdminStudySetReportQueryInput> = {},
+): Promise<Paginated<AdminStudySetReportRow>> {
+  const { data } = await apiClient.get<Paginated<AdminStudySetReportRow>>('/admin/study-set-reports', {
+    params: query,
+  });
+  return data;
+}
+
+export async function dismissStudySetReport(reportId: number): Promise<void> {
+  await apiClient.post(`/admin/study-set-reports/${reportId}/dismiss`);
+}
+
+export async function getStudySet(setId: number): Promise<AdminStudySetDetail> {
+  const { data } = await apiClient.get<AdminStudySetDetail>(`/admin/study-sets/${setId}`);
+  return data;
+}
+
+export async function blockStudySet(setId: number, reason: string): Promise<AdminStudySetDetail> {
+  const { data } = await apiClient.post<AdminStudySetDetail>(`/admin/study-sets/${setId}/block`, { reason });
+  return data;
+}
+
+export async function unblockStudySet(setId: number): Promise<AdminStudySetDetail> {
+  const { data } = await apiClient.post<AdminStudySetDetail>(`/admin/study-sets/${setId}/unblock`);
   return data;
 }

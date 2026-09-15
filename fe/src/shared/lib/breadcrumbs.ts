@@ -24,8 +24,9 @@ export const ADMIN_ROOT: Crumb = { label: 'Tổng quan hệ thống', to: '/admi
 const TRAILS: Record<string, Crumb[]> = {
   '/': [],
   '/report': [{ label: 'Báo cáo' }],
-  '/vocabulary': [{ label: 'Từ vựng' }],
-  '/flashcards': [{ label: 'Ôn tập' }],
+  '/library': [{ label: 'Thư viện' }],
+  '/learn': [{ label: 'Học' }],
+  '/review': [{ label: 'Ôn tập' }],
   '/leaderboard': [{ label: 'Bảng xếp hạng' }],
   '/habits': [{ label: 'Thói quen' }],
   '/goals': [{ label: 'Mục tiêu' }],
@@ -40,6 +41,7 @@ const TRAILS: Record<string, Crumb[]> = {
   '/admin/content': [{ label: 'Nội dung học tập' }],
   '/admin/announcements': [{ label: 'Gửi thông báo' }],
   '/admin/groups': [{ label: 'Quản lý nhóm' }],
+  '/admin/study-sets': [{ label: 'Kiểm duyệt bộ thẻ' }],
   '/admin/requests': [{ label: 'Quản lý yêu cầu' }],
   '/admin/features': [{ label: 'Quản lý tính năng' }],
 };
@@ -55,12 +57,13 @@ export function crumbsForPath(pathname: string, isAdmin: boolean): Crumb[] {
   // Bỏ dấu "/" thừa ở cuối để "/habits/" và "/habits" cùng tra được một dòng
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
 
-  // `/groups/:id` là route có URL riêng nhưng mang id động nên không tra thẳng
-  // được từ bản đồ tĩnh — đây là route ID động DUY NHẤT của app, nên xử lý riêng
-  // một trường hợp thay vì dựng cả cơ chế khớp mẫu cho một route chưa ai dùng thêm.
-  // Trang tự nối thêm tên nhóm bằng `useBreadcrumbTail`.
-  if (path !== '/groups' && path.startsWith('/groups/')) {
-    return [root, ...(TRAILS['/groups'] ?? [])];
+  // `/groups/:id` và `/library/:id` có URL riêng nhưng mang id động nên không tra thẳng
+  // được từ bản đồ tĩnh. Mới có hai route kiểu này nên xử lý từng cái thay vì dựng cả
+  // cơ chế khớp mẫu. Trang tự nối thêm tên nhóm / tên bộ thẻ bằng `useBreadcrumbTail`.
+  for (const parent of ['/groups', '/library']) {
+    if (path !== parent && path.startsWith(`${parent}/`)) {
+      return [root, ...(TRAILS[parent] ?? [])];
+    }
   }
 
   const trail = TRAILS[path] ?? [];
