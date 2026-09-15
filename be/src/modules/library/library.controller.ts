@@ -3,6 +3,7 @@ import {
   studySetSearchSchema,
   type CreateStudySetInput,
   type ImportStudySetCardsInput,
+  type ImportStudySetInput,
   type ReportStudySetInput,
   type StudySetCardInput,
   type UpdateStudySetCardInput,
@@ -51,6 +52,10 @@ export async function addCard(req: Request, res: Response): Promise<void> {
   res
     .status(201)
     .json(await libraryService.addCard(currentUser(req).id, parseId(req.params.id), req.body as StudySetCardInput));
+}
+
+export async function importSet(req: Request, res: Response): Promise<void> {
+  res.status(201).json(await libraryService.importNewSet(currentUser(req).id, req.body as ImportStudySetInput));
 }
 
 export async function importCards(req: Request, res: Response): Promise<void> {

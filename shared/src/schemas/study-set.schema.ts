@@ -55,6 +55,20 @@ export interface ImportStudySetCardsResult {
   skipped: number;
 }
 
+/**
+ * Tạo bộ thẻ mới cùng toàn bộ thẻ từ file trong MỘT transaction — gọi hai API nối nhau
+ * thì bước nhập thẻ lỗi sẽ để lại một bộ rỗng trong tab Của tôi.
+ */
+export const importStudySetSchema = z.object({
+  set: createStudySetSchema,
+  cards: importStudySetCardsSchema.shape.cards,
+});
+export type ImportStudySetInput = z.infer<typeof importStudySetSchema>;
+
+export interface ImportStudySetResult extends ImportStudySetCardsResult {
+  set: StudySetSummary;
+}
+
 export const studySetSearchSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(12),

@@ -9,6 +9,8 @@ import type {
   CreateStudySetInput,
   ImportStudySetCardsInput,
   ImportStudySetCardsResult,
+  ImportStudySetInput,
+  ImportStudySetResult,
   Paginated,
   ReportStudySetInput,
   StudySetCard,
@@ -91,6 +93,10 @@ export function useDeleteStudySet(): UseMutationResult<void, Error, number> {
 
 export function useAddCard(): UseMutationResult<StudySetCard, Error, { setId: number; input: StudySetCardInput }> {
   return useLibraryMutation(({ setId, input }) => libraryApi.addCard(setId, input));
+}
+
+export function useImportStudySet(): UseMutationResult<ImportStudySetResult, Error, ImportStudySetInput> {
+  return useLibraryMutation(libraryApi.importSet);
 }
 
 export function useImportCards(): UseMutationResult<

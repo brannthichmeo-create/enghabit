@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Compass, FolderOpen, Library, Plus, Search } from 'lucide-react';
+import { Compass, FileSpreadsheet, FolderOpen, Library, Plus, Search } from 'lucide-react';
 import { STUDY_SET_SEARCH_MAX_LENGTH } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, EmptyState, ErrorMessage, Input, PageHeader, SkeletonList } from '../../../shared/components/ui';
@@ -8,6 +8,7 @@ import { useT } from '../../../shared/i18n/language';
 import { useMyStudySets, useStudySetSearch } from '../library.hooks';
 import { StudySetCard } from './StudySetCard';
 import { StudySetFormModal } from './StudySetForms';
+import { ImportCardsModal } from './ImportCardsModal';
 
 type Tab = 'discover' | 'mine';
 
@@ -27,6 +28,7 @@ export function LibraryPage(): JSX.Element {
   const [params, setParams] = useSearchParams();
   const tab: Tab = params.get('tab') === 'mine' ? 'mine' : 'discover';
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   return (
     <div>
@@ -34,9 +36,14 @@ export function LibraryPage(): JSX.Element {
         title={t('Thư viện')}
         description={t('Khám phá bộ thẻ công khai hoặc tự tạo bộ thẻ của riêng bạn')}
         action={
-          <Button icon={Plus} onClick={() => setCreating(true)}>
-            {t('Tạo bộ thẻ')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" icon={FileSpreadsheet} onClick={() => setImporting(true)}>
+              {t('Nhập từ file')}
+            </Button>
+            <Button icon={Plus} onClick={() => setCreating(true)}>
+              {t('Tạo bộ thẻ')}
+            </Button>
+          </div>
         }
       />
 
@@ -57,11 +64,16 @@ export function LibraryPage(): JSX.Element {
         ))}
       </div>
 
-      {tab === 'discover' ? <DiscoverTab /> : <MineTab onCreate={() => setCreating(true)} />}
+      {tab === 'discover' ? (
+        <DiscoverTab />
+      ) : (
+        <MineTab onCreate={() => setCreating(true)} onImport={() => setImporting(true)} />
+      )}
 
       {creating && (
         <StudySetFormModal open onClose={() => setCreating(false)} onSaved={(set) => navigate(`/library/${set.id}`)} />
       )}
+      {importing && <ImportCardsModal open onClose={() => setImporting(false)} />}
     </div>
   );
 }
@@ -135,7 +147,7 @@ function DiscoverTab(): JSX.Element {
   );
 }
 
-function MineTab({ onCreate }: { onCreate: () => void }): JSX.Element {
+function MineTab({ onCreate, onImport }: { onCreate: () => void; onImport: () => void }): JSX.Element {
   const t = useT();
   const mine = useMyStudySets();
 
@@ -149,9 +161,14 @@ function MineTab({ onCreate }: { onCreate: () => void }): JSX.Element {
         title={t('Bạn chưa tạo bộ thẻ nào')}
         description={t('Tạo bộ thẻ riêng để học đúng những từ bạn cần.')}
         action={
-          <Button icon={Plus} onClick={onCreate}>
-            {t('Tạo bộ thẻ')}
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="secondary" icon={FileSpreadsheet} onClick={onImport}>
+              {t('Nhập từ file')}
+            </Button>
+            <Button icon={Plus} onClick={onCreate}>
+              {t('Tạo bộ thẻ')}
+            </Button>
+          </div>
         }
       />
     );

@@ -8,6 +8,8 @@ import {
   type CreateStudySetInput,
   type ImportStudySetCardsInput,
   type ImportStudySetCardsResult,
+  type ImportStudySetInput,
+  type ImportStudySetResult,
   type Paginated,
   type ReportStudySetInput,
   type StudySetCard,
@@ -180,18 +182,19 @@ export async function getSetDetail(userId: number, timezone: string, setId: numb
 // Soạn bộ thẻ — chỉ chủ bộ thẻ
 // ---------------------------------------------------------------------------
 
+function newSetData(userId: number, input: CreateStudySetInput): Prisma.TopicUncheckedCreateInput {
+  return {
+    name: input.name,
+    description: optionalText(input.description) ?? null,
+    level: input.level,
+    visibility: input.visibility,
+    ownerId: userId,
+    createdById: userId,
+  };
+}
+
 export async function createSet(userId: number, input: CreateStudySetInput): Promise<StudySetSummary> {
-  const set = await prisma.topic.create({
-    data: {
-      name: input.name,
-      description: optionalText(input.description) ?? null,
-      level: input.level,
-      visibility: input.visibility,
-      ownerId: userId,
-      createdById: userId,
-    },
-    include: SUMMARY_INCLUDE,
-  });
+  const set = await prisma.topic.create({ data: newSetData(userId, input), include: SUMMARY_INCLUDE });
   return toSummary(set, userId);
 }
 
@@ -239,13 +242,41 @@ export async function addCard(userId: number, setId: number, input: StudySetCard
   return toCard(card);
 }
 
+// ---------------------------------------------------------------------------
+// Nhập thẻ từ file — FE đã đọc file và tách thẻ, ở đây chỉ chống trùng rồi ghi
+// ---------------------------------------------------------------------------
+
 /**
- * Nhập nhiều thẻ từ file. FE đã đọc file và tách thẻ; ở đây chỉ chống trùng rồi ghi.
+ * Bỏ thẻ trùng thẻ đã có và trùng nhau trong cùng lần nhập.
  *
  * Chống trùng lại ở BE chứ không tin màn xem trước: giữa lúc xem trước và lúc bấm nhập,
  * chủ bộ có thể đã thêm tay đúng thẻ đó ở tab khác. Dùng chung `cardImportKey` với FE nên
  * con số "bỏ qua" hai bên khớp nhau.
  */
+function dropDuplicateCards(
+  cards: StudySetCardInput[],
+  existing: { word: string; meaning: string }[],
+): StudySetCardInput[] {
+  const seen = new Set(existing.map((card) => cardImportKey(card.word, card.meaning)));
+  return cards.filter((card) => {
+    const key = cardImportKey(card.word, card.meaning);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function cardRows(setId: number, cards: StudySetCardInput[]): Prisma.VocabularyCreateManyInput[] {
+  return cards.map((card) => ({
+    topicId: setId,
+    word: card.word,
+    meaning: card.meaning,
+    phonetic: optionalText(card.phonetic) ?? null,
+    example: optionalText(card.example) ?? null,
+  }));
+}
+
+/** Nhập thêm thẻ vào một bộ đã có. */
 export async function importCards(
   userId: number,
   setId: number,
@@ -254,27 +285,23 @@ export async function importCards(
   await findOwnedSet(userId, setId);
 
   const existing = await prisma.vocabulary.findMany({ where: { topicId: setId }, select: { word: true, meaning: true } });
-  const seen = new Set(existing.map((card) => cardImportKey(card.word, card.meaning)));
-  const fresh = input.cards.filter((card) => {
-    const key = cardImportKey(card.word, card.meaning);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  if (fresh.length > 0) {
-    await prisma.vocabulary.createMany({
-      data: fresh.map((card) => ({
-        topicId: setId,
-        word: card.word,
-        meaning: card.meaning,
-        phonetic: optionalText(card.phonetic) ?? null,
-        example: optionalText(card.example) ?? null,
-      })),
-    });
-  }
+  const fresh = dropDuplicateCards(input.cards, existing);
+  if (fresh.length > 0) await prisma.vocabulary.createMany({ data: cardRows(setId, fresh) });
 
   return { created: fresh.length, skipped: input.cards.length - fresh.length };
+}
+
+/** Tạo bộ mới từ file. Bộ và thẻ ghi trong một transaction: lỗi giữa chừng thì không để lại bộ rỗng. */
+export async function importNewSet(userId: number, input: ImportStudySetInput): Promise<ImportStudySetResult> {
+  const fresh = dropDuplicateCards(input.cards, []);
+
+  const set = await prisma.$transaction(async (tx) => {
+    const created = await tx.topic.create({ data: newSetData(userId, input.set), select: { id: true } });
+    await tx.vocabulary.createMany({ data: cardRows(created.id, fresh) });
+    return tx.topic.findUniqueOrThrow({ where: { id: created.id }, include: SUMMARY_INCLUDE });
+  });
+
+  return { set: toSummary(set, userId), created: fresh.length, skipped: input.cards.length - fresh.length };
 }
 
 async function findOwnedCard(userId: number, cardId: number): Promise<Vocabulary> {

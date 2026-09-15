@@ -3,6 +3,7 @@ import {
   UserRole,
   createStudySetSchema,
   importStudySetCardsSchema,
+  importStudySetSchema,
   reportStudySetSchema,
   studySetCardSchema,
   studySetSearchSchema,
@@ -25,11 +26,12 @@ libraryRoutes.get('/sets', validateQuery(studySetSearchSchema), asyncHandler(con
 libraryRoutes.get('/sets/mine', asyncHandler(controller.mine));
 libraryRoutes.get('/sets/:id', asyncHandler(controller.detail));
 libraryRoutes.post('/sets', validateBody(createStudySetSchema), asyncHandler(controller.create));
+// Trần thân request riêng cho hai route nhập file đặt ở app.ts.
+libraryRoutes.post('/sets/import', validateBody(importStudySetSchema), asyncHandler(controller.importSet));
 libraryRoutes.patch('/sets/:id', validateBody(updateStudySetSchema), asyncHandler(controller.update));
 libraryRoutes.delete('/sets/:id', asyncHandler(controller.remove));
 
 libraryRoutes.post('/sets/:id/cards', validateBody(studySetCardSchema), asyncHandler(controller.addCard));
-// Trần thân request riêng cho route này đặt ở app.ts.
 libraryRoutes.post(
   '/sets/:id/cards/import',
   validateBody(importStudySetCardsSchema),

@@ -50,7 +50,7 @@ export function createApp(): Express {
   app.use('/api/v1/community', express.json({ limit: '5mb' }));
   // Nhập thẻ từ file: tối đa 500 thẻ × (100 + 500 + 100 + 500) ký tự, chữ Việt tới 3 byte
   // mỗi ký tự trong UTF-8 ≈ 1,8MB cho trường hợp xấu nhất.
-  app.use('/api/v1/library/sets/:id/cards/import', express.json({ limit: '3mb' }));
+  app.use(['/api/v1/library/sets/import', '/api/v1/library/sets/:id/cards/import'], express.json({ limit: '3mb' }));
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
 

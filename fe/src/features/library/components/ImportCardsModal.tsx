@@ -1,34 +1,43 @@
-import { useRef, useState } from 'react';
-import { Download, FileUp, Upload } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Download, FileUp, FolderOpen, Plus, Upload, type LucideIcon } from 'lucide-react';
 import {
   CARD_IMPORT_MAX_FILE_BYTES,
   CARD_IMPORT_MAX_ROWS,
   CardImportRowStatus,
+  StudySetVisibility,
+  VocabLevel,
   buildCardImport,
+  createStudySetSchema,
   parseCsv,
   type CardImportPreview,
   type CardImportRow,
   type ImportCell,
-  type StudySetCard,
 } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
-import { Badge, Button, ErrorMessage } from '../../../shared/components/ui';
+import { Badge, Button, ErrorMessage, Field, Input, Select } from '../../../shared/components/ui';
 import { Modal } from '../../../shared/components/Modal';
 import { useToast } from '../../../shared/components/Toast';
+import { VOCAB_LEVEL_LABELS } from '../../../shared/lib/labels';
 import { useT } from '../../../shared/i18n/language';
-import { useImportCards } from '../library.hooks';
+import { useImportCards, useImportStudySet, useMyStudySets, useStudySet } from '../library.hooks';
 
 /**
- * Nhập thẻ từ file .csv hoặc .xlsx.
+ * Nhập thẻ từ file .csv hoặc .xlsx — mở từ màn Thư viện.
  *
  * File đọc ngay trên trình duyệt, xem trước từng dòng rồi mới gửi danh sách thẻ lên BE.
  * Không tải file lên server: không có gì phải lưu, và người dùng thấy dòng lỗi trước khi
  * bấm nhập thay vì nhận về một câu "nhập thất bại" chung chung.
+ *
+ * Nhập vào bộ MỚI (tạo bộ và thẻ trong một transaction) hoặc bộ CÓ SẴN của chính mình.
  */
 
 /** Hiện tối đa ngần này dòng ở bảng xem trước — file 500 dòng vẽ hết thì hộp thoại rất nặng. */
 const PREVIEW_ROW_LIMIT = 100;
 const MAX_FILE_MB = CARD_IMPORT_MAX_FILE_BYTES / (1024 * 1024);
+const SET_NAME_MAX_LENGTH = 120;
+
+type Target = 'new' | 'existing';
 
 /** Câu lỗi là khoá dịch tiếng Việt, dịch ở chỗ hiển thị. */
 class ImportFileError extends Error {}
@@ -38,6 +47,15 @@ function fileKindOf(name: string): 'csv' | 'xlsx' | null {
   if (lower.endsWith('.csv')) return 'csv';
   if (lower.endsWith('.xlsx')) return 'xlsx';
   return null;
+}
+
+/** Tên bộ gợi ý từ tên file: "tu_vung_unit_3.xlsx" → "tu vung unit 3". */
+function nameFromFile(fileName: string): string {
+  return fileName
+    .replace(/\.(csv|xlsx)$/i, '')
+    .replace(/_+/g, ' ')
+    .trim()
+    .slice(0, SET_NAME_MAX_LENGTH);
 }
 
 async function readRows(file: File): Promise<ImportCell[][]> {
@@ -71,7 +89,7 @@ async function readRows(file: File): Promise<ImportCell[][]> {
 function downloadTemplate(): void {
   const csv = [
     'word,meaning,phonetic,example',
-    'appointment,cuộc hẹn,/əˈpɔɪntmənt/,I have a doctor\'s appointment at 3pm.',
+    "appointment,cuộc hẹn,/əˈpɔɪntmənt/,I have a doctor's appointment at 3pm.",
     'grocery,"hàng tạp hoá, thực phẩm",/ˈɡroʊsəri/,',
   ].join('\r\n');
   // BOM để Excel mở file mẫu nhận đúng UTF-8, không vỡ chữ Việt.
@@ -83,37 +101,54 @@ function downloadTemplate(): void {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export function ImportCardsModal({
-  setId,
-  existingCards,
-  open,
-  onClose,
-}: {
-  setId: number;
-  existingCards: StudySetCard[];
-  open: boolean;
-  onClose: () => void;
-}): JSX.Element {
+export function ImportCardsModal({ open, onClose }: { open: boolean; onClose: () => void }): JSX.Element {
   const t = useT();
   const toast = useToast();
+  const navigate = useNavigate();
+  const importSet = useImportStudySet();
   const importCards = useImportCards();
+  const mine = useMyStudySets(open);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [fileName, setFileName] = useState('');
-  const [preview, setPreview] = useState<CardImportPreview | null>(null);
+  const [sheet, setSheet] = useState<ImportCell[][] | null>(null);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState('');
+
+  const [target, setTarget] = useState<Target>('new');
+  const [name, setName] = useState('');
+  const [level, setLevel] = useState<VocabLevel>(VocabLevel.BEGINNER);
+  const [visibility, setVisibility] = useState<StudySetVisibility>(StudySetVisibility.PRIVATE);
+  const [existingId, setExistingId] = useState<number | null>(null);
+
+  // Nhập vào bộ có sẵn thì cần thẻ của bộ đó để báo "Trùng" ngay ở màn xem trước.
+  const existingSet = useStudySet(target === 'existing' ? existingId : null);
+
+  const preview = useMemo<CardImportPreview | null>(() => {
+    if (!sheet) return null;
+    return buildCardImport(sheet, target === 'existing' ? (existingSet.data?.cards ?? []) : []);
+  }, [sheet, target, existingSet.data]);
+
+  const hasOwnSets = (mine.data?.length ?? 0) > 0;
+  const validCount = preview?.cards.length ?? 0;
+  const waitingForSet = target === 'existing' && (existingId === null || !existingSet.data);
+  const pending = importSet.isPending || importCards.isPending;
 
   const pick = async (file: File | undefined): Promise<void> => {
     if (!file) return;
     setError('');
-    setPreview(null);
+    setSheet(null);
     setFileName(file.name);
     setReading(true);
     try {
-      const result = buildCardImport(await readRows(file), existingCards);
-      if (result.rows.length === 0) setError(t('File không có dòng dữ liệu nào'));
-      else setPreview(result);
+      const rows = await readRows(file);
+      if (buildCardImport(rows).rows.length === 0) {
+        setError(t('File không có dòng dữ liệu nào'));
+      } else {
+        setSheet(rows);
+        // Chỉ gợi ý khi ô tên còn trống — không đè lên tên người dùng đã tự gõ.
+        setName((current) => current || nameFromFile(file.name));
+      }
     } catch (err) {
       setError(err instanceof ImportFileError ? t(err.message, { mb: MAX_FILE_MB }) : getErrorMessage(err));
     } finally {
@@ -123,25 +158,48 @@ export function ImportCardsModal({
     }
   };
 
+  const finish = (setId: number, created: number, skipped: number): void => {
+    toast.success(
+      skipped > 0
+        ? t('Đã nhập {created} thẻ, bỏ qua {skipped} thẻ trùng', { created, skipped })
+        : t('Đã nhập {n} thẻ', { n: created }),
+    );
+    onClose();
+    navigate(`/library/${setId}`);
+  };
+
   const submit = (): void => {
-    if (!preview || preview.cards.length === 0 || preview.tooMany) return;
-    importCards.mutate(
-      { setId, input: { cards: preview.cards } },
-      {
-        onSuccess: ({ created, skipped }) => {
-          toast.success(
-            skipped > 0
-              ? t('Đã nhập {created} thẻ, bỏ qua {skipped} thẻ trùng', { created, skipped })
-              : t('Đã nhập {n} thẻ', { n: created }),
-          );
-          onClose();
+    if (!preview || validCount === 0 || preview.tooMany) return;
+    setError('');
+
+    if (target === 'new') {
+      const parsed = createStudySetSchema.safeParse({ name, level, visibility });
+      if (!parsed.success) {
+        setError(t(parsed.error.issues[0]?.message ?? 'Dữ liệu không hợp lệ'));
+        return;
+      }
+      importSet.mutate(
+        { set: parsed.data, cards: preview.cards },
+        {
+          onSuccess: (result) => finish(result.set.id, result.created, result.skipped),
+          onError: (err) => setError(getErrorMessage(err)),
         },
+      );
+      return;
+    }
+
+    if (existingId === null) {
+      setError(t('Hãy chọn bộ thẻ để nhập vào'));
+      return;
+    }
+    importCards.mutate(
+      { setId: existingId, input: { cards: preview.cards } },
+      {
+        onSuccess: (result) => finish(existingId, result.created, result.skipped),
         onError: (err) => setError(getErrorMessage(err)),
       },
     );
   };
-
-  const validCount = preview?.cards.length ?? 0;
 
   return (
     <Modal
@@ -157,11 +215,11 @@ export function ImportCardsModal({
           </Button>
           <Button
             icon={FileUp}
-            loading={importCards.isPending}
-            disabled={!preview || validCount === 0 || preview.tooMany}
+            loading={pending}
+            disabled={!preview || validCount === 0 || preview.tooMany || waitingForSet}
             onClick={submit}
           >
-            {t('Nhập {n} thẻ', { n: validCount })}
+            {target === 'new' ? t('Tạo bộ và nhập {n} thẻ', { n: validCount }) : t('Nhập {n} thẻ', { n: validCount })}
           </Button>
         </>
       }
@@ -199,10 +257,107 @@ export function ImportCardsModal({
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
         {preview && (
-          <PreviewTable preview={preview} />
+          <>
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-content-soft">{t('Nhập vào')}</legend>
+              <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
+                <TargetOption
+                  selected={target === 'new'}
+                  icon={Plus}
+                  label={t('Bộ thẻ mới')}
+                  hint={t('Tạo bộ mới từ file này')}
+                  onClick={() => setTarget('new')}
+                />
+                <TargetOption
+                  selected={target === 'existing'}
+                  icon={FolderOpen}
+                  label={t('Bộ thẻ có sẵn')}
+                  hint={hasOwnSets ? t('Thêm vào một bộ bạn đã tạo') : t('Bạn chưa tạo bộ thẻ nào')}
+                  disabled={!hasOwnSets}
+                  onClick={() => setTarget('existing')}
+                />
+              </div>
+
+              {target === 'new' ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Field label={t('Tên bộ thẻ')}>
+                      <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={SET_NAME_MAX_LENGTH} />
+                    </Field>
+                  </div>
+                  <Field label={t('Trình độ')}>
+                    <Select value={level} onChange={(e) => setLevel(e.target.value as VocabLevel)}>
+                      {Object.values(VocabLevel).map((value) => (
+                        <option key={value} value={value}>
+                          {t(VOCAB_LEVEL_LABELS[value])}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label={t('Ai được xem')}>
+                    <Select value={visibility} onChange={(e) => setVisibility(e.target.value as StudySetVisibility)}>
+                      <option value={StudySetVisibility.PRIVATE}>{t('Riêng tư')}</option>
+                      <option value={StudySetVisibility.PUBLIC}>{t('Công khai')}</option>
+                    </Select>
+                  </Field>
+                </div>
+              ) : (
+                <Field label={t('Bộ thẻ')}>
+                  <Select
+                    value={existingId ?? ''}
+                    onChange={(e) => setExistingId(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">{t('Chọn bộ thẻ')}</option>
+                    {mine.data?.map((set) => (
+                      <option key={set.id} value={set.id}>
+                        {set.name} · {t('{n} thẻ', { n: set.cardCount })}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+            </fieldset>
+
+            <PreviewTable preview={preview} />
+          </>
         )}
       </div>
     </Modal>
+  );
+}
+
+function TargetOption({
+  selected,
+  icon: Icon,
+  label,
+  hint,
+  disabled = false,
+  onClick,
+}: {
+  selected: boolean;
+  icon: LucideIcon;
+  label: string;
+  hint: string;
+  disabled?: boolean;
+  onClick: () => void;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex items-start gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+        selected ? 'border-brand bg-brand-soft' : 'border-line hover:border-line-strong'
+      }`}
+    >
+      <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${selected ? 'text-brand-strong' : 'text-content-muted'}`} aria-hidden />
+      <span>
+        <span className={`block text-sm font-medium ${selected ? 'text-brand-strong' : 'text-content'}`}>{label}</span>
+        <span className="block text-xs text-content-muted">{hint}</span>
+      </span>
+    </button>
   );
 }
 

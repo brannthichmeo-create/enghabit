@@ -1271,8 +1271,15 @@ export const EN: Dictionary = {
   // --- Nhập thẻ từ file ------------------------------------------------------------
   'Nhập từ file': 'Import from file',
   'Nhập thẻ từ file': 'Import cards from file',
-  'Thêm thẻ ở ô bên trên hoặc nhập nhiều thẻ từ file .csv, .xlsx.':
-    'Add a card above, or import many cards from a .csv or .xlsx file.',
+  'Nhập vào': 'Import into',
+  'Bộ thẻ mới': 'New card set',
+  'Tạo bộ mới từ file này': 'Create a new set from this file',
+  'Bộ thẻ có sẵn': 'Existing card set',
+  'Thêm vào một bộ bạn đã tạo': 'Add to a set you created',
+  'Chọn bộ thẻ': 'Choose a card set',
+  'Hãy chọn bộ thẻ để nhập vào': 'Choose a card set to import into',
+  'Tạo bộ và nhập {n} thẻ': { one: 'Create set and import {n} card', other: 'Create set and import {n} cards' },
+  'Tên bộ thẻ không được để trống': 'Card set name is required',
   'Mỗi dòng là một thẻ. Bắt buộc có cột Từ và Nghĩa; Phiên âm và Câu ví dụ không bắt buộc. Dòng đầu là tên cột thì hệ thống tự nhận ra.':
     'Each row is one card. Word and Meaning columns are required; Phonetic and Example are optional. A header row is detected automatically.',
   'Nhận file .csv (UTF-8) hoặc .xlsx, tối đa {mb} MB và {max} thẻ mỗi lần.':
