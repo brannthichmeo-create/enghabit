@@ -3,10 +3,16 @@ import type { Topic, Vocabulary } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { NotFoundError } from '../../common/errors/app-error.js';
 
-/** Chủ đề học — user chỉ đọc, admin quản lý (CRUD qua module admin). */
+/**
+ * Bộ thẻ "Hệ thống" — do quản trị viên soạn ở /admin/content.
+ *
+ * Module này CHỈ đụng tới bộ có `ownerId` null. Bộ người học tự tạo nằm ở module
+ * `library`; quản trị viên không sửa được chúng, chỉ chặn được qua kiểm duyệt.
+ */
 
 export async function listTopics(): Promise<(Topic & { vocabularyCount: number })[]> {
   const topics = await prisma.topic.findMany({
+    where: { ownerId: null },
     orderBy: { name: 'asc' },
     include: { _count: { select: { vocabularies: true } } },
   });
@@ -14,32 +20,20 @@ export async function listTopics(): Promise<(Topic & { vocabularyCount: number }
   return topics.map(({ _count, ...topic }) => ({ ...topic, vocabularyCount: _count.vocabularies }));
 }
 
+/** Tìm bộ "Hệ thống". Bộ của người học trả 404 như thể không tồn tại với khu quản trị. */
 export async function getTopic(topicId: number): Promise<Topic> {
-  const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+  const topic = await prisma.topic.findFirst({ where: { id: topicId, ownerId: null } });
   if (!topic) throw new NotFoundError('Không tìm thấy chủ đề');
   return topic;
 }
 
-/**
- * Từ vựng của một chủ đề, kèm cờ cho biết user đã đưa từ đó vào danh sách học chưa
- * để UI hiển thị đúng nút "Học từ này" / "Đã học".
- */
-export async function listVocabularyByTopic(
-  topicId: number,
-  userId: number,
-): Promise<(Vocabulary & { isLearning: boolean })[]> {
+export async function listVocabularyByTopic(topicId: number): Promise<Vocabulary[]> {
   await getTopic(topicId);
-
-  const vocabularies = await prisma.vocabulary.findMany({
-    where: { topicId },
-    orderBy: { word: 'asc' },
-    include: { progress: { where: { userId }, select: { id: true } } },
-  });
-
-  return vocabularies.map(({ progress, ...vocab }) => ({ ...vocab, isLearning: progress.length > 0 }));
+  return prisma.vocabulary.findMany({ where: { topicId }, orderBy: { word: 'asc' } });
 }
 
 export async function createTopic(input: CreateTopicInput, createdById: number): Promise<Topic> {
+  // ownerId để null: bộ quản trị viên tạo là bộ "Hệ thống", không thuộc tài khoản nào.
   return prisma.topic.create({ data: { ...input, createdById } });
 }
 

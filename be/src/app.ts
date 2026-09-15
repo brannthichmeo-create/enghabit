@@ -14,7 +14,8 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { goalRoutes } from './modules/goals/goal.routes.js';
 import { habitRoutes } from './modules/habits/habit.routes.js';
 import { topicRoutes } from './modules/topics/topic.routes.js';
-import { flashcardRoutes } from './modules/flashcards/flashcard.routes.js';
+import { libraryRoutes } from './modules/library/library.routes.js';
+import { studyRoutes } from './modules/study/study.routes.js';
 import { statisticsRoutes } from './modules/statistics/statistics.routes.js';
 import { notificationRoutes } from './modules/notifications/notification.routes.js';
 import { rewardsRoutes } from './modules/rewards/rewards.routes.js';
@@ -84,9 +85,12 @@ export function createApp(): Express {
   */
   api.use('/goals', requireAuth, requireFeature(FeatureKey.GOALS), goalRoutes);
   api.use('/habits', requireAuth, requireFeature(FeatureKey.HABITS), habitRoutes);
-  // Quản trị viên vẫn đọc /topics để quản lý nội dung ở /admin/content.
-  api.use('/topics', requireAuth, requireFeature(FeatureKey.VOCABULARY, { adminBypass: true }), topicRoutes);
-  api.use('/flashcards', requireAuth, requireFeature(FeatureKey.FLASHCARDS), flashcardRoutes);
+  // /topics giờ chỉ phục vụ màn Nội dung học tập của quản trị viên, nên không chịu cờ
+  // tính năng nào: tắt Thư viện không được làm quản trị viên mất khả năng soạn nội dung.
+  api.use('/topics', topicRoutes);
+  api.use('/library', requireAuth, requireFeature(FeatureKey.VOCABULARY), libraryRoutes);
+  // Học và Ôn tập dùng chung /study; cờ riêng của từng bên kiểm tra trong service.
+  api.use('/study', requireAuth, requireFeature(FeatureKey.VOCABULARY), studyRoutes);
   api.use('/statistics', statisticsRoutes);
   api.use('/notifications', notificationRoutes);
   api.use('/rewards', requireAuth, requireFeature(FeatureKey.REWARDS), rewardsRoutes);

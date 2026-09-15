@@ -4,7 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { jobLogger } from '../lib/logger.js';
 import { toDbDate } from '../common/utils/db-date.js';
 import * as notificationService from '../modules/notifications/notification.service.js';
-import * as flashcardService from '../modules/flashcards/flashcard.service.js';
+import * as studyService from '../modules/study/study.service.js';
 import * as featureService from '../modules/feature-flags/feature.service.js';
 import { sendPush } from './onesignal.client.js';
 
@@ -170,8 +170,8 @@ async function sendDailyReminder(
   localDate: string,
   reminderId: number,
 ): Promise<boolean> {
-  // Module `lessons` đã bị gỡ để dựng lại, nên tạm thời không còn nguồn "từ sai chờ
-  // luyện lại". Khi dựng xong màn học mới, thêm lại một nhánh nữa ở đây trỏ tới nó.
+  // Số thẻ cần ôn = tới hạn + quá hạn, lọc qua quyền truy cập bộ thẻ: thẻ của bộ đã
+  // chuyển riêng tư hay bị chặn không được nhắc, vì bấm vào cũng không học được.
   //
   // Kiểm tra cờ tính năng ở JOB chứ không ở chỗ tạo cấu hình nhắc nhở — cùng lý do với
   // việc lọc vai trò USER: cấu hình có từ trước khi quản trị viên tắt tính năng. Nhắc
@@ -180,17 +180,17 @@ async function sendDailyReminder(
   const reviewEnabled = await featureService.isEnabled(FeatureKey.FLASHCARDS);
   const dueCards =
     user.remindReviewDue && reviewEnabled
-      ? await flashcardService.countDueCards(user.id, user.timezone)
+      ? await studyService.countDueCards(user.id, user.timezone)
       : 0;
 
   const streak = user.streak?.currentStreak ?? 0;
   let body: string;
   // Ôn tập đã tắt thì lời nhắc phải trỏ về Tổng quan, không trỏ vào một trang 404.
-  let link = reviewEnabled ? '/flashcards' : '/';
+  let link = reviewEnabled ? '/review' : '/';
 
   if (dueCards > 0) {
-    body = `Bạn có ${dueCards} thẻ tới hạn ôn hôm nay. Ôn xong là giữ được chuỗi.`;
-    link = '/flashcards';
+    body = `Bạn có ${dueCards} thẻ cần ôn hôm nay. Ôn xong là giữ được chuỗi.`;
+    link = '/review';
   } else if (streak > 0) {
     body = `Bạn đang có chuỗi ${streak} ngày. Học vài phút hôm nay để giữ chuỗi.`;
   } else {

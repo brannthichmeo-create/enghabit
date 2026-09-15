@@ -1,6 +1,8 @@
 import {
   AlertTriangle,
   Bell,
+  CircleCheck,
+  Flag,
   Flame,
   KeyRound,
   Layers,
@@ -72,6 +74,27 @@ const DISPLAY: Record<NotificationType, Display> = {
     icon: KeyRound,
     label: 'Yêu cầu cấp lại mật khẩu',
     tone: 'text-accent-ink',
+  },
+  // Chỉ quản trị viên nhận.
+  [NotificationType.STUDY_SET_REPORTED]: {
+    icon: Flag,
+    label: 'Báo cáo bộ thẻ',
+    tone: 'text-accent-ink',
+  },
+  [NotificationType.STUDY_SET_BLOCKED]: {
+    icon: Ban,
+    label: 'Bộ thẻ bị chặn',
+    tone: 'text-danger',
+  },
+  [NotificationType.STUDY_SET_UNBLOCKED]: {
+    icon: ShieldCheck,
+    label: 'Bộ thẻ được mở chặn',
+    tone: 'text-success',
+  },
+  [NotificationType.STUDY_SET_REPORT_RESOLVED]: {
+    icon: CircleCheck,
+    label: 'Báo cáo đã được xử lý',
+    tone: 'text-brand-strong',
   },
 };
 

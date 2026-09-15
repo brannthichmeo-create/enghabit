@@ -91,8 +91,37 @@ export const NotificationType = {
   GROUP_JOIN_APPROVED: 'GROUP_JOIN_APPROVED',
   GROUP_JOIN_REJECTED: 'GROUP_JOIN_REJECTED',
   PASSWORD_RESET_REQUEST: 'PASSWORD_RESET_REQUEST',
+  /** Có báo cáo vi phạm mới về một bộ thẻ — gửi cho MỌI quản trị viên */
+  STUDY_SET_REPORTED: 'STUDY_SET_REPORTED',
+  /** Bộ thẻ bị chặn — gửi cho chủ bộ thẻ */
+  STUDY_SET_BLOCKED: 'STUDY_SET_BLOCKED',
+  /** Bộ thẻ được mở chặn — gửi cho chủ bộ thẻ */
+  STUDY_SET_UNBLOCKED: 'STUDY_SET_UNBLOCKED',
+  /** Báo cáo của mình đã được xử lý (chặn hoặc bỏ qua) — gửi cho người báo cáo */
+  STUDY_SET_REPORT_RESOLVED: 'STUDY_SET_REPORT_RESOLVED',
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
+
+/**
+ * Ai thấy một bộ thẻ. PUBLIC hiện trong Khám phá và mở được bằng liên kết; PRIVATE chỉ
+ * chủ bộ thẻ thấy — người khác mở liên kết nhận 404.
+ */
+export const StudySetVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE',
+} as const;
+export type StudySetVisibility = (typeof StudySetVisibility)[keyof typeof StudySetVisibility];
+
+/**
+ * Trạng thái một báo cáo vi phạm bộ thẻ.
+ * RESOLVED = quản trị viên đã chặn bộ thẻ; DISMISSED = xem xong, không vi phạm.
+ */
+export const StudySetReportStatus = {
+  PENDING: 'PENDING',
+  RESOLVED: 'RESOLVED',
+  DISMISSED: 'DISMISSED',
+} as const;
+export type StudySetReportStatus = (typeof StudySetReportStatus)[keyof typeof StudySetReportStatus];
 
 /**
  * Trạng thái một yêu cầu cấp lại mật khẩu.

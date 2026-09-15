@@ -566,14 +566,34 @@ async function pingDatabase(): Promise<boolean> {
 // Nội dung học tập
 // ---------------------------------------------------------------------------
 
+/**
+ * Quản trị viên chỉ soạn bộ "Hệ thống" (`ownerId` null). Bộ người học tự tạo thì chỉ chủ
+ * của nó sửa được — quản trị viên xử lý vi phạm bằng cách chặn, không sửa hộ.
+ */
+async function assertSystemTopic(topicId: number): Promise<void> {
+  const topic = await prisma.topic.findFirst({ where: { id: topicId, ownerId: null }, select: { id: true } });
+  if (!topic) throw new NotFoundError('Không tìm thấy chủ đề');
+}
+
+async function assertSystemVocabulary(vocabularyId: number): Promise<void> {
+  const vocabulary = await prisma.vocabulary.findFirst({
+    where: { id: vocabularyId, topic: { ownerId: null } },
+    select: { id: true },
+  });
+  if (!vocabulary) throw new NotFoundError('Không tìm thấy từ vựng');
+}
+
 export async function createVocabulary(input: CreateVocabularyInput) {
+  await assertSystemTopic(input.topicId);
   return prisma.vocabulary.create({ data: input });
 }
 
 export async function updateVocabulary(vocabularyId: number, input: UpdateVocabularyInput) {
+  await assertSystemVocabulary(vocabularyId);
   return prisma.vocabulary.update({ where: { id: vocabularyId }, data: input });
 }
 
 export async function deleteVocabulary(vocabularyId: number): Promise<void> {
+  await assertSystemVocabulary(vocabularyId);
   await prisma.vocabulary.delete({ where: { id: vocabularyId } });
 }

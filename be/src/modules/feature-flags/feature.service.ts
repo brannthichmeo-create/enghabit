@@ -122,6 +122,8 @@ async function countRecentUsers(): Promise<Partial<Record<FeatureKey, number>>> 
 
   return {
     [FeatureKey.VOCABULARY]: byType.get('VOCAB_LEARNED')?.size ?? 0,
+    // Mỗi phiên Học kết thúc ghi một dòng QUIZ_COMPLETED — đếm người có phiên Học.
+    [FeatureKey.LEARN]: byType.get('QUIZ_COMPLETED')?.size ?? 0,
     [FeatureKey.FLASHCARDS]: byType.get('FLASHCARD_REVIEWED')?.size ?? 0,
     [FeatureKey.HABITS]: byType.get('HABIT_CHECKIN')?.size ?? 0,
   };

@@ -20,7 +20,7 @@ import { createNotification } from '../notifications/notification.service.js';
 /**
  * Nơi DUY NHẤT ghi ActivityLog và cập nhật UserStreak.
  *
- * Mọi module khác (habits, flashcards, lessons, vocabulary) phải gọi `recordActivity()`
+ * Mọi module khác (habits, study) phải gọi `recordActivity()`
  * thay vì tự ghi vào DB — nếu không sẽ có nhiều cách ghi log khác nhau và streak sẽ sai
  * (xem CLAUDE.md > Quy tắc tái sử dụng code).
  */
@@ -42,6 +42,11 @@ export interface RecordActivityInput {
    * user chưa học hôm nay vẫn được tính là có.
    */
   localDate?: LocalDate;
+  /**
+   * Khoá chống ghi trùng, tuỳ chọn. Trùng khoá thì DB ném lỗi unique (P2002) — chỗ gọi
+   * tự bắt. Hiện chỉ dòng "hoàn thành phiên Học" dùng (`SESSION:<sessionKey>`).
+   */
+  dedupeKey?: string;
   /** Cho phép truyền client transaction khi cần ghi log cùng thao tác khác trong một transaction. */
   tx?: Prisma.TransactionClient;
 }
@@ -70,6 +75,7 @@ export async function recordActivity(input: RecordActivityInput): Promise<{ loca
         // lúc nào, còn streak và thống kê chỉ đọc `localDate`.
         occurredAt,
         localDate: toDbDate(localDate),
+        dedupeKey: input.dedupeKey ?? null,
       },
     });
 
@@ -145,7 +151,7 @@ async function notifyAchievedGoals(
 const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   VOCAB_PER_DAY: 'Số từ vựng mỗi ngày',
   MINUTES_PER_DAY: 'Số lượt ôn tập mỗi ngày',
-  LESSONS_PER_WEEK: 'Số bài kiểm tra mỗi tuần',
+  LESSONS_PER_WEEK: 'Số phiên học mỗi tuần',
   STREAK_TARGET: 'Chuỗi ngày học liên tiếp',
 };
 

@@ -94,6 +94,32 @@ enum NotificationType {
   GROUP_JOIN_REJECTED
   /// Có yêu cầu cấp lại mật khẩu mới chờ duyệt — gửi cho MỌI quản trị viên
   PASSWORD_RESET_REQUEST
+  /// Có báo cáo vi phạm mới về một bộ thẻ — gửi cho MỌI quản trị viên
+  STUDY_SET_REPORTED
+  /// Bộ thẻ bị chặn / được mở chặn — gửi cho chủ bộ thẻ
+  STUDY_SET_BLOCKED
+  STUDY_SET_UNBLOCKED
+  /// Báo cáo của mình đã được xử lý — gửi cho người báo cáo
+  STUDY_SET_REPORT_RESOLVED
+}
+
+/// Ai thấy một bộ thẻ. PRIVATE thì người khác mở liên kết cũng nhận 404.
+enum StudySetVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+/// RESOLVED = đã chặn bộ thẻ; DISMISSED = xem xong, không vi phạm.
+enum StudySetReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+/// Cách làm một thẻ. Chỉ có hai dạng — xem docs/ke-hoach-hoc-on-flashcard.md.
+enum StudyMode {
+  FLASHCARD
+  MULTIPLE_CHOICE
 }
 
 /// Ai tìm thấy nhóm: công khai hiện trong ô tìm kiếm, riêng tư chỉ vào được bằng mã 8 số.
@@ -182,6 +208,11 @@ model User {
   coinTransactions    CoinTransaction[]
   streakFreezes       StreakFreeze[]
   createdTopics       Topic[]              @relation("TopicCreatedBy")
+  ownedTopics         Topic[]              @relation("TopicOwner")
+  blockedTopics       Topic[]              @relation("TopicBlockedBy")
+  cardReviews         CardReview[]
+  studySetReports     StudySetReport[]     @relation("StudySetReporter")
+  resolvedStudySetReports StudySetReport[] @relation("StudySetReportResolver")
   createdGroups       Group[]              @relation("GroupCreatedBy")
   blockedGroups       Group[]              @relation("GroupBlockedBy")
   groupMemberships    GroupMember[]
@@ -380,6 +411,11 @@ model HabitCheckIn {
 // Nội dung học: chủ đề, từ vựng, tiến độ SRS
 // ---------------------------------------------------------------------------
 
+/// Một bộ thẻ. Tên bảng giữ là `topics` vì bộ của quản trị viên chính là các chủ đề cũ.
+///
+/// `ownerId` null là bộ "Hệ thống" do quản trị viên soạn ở /admin/content. Có giá trị là
+/// bộ người học tự tạo. `createdById` giữ nguyên nghĩa cũ (ai bấm tạo) và KHÔNG dùng để
+/// hiển thị tác giả.
 model Topic {
   id          Int        @id @default(autoincrement())
   name        String     @db.VarChar(120)
@@ -387,13 +423,28 @@ model Topic {
   level       VocabLevel
   createdById Int?       @map("created_by_id")
 
+  /// Chủ bộ thẻ. Xoá tài khoản thì bộ thẻ xoá theo; khoá tài khoản thì bộ chỉ bị ẩn.
+  ownerId    Int?               @map("owner_id")
+  visibility StudySetVisibility @default(PUBLIC)
+
+  /// Quản trị viên chặn vì vi phạm. Chặn không xoá dữ liệu — mở chặn là trở lại như cũ.
+  blockedAt     DateTime? @map("blocked_at")
+  /// Lý do chặn — HIỆN CHO CHỦ BỘ THẺ đọc, nên viết cho người dùng cuối.
+  blockedReason String?   @map("blocked_reason") @db.VarChar(500)
+  blockedById   Int?      @map("blocked_by_id")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  createdBy      User?            @relation("TopicCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  vocabularies   Vocabulary[]
+  createdBy    User?            @relation("TopicCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  owner        User?            @relation("TopicOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  blockedBy    User?            @relation("TopicBlockedBy", fields: [blockedById], references: [id], onDelete: SetNull)
+  vocabularies Vocabulary[]
+  reports      StudySetReport[]
 
   @@index([level])
+  @@index([ownerId])
+  @@index([visibility, blockedAt])
   @@map("topics")
 }
 
@@ -409,8 +460,9 @@ model Vocabulary {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  topic    Topic               @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  progress UserVocabProgress[]
+  topic       Topic               @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  progress    UserVocabProgress[]
+  cardReviews CardReview[]
 
   @@index([topicId])
   @@map("vocabularies")
@@ -428,6 +480,12 @@ model UserVocabProgress {
   nextReviewDate DateTime  @map("next_review_date") @db.Date
   lastReviewedAt DateTime? @map("last_reviewed_at")
 
+  /// Bộ đếm cho nhóm "Yếu" — xem shared/src/study/study.ts `isWeakCard`.
+  /// Số lần quên (quality dưới 3).
+  lapses       Int @default(0)
+  correctCount Int @default(0) @map("correct_count")
+  wrongCount   Int @default(0) @map("wrong_count")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -439,9 +497,67 @@ model UserVocabProgress {
   @@map("user_vocab_progress")
 }
 
-// ---------------------------------------------------------------------------
-// Kiểm tra (chế độ "Exam" trong module lessons — xem be/src/modules/lessons/exam.service.ts)
-// ---------------------------------------------------------------------------
+/// Lịch sử từng lần làm một thẻ (Học hoặc Ôn tập). Cram Mode không ghi vào đây.
+///
+/// CHỈ phục vụ lịch sử và độ chính xác. Streak, XP, thống kê ngày vẫn tính từ
+/// ActivityLog — đọc bảng này để đếm hoạt động là tạo nguồn số liệu thứ hai.
+model CardReview {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @map("user_id")
+  vocabularyId Int       @map("vocabulary_id")
+  mode         StudyMode
+  isCorrect    Boolean   @map("is_correct")
+  /// ReviewQuality 0-5 đã đưa vào SM-2.
+  quality      Int
+  responseMs   Int?      @map("response_ms")
+
+  intervalBefore Int @map("interval_before")
+  intervalAfter  Int @map("interval_after")
+
+  /// Băm của mã câu hỏi. Unique theo người để bấm hai lần / mạng gửi lại không tính hai lần.
+  attemptKey String  @map("attempt_key") @db.Char(64)
+  /// Có giá trị khi làm trong phiên Học — dùng để ghi một dòng "hoàn thành phiên".
+  sessionKey String? @map("session_key") @db.Char(36)
+
+  reviewedAt DateTime @default(now()) @map("reviewed_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, attemptKey])
+  @@index([userId, reviewedAt])
+  @@index([userId, sessionKey])
+  @@index([vocabularyId])
+  @@map("card_reviews")
+}
+
+/// Báo cáo vi phạm một bộ thẻ công khai.
+model StudySetReport {
+  id         Int                  @id @default(autoincrement())
+  topicId    Int                  @map("topic_id")
+  reporterId Int                  @map("reporter_id")
+  reason     String               @db.VarChar(500)
+  status     StudySetReportStatus @default(PENDING)
+
+  /// `<topicId>:<reporterId>` khi còn chờ xử lý, null khi đã xử lý. Unique chặn một người
+  /// gửi hai báo cáo chờ cho cùng một bộ; MySQL cho nhiều NULL nên báo cáo cũ đã xử lý
+  /// không cản người đó báo cáo lại về sau.
+  pendingKey String? @unique @map("pending_key") @db.VarChar(40)
+
+  resolvedById Int?      @map("resolved_by_id")
+  resolvedAt   DateTime? @map("resolved_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  topic      Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  reporter   User  @relation("StudySetReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedBy User? @relation("StudySetReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([topicId])
+  @@index([reporterId])
+  @@map("study_set_reports")
+}
 
 // ---------------------------------------------------------------------------
 // Hoạt động & streak
@@ -466,8 +582,14 @@ model ActivityLog {
   /// Ngày theo timezone user tại thời điểm ghi. MỌI thống kê/streak group theo cột này.
   localDate DateTime @map("local_date") @db.Date
 
+  /// Khoá chống ghi trùng, tuỳ chọn. Hiện dùng cho dòng "hoàn thành phiên Học"
+  /// (`SESSION:<sessionKey>`) để bấm kết thúc hai lần không thành hai phiên.
+  /// Null thì không ràng buộc — MySQL cho nhiều NULL trong unique index.
+  dedupeKey String? @map("dedupe_key") @db.VarChar(80)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, dedupeKey])
   @@index([userId, localDate])
   @@index([userId, type, localDate])
   @@map("activity_logs")

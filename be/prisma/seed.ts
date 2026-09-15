@@ -124,9 +124,10 @@ async function seedContent(adminId: number): Promise<Map<string, number[]>> {
   const result = new Map<string, number[]>();
 
   for (const topicSeed of TOPICS) {
-    // Topic không có unique key trên name nên phải tìm trước khi tạo.
+    // Topic không có unique key trên name nên phải tìm trước khi tạo. Chỉ tìm trong bộ
+    // "Hệ thống": người học có thể tự tạo bộ trùng tên, seed không được nhận nhầm bộ đó.
     const topic =
-      (await prisma.topic.findFirst({ where: { name: topicSeed.name } })) ??
+      (await prisma.topic.findFirst({ where: { name: topicSeed.name, ownerId: null } })) ??
       (await prisma.topic.create({
         data: {
           name: topicSeed.name,

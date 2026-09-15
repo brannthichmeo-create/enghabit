@@ -4,7 +4,9 @@ import {
   accessLogQuerySchema,
   adminGroupQuerySchema,
   adminUserQuerySchema,
+  adminStudySetReportQuerySchema,
   blockGroupSchema,
+  blockStudySetSchema,
   createAnnouncementSchema,
   createTopicSchema,
   createVocabularySchema,
@@ -19,6 +21,7 @@ import {
   updateVocabularySchema,
   warnGroupSchema,
   type BlockGroupInput,
+  type BlockStudySetInput,
   type CreateAnnouncementInput,
   type CreateTopicInput,
   type CreateVocabularyInput,
@@ -39,6 +42,7 @@ import * as passwordResetService from '../auth/password-reset.service.js';
 import * as topicService from '../topics/topic.service.js';
 import * as adminService from './admin.service.js';
 import * as adminGroupService from './admin-group.service.js';
+import * as adminStudySetService from './admin-study-set.service.js';
 
 export const adminRoutes: Router = Router();
 
@@ -260,6 +264,48 @@ adminRoutes.delete(
   asyncHandler(async (req, res) => {
     await adminService.deleteVocabulary(parseId(req.params.id));
     res.status(204).send();
+  }),
+);
+
+// --- Kiểm duyệt bộ thẻ ---
+//
+// Như nhóm lớp: chỉ xem, bỏ qua báo cáo, chặn/mở chặn. Không có xoá bộ thẻ.
+adminRoutes.get(
+  '/study-set-reports',
+  validateQuery(adminStudySetReportQuerySchema),
+  asyncHandler(async (req, res) => {
+    res.json(await adminStudySetService.listReports(getValidatedQuery(req, adminStudySetReportQuerySchema)));
+  }),
+);
+
+adminRoutes.post(
+  '/study-set-reports/:id/dismiss',
+  asyncHandler(async (req, res) => {
+    await adminStudySetService.dismissReport(parseId(req.params.id), currentUser(req).id);
+    res.status(204).send();
+  }),
+);
+
+adminRoutes.get(
+  '/study-sets/:id',
+  asyncHandler(async (req, res) => {
+    res.json(await adminStudySetService.getStudySet(parseId(req.params.id)));
+  }),
+);
+
+adminRoutes.post(
+  '/study-sets/:id/block',
+  validateBody(blockStudySetSchema),
+  asyncHandler(async (req, res) => {
+    const { reason } = req.body as BlockStudySetInput;
+    res.json(await adminStudySetService.blockSet(parseId(req.params.id), currentUser(req).id, reason));
+  }),
+);
+
+adminRoutes.post(
+  '/study-sets/:id/unblock',
+  asyncHandler(async (req, res) => {
+    res.json(await adminStudySetService.unblockSet(parseId(req.params.id)));
   }),
 );
 

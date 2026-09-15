@@ -12,7 +12,10 @@
 
 /** Khoá tính năng — khớp cột `key` của bảng feature_flags. */
 export const FeatureKey = {
+  /** Thư viện bộ thẻ. Giữ khoá cũ để trạng thái bật/tắt đã lưu dưới DB vẫn còn hiệu lực. */
   VOCABULARY: 'VOCABULARY',
+  LEARN: 'LEARN',
+  /** Ôn tập. Giữ khoá cũ vì cùng lý do với VOCABULARY. */
   FLASHCARDS: 'FLASHCARDS',
   HABITS: 'HABITS',
   GOALS: 'GOALS',
@@ -51,15 +54,22 @@ export interface FeatureDefinition {
 export const FEATURES: readonly FeatureDefinition[] = [
   {
     key: FeatureKey.VOCABULARY,
-    label: 'Từ vựng',
-    description: 'Học từ mới theo chủ đề. Tắt thì cả phần Ôn tập cũng dừng theo.',
-    routes: ['/vocabulary'],
+    label: 'Thư viện',
+    description: 'Khám phá và tự tạo bộ thẻ. Tắt thì cả Học và Ôn tập cũng dừng theo.',
+    routes: ['/library'],
+  },
+  {
+    key: FeatureKey.LEARN,
+    label: 'Học',
+    description: 'Học một bộ thẻ bằng flashcard hoặc trắc nghiệm.',
+    routes: ['/learn'],
+    dependsOn: [FeatureKey.VOCABULARY],
   },
   {
     key: FeatureKey.FLASHCARDS,
     label: 'Ôn tập',
-    description: 'Ôn lại từ đã học bằng flashcard theo lịch lặp lại ngắt quãng.',
-    routes: ['/flashcards'],
+    description: 'Ôn thẻ tới hạn, quá hạn và thẻ yếu theo lịch lặp lại ngắt quãng.',
+    routes: ['/review'],
     dependsOn: [FeatureKey.VOCABULARY],
   },
   {
