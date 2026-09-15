@@ -1,5 +1,7 @@
 import type {
   CreateStudySetInput,
+  ImportStudySetCardsInput,
+  ImportStudySetCardsResult,
   Paginated,
   ReportStudySetInput,
   StudySetCard,
@@ -45,6 +47,11 @@ export async function deleteSet(setId: number): Promise<void> {
 
 export async function addCard(setId: number, input: StudySetCardInput): Promise<StudySetCard> {
   const { data } = await apiClient.post<StudySetCard>(`/library/sets/${setId}/cards`, input);
+  return data;
+}
+
+export async function importCards(setId: number, input: ImportStudySetCardsInput): Promise<ImportStudySetCardsResult> {
+  const { data } = await apiClient.post<ImportStudySetCardsResult>(`/library/sets/${setId}/cards/import`, input);
   return data;
 }
 

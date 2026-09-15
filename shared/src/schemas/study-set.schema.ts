@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { StudySetReportStatus, StudySetVisibility, VocabLevel } from '../constants/enums.js';
-import { STUDY_SET_SEARCH_MAX_LENGTH } from '../study/study.js';
+import { CARD_IMPORT_MAX_ROWS, STUDY_SET_SEARCH_MAX_LENGTH } from '../study/study.js';
 
 /**
  * Thư viện bộ thẻ.
@@ -27,15 +27,33 @@ export type UpdateStudySetInput = z.infer<typeof updateStudySetSchema>;
 
 /** Một thẻ. Không có audio — xem mục "Không làm" của đặc tả. */
 export const studySetCardSchema = z.object({
-  word: z.string().trim().min(1, 'Từ không được để trống').max(100),
-  meaning: z.string().trim().min(1, 'Nghĩa không được để trống').max(500),
-  phonetic: z.string().trim().max(100).optional(),
-  example: z.string().trim().max(500).optional(),
+  word: z.string().trim().min(1, 'Từ không được để trống').max(100, 'Từ tối đa 100 ký tự'),
+  meaning: z.string().trim().min(1, 'Nghĩa không được để trống').max(500, 'Nghĩa tối đa 500 ký tự'),
+  phonetic: z.string().trim().max(100, 'Phiên âm tối đa 100 ký tự').optional(),
+  example: z.string().trim().max(500, 'Câu ví dụ tối đa 500 ký tự').optional(),
 });
 export type StudySetCardInput = z.infer<typeof studySetCardSchema>;
 
 export const updateStudySetCardSchema = studySetCardSchema.partial();
 export type UpdateStudySetCardInput = z.infer<typeof updateStudySetCardSchema>;
+
+/**
+ * Nhập nhiều thẻ một lần. FE đã đọc file và tách thẻ (xem `study/card-import.ts`);
+ * BE chỉ nhận danh sách thẻ và kiểm tra lại từng thẻ bằng đúng schema của form thêm thẻ.
+ */
+export const importStudySetCardsSchema = z.object({
+  cards: z
+    .array(studySetCardSchema)
+    .min(1, 'Không có thẻ hợp lệ nào để nhập')
+    .max(CARD_IMPORT_MAX_ROWS, `Mỗi lần nhập tối đa ${CARD_IMPORT_MAX_ROWS} thẻ`),
+});
+export type ImportStudySetCardsInput = z.infer<typeof importStudySetCardsSchema>;
+
+export interface ImportStudySetCardsResult {
+  created: number;
+  /** Thẻ trùng với thẻ đã có trong bộ hoặc trùng nhau trong cùng lần nhập. */
+  skipped: number;
+}
 
 export const studySetSearchSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

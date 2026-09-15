@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Ban, Flag, GraduationCap, Library, Pencil, Share2, Trash2, Zap } from 'lucide-react';
+import { ArrowLeft, Ban, FileSpreadsheet, Flag, GraduationCap, Library, Pencil, Share2, Trash2, Zap } from 'lucide-react';
 import { FeatureKey, StudySetVisibility, type StudySetCard, type StudySetDetail } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Badge, Button, Card, EmptyState, PageHeader, SkeletonList } from '../../../shared/components/ui';
@@ -13,6 +13,7 @@ import { useFeature } from '../../feature-flags/feature-flag.hooks';
 import { useDeleteCard, useDeleteStudySet, useStudySet } from '../library.hooks';
 import { authorLabel } from './StudySetCard';
 import { CardForm, ReportStudySetModal, StudySetFormModal } from './StudySetForms';
+import { ImportCardsModal } from './ImportCardsModal';
 
 /**
  * Chi tiết một bộ thẻ.
@@ -197,6 +198,7 @@ function Cards({ set }: { set: StudySetDetail }): JSX.Element {
   const confirm = useConfirm();
   const deleteCard = useDeleteCard();
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const remove = async (card: StudySetCard): Promise<void> => {
     const ok = await confirm({
@@ -211,7 +213,14 @@ function Cards({ set }: { set: StudySetDetail }): JSX.Element {
 
   return (
     <Card>
-      <h2 className="font-semibold text-content">{t('Thẻ trong bộ ({n})', { n: set.cardCount })}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold text-content">{t('Thẻ trong bộ ({n})', { n: set.cardCount })}</h2>
+        {set.isOwner && (
+          <Button variant="secondary" size="sm" icon={FileSpreadsheet} onClick={() => setImporting(true)}>
+            {t('Nhập từ file')}
+          </Button>
+        )}
+      </div>
 
       {set.isOwner && (
         <div className="mt-3 rounded-xl border border-dashed border-line p-3">
@@ -219,9 +228,13 @@ function Cards({ set }: { set: StudySetDetail }): JSX.Element {
         </div>
       )}
 
+      {importing && (
+        <ImportCardsModal open setId={set.id} existingCards={set.cards} onClose={() => setImporting(false)} />
+      )}
+
       {set.cards.length === 0 ? (
         <p className="mt-4 text-sm text-content-muted">
-          {set.isOwner ? t('Thêm thẻ đầu tiên ở ô bên trên.') : t('Bộ thẻ này chưa có thẻ nào.')}
+          {set.isOwner ? t('Thêm thẻ ở ô bên trên hoặc nhập nhiều thẻ từ file .csv, .xlsx.') : t('Bộ thẻ này chưa có thẻ nào.')}
         </p>
       ) : (
         <ul className="mt-3 divide-y divide-line">

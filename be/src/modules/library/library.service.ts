@@ -3,8 +3,11 @@ import {
   NotificationType,
   UserRole,
   UserStatus,
+  cardImportKey,
   todayLocalDate,
   type CreateStudySetInput,
+  type ImportStudySetCardsInput,
+  type ImportStudySetCardsResult,
   type Paginated,
   type ReportStudySetInput,
   type StudySetCard,
@@ -234,6 +237,44 @@ export async function addCard(userId: number, setId: number, input: StudySetCard
     },
   });
   return toCard(card);
+}
+
+/**
+ * Nhập nhiều thẻ từ file. FE đã đọc file và tách thẻ; ở đây chỉ chống trùng rồi ghi.
+ *
+ * Chống trùng lại ở BE chứ không tin màn xem trước: giữa lúc xem trước và lúc bấm nhập,
+ * chủ bộ có thể đã thêm tay đúng thẻ đó ở tab khác. Dùng chung `cardImportKey` với FE nên
+ * con số "bỏ qua" hai bên khớp nhau.
+ */
+export async function importCards(
+  userId: number,
+  setId: number,
+  input: ImportStudySetCardsInput,
+): Promise<ImportStudySetCardsResult> {
+  await findOwnedSet(userId, setId);
+
+  const existing = await prisma.vocabulary.findMany({ where: { topicId: setId }, select: { word: true, meaning: true } });
+  const seen = new Set(existing.map((card) => cardImportKey(card.word, card.meaning)));
+  const fresh = input.cards.filter((card) => {
+    const key = cardImportKey(card.word, card.meaning);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (fresh.length > 0) {
+    await prisma.vocabulary.createMany({
+      data: fresh.map((card) => ({
+        topicId: setId,
+        word: card.word,
+        meaning: card.meaning,
+        phonetic: optionalText(card.phonetic) ?? null,
+        example: optionalText(card.example) ?? null,
+      })),
+    });
+  }
+
+  return { created: fresh.length, skipped: input.cards.length - fresh.length };
 }
 
 async function findOwnedCard(userId: number, cardId: number): Promise<Vocabulary> {

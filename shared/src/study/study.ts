@@ -157,3 +157,11 @@ export const STUDY_BATCH_MAX = 50;
 export const MAX_RESPONSE_MS = 10 * 60 * 1000;
 
 export const STUDY_SET_SEARCH_MAX_LENGTH = 100;
+
+/**
+ * Số thẻ tối đa một lần nhập từ file. Trần thân request ở BE (app.ts) tính theo con số
+ * này — tăng thì phải tính lại trần đó.
+ */
+export const CARD_IMPORT_MAX_ROWS = 500;
+/** Kích thước file nhập tối đa. File đọc ngay trên trình duyệt, không tải lên server. */
+export const CARD_IMPORT_MAX_FILE_BYTES = 2 * 1024 * 1024;

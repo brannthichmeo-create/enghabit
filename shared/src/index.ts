@@ -13,6 +13,7 @@ export * from './level/level.js';
 export * from './srs/sm2.js';
 export * from './study/study.js';
 export * from './study/multiple-choice.js';
+export * from './study/card-import.js';
 export * from './rewards/rewards.js';
 export * from './report/report.js';
 export * from './avatar/avatar.js';

@@ -28,6 +28,7 @@
 | F7 | Màn **Ôn tập**: bốn nhóm Mới / Tới hạn / Quá hạn / Yếu |
 | F8 | Cram Mode: ôn nhanh không đổi lịch SRS |
 | F9 | Lịch sử ôn và thống kê học/ôn theo từng người |
+| F10 | Chủ bộ thẻ nhập nhiều thẻ một lần từ file `.csv` hoặc `.xlsx` |
 
 ### 1.2 Không làm
 
@@ -121,6 +122,10 @@ Sửa ở đây nếu không đúng ý.
 | I-06 | Bộ mới tạo mặc định RIÊNG TƯ | Bộ vừa tạo còn trống; để công khai sẵn thì người khác mở ra thấy bộ rỗng |
 | I-07 | Ôn tập không chọn bộ: nhóm Mới chỉ lấy thẻ trong bộ đã bắt đầu học | Lấy mọi thẻ chưa học của mọi bộ công khai là đổ cả thư viện vào nhóm Mới |
 | I-08 | Màn quản trị ở `/admin/study-sets` ("Kiểm duyệt bộ thẻ"); chi tiết bộ thẻ ở `/library/:id` | Theo mẫu `/admin/groups` và `/groups/:id` |
+| I-09 | Nhập thẻ từ file: trình duyệt đọc file (`shared/study/card-import.ts` + `read-excel-file`), xem trước từng dòng, rồi gửi danh sách thẻ tới `POST /library/sets/:id/cards/import` | File không lên server nên không phải lưu hay quét tệp; người dùng thấy dòng lỗi trước khi nhập |
+| I-10 | Nhận `.csv` UTF-8 (tự đoán dấu `,` `;` tab) và `.xlsx` (sheet đầu). Tối đa 2 MB, 500 thẻ mỗi lần. CSV không phải UTF-8 thì từ chối | Excel Windows lưu CSV bằng bảng mã cũ; đọc bừa là chữ Việt vỡ mà không ai báo |
+| I-11 | Dòng tên cột nhận cả tiếng Việt lẫn tiếng Anh, chỉ công nhận khi có đủ cột Từ và Nghĩa; không có thì đọc theo thứ tự Từ, Nghĩa, Phiên âm, Câu ví dụ | Thẻ đầu tiên có từ "word" không bị nuốt thành tên cột |
+| I-12 | Trùng = cùng từ VÀ cùng nghĩa (không phân biệt hoa thường, khoảng trắng); thẻ trùng bị bỏ qua, không ghi đè. BE chống trùng lại bằng cùng khoá `cardImportKey` | Một từ nhiều nghĩa là nhiều thẻ có chủ ý; ghi đè sẽ xoá mất sửa tay của chủ bộ |
 
 ---
 

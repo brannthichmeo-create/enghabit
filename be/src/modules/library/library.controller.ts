@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import {
   studySetSearchSchema,
   type CreateStudySetInput,
+  type ImportStudySetCardsInput,
   type ReportStudySetInput,
   type StudySetCardInput,
   type UpdateStudySetCardInput,
@@ -50,6 +51,14 @@ export async function addCard(req: Request, res: Response): Promise<void> {
   res
     .status(201)
     .json(await libraryService.addCard(currentUser(req).id, parseId(req.params.id), req.body as StudySetCardInput));
+}
+
+export async function importCards(req: Request, res: Response): Promise<void> {
+  res
+    .status(201)
+    .json(
+      await libraryService.importCards(currentUser(req).id, parseId(req.params.id), req.body as ImportStudySetCardsInput),
+    );
 }
 
 export async function updateCard(req: Request, res: Response): Promise<void> {

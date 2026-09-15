@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   UserRole,
   createStudySetSchema,
+  importStudySetCardsSchema,
   reportStudySetSchema,
   studySetCardSchema,
   studySetSearchSchema,
@@ -28,6 +29,12 @@ libraryRoutes.patch('/sets/:id', validateBody(updateStudySetSchema), asyncHandle
 libraryRoutes.delete('/sets/:id', asyncHandler(controller.remove));
 
 libraryRoutes.post('/sets/:id/cards', validateBody(studySetCardSchema), asyncHandler(controller.addCard));
+// Trần thân request riêng cho route này đặt ở app.ts.
+libraryRoutes.post(
+  '/sets/:id/cards/import',
+  validateBody(importStudySetCardsSchema),
+  asyncHandler(controller.importCards),
+);
 libraryRoutes.patch('/cards/:id', validateBody(updateStudySetCardSchema), asyncHandler(controller.updateCard));
 libraryRoutes.delete('/cards/:id', asyncHandler(controller.removeCard));
 

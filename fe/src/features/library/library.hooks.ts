@@ -7,6 +7,8 @@ import {
 } from '@tanstack/react-query';
 import type {
   CreateStudySetInput,
+  ImportStudySetCardsInput,
+  ImportStudySetCardsResult,
   Paginated,
   ReportStudySetInput,
   StudySetCard,
@@ -89,6 +91,14 @@ export function useDeleteStudySet(): UseMutationResult<void, Error, number> {
 
 export function useAddCard(): UseMutationResult<StudySetCard, Error, { setId: number; input: StudySetCardInput }> {
   return useLibraryMutation(({ setId, input }) => libraryApi.addCard(setId, input));
+}
+
+export function useImportCards(): UseMutationResult<
+  ImportStudySetCardsResult,
+  Error,
+  { setId: number; input: ImportStudySetCardsInput }
+> {
+  return useLibraryMutation(({ setId, input }) => libraryApi.importCards(setId, input));
 }
 
 export function useUpdateCard(): UseMutationResult<

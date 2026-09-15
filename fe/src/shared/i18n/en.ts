@@ -1268,6 +1268,46 @@ export const EN: Dictionary = {
   '{n} thẻ, thứ tự ngẫu nhiên.': { one: '{n} card, in random order.', other: '{n} cards, in random order.' },
   '{n} thẻ cần ôn': { one: '{n} card to review', other: '{n} cards to review' },
 
+  // --- Nhập thẻ từ file ------------------------------------------------------------
+  'Nhập từ file': 'Import from file',
+  'Nhập thẻ từ file': 'Import cards from file',
+  'Thêm thẻ ở ô bên trên hoặc nhập nhiều thẻ từ file .csv, .xlsx.':
+    'Add a card above, or import many cards from a .csv or .xlsx file.',
+  'Mỗi dòng là một thẻ. Bắt buộc có cột Từ và Nghĩa; Phiên âm và Câu ví dụ không bắt buộc. Dòng đầu là tên cột thì hệ thống tự nhận ra.':
+    'Each row is one card. Word and Meaning columns are required; Phonetic and Example are optional. A header row is detected automatically.',
+  'Nhận file .csv (UTF-8) hoặc .xlsx, tối đa {mb} MB và {max} thẻ mỗi lần.':
+    'Accepts .csv (UTF-8) or .xlsx files, up to {mb} MB and {max} cards per import.',
+  'Chọn file': 'Choose file',
+  'Tải file mẫu': 'Download template',
+  'Chỉ nhận file .csv hoặc .xlsx': 'Only .csv or .xlsx files are accepted',
+  'File lớn hơn {mb} MB': 'File is larger than {mb} MB',
+  'File CSV không ở dạng UTF-8. Hãy lưu lại bằng "CSV UTF-8" hoặc dùng file .xlsx.':
+    'The CSV file is not UTF-8. Save it again as "CSV UTF-8" or use an .xlsx file.',
+  'Không đọc được file .xlsx. File có thể bị hỏng hoặc đặt mật khẩu.':
+    'Could not read the .xlsx file. It may be damaged or password-protected.',
+  'File không có dòng dữ liệu nào': 'The file has no data rows',
+  'Nhập {n} thẻ': { one: 'Import {n} card', other: 'Import {n} cards' },
+  'Đã nhập {n} thẻ': { one: 'Imported {n} card', other: 'Imported {n} cards' },
+  'Đã nhập {created} thẻ, bỏ qua {skipped} thẻ trùng': 'Imported {created} cards, skipped {skipped} duplicates',
+  '{n} thẻ hợp lệ': { one: '{n} valid card', other: '{n} valid cards' },
+  '{n} thẻ trùng': { one: '{n} duplicate', other: '{n} duplicates' },
+  '{n} dòng lỗi': { one: '{n} row with errors', other: '{n} rows with errors' },
+  'File có {n} thẻ hợp lệ, vượt quá {max} thẻ mỗi lần. Hãy chia nhỏ file.':
+    'The file has {n} valid cards, more than {max} per import. Split it into smaller files.',
+  'Không thấy dòng tên cột nên đọc theo thứ tự: Từ, Nghĩa, Phiên âm, Câu ví dụ.':
+    'No header row found, so columns are read in order: Word, Meaning, Phonetic, Example.',
+  'Dòng': 'Row',
+  'Hợp lệ': 'Valid',
+  'Trùng': 'Duplicate',
+  'Lỗi': 'Error',
+  '… và {n} dòng khác': { one: '… and {n} more row', other: '… and {n} more rows' },
+  'Từ không được để trống': 'Word is required',
+  'Nghĩa không được để trống': 'Meaning is required',
+  'Từ tối đa 100 ký tự': 'Word must be at most 100 characters',
+  'Nghĩa tối đa 500 ký tự': 'Meaning must be at most 500 characters',
+  'Phiên âm tối đa 100 ký tự': 'Phonetic must be at most 100 characters',
+  'Câu ví dụ tối đa 500 ký tự': 'Example must be at most 500 characters',
+
   // --- Kiểm duyệt bộ thẻ -----------------------------------------------------------
   'Kiểm duyệt bộ thẻ': 'Card set moderation',
   'Xử lý báo cáo vi phạm về bộ thẻ công khai do người học tạo': 'Handle reports about public card sets created by learners',
