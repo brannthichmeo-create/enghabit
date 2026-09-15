@@ -6,8 +6,9 @@ import { VocabLevel } from '@prisma/client';
  * Tách khỏi seed.ts để seed.ts chỉ lo logic ghi DB, còn nội dung sửa ở đây —
  * dễ thêm chủ đề mới mà không đụng vào code.
  *
- * Không còn câu hỏi quiz soạn tay ở đây: đề Kiểm tra (chế độ "Exam") giờ sinh tự động
- * từ chính từ vựng bên dưới, xem be/src/modules/lessons/exam.service.ts.
+ * Đây là các bộ thẻ "Hệ thống" (ownerId null). Bộ thẻ do người học tự tạo nằm ở
+ * `seed-data/library.ts`. Câu trắc nghiệm sinh tự động từ chính từ vựng bên dưới,
+ * xem shared/src/study/multiple-choice.ts.
  */
 
 export interface WordSeed {
@@ -98,6 +99,66 @@ export const TOPICS: TopicSeed[] = [
       { word: 'empirical', meaning: 'thực nghiệm', phonetic: '/ɪmˈpɪrɪkl/', example: 'The claim lacks empirical evidence.' },
       { word: 'framework', meaning: 'khung lý thuyết', phonetic: '/ˈfreɪmwɜːrk/', example: 'We adopted a theoretical framework.' },
       { word: 'limitation', meaning: 'hạn chế', phonetic: '/ˌlɪmɪˈteɪʃn/', example: 'One limitation is the small sample size.' },
+    ],
+  },
+  {
+    name: 'Food & Cooking',
+    description: 'Từ vựng về món ăn, nguyên liệu và cách nấu nướng trong bếp',
+    level: VocabLevel.BEGINNER,
+    words: [
+      { word: 'ingredient', meaning: 'nguyên liệu', phonetic: '/ɪnˈɡriːdiənt/', example: 'Mix all the ingredients in a large bowl.' },
+      { word: 'recipe', meaning: 'công thức nấu ăn', phonetic: '/ˈresəpi/', example: 'This recipe comes from my grandmother.' },
+      { word: 'boil', meaning: 'luộc, đun sôi', phonetic: '/bɔɪl/', example: 'Boil the eggs for eight minutes.' },
+      { word: 'fry', meaning: 'chiên, rán', phonetic: '/fraɪ/', example: 'Fry the onions until they turn golden.' },
+      { word: 'spicy', meaning: 'cay', phonetic: '/ˈspaɪsi/', example: 'Thai food is often quite spicy.' },
+      { word: 'leftovers', meaning: 'đồ ăn thừa', phonetic: '/ˈleftoʊvərz/', example: 'We had leftovers for lunch the next day.' },
+      { word: 'portion', meaning: 'khẩu phần', phonetic: '/ˈpɔːrʃn/', example: 'The restaurant serves large portions.' },
+      { word: 'appetite', meaning: 'sự thèm ăn', phonetic: '/ˈæpɪtaɪt/', example: 'Swimming always gives me a big appetite.' },
+    ],
+  },
+  {
+    name: 'Health & Fitness',
+    description: 'Từ vựng về sức khoẻ, luyện tập thể thao và khám bệnh',
+    level: VocabLevel.INTERMEDIATE,
+    words: [
+      { word: 'symptom', meaning: 'triệu chứng', phonetic: '/ˈsɪmptəm/', example: 'A sore throat is a common symptom of a cold.' },
+      { word: 'prescription', meaning: 'đơn thuốc', phonetic: '/prɪˈskrɪpʃn/', example: 'The doctor gave me a prescription for antibiotics.' },
+      { word: 'workout', meaning: 'buổi tập luyện', phonetic: '/ˈwɜːrkaʊt/', example: 'I do a 30-minute workout every morning.' },
+      { word: 'stretch', meaning: 'giãn cơ', phonetic: '/stretʃ/', example: 'Stretch your legs before you run.' },
+      { word: 'nutrition', meaning: 'dinh dưỡng', phonetic: '/nuˈtrɪʃn/', example: 'Good nutrition helps you recover faster.' },
+      { word: 'injury', meaning: 'chấn thương', phonetic: '/ˈɪndʒəri/', example: 'He missed the match because of a knee injury.' },
+      { word: 'recover', meaning: 'hồi phục', phonetic: '/rɪˈkʌvər/', example: 'She recovered quickly after the surgery.' },
+      { word: 'posture', meaning: 'tư thế', phonetic: '/ˈpɒstʃər/', example: 'Sitting all day can ruin your posture.' },
+    ],
+  },
+  {
+    name: 'Job Interview',
+    description: 'Từ vựng và cụm từ hay gặp khi đi phỏng vấn xin việc',
+    level: VocabLevel.INTERMEDIATE,
+    words: [
+      { word: 'candidate', meaning: 'ứng viên', phonetic: '/ˈkændɪdət/', example: 'We interviewed five candidates for the role.' },
+      { word: 'résumé', meaning: 'sơ yếu lý lịch', phonetic: '/ˈrezəmeɪ/', example: 'Please attach your résumé to the email.' },
+      { word: 'strength', meaning: 'điểm mạnh', phonetic: '/streŋθ/', example: 'Teamwork is one of my greatest strengths.' },
+      { word: 'weakness', meaning: 'điểm yếu', phonetic: '/ˈwiːknəs/', example: 'Talk about a weakness you are working on.' },
+      { word: 'salary', meaning: 'mức lương', phonetic: '/ˈsæləri/', example: 'What salary do you expect for this position?' },
+      { word: 'probation', meaning: 'thời gian thử việc', phonetic: '/proʊˈbeɪʃn/', example: 'The probation period lasts two months.' },
+      { word: 'qualification', meaning: 'bằng cấp, trình độ', phonetic: '/ˌkwɒlɪfɪˈkeɪʃn/', example: 'She has the right qualifications for the job.' },
+      { word: 'reference', meaning: 'người giới thiệu', phonetic: '/ˈrefrəns/', example: 'My former manager agreed to be my reference.' },
+    ],
+  },
+  {
+    name: 'Environment',
+    description: 'Từ vựng học thuật về môi trường, biến đổi khí hậu và phát triển bền vững',
+    level: VocabLevel.ADVANCED,
+    words: [
+      { word: 'emission', meaning: 'khí thải', phonetic: '/iˈmɪʃn/', example: 'The factory cut its carbon emissions by half.' },
+      { word: 'renewable', meaning: 'tái tạo được', phonetic: '/rɪˈnuːəbl/', example: 'Solar power is a renewable source of energy.' },
+      { word: 'deforestation', meaning: 'nạn phá rừng', phonetic: '/diːˌfɒrɪˈsteɪʃn/', example: 'Deforestation threatens many species.' },
+      { word: 'sustainable', meaning: 'bền vững', phonetic: '/səˈsteɪnəbl/', example: 'We need a more sustainable way of farming.' },
+      { word: 'biodiversity', meaning: 'đa dạng sinh học', phonetic: '/ˌbaɪoʊdaɪˈvɜːrsəti/', example: 'Coral reefs are rich in biodiversity.' },
+      { word: 'pollutant', meaning: 'chất gây ô nhiễm', phonetic: '/pəˈluːtənt/', example: 'Plastic is a major pollutant in the ocean.' },
+      { word: 'drought', meaning: 'hạn hán', phonetic: '/draʊt/', example: 'The drought destroyed most of the crops.' },
+      { word: 'mitigate', meaning: 'giảm nhẹ', phonetic: '/ˈmɪtɪɡeɪt/', example: 'Planting trees can help mitigate climate change.' },
     ],
   },
 ];

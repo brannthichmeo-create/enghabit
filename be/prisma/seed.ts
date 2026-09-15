@@ -1,25 +1,42 @@
+import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { crc32, deflateSync } from 'node:zlib';
 import bcrypt from 'bcryptjs';
 import {
   ActivityType,
+  CoinReason,
   GoalPeriod,
   GoalType,
+  GroupJoinStatus,
+  GroupMemberRole,
   HabitFrequency,
+  NotificationType,
+  PasswordResetStatus,
+  StudyMode,
+  StudySetReportStatus,
   UserRole,
-  VocabLevel,
   PrismaClient,
   type Prisma,
 } from '@prisma/client';
 import {
+  DAILY_CHECKIN_REWARD,
+  DAILY_MISSIONS,
   FEATURES,
+  RATING_QUALITY,
+  ReviewRating,
+  STREAK_FREEZE_PRICE,
+  checkInDedupeKey,
   computeStreak,
   initialSrsState,
+  missionDedupeKey,
+  qualityForMultipleChoice,
   reviewCard,
   toLocalDate,
   ReviewQuality,
 } from '@enghabit/shared';
 import { TOPICS } from './seed-data/content.js';
 import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
+import { STUDY_SETS, STUDY_SET_REPORTS } from './seed-data/library.js';
+import { GROUPS } from './seed-data/groups.js';
 
 /**
  * Seed dữ liệu mẫu — IDEMPOTENT, chạy nhiều lần không tạo bản ghi trùng.
@@ -30,6 +47,10 @@ import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
  *   admin@enghabit.com  / A1234567   (quản trị viên)
  *   user@enghabit.com   / A1234567   (có sẵn 45 ngày lịch sử học để xem thống kê)
  *   newbie@enghabit.com / A1234567   (tài khoản trắng, để xem giao diện lúc chưa có dữ liệu)
+ *   Sáu thành viên trong seed-data/community.ts, cùng mật khẩu A1234567.
+ *
+ * Mỗi phần tự kiểm tra "đã có dữ liệu chưa" trước khi ghi, nên chạy lại seed trên một DB
+ * đã seed từ bản cũ vẫn bổ sung được phần còn thiếu mà không nhân đôi phần đã có.
  */
 
 const prisma = new PrismaClient();
@@ -58,7 +79,16 @@ async function main(): Promise<void> {
   await seedLearnerData(learner.id, vocabByTopic);
   await seedLoginHistory([admin.id, learner.id]);
   await seedNotifications(learner.id);
-  await seedCommunity(admin.id, learner.id);
+
+  const members = await seedCommunityMembers();
+  await seedCommunity(admin.id, learner.id, members);
+
+  const people = new Map<string, number>([[admin.email, admin.id], [learner.email, learner.id], ...members]);
+  await seedLibrary(admin.id, people);
+  await seedStudyHistory(learner.id);
+  await seedGroups(admin.id, people);
+  await seedPasswordResetRequests(admin.id, people);
+  await seedRewards(learner.id);
   await seedFeatureFlags();
 
   await printSummary();
@@ -300,8 +330,12 @@ async function seedNotifications(userId: number): Promise<void> {
  * Mốc thời gian được đặt lùi về quá khứ chứ không để mặc định: mười bài cùng hiện
  * "vài giây trước" trông không giống một diễn đàn có người dùng thật.
  */
-async function seedCommunity(adminId: number, learnerId: number): Promise<void> {
-  const existing = await prisma.post.count();
+async function seedCommunity(
+  adminId: number,
+  learnerId: number,
+  members: ReadonlyMap<string, number>,
+): Promise<void> {
+  const existing = await prisma.post.count({ where: { groupId: null } });
   if (existing > 0) {
     console.log(`  (diễn đàn đã có ${existing} bài — bỏ qua)`);
     return;
@@ -309,12 +343,7 @@ async function seedCommunity(adminId: number, learnerId: number): Promise<void> 
 
   // Chỉ số 0 là quản trị viên, 1 là người học mẫu, còn lại là thành viên riêng của
   // diễn đàn — khớp với quy ước ở seed-data/community.ts.
-  const people = [adminId, learnerId];
-  for (const member of COMMUNITY_MEMBERS) {
-    const user = await upsertUser(member.email, member.name, 'A1234567');
-    people.push(user.id);
-    await seedMemberActivity(user.id, member);
-  }
+  const people = [adminId, learnerId, ...COMMUNITY_MEMBERS.map((member) => idOf(members, member.email))];
 
   let commentCount = 0;
   let likeCount = 0;
@@ -421,6 +450,601 @@ async function seedMemberActivity(
 
   await prisma.activityLog.createMany({ data: logs });
   await recomputeStreak(userId);
+}
+
+/**
+ * Thành viên dùng chung cho diễn đàn, Thư viện và Nhóm lớp. Trả về map email → id.
+ *
+ * Tách khỏi `seedCommunity` vì hàm đó bỏ qua toàn bộ khi diễn đàn đã có bài — mà Thư
+ * viện và Nhóm lớp vẫn cần các tài khoản này trên một DB đã seed từ bản cũ.
+ */
+async function seedCommunityMembers(): Promise<Map<string, number>> {
+  const members = new Map<string, number>();
+  for (const member of COMMUNITY_MEMBERS) {
+    const user = await upsertUser(member.email, member.name, 'A1234567');
+    members.set(member.email, user.id);
+    await seedMemberActivity(user.id, member);
+  }
+  return members;
+}
+
+// ---------------------------------------------------------------------------
+// Thư viện, Học/Ôn tập, Kiểm duyệt bộ thẻ
+// ---------------------------------------------------------------------------
+
+/** Bộ thẻ người học tự tạo, báo cáo vi phạm, và thông báo đi kèm các trạng thái đó. */
+async function seedLibrary(adminId: number, people: ReadonlyMap<string, number>): Promise<void> {
+  const existing = await prisma.topic.count({ where: { ownerId: { not: null } } });
+  if (existing > 0) {
+    console.log(`  (đã có ${existing} bộ thẻ người học tạo — bỏ qua Thư viện)`);
+    return;
+  }
+
+  const setIds = new Map<string, number>();
+  const notifications: Prisma.NotificationCreateManyInput[] = [];
+  let cardCount = 0;
+
+  for (const seed of STUDY_SETS) {
+    const ownerId = idOf(people, seed.owner);
+    const createdAt = instantAtOffset(seed.daysAgo, 21);
+    const blockedAt = seed.blockedReason ? pastInstantAtOffset(Math.max(seed.daysAgo - 1, 0), 10) : null;
+
+    const set = await prisma.topic.create({
+      data: {
+        name: seed.name,
+        description: seed.description,
+        level: seed.level,
+        visibility: seed.visibility,
+        ownerId,
+        createdById: ownerId,
+        blockedAt,
+        blockedReason: seed.blockedReason ?? null,
+        blockedById: seed.blockedReason ? adminId : null,
+        createdAt,
+        updatedAt: createdAt,
+        vocabularies: {
+          create: seed.cards.map((card) => ({
+            word: card.word,
+            meaning: card.meaning,
+            phonetic: card.phonetic ?? null,
+            example: card.example ?? null,
+            createdAt,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+    setIds.set(seed.name, set.id);
+    cardCount += seed.cards.length;
+
+    if (seed.blockedReason && blockedAt) {
+      notifications.push({
+        userId: ownerId,
+        type: NotificationType.STUDY_SET_BLOCKED,
+        title: 'Bộ thẻ của bạn đã bị chặn',
+        body: `Bộ thẻ "${seed.name}" bị chặn: ${seed.blockedReason}`.slice(0, 500),
+        link: `/library/${set.id}`,
+        dedupeKey: `${NotificationType.STUDY_SET_BLOCKED}:seed:${set.id}`,
+        createdAt: blockedAt,
+      });
+    }
+  }
+
+  for (const seed of STUDY_SET_REPORTS) {
+    const topicId = setIds.get(seed.set);
+    if (topicId === undefined) throw new Error(`Báo cáo mẫu trỏ tới bộ thẻ không có trong STUDY_SETS: ${seed.set}`);
+    const reporterId = idOf(people, seed.reporter);
+    const createdAt = pastInstantAtOffset(seed.daysAgo, 9);
+    const isPending = seed.status === StudySetReportStatus.PENDING;
+    const resolvedAt = isPending ? null : new Date(createdAt.getTime() + 5 * 3_600_000);
+
+    const report = await prisma.studySetReport.create({
+      data: {
+        topicId,
+        reporterId,
+        reason: seed.reason,
+        status: seed.status,
+        // Cùng định dạng với pendingReportKey ở library.access.ts.
+        pendingKey: isPending ? `${topicId}:${reporterId}` : null,
+        resolvedById: isPending ? null : adminId,
+        resolvedAt,
+        createdAt,
+      },
+      select: { id: true },
+    });
+
+    notifications.push(
+      isPending
+        ? {
+            userId: adminId,
+            type: NotificationType.STUDY_SET_REPORTED,
+            title: 'Có báo cáo vi phạm bộ thẻ',
+            body: `Báo cáo bộ thẻ "${seed.set}": ${seed.reason}`.slice(0, 500),
+            link: '/admin/study-sets',
+            dedupeKey: `${NotificationType.STUDY_SET_REPORTED}:${report.id}`,
+            createdAt,
+          }
+        : {
+            userId: reporterId,
+            type: NotificationType.STUDY_SET_REPORT_RESOLVED,
+            title: 'Báo cáo của bạn đã được xử lý',
+            body:
+              seed.status === StudySetReportStatus.RESOLVED
+                ? `Quản trị viên đã chặn bộ thẻ "${seed.set}". Cảm ơn bạn đã báo cáo.`
+                : `Quản trị viên đã xem báo cáo về bộ thẻ "${seed.set}" và không thấy vi phạm.`,
+            link: '/library',
+            dedupeKey: `${NotificationType.STUDY_SET_REPORT_RESOLVED}:seed:${report.id}`,
+            createdAt: resolvedAt ?? createdAt,
+          },
+    );
+  }
+
+  await notify(notifications);
+  console.log(
+    `  Đã tạo ${STUDY_SETS.length} bộ thẻ người học (${cardCount} thẻ) và ${STUDY_SET_REPORTS.length} báo cáo vi phạm`,
+  );
+}
+
+/** Số ngày học gần nhất được dựng lịch sử ôn và phiên học. */
+const STUDY_HISTORY_DAYS = 10;
+
+/**
+ * Lịch sử ôn (`card_reviews`), phiên học và bộ đếm nhóm Yếu cho người học demo.
+ *
+ * DỰNG TỪ ActivityLog có sẵn chứ không bịa riêng: mỗi lượt học/ôn trong 10 ngày học gần
+ * nhất sinh đúng một dòng card_reviews cùng thẻ, cùng thời điểm. Nhờ vậy lịch sử ôn,
+ * độ chính xác và thống kê ngày không bao giờ nói ba con số khác nhau.
+ */
+async function seedStudyHistory(userId: number): Promise<void> {
+  const existing = await prisma.cardReview.count({ where: { userId } });
+  if (existing > 0) {
+    console.log(`  (user demo đã có ${existing} lượt ôn — bỏ qua lịch sử ôn)`);
+    return;
+  }
+
+  const logs = await prisma.activityLog.findMany({
+    where: {
+      userId,
+      type: { in: [ActivityType.VOCAB_LEARNED, ActivityType.FLASHCARD_REVIEWED] },
+      refId: { not: null },
+    },
+    orderBy: { occurredAt: 'asc' },
+    select: { id: true, refId: true, localDate: true, occurredAt: true },
+  });
+
+  // Chỉ lấy thẻ còn tồn tại — refId của log cũ có thể trỏ tới thẻ đã bị xoá.
+  const refIds = [...new Set(logs.map((log) => log.refId as number))];
+  const liveIds = new Set(
+    (await prisma.vocabulary.findMany({ where: { id: { in: refIds } }, select: { id: true } })).map((v) => v.id),
+  );
+
+  const byDay = new Map<string, typeof logs>();
+  for (const log of logs) {
+    if (!liveIds.has(log.refId as number)) continue;
+    const day = log.localDate.toISOString().slice(0, 10);
+    byDay.set(day, [...(byDay.get(day) ?? []), log]);
+  }
+
+  const days = [...byDay.keys()].sort().slice(-STUDY_HISTORY_DAYS);
+  if (days.length === 0) {
+    console.log('  (user demo chưa có hoạt động học — bỏ qua lịch sử ôn)');
+    return;
+  }
+
+  const reviews: Prisma.CardReviewCreateManyInput[] = [];
+  const sessions: Prisma.ActivityLogCreateManyInput[] = [];
+  const counters = new Map<number, { correct: number; wrong: number; last: Date }>();
+
+  days.forEach((day, dayIndex) => {
+    const dayLogs = byDay.get(day) ?? [];
+    const sessionKey = randomUUID();
+    // Xen kẽ hai chế độ theo ngày để lịch sử có cả Flashcard lẫn Trắc nghiệm.
+    const mode = dayIndex % 2 === 0 ? StudyMode.FLASHCARD : StudyMode.MULTIPLE_CHOICE;
+    let correctInSession = 0;
+    let lastAt = dayLogs[0]?.occurredAt ?? new Date();
+
+    dayLogs.forEach((log, index) => {
+      const vocabularyId = log.refId as number;
+      // Thẻ có id chia hết cho 6 cố ý sai một nửa số lần để nhóm "Yếu" có thẻ thật.
+      const isCorrect = vocabularyId % 6 === 0 ? index % 2 === 0 : (vocabularyId + index) % 5 !== 0;
+      const quality =
+        mode === StudyMode.MULTIPLE_CHOICE
+          ? qualityForMultipleChoice(isCorrect)
+          : RATING_QUALITY[
+              isCorrect ? ((vocabularyId + index) % 3 === 0 ? ReviewRating.EASY : ReviewRating.GOOD) : ReviewRating.AGAIN
+            ];
+      const intervalBefore = 1 + ((vocabularyId + index) % 6);
+      const reviewedAt = new Date(log.occurredAt.getTime() + index * 25_000);
+
+      reviews.push({
+        userId,
+        vocabularyId,
+        mode,
+        isCorrect,
+        quality: Number(quality),
+        responseMs: 1_800 + ((vocabularyId * 37 + index * 211) % 7_000),
+        intervalBefore,
+        intervalAfter: isCorrect ? intervalBefore * 2 : 1,
+        attemptKey: createHash('sha256').update(`seed:${userId}:${log.id}`).digest('hex'),
+        sessionKey,
+        reviewedAt,
+      });
+
+      if (isCorrect) correctInSession += 1;
+      const counter = counters.get(vocabularyId) ?? { correct: 0, wrong: 0, last: reviewedAt };
+      if (isCorrect) counter.correct += 1;
+      else counter.wrong += 1;
+      counter.last = reviewedAt;
+      counters.set(vocabularyId, counter);
+      lastAt = reviewedAt;
+    });
+
+    // Một dòng "hoàn thành phiên" mỗi ngày — nguồn của mục tiêu "Số phiên học mỗi tuần".
+    sessions.push({
+      userId,
+      type: ActivityType.QUIZ_COMPLETED,
+      value: correctInSession,
+      occurredAt: new Date(lastAt.getTime() + 60_000),
+      localDate: new Date(`${day}T00:00:00.000Z`),
+      dedupeKey: `SESSION:${sessionKey}`,
+    });
+  });
+
+  await prisma.cardReview.createMany({ data: reviews });
+  await prisma.activityLog.createMany({ data: sessions });
+
+  let overdue = 0;
+  for (const [vocabularyId, counter] of counters) {
+    // Vài thẻ đẩy lịch ôn về quá khứ để nhóm "Quá hạn" không trống.
+    const makeOverdue = vocabularyId % 7 === 3;
+    const { count } = await prisma.userVocabProgress.updateMany({
+      where: { userId, vocabularyId },
+      data: {
+        correctCount: counter.correct,
+        wrongCount: counter.wrong,
+        lapses: counter.wrong,
+        lastReviewedAt: counter.last,
+        ...(makeOverdue ? { nextReviewDate: dateAtOffset(2 + (vocabularyId % 4)) } : {}),
+      },
+    });
+    if (count > 0 && makeOverdue) overdue += 1;
+  }
+
+  console.log(`  Đã tạo ${reviews.length} lượt ôn, ${sessions.length} phiên học, ${overdue} thẻ quá hạn`);
+}
+
+// ---------------------------------------------------------------------------
+// Nhóm lớp
+// ---------------------------------------------------------------------------
+
+async function seedGroups(adminId: number, people: ReadonlyMap<string, number>): Promise<void> {
+  const existing = await prisma.group.count();
+  if (existing > 0) {
+    console.log(`  (đã có ${existing} nhóm — bỏ qua Nhóm lớp)`);
+    return;
+  }
+
+  let postCount = 0;
+  const notifications: Prisma.NotificationCreateManyInput[] = [];
+
+  for (const seed of GROUPS) {
+    const createdAt = instantAtOffset(seed.daysAgo, 20);
+    const leaderIds = seed.leaders.map((email) => idOf(people, email));
+    const memberIds = seed.members.map((email) => idOf(people, email));
+    const blockedAt = seed.blockedReason ? pastInstantAtOffset(1, 10) : null;
+
+    const group = await prisma.group.create({
+      data: {
+        code: await uniqueGroupCode(),
+        name: seed.name,
+        description: seed.description,
+        visibility: seed.visibility,
+        requireApproval: seed.requireApproval,
+        createdById: leaderIds[0] ?? null,
+        blockedAt,
+        blockedReason: seed.blockedReason ?? null,
+        blockedById: seed.blockedReason ? adminId : null,
+        createdAt,
+        updatedAt: createdAt,
+      },
+      select: { id: true },
+    });
+
+    await prisma.groupMember.createMany({
+      data: [
+        ...leaderIds.map((userId, index) => ({
+          groupId: group.id,
+          userId,
+          role: GroupMemberRole.LEADER,
+          joinedAt: new Date(createdAt.getTime() + index * 3_600_000),
+        })),
+        ...memberIds.map((userId, index) => ({
+          groupId: group.id,
+          userId,
+          role: GroupMemberRole.MEMBER,
+          joinedAt: new Date(createdAt.getTime() + (index + 1) * 6 * 3_600_000),
+        })),
+      ],
+    });
+
+    const requestedAt = pastInstantAtOffset(1, 18);
+    const rejectedAt = instantAtOffset(3, 9);
+    await prisma.groupJoinRequest.createMany({
+      data: [
+        ...seed.pendingRequests.map((request) => ({
+          groupId: group.id,
+          userId: idOf(people, request.email),
+          status: GroupJoinStatus.PENDING,
+          message: request.message ?? null,
+          createdAt: requestedAt,
+        })),
+        ...seed.rejectedRequests.map((request) => ({
+          groupId: group.id,
+          userId: idOf(people, request.email),
+          status: GroupJoinStatus.REJECTED,
+          message: request.message ?? null,
+          decidedById: leaderIds[0] ?? null,
+          decidedAt: rejectedAt,
+          createdAt: instantAtOffset(4, 21),
+        })),
+      ],
+    });
+
+    for (const request of seed.pendingRequests) {
+      const requesterId = idOf(people, request.email);
+      for (const leaderId of leaderIds) {
+        notifications.push({
+          userId: leaderId,
+          type: NotificationType.GROUP_JOIN_REQUEST,
+          title: 'Có yêu cầu vào nhóm',
+          body: `Có người xin vào nhóm "${seed.name}". Vào nhóm để duyệt hoặc từ chối.`,
+          link: `/groups/${group.id}`,
+          dedupeKey: `${NotificationType.GROUP_JOIN_REQUEST}:seed:${group.id}:${requesterId}`,
+          createdAt: requestedAt,
+        });
+      }
+    }
+    for (const request of seed.rejectedRequests) {
+      notifications.push({
+        userId: idOf(people, request.email),
+        type: NotificationType.GROUP_JOIN_REJECTED,
+        title: 'Yêu cầu vào nhóm bị từ chối',
+        body: `Trưởng nhóm đã từ chối yêu cầu vào nhóm "${seed.name}" của bạn.`,
+        link: '/groups',
+        dedupeKey: `${NotificationType.GROUP_JOIN_REJECTED}:seed:${group.id}`,
+        createdAt: rejectedAt,
+      });
+    }
+    if (seed.blockedReason && blockedAt) {
+      for (const userId of [...leaderIds, ...memberIds]) {
+        notifications.push({
+          userId,
+          type: NotificationType.GROUP_BLOCKED,
+          title: 'Nhóm đã bị chặn',
+          body: `Nhóm "${seed.name}" bị chặn: ${seed.blockedReason}`.slice(0, 500),
+          link: `/groups/${group.id}`,
+          dedupeKey: `${NotificationType.GROUP_BLOCKED}:seed:${group.id}`,
+          createdAt: blockedAt,
+        });
+      }
+    }
+
+    for (const post of seed.posts) {
+      const postedAt = instantAtOffset(post.daysAgo, post.hour);
+      const created = await prisma.post.create({
+        data: {
+          authorId: idOf(people, post.by),
+          groupId: group.id,
+          title: post.title,
+          body: post.body,
+          createdAt: postedAt,
+          updatedAt: postedAt,
+        },
+        select: { id: true },
+      });
+      await prisma.postLike.createMany({
+        data: post.likedBy.map((email) => ({ postId: created.id, userId: idOf(people, email), createdAt: postedAt })),
+      });
+      await prisma.postComment.createMany({
+        data: post.comments.map((comment) => ({
+          postId: created.id,
+          authorId: idOf(people, comment.by),
+          body: comment.body,
+          createdAt: new Date(postedAt.getTime() + comment.hoursAfter * 3_600_000),
+        })),
+      });
+      postCount += 1;
+    }
+  }
+
+  await notify(notifications);
+  console.log(`  Đã tạo ${GROUPS.length} nhóm lớp và ${postCount} bài đăng trong nhóm`);
+}
+
+/** Mã nhóm 8 chữ số, cùng cách sinh với group.service (randomInt, không Math.random). */
+async function uniqueGroupCode(): Promise<string> {
+  for (;;) {
+    const code = String(randomInt(0, 100_000_000)).padStart(8, '0');
+    if ((await prisma.group.count({ where: { code } })) === 0) return code;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Quản lý yêu cầu cấp lại mật khẩu
+// ---------------------------------------------------------------------------
+
+/**
+ * Yêu cầu cấp lại mật khẩu ở cả ba trạng thái, cho hai tab Yêu cầu và Nhật ký.
+ *
+ * Yêu cầu đã duyệt đều đánh dấu ĐÃ DÙNG: một lượt duyệt còn hiệu lực cho phép đặt mật khẩu
+ * mới mà không cần mật khẩu cũ — không để sẵn thứ đó trên DB dev dùng chung.
+ */
+const RESET_REQUESTS: {
+  email: string;
+  status: PasswordResetStatus;
+  daysAgo: number;
+  rejectReason?: string;
+}[] = [
+  { email: 'ha.le@enghabit.com', status: PasswordResetStatus.PENDING, daysAgo: 0 },
+  { email: 'duy.pham@enghabit.com', status: PasswordResetStatus.PENDING, daysAgo: 1 },
+  { email: 'long.tran@enghabit.com', status: PasswordResetStatus.APPROVED, daysAgo: 6 },
+  {
+    email: 'chi.bui@enghabit.com',
+    status: PasswordResetStatus.REJECTED,
+    daysAgo: 4,
+    rejectReason: 'Thông tin bạn cung cấp không khớp với tài khoản. Hãy liên hệ quản trị viên qua email trường để xác minh.',
+  },
+];
+
+async function seedPasswordResetRequests(adminId: number, people: ReadonlyMap<string, number>): Promise<void> {
+  const existing = await prisma.passwordResetRequest.count();
+  if (existing > 0) {
+    console.log(`  (đã có ${existing} yêu cầu cấp lại mật khẩu — bỏ qua)`);
+    return;
+  }
+
+  const notifications: Prisma.NotificationCreateManyInput[] = [];
+  for (const seed of RESET_REQUESTS) {
+    const userId = idOf(people, seed.email);
+    const createdAt = pastInstantAtOffset(seed.daysAgo, 8);
+    const isPending = seed.status === PasswordResetStatus.PENDING;
+    const reviewedAt = isPending ? null : new Date(createdAt.getTime() + 2 * 3_600_000);
+
+    const request = await prisma.passwordResetRequest.create({
+      data: {
+        userId,
+        status: seed.status,
+        pendingUserId: isPending ? userId : null,
+        reviewedById: isPending ? null : adminId,
+        reviewedAt,
+        rejectReason: seed.rejectReason ?? null,
+        usedAt: seed.status === PasswordResetStatus.APPROVED && reviewedAt ? new Date(reviewedAt.getTime() + 3_600_000) : null,
+        createdAt,
+      },
+      select: { id: true },
+    });
+
+    if (isPending) {
+      notifications.push({
+        userId: adminId,
+        type: NotificationType.PASSWORD_RESET_REQUEST,
+        title: 'Có yêu cầu cấp lại mật khẩu',
+        body: `Tài khoản ${usernameFromEmail(seed.email)} yêu cầu cấp lại mật khẩu.`,
+        link: '/admin/requests',
+        dedupeKey: `${NotificationType.PASSWORD_RESET_REQUEST}:seed:${request.id}`,
+        createdAt,
+      });
+    }
+  }
+
+  await notify(notifications);
+  console.log(`  Đã tạo ${RESET_REQUESTS.length} yêu cầu cấp lại mật khẩu`);
+}
+
+// ---------------------------------------------------------------------------
+// Phần thưởng
+// ---------------------------------------------------------------------------
+
+/**
+ * Lịch sử xu và vật phẩm giữ chuỗi của người học demo.
+ *
+ * Nhiệm vụ chỉ được "nhận thưởng" ở những ngày ActivityLog thật sự đạt chỉ tiêu — cùng
+ * cách BE chấm lại lúc nhận. Chừa hôm nay để người dùng tự bấm điểm danh và nhận thưởng.
+ */
+async function seedRewards(userId: number): Promise<void> {
+  const existing = await prisma.coinTransaction.count({ where: { userId } });
+  if (existing > 0) {
+    console.log(`  (user demo đã có ${existing} giao dịch xu — bỏ qua Phần thưởng)`);
+    return;
+  }
+
+  const today = dateAtOffsetLocal(0);
+  const grouped = await prisma.activityLog.groupBy({
+    by: ['localDate', 'type'],
+    where: { userId },
+    _count: { _all: true },
+  });
+
+  const countsByDay = new Map<string, Record<string, number>>();
+  for (const row of grouped) {
+    const day = row.localDate.toISOString().slice(0, 10);
+    if (day === today) continue;
+    const counts = countsByDay.get(day) ?? {};
+    counts[row.type] = row._count._all;
+    countsByDay.set(day, counts);
+  }
+
+  const days = [...countsByDay.keys()].sort().slice(-7);
+  const rows: Prisma.CoinTransactionCreateManyInput[] = [];
+  let balance = 0;
+
+  for (const day of days) {
+    const localDate = new Date(`${day}T00:00:00.000Z`);
+    const checkedInAt = new Date(`${day}T13:00:00.000Z`); // 20h giờ Việt Nam
+    rows.push({
+      userId,
+      amount: DAILY_CHECKIN_REWARD,
+      reason: CoinReason.DAILY_CHECKIN,
+      dedupeKey: checkInDedupeKey(day),
+      localDate,
+      createdAt: checkedInAt,
+    });
+    balance += DAILY_CHECKIN_REWARD;
+
+    const counts = countsByDay.get(day) ?? {};
+    for (const mission of DAILY_MISSIONS) {
+      if ((counts[mission.activityType] ?? 0) < mission.target) continue;
+      rows.push({
+        userId,
+        amount: mission.reward,
+        reason: CoinReason.MISSION_CLAIM,
+        dedupeKey: missionDedupeKey(mission.id, day),
+        localDate,
+        createdAt: new Date(checkedInAt.getTime() + 10 * 60_000),
+      });
+      balance += mission.reward;
+    }
+  }
+
+  // Mua vật phẩm giữ chuỗi ở ngày cuối, để nguyên trong kho — không mua quá số xu đang có.
+  const lastDay = days.at(-1);
+  const freezeCount = lastDay ? Math.min(2, Math.floor(balance / STREAK_FREEZE_PRICE)) : 0;
+  const purchasedAt = new Date(`${lastDay}T14:00:00.000Z`);
+  for (let i = 0; i < freezeCount; i += 1) {
+    rows.push({
+      userId,
+      amount: -STREAK_FREEZE_PRICE,
+      reason: CoinReason.STREAK_FREEZE_PURCHASE,
+      // Cùng định dạng với rewards.service: mua là hành động lặp lại được.
+      dedupeKey: `${CoinReason.STREAK_FREEZE_PURCHASE}:${randomUUID()}`,
+      localDate: new Date(`${lastDay}T00:00:00.000Z`),
+      createdAt: purchasedAt,
+    });
+  }
+
+  await prisma.coinTransaction.createMany({ data: rows });
+  if (freezeCount > 0) {
+    await prisma.streakFreeze.createMany({ data: Array.from({ length: freezeCount }, () => ({ userId, purchasedAt })) });
+  }
+
+  console.log(
+    `  Đã tạo ${rows.length} giao dịch xu (số dư ${balance - freezeCount * STREAK_FREEZE_PRICE}) và ${freezeCount} vật phẩm giữ chuỗi`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tiện ích chung
+// ---------------------------------------------------------------------------
+
+function idOf(people: ReadonlyMap<string, number>, email: string): number {
+  const id = people.get(email);
+  if (id === undefined) throw new Error(`Seed tham chiếu tài khoản chưa được tạo: ${email}`);
+  return id;
+}
+
+/** `skipDuplicates`: thông báo có unique (userId, dedupeKey), chạy lại seed không lỗi. */
+async function notify(rows: Prisma.NotificationCreateManyInput[]): Promise<void> {
+  if (rows.length > 0) await prisma.notification.createMany({ data: rows, skipDuplicates: true });
 }
 
 /**
@@ -661,20 +1285,37 @@ function dateAtOffsetLocal(offset: number): string {
   return toLocalDate(new Date(Date.now() - offset * 86_400_000), TIMEZONE);
 }
 
+/**
+ * Như `instantAtOffset` nhưng không bao giờ rơi vào tương lai: chạy seed lúc 7h sáng mà
+ * đặt mốc "hôm nay 9h" thì báo cáo sẽ hiện "sau 2 giờ nữa".
+ */
+function pastInstantAtOffset(offset: number, hour: number): Date {
+  const at = instantAtOffset(offset, hour);
+  const latest = Date.now() - 3_600_000;
+  return at.getTime() > latest ? new Date(latest) : at;
+}
+
 async function printSummary(): Promise<void> {
-  const [users, topics, vocab, logs, posts, comments] = await Promise.all([
-    prisma.user.count(),
-    prisma.topic.count(),
-    prisma.vocabulary.count(),
-    prisma.activityLog.count(),
-    prisma.post.count(),
-    prisma.postComment.count(),
-  ]);
+  const [users, systemSets, userSets, vocab, logs, reviews, posts, comments, groups, reports, resets] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.topic.count({ where: { ownerId: null } }),
+      prisma.topic.count({ where: { ownerId: { not: null } } }),
+      prisma.vocabulary.count(),
+      prisma.activityLog.count(),
+      prisma.cardReview.count(),
+      prisma.post.count(),
+      prisma.postComment.count(),
+      prisma.group.count(),
+      prisma.studySetReport.count(),
+      prisma.passwordResetRequest.count(),
+    ]);
 
   console.log('\nSeed hoàn tất.');
-  console.log(`  ${users} người dùng | ${topics} chủ đề | ${vocab} từ vựng`);
-  console.log(`  ${logs} hoạt động`);
-  console.log(`  ${posts} bài diễn đàn (${comments} bình luận)`);
+  console.log(`  ${users} người dùng | ${systemSets} bộ thẻ Hệ thống | ${userSets} bộ thẻ người học | ${vocab} thẻ`);
+  console.log(`  ${logs} hoạt động | ${reviews} lượt ôn`);
+  console.log(`  ${posts} bài đăng (${comments} bình luận) | ${groups} nhóm lớp`);
+  console.log(`  ${reports} báo cáo bộ thẻ | ${resets} yêu cầu cấp lại mật khẩu`);
   console.log('\nTài khoản đăng nhập:');
   console.log('  admin@enghabit.com  / A1234567   (quản trị viên)');
   console.log('  user@enghabit.com   / A1234567   (có sẵn dữ liệu học tập)');
