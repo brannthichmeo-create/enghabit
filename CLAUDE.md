@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Trạng thái dự án
 
-Đã scaffold xong nền tảng: `shared` (enum, Zod schema, SM-2, streak, phần thưởng — có test), `be` (Express + Prisma + đầy đủ module auth/goals/habits/topics/flashcards/statistics/notifications/rewards/leaderboard/admin, cron nhắc nhở + cron vật phẩm giữ chuỗi), `fe` (React + Vite + Tailwind, auth + dashboard thống kê). `mobile` chưa scaffold.
+Đã scaffold xong nền tảng: `shared` (enum, Zod schema, SM-2, streak, phần thưởng — có test), `be` (Express + Prisma + đầy đủ module auth/goals/habits/topics/library/study/statistics/notifications/rewards/leaderboard/admin, cron nhắc nhở + cron vật phẩm giữ chuỗi), `fe` (React + Vite + Tailwind, auth + dashboard thống kê). `mobile` chưa scaffold.
 
-Các feature FE còn lại (habits, goals, flashcards, admin) đã có sẵn API backend và khuôn mẫu ở `fe/src/features/auth` + `fe/src/features/statistics` để làm theo.
+Các feature FE còn lại (habits, goals, admin) đã có sẵn API backend và khuôn mẫu ở `fe/src/features/auth` + `fe/src/features/statistics` để làm theo.
 
 ## Tổng quan hệ thống
 
@@ -16,41 +16,46 @@ Các feature FE còn lại (habits, goals, flashcards, admin) đã có sẵn API
 - Tạo tài khoản, quản lý thông tin cá nhân
 - Thiết lập mục tiêu học (số từ/ngày, số phút/ngày, số bài/tuần, streak N ngày)
 - Tạo và quản lý thói quen học tập (tần suất daily/weekly/custom), check-in hoàn thành
-- Học từ vựng theo chủ đề, ôn tập bằng flashcard (spaced repetition)
+- Khám phá bộ thẻ công khai, tự tạo bộ thẻ riêng tư/công khai, chia sẻ và báo cáo vi phạm (`/library`)
+- Học một bộ thẻ bằng flashcard hoặc trắc nghiệm (`/learn`), ôn thẻ tới hạn/quá hạn/yếu theo SM-2 (`/review`)
 - Xem chuỗi ngày học liên tiếp (streak), tỷ lệ hoàn thành thói quen, thống kê theo ngày/tuần/tháng
 - Điểm danh mỗi ngày nhận xu, làm ba nhiệm vụ ngày, mua vật phẩm giữ chuỗi để không mất streak khi lỡ nghỉ một hôm
 - Xem bảng xếp hạng theo tuần/tháng/toàn thời gian, biết mình đứng thứ mấy trong số người học
 - Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user), cảnh báo chuỗi sắp đứt, chúc mừng đạt mục tiêu — xem trong chuông thông báo và trang `/notifications`
 
-### Màn học — ĐANG TRỐNG, chờ dựng lại
+### Thư viện, Học và Ôn tập (module `library` + `study`)
 
-Module `lessons` đã bị **gỡ sạch ngày 12/09/2026** để dựng lại từ đầu: cả
-`be/src/modules/lessons/`, `fe/src/features/lessons/`, `shared/src/schemas/lesson.schema.ts`,
-`shared/src/constants/exercise.ts`, ba bảng `lesson_progress` / `mistakes` / `exam_attempts`,
-và enum `ExerciseType`. Route `/learn` cùng mục "Học" ở sidebar cũng đã gỡ.
+Đặc tả đầy đủ và mọi quyết định đã chốt: **`docs/ke-hoach-hoc-on-flashcard.md`** — đọc
+trước khi sửa. Thay cho module `lessons` (gỡ 12/09/2026) và màn `/flashcards` cũ.
 
-Hiện **không có màn học nào**. Người dùng chỉ còn Từ vựng và Ôn tập flashcard.
+- **Bộ thẻ = `Topic`, thẻ = `Vocabulary`.** Không có bảng StudySet/Flashcard riêng.
+  `ownerId` null là bộ "Hệ thống" do quản trị viên soạn ở `/admin/content`; có giá trị là
+  bộ người học tự tạo. `createdById` KHÔNG dùng để hiển thị tác giả.
+- **Quyền truy cập nằm ở MỘT chỗ: `be/src/modules/library/library.access.ts`.** Mọi truy
+  vấn bộ thẻ, thẻ, tiến độ, lịch sử của người học phải lọc qua `readableSetWhere` ngay
+  trong câu truy vấn. Người không có quyền nhận **404**, không nhận 403.
+- **Một thẻ, một trạng thái nhớ (`UserVocabProgress`).** Học và Ôn tập cùng gọi
+  `reviewCard()` của `shared/srs`. Lịch ôn tính theo NGÀY (`nextReviewDate` kiểu `DATE`),
+  không có mốc phút. Nhóm Yếu và các ngưỡng nằm ở `shared/src/study/study.ts`.
+- **Đáp án không rời server trước khi trả lời.** Đề phát kèm mã câu hỏi mã hoá AES-GCM
+  (`study/question-token.ts`) — chỉ ký là KHÔNG ĐỦ vì base64 đọc được. Mỗi câu chấm và ghi
+  ngay; `card_reviews.@@unique([userId, attemptKey])` chặn bấm hai lần.
+- **`ActivityLog` mỗi thẻ một dòng:** thẻ chưa từng học ghi `VOCAB_LEARNED`, thẻ đã có lịch
+  ghi `FLASHCARD_REVIEWED`. Kết thúc phiên Học ghi thêm một `QUIZ_COMPLETED` với
+  `dedupeKey = SESSION:<sessionKey>` — đây là nguồn của mục tiêu `LESSONS_PER_WEEK` (nay
+  hiển thị "Số phiên học mỗi tuần"). Không đổi tên enum: `activity_logs` còn dữ liệu cũ.
+- **Cram Mode không ghi gì cả** — không SRS, không `card_reviews`, không `ActivityLog`.
+  Ghi vào là cày được XP và streak vô hạn.
+- **`card_reviews` chỉ phục vụ lịch sử và độ chính xác.** Streak, XP, thống kê ngày vẫn
+  đọc `ActivityLog` — đếm hoạt động từ `card_reviews` là tạo nguồn số liệu thứ hai.
+- **Kiểm duyệt như nhóm lớp:** người học báo cáo bộ công khai, quản trị viên chặn (bắt buộc
+  lý do) hoặc bỏ qua ở `/admin/study-sets`. Không có xoá bộ thẻ phía quản trị. Bộ "Hệ
+  thống" không nhận báo cáo và không bị chặn. Chống báo cáo trùng bằng unique `pendingKey`.
+- Cờ tính năng giữ khoá cũ để không mất trạng thái đã lưu: `VOCABULARY` = Thư viện,
+  `FLASHCARDS` = Ôn tập, thêm `LEARN` = Học. `/study` kiểm tra cờ theo `source` trong service.
 
-Trước đó ở đây từng có lộ trình bài học, chế độ Kiểm tra sinh đề động, và theo dõi lỗi sai.
-Muốn xem thiết kế cũ thì đọc commit trước khi gỡ — **không** khôi phục nguyên trạng nếu
-không có lý do rõ ràng, vì mục đích của việc gỡ là làm lại khác đi.
-
-**Bốn ràng buộc phải giữ khi dựng lại:**
-
-- Hoạt động học **bắt buộc** gọi `recordActivity` của `activity-logs.service`, không tự ghi
-  `ActivityLog`. Đó là phễu duy nhất, và nó cập nhật streak trong cùng transaction.
-- `ActivityType` hiện có bốn giá trị, trong đó `QUIZ_COMPLETED` **vẫn còn dữ liệu cũ trong
-  `activity_logs`**. `GOAL_ACTIVITY_TYPE` và `XP_PER_ACTIVITY` ở `shared/` đã gắn với giá
-  trị này — đổi tên sẽ vỡ mục tiêu "số bài kiểm tra mỗi tuần", cách tính XP và bảng xếp hạng
-  của mọi người dùng hiện có.
-- `NotificationType.MISTAKES_PENDING` vẫn còn trong enum nhưng **không ai sinh ra nữa**. Giữ
-  lại vì các thông báo CŨ đã gửi đang mang giá trị đó; bỏ khỏi enum là chúng không đọc được.
-- Mục tiêu loại `GoalType.LESSONS_PER_WEEK` hiện **không có nguồn dữ liệu**. Dựng lại màn
-  học thì nhớ nối lại, hoặc gỡ luôn loại mục tiêu đó.
-
-Ba chỗ từng phụ thuộc vào `lessons` đã được gỡ khỏi, dựng lại thì cân nhắc nối lại:
-`DashboardPage` (thẻ "Việc hôm nay" giờ chỉ còn một việc), `Sidebar` (mất mục "Học"),
-`reminder.job.ts` (mất nhánh nhắc "từ sai chờ luyện lại").
+`NotificationType.MISTAKES_PENDING` vẫn còn trong enum nhưng **không ai sinh ra nữa**. Giữ
+lại vì các thông báo CŨ đã gửi đang mang giá trị đó; bỏ khỏi enum là chúng không đọc được.
 
 ### Nhóm lớp (mọi người dùng)
 
@@ -98,7 +103,8 @@ Quản trị viên **vận hành hệ thống, không phải người học**: �
 - **Quản lý tài khoản** (`/admin/users`) — tìm kiếm/lọc/sắp xếp (theo tên, **tên tài khoản** hoặc email), xem hồ sơ chi tiết, đổi vai trò, khoá–mở khoá, xoá
 - **Quản lý yêu cầu** (`/admin/requests`) — duyệt hoặc từ chối (kèm lý do) yêu cầu cấp lại mật khẩu; tab Nhật ký ghi ai xử lý, lúc nào, vì sao
 - **Lượt truy cập** (`/admin/access`) — nhật ký đăng nhập (cả lần thất bại), lượt truy cập theo ngày, phiên đang mở
-- **Nội dung học tập** (`/admin/content`) — chủ đề, từ vựng
+- **Nội dung học tập** (`/admin/content`) — bộ thẻ "Hệ thống" (chủ đề, từ vựng); không sửa được bộ người học tự tạo
+- **Kiểm duyệt bộ thẻ** (`/admin/study-sets`) — xem báo cáo vi phạm, chặn/mở chặn bộ thẻ công khai, bỏ qua báo cáo
 - **Quản lý tính năng** (`/admin/features`) — bật/tắt từng tính năng của người học
 
 Ba quy tắc an toàn bắt buộc giữ khi sửa module này (đã cài trong `admin.service.ts`):
@@ -132,9 +138,9 @@ Sáu quyết định bắt buộc giữ:
   luôn phải chạy.
 - **Không có cờ cho `auth`, `admin`, `profile`, `notifications` và trang Tổng quan.** Tắt
   được chúng là tự khoá cửa nhà mình.
-- **`/topics` và `/community` có `adminBypass`.** Hai nhánh này dùng chung hai vai trò:
-  tắt Từ vựng không được làm quản trị viên mất khả năng soạn nội dung, tắt Cộng đồng
-  không được khoá luôn người kiểm duyệt.
+- **`/community` có `adminBypass`; `/topics` không gắn cờ nào.** Tắt Cộng đồng không được
+  khoá luôn người kiểm duyệt, tắt Thư viện không được làm quản trị viên mất khả năng soạn
+  bộ "Hệ thống" (`/topics` giờ chỉ cho quản trị viên).
 - **Tắt là đảo ngược được.** Không dọn `ActivityLog`, không xoá `Goal`/`Habit`, không
   tính lại streak — bật lại là người học thấy lại đúng chỗ đang dở.
 
@@ -171,7 +177,7 @@ thấy một dãy số 0 vô nghĩa và tưởng hệ thống đếm sai:
 
 ```
 enghabit/
-├── fe/                # Web (React + Vite) — features/{auth,goals,habits,vocabulary,flashcards,statistics,notifications,admin}/
+├── fe/                # Web (React + Vite) — features/{auth,goals,habits,library,study,statistics,notifications,admin}/
 ├── be/                # Backend (Node + Prisma) — modules/{...cùng tên feature với fe...}/
 ├── mobile/            # React Native (Expo) — thêm sau, cùng tên feature
 ├── shared/            # @enghabit/shared: schemas (Zod), constants/enum, srs/ (SM-2), streak/ (tính streak)
@@ -182,7 +188,7 @@ enghabit/
 Bên trong `be/src/modules/<feature>/`: `routes.ts → controller.ts → service.ts → schema.ts`.
 Bên trong `fe/src/features/<feature>/`: `components/`, `hooks/`, `api.ts`, `types.ts`.
 
-Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `vocabulary`, `flashcards`, `statistics`, `notifications`, `rewards`, `leaderboard`, `feature-flags`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
+Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `library`, `study`, `statistics`, `notifications`, `rewards`, `leaderboard`, `feature-flags`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
 
 **Hai quy ước bắt buộc khi scaffold:**
 
@@ -385,11 +391,11 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - Query param kiểu boolean **không dùng `z.coerce.boolean()`**: query string luôn là chuỗi và `Boolean('false') === true`, nên bộ lọc sẽ luôn bật. Dùng `z.preprocess` so khớp `'true'`/`'1'` (xem `notificationQuerySchema`).
 - Mọi route `/admin/*` bắt buộc đi qua role-guard middleware.
 - **Và ngược lại: module học tập chặn `requireRole(UserRole.USER)` ngay ở tầng router** —
-  `rewards`, `flashcards`, `habits`, `goals`, `statistics`, cùng
+  `rewards`, `library`, `study`, `habits`, `goals`, `statistics`, cùng
   `/notifications/settings`. Ẩn trên giao diện là chưa đủ: token admin gọi thẳng API vẫn
-  điểm danh lấy xu hay ghi `ActivityLog` được. Hai ngoại lệ cố ý mở cho cả hai vai trò:
-  `/topics` (khu quản trị đọc để quản lý nội dung) và danh sách `/notifications` (quản trị
-  viên vẫn nhận thông báo hệ thống trong chuông).
+  điểm danh lấy xu hay ghi `ActivityLog` được. `/topics` giờ ngược lại — chỉ quản trị viên
+  đọc, để soạn bộ "Hệ thống". Ngoại lệ cố ý mở cho cả hai vai trò: danh sách
+  `/notifications` (quản trị viên vẫn nhận thông báo hệ thống trong chuông).
 - Thay đổi schema DB luôn qua `prisma migrate dev`, không sửa tay trực tiếp trên MySQL.
 
 ## Quy tắc tái sử dụng code
@@ -407,7 +413,7 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - Streak "tự nhiên còn" dù có ngày nghỉ: xem `streak_freezes` — rất có thể một vật phẩm đã bù ngày đó (job chạy 30 phút một lượt). Đây là hành vi đúng, không phải bug.
 - Không nhận được xu: kiểm tra `coin_transactions` theo `dedupe_key` của ngày đó. Trùng khoá nghĩa là đã nhận rồi, API trả lỗi 409 chứ không cộng thêm lần nữa.
 - Test đặt cạnh file nguồn trong cùng thư mục module (`*.test.ts`), không gom vào thư mục `tests/` tách biệt.
-- FE: mỗi feature lớn (`flashcards`, `community`...) có Error Boundary cục bộ, tránh lỗi 1 feature làm crash toàn app.
+- FE: mỗi feature lớn (`study`, `community`...) có Error Boundary cục bộ, tránh lỗi 1 feature làm crash toàn app.
 - Debug cron/notification: xem log riêng của `be/src/jobs`, không lẫn với log của module `notifications` (module này giữ **nội dung và lưu trữ** thông báo + cấu hình nhắc nhở, nhưng **không chứa lịch trình gửi**).
 - Không nhận được nhắc nhở: kiểm tra theo thứ tự (1) `notification_settings.is_enabled` — công tắc tổng, tắt là im hết; (2) bảng `reminders`: có mốc nào `is_enabled` và `days_of_week` chứa thứ hôm nay không; (3) `User.timezone` — giờ nhắc tính theo giờ user, không phải giờ máy chủ; (4) hôm đó user đã có `ActivityLog` chưa (đã học thì hệ thống cố ý im lặng); (5) bảng `notifications` xem `dedupe_key` (`DAILY_REMINDER:<reminderId>:<local_date>`) của ngày đó đã tồn tại chưa.
 
