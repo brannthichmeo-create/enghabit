@@ -21,6 +21,7 @@ Các feature FE còn lại (habits, goals, admin) đã có sẵn API backend và
 - Xem chuỗi ngày học liên tiếp (streak), tỷ lệ hoàn thành thói quen, thống kê theo ngày/tuần/tháng
 - Điểm danh mỗi ngày nhận xu, làm ba nhiệm vụ ngày, mua vật phẩm giữ chuỗi để không mất streak khi lỡ nghỉ một hôm
 - Xem bảng xếp hạng theo tuần/tháng/toàn thời gian, biết mình đứng thứ mấy trong số người học
+- Lập nhóm lớp, đăng bài nội bộ, nhắc nhau bằng `@`, dùng chung kho tài liệu của nhóm và học các bộ thẻ trưởng nhóm chia sẻ
 - Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user), cảnh báo chuỗi sắp đứt, chúc mừng đạt mục tiêu — xem trong chuông thông báo và trang `/notifications`
 
 ### Thư viện, Học và Ôn tập (module `library` + `study`)
@@ -92,6 +93,33 @@ Ba quy tắc bắt buộc giữ khi sửa module này:
 - **Bài của nhóm dùng lại module community**, không dựng bảng bài viết thứ hai — nhờ vậy
   tệp đính kèm, bình luận, thả tim chỉ có một bản triển khai. Khoá cache của FE
   (`communityKeys.list`) **bắt buộc chứa `groupId`**, thiếu là hai bảng tin dùng chung ô cache.
+
+#### Đề cập, tài liệu và bộ thẻ trong nhóm
+
+Nhóm có năm tab: Bảng tin, **Tài liệu nhóm**, **Flashcard**, Thành viên, Yêu cầu (và Cài
+đặt cho trưởng nhóm). Bốn quyết định bắt buộc giữ:
+
+- **Người được nhắc do BACKEND tách ra từ chính nội dung bài**, không nhận danh sách từ
+  frontend — nhận là gọi thẳng API nhắc được cả người ngoài nhóm. Cả hai phía tách bằng
+  cùng `matchMentions` của `shared/mention`, nên ô gợi ý và người thật sự nhận thông báo
+  không bao giờ lệch. Nội dung vẫn là **văn bản thuần**: không lưu bảng liên kết
+  "bài ↔ người được nhắc", `@all` là cả nhóm, gõ tên không có thật thì chỉ là chữ thường.
+  Thông báo đề cập **không được làm hỏng việc đăng bài** — `notifyMentions` tự nuốt lỗi
+  và chỉ ghi log, vì bài đã ghi vào DB trước đó rồi.
+- **Tài liệu nhóm KHÔNG có bảng riêng và không có đường tải lên riêng.** Nó chính là
+  `post_attachments` của các bài có `group_id`, xếp theo bài mới nhất; tải về vẫn đi qua
+  `/community/attachments/:id` (endpoint đó đã kiểm tra tư cách thành viên). Dựng kho tệp
+  thứ hai là hai chỗ kiểm định dạng, hai chỗ kiểm quyền, và tệp mất ngữ cảnh "ai đăng,
+  trong bài nào".
+- **Chia sẻ bộ thẻ KHÔNG nhân bản bộ thẻ.** `group_study_sets` chỉ là một dòng liên kết
+  mở thêm quyền đọc; bộ vẫn là một dòng duy nhất trong `topics` do chủ sửa ở Thư viện.
+  Nhân bản thì bản trong nhóm đứng yên trong khi bản gốc được sửa tiếp. Vì vậy quyền đọc
+  phải gắn ở **đúng một chỗ** — nhánh thứ ba của `readableSetWhere` trong
+  `library.access.ts`, có lọc cả nhóm bị chặn lẫn bộ bị chặn. Chỉ trưởng nhóm chia sẻ và
+  gỡ, và chỉ chia sẻ được bộ **của chính mình** (kể cả riêng tư); trong nhóm bộ nào cũng
+  mang nhãn "Nội bộ", còn ở Thư viện chế độ của nó giữ nguyên.
+- **Gỡ chia sẻ không xoá tiến độ.** `user_vocab_progress` giữ nguyên để chia sẻ lại là
+  học tiếp được — cùng nguyên tắc với việc chuyển một bộ về riêng tư.
 
 ### Chức năng cho quản trị viên
 

@@ -2,8 +2,10 @@ import { Router } from 'express';
 import {
   addMemberSchema,
   createGroupSchema,
+  groupDocumentQuerySchema,
   groupSearchSchema,
   joinGroupSchema,
+  shareStudySetSchema,
   updateGroupSchema,
   updateMemberRoleSchema,
 } from '@enghabit/shared';
@@ -48,3 +50,26 @@ groupRoutes.patch(
   asyncHandler(controller.updateRole),
 );
 groupRoutes.delete('/:id/members/:userId', asyncHandler(controller.removeMember));
+
+// --- Đề cập ---
+// Danh sách người có thể nhắc bằng @. Chỉ thành viên gọi được, kiểm tra trong service.
+groupRoutes.get('/:id/mentions', asyncHandler(controller.mentionTargets));
+
+// --- Tài liệu nhóm ---
+// Chỉ LIỆT KÊ. Tệp đi lên bằng bài đăng, tải về qua /community/attachments/:id — cả hai
+// đã có sẵn ở module community, dựng thêm đường thứ hai là hai chỗ phải canh cùng một luật.
+groupRoutes.get(
+  '/:id/documents',
+  validateQuery(groupDocumentQuerySchema),
+  asyncHandler(controller.documents),
+);
+
+// --- Bộ thẻ chia sẻ trong nhóm ---
+// Mọi thành viên xem được; chỉ trưởng nhóm thêm và gỡ (kiểm tra trong service).
+groupRoutes.get('/:id/study-sets', asyncHandler(controller.studySets));
+groupRoutes.post(
+  '/:id/study-sets',
+  validateBody(shareStudySetSchema),
+  asyncHandler(controller.shareStudySet),
+);
+groupRoutes.delete('/:id/study-sets/:setId', asyncHandler(controller.unshareStudySet));

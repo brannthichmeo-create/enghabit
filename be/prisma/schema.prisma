@@ -101,6 +101,10 @@ enum NotificationType {
   STUDY_SET_UNBLOCKED
   /// Báo cáo của mình đã được xử lý — gửi cho người báo cáo
   STUDY_SET_REPORT_RESOLVED
+  /// Được ai đó đề cập bằng @ trong bài đăng hoặc bình luận của nhóm
+  MENTIONED
+  /// Trưởng nhóm chia sẻ một bộ thẻ vào nhóm — gửi cho MỌI thành viên
+  GROUP_STUDY_SET_SHARED
 }
 
 /// Ai thấy một bộ thẻ. PRIVATE thì người khác mở liên kết cũng nhận 404.
@@ -218,6 +222,7 @@ model User {
   groupMemberships    GroupMember[]
   groupJoinRequests   GroupJoinRequest[]   @relation("JoinRequestUser")
   groupDecisions      GroupJoinRequest[]   @relation("JoinRequestDecidedBy")
+  sharedGroupStudySets GroupStudySet[]     @relation("GroupStudySetSharedBy")
   posts               Post[]
   postComments        PostComment[]
   postLikes           PostLike[]
@@ -441,6 +446,7 @@ model Topic {
   blockedBy    User?            @relation("TopicBlockedBy", fields: [blockedById], references: [id], onDelete: SetNull)
   vocabularies Vocabulary[]
   reports      StudySetReport[]
+  groupShares  GroupStudySet[]
 
   @@index([level])
   @@index([ownerId])
@@ -901,6 +907,7 @@ model Group {
   members      GroupMember[]
   joinRequests GroupJoinRequest[]
   posts        Post[]
+  studySets    GroupStudySet[]
 
   @@index([visibility, createdAt])
   @@index([blockedAt])
@@ -953,6 +960,38 @@ model GroupJoinRequest {
   @@index([groupId, status])
   @@index([userId])
   @@map("group_join_requests")
+}
+
+/// Một bộ thẻ được trưởng nhóm chia sẻ vào nhóm.
+///
+/// Bảng này CHỈ mở thêm quyền đọc, không sao chép gì cả: bộ thẻ vẫn là một dòng duy
+/// nhất trong `topics`, do chủ của nó sửa ở Thư viện. Nhân bản bộ thẻ khi chia sẻ sẽ
+/// làm bản trong nhóm đứng yên trong khi bản gốc được sửa tiếp, và mỗi người học một
+/// nội dung khác nhau.
+///
+/// Gỡ chia sẻ hoặc xoá bộ thẻ chỉ xoá dòng ở đây; tiến độ SRS của thành viên giữ
+/// nguyên để chia sẻ lại là học tiếp được (cùng lý do với việc chuyển bộ về riêng tư).
+model GroupStudySet {
+  id      Int @id @default(autoincrement())
+  groupId Int @map("group_id")
+  topicId Int @map("topic_id")
+
+  /// Trưởng nhóm đã chia sẻ. Null khi tài khoản đó bị xoá — bộ vẫn ở lại nhóm vì
+  /// những người đang học dở không nên mất quyền vì một người rời đi.
+  sharedById Int? @map("shared_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  topic    Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  sharedBy User? @relation("GroupStudySetSharedBy", fields: [sharedById], references: [id], onDelete: SetNull)
+
+  /// Chặn chia sẻ hai lần cùng một bộ vào cùng một nhóm. Đây là thứ DUY NHẤT chặn
+  /// được khi hai trưởng nhóm bấm cùng lúc — kiểm tra đọc-rồi-ghi vẫn lọt.
+  @@unique([groupId, topicId])
+  @@index([groupId, createdAt])
+  @@index([topicId])
+  @@map("group_study_sets")
 }
 
 /// Một vật phẩm giữ chuỗi. Mỗi dòng là một cái đã mua.

@@ -1340,4 +1340,54 @@ export const EN: Dictionary = {
   'Bộ thẻ bị chặn': 'Card set blocked',
   'Bộ thẻ được mở chặn': 'Card set unblocked',
   'Báo cáo đã được xử lý': 'Report handled',
+
+  // --- Nhóm lớp: đề cập (@mention) --------------------------------------------------
+  'Được nhắc tên': 'Mentioned',
+  'Gợi ý người để nhắc': 'People you can mention',
+  'Tất cả thành viên trong nhóm': 'Everyone in the group',
+  'Viết bình luận, gõ @ để nhắc ai đó…': 'Write a comment, type @ to mention someone…',
+  '{n}/10000 ký tự. Gõ @ để nhắc một thành viên, @all để nhắc cả nhóm.':
+    '{n}/10000 characters. Type @ to mention a member, @all for the whole group.',
+
+  // --- Nhóm lớp: tài liệu chung -----------------------------------------------------
+  'Tài liệu nhóm': 'Group files',
+  'Tìm theo tên tệp': 'Search by file name',
+  'Không có tệp nào khớp': 'No matching files',
+  'Thử một từ khoá khác trong tên tệp.': 'Try another keyword from the file name.',
+  'Nhóm chưa có tài liệu nào': 'This group has no files yet',
+  'Đính kèm tệp vào một bài đăng, tệp sẽ tự hiện ở đây cho cả nhóm.':
+    'Attach a file to a post and it shows up here for the whole group.',
+  'Tệp đính kèm sẽ vào tab Tài liệu nhóm, mọi thành viên tải về được.':
+    'Attachments go to the Group files tab, where every member can download them.',
+  'Tải về': 'Download',
+  'Trang trước': 'Previous',
+  'Trang sau': 'Next',
+  '{size} · {name} đăng trong "{post}"': '{size} · {name} posted in "{post}"',
+
+  // --- Nhóm lớp: bộ thẻ chia sẻ -----------------------------------------------------
+  'Chia sẻ bộ thẻ vào nhóm': 'Share a card set',
+  'Chỉ trưởng nhóm chia sẻ được. Chọn trong các bộ thẻ bạn tự tạo ở Thư viện.':
+    'Only group leaders can share. Pick one of the sets you created in the Library.',
+  'Chọn bộ thẻ để chia sẻ': 'Pick a card set to share',
+  'Nhóm chưa có bộ thẻ nào': 'This group has no card sets yet',
+  'Chia sẻ một bộ thẻ của bạn để cả nhóm cùng học.':
+    'Share one of your card sets so the whole group can study it.',
+  'Khi trưởng nhóm chia sẻ bộ thẻ, bộ đó sẽ hiện ở đây cho cả nhóm cùng học.':
+    'Card sets shared by a group leader show up here for everyone to study.',
+  'Bạn chưa có bộ thẻ nào': 'You have no card sets yet',
+  'Tạo một bộ thẻ ở Thư viện rồi quay lại đây để chia sẻ cho cả nhóm.':
+    'Create a card set in the Library, then come back here to share it.',
+  'Nội bộ': 'Group only',
+  'Công khai ở Thư viện': 'Public in Library',
+  'Riêng tư ở Thư viện': 'Private in Library',
+  'Mở bộ thẻ': 'Open set',
+  'Đã có trong nhóm': 'Already shared',
+  'Đã chia sẻ "{name}" vào nhóm': '"{name}" shared with the group',
+  'Gỡ khỏi nhóm': 'Remove from group',
+  'Gỡ "{name}" khỏi nhóm?': 'Remove "{name}" from the group?',
+  'Thành viên sẽ không học bộ này qua nhóm nữa. Bộ thẻ trong Thư viện của chủ vẫn còn nguyên, và tiến độ đã học không mất.':
+    'Members lose access through the group. The owner keeps the set in their Library, and study progress is not lost.',
+  'Đã gỡ bộ thẻ khỏi nhóm': 'Card set removed from the group',
+  '{name} chia sẻ ngày {date}': 'Shared by {name} on {date}',
+  'Nhóm có bộ thẻ mới': 'New card set in your group',
 };

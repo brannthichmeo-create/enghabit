@@ -18,4 +18,5 @@ export * from './rewards/rewards.js';
 export * from './report/report.js';
 export * from './avatar/avatar.js';
 export * from './attachment/attachment.js';
+export * from './mention/mention.js';
 export * from './schemas/index.js';

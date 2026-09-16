@@ -13,7 +13,9 @@ import { Button, ErrorMessage, Field, Input } from '../../../shared/components/u
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { useToast } from '../../../shared/components/Toast';
 import { useCreatePost } from '../community.hooks';
+import { useMentionTargets } from '../../groups/group.hooks';
 import { formatFileSize } from './AttachmentView';
+import { MentionBox } from './MentionBox';
 import { useT } from '../../../shared/i18n/language';
 
 /**
@@ -50,6 +52,7 @@ export function PostComposer({
   const toast = useToast();
   const createPost = useCreatePost();
   const fileInput = useRef<HTMLInputElement>(null);
+  const mentionTargets = useMentionTargets(groupId ?? null);
 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -139,17 +142,27 @@ export function PostComposer({
 
       <Field
         label={t('Nội dung')}
-        hint={t('{n}/10000 ký tự', { n: body.length })}
+        hint={
+          groupId
+            ? t('{n}/10000 ký tự. Gõ @ để nhắc một thành viên, @all để nhắc cả nhóm.', {
+                n: body.length,
+              })
+            : t('{n}/10000 ký tự', { n: body.length })
+        }
         error={fieldErrors.body}
       >
-        <textarea
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          placeholder={t('Mô tả cụ thể giúp người khác trả lời dễ hơn.')}
-          rows={5}
-          maxLength={10_000}
-          className="mt-1.5 w-full rounded-lg border border-line-control bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10"
-        />
+        <div className="mt-1.5">
+          <MentionBox
+            value={body}
+            onChange={setBody}
+            // Diễn đàn chung không có danh sách thành viên để nhắc — mảng rỗng biến ô
+            // này thành textarea thường, không có gợi ý nào bật lên.
+            targets={mentionTargets.data ?? []}
+            placeholder={t('Mô tả cụ thể giúp người khác trả lời dễ hơn.')}
+            rows={5}
+            maxLength={10_000}
+          />
+        </div>
       </Field>
 
       {files.length > 0 && (
@@ -206,6 +219,13 @@ export function PostComposer({
               size: Math.round(ATTACHMENT_MAX_BYTES / 1000),
             })}
           </p>
+          {/* Nói trước để người đăng biết tệp không chỉ nằm trong bài của mình: nó vào
+              luôn kho tài liệu chung, ai trong nhóm cũng xem và tải được. */}
+          {groupId && (
+            <p className="mt-1 text-xs text-content-muted">
+              {t('Tệp đính kèm sẽ vào tab Tài liệu nhóm, mọi thành viên tải về được.')}
+            </p>
+          )}
         </div>
 
         <div className="flex gap-2">

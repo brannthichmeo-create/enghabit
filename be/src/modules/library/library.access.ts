@@ -28,11 +28,30 @@ export function publicSetWhere(): Prisma.TopicWhereInput {
 }
 
 /**
+ * Bộ thẻ được chia sẻ vào một nhóm mà `userId` đang là thành viên.
+ *
+ * Chia sẻ mở thêm quyền đọc cho ĐÚNG thành viên nhóm, kể cả với bộ riêng tư — đó là ý
+ * nghĩa của trạng thái "nội bộ" hiện trong nhóm. Nhưng:
+ *
+ * - Nhóm bị chặn thì không mở gì cả, đúng như `isMember` của group.service: chặn mà nội
+ *   dung vẫn dùng được thì không phải là chặn.
+ * - Bộ đang bị chặn vẫn ẩn. Chia sẻ vào nhóm không được trở thành đường vòng để phát
+ *   tán một bộ mà quản trị viên đã gỡ.
+ */
+function groupSharedSetWhere(userId: number): Prisma.TopicWhereInput {
+  return {
+    blockedAt: null,
+    groupShares: { some: { group: { blockedAt: null, members: { some: { userId } } } } },
+  };
+}
+
+/**
  * Bộ thẻ `userId` được xem, học và ôn: của chính mình (kể cả riêng tư hoặc đang bị
- * chặn — chủ vẫn phải thấy để biết lý do và sửa), hoặc bộ công khai hợp lệ.
+ * chặn — chủ vẫn phải thấy để biết lý do và sửa), bộ công khai hợp lệ, hoặc bộ được
+ * chia sẻ vào một nhóm mà họ là thành viên.
  */
 export function readableSetWhere(userId: number): Prisma.TopicWhereInput {
-  return { OR: [{ ownerId: userId }, publicSetWhere()] };
+  return { OR: [{ ownerId: userId }, publicSetWhere(), groupSharedSetWhere(userId)] };
 }
 
 /** Bộ thẻ mà người học đã bắt đầu học — có ít nhất một thẻ đã có lịch ôn. */

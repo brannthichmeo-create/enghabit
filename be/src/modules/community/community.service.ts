@@ -18,6 +18,7 @@ import {
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { isMember } from '../groups/group.service.js';
+import { notifyMentions } from './mention.service.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors/app-error.js';
 import { getLevelsFor } from '../statistics/statistics.service.js';
 
@@ -185,6 +186,8 @@ export async function getPost(
 
   return {
     id: post.id,
+    // Giao diện cần biết bài thuộc nhóm nào để ô bình luận bật được gợi ý `@`.
+    groupId: post.groupId,
     title: post.title,
     body: post.body,
     author: toAuthor(post.author, levels),
@@ -265,7 +268,21 @@ export async function createPost(
     return created;
   });
 
-  return getPost(post.id, author);
+  const detail = await getPost(post.id, author);
+
+  // Sau khi bài đã ghi xong: người được nhắc chỉ nên nhận thông báo về một bài có thật.
+  // Hàm này tự nuốt lỗi nên đề cập hỏng không làm hỏng việc đăng bài.
+  await notifyMentions({
+    groupId: detail.groupId ?? null,
+    authorId: author.id,
+    authorName: detail.author.name,
+    // Cả tiêu đề lẫn nội dung: người ta hay nhắc tên ngay ở tiêu đề ("@all họp nhóm").
+    text: `${input.title}\n${input.body}`,
+    postId: detail.id,
+    postTitle: detail.title,
+  });
+
+  return detail;
 }
 
 export async function deletePost(
@@ -289,13 +306,26 @@ export async function createComment(
   authorId: number,
   input: CreateCommentInput,
 ): Promise<PostCommentRow> {
-  const post = await prisma.post.findUnique({ where: { id: postId }, select: { groupId: true } });
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { groupId: true, title: true },
+  });
   if (!post) throw new NotFoundError('Không tìm thấy bài viết');
   if (post.groupId !== null) await assertGroupAccess(post.groupId, authorId);
 
   const comment = await prisma.postComment.create({
     data: { postId, authorId, body: input.body },
     include: { author: { select: AUTHOR_SELECT } },
+  });
+
+  await notifyMentions({
+    groupId: post.groupId,
+    authorId,
+    authorName: comment.author.name,
+    text: input.body,
+    postId,
+    postTitle: post.title,
+    commentId: comment.id,
   });
 
   return {

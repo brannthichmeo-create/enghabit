@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  AtSign,
   Bell,
   CircleCheck,
   Flag,
@@ -95,6 +96,16 @@ const DISPLAY: Record<NotificationType, Display> = {
     icon: CircleCheck,
     label: 'Báo cáo đã được xử lý',
     tone: 'text-brand-strong',
+  },
+  [NotificationType.MENTIONED]: {
+    icon: AtSign,
+    label: 'Được nhắc tên',
+    tone: 'text-brand-strong',
+  },
+  [NotificationType.GROUP_STUDY_SET_SHARED]: {
+    icon: Layers,
+    label: 'Nhóm có bộ thẻ mới',
+    tone: 'text-brand',
   },
 };
 

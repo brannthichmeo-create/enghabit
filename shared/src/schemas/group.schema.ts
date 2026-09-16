@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { GroupJoinStatus, GroupMemberRole, GroupVisibility } from '../constants/enums.js';
+import {
+  GroupJoinStatus,
+  GroupMemberRole,
+  GroupVisibility,
+  StudySetVisibility,
+  VocabLevel,
+} from '../constants/enums.js';
 
 /**
  * Nhóm lớp — không gian trao đổi nội bộ do chính người học tạo ra.
@@ -139,6 +145,70 @@ export interface JoinGroupResult {
   state: GroupViewerState;
   /** true nghĩa là đã là thành viên ngay, không phải chờ duyệt. */
   joined: boolean;
+}
+
+// --- Tài liệu nhóm ---
+
+/**
+ * Tài liệu nhóm KHÔNG có bảng riêng: nó chính là tệp đính kèm của các bài đăng trong
+ * nhóm, xếp theo bài mới nhất.
+ *
+ * Dựng một kho tệp thứ hai sẽ có hai đường tải lên, hai chỗ kiểm định dạng và hai chỗ
+ * phải kiểm tra tư cách thành viên — mà tệp đính kèm của community đã làm đủ cả ba.
+ * Tải về vẫn đi qua đúng endpoint `/community/attachments/:id`.
+ */
+export const groupDocumentQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+  /** Tìm theo tên tệp. */
+  search: z.string().trim().max(255).optional(),
+});
+export type GroupDocumentQueryInput = z.infer<typeof groupDocumentQuerySchema>;
+
+export interface GroupDocumentRow {
+  /** Id của `PostAttachment` — dùng thẳng cho endpoint tải tệp. */
+  id: number;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  isImage: boolean;
+  /** Thời điểm bài mang tệp này được đăng. */
+  createdAt: string;
+  /** Bài đăng đã mang tệp lên, để mở lại ngữ cảnh trao đổi. */
+  postId: number;
+  postTitle: string;
+  uploaderName: string;
+}
+
+// --- Bộ thẻ chia sẻ trong nhóm ---
+
+/**
+ * Trưởng nhóm chia sẻ một bộ thẻ của CHÍNH MÌNH vào nhóm.
+ *
+ * Chia sẻ không đổi gì trong Thư viện: bộ riêng tư vẫn riêng tư với người ngoài nhóm,
+ * bộ công khai vẫn công khai. Nó chỉ mở thêm quyền đọc/học cho thành viên nhóm.
+ */
+export const shareStudySetSchema = z.object({
+  setId: z.number().int().positive(),
+});
+export type ShareStudySetInput = z.infer<typeof shareStudySetSchema>;
+
+export interface GroupStudySetRow {
+  setId: number;
+  name: string;
+  description: string | null;
+  level: VocabLevel;
+  cardCount: number;
+  /**
+   * Chế độ của bộ thẻ trong Thư viện — hiện để trưởng nhóm biết mình đang chia sẻ bộ
+   * riêng tư hay bộ công khai. Trong nhóm thì bộ nào cũng là nội bộ.
+   */
+  visibility: StudySetVisibility;
+  /** Người đã chia sẻ bộ này vào nhóm. Null nếu tài khoản đó đã bị xoá. */
+  sharedByName: string | null;
+  sharedAt: string;
+  /** Người đang xem có phải chủ bộ thẻ không — chủ mới sửa được nội dung ở Thư viện. */
+  isOwner: boolean;
 }
 
 // --- Dành cho quản trị viên ---

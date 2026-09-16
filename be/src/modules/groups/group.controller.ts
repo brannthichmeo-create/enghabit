@@ -1,10 +1,12 @@
 import type { Request, Response } from 'express';
 import {
   GroupMemberRole,
+  groupDocumentQuerySchema,
   groupSearchSchema,
   type AddMemberInput,
   type CreateGroupInput,
   type JoinGroupInput,
+  type ShareStudySetInput,
   type UpdateGroupInput,
   type UpdateMemberRoleInput,
 } from '@enghabit/shared';
@@ -103,6 +105,47 @@ export async function removeMember(req: Request, res: Response): Promise<void> {
   await groupService.removeMember(
     parseId(req.params.id),
     parseId(req.params.userId),
+    currentUser(req).id,
+  );
+  res.status(204).send();
+}
+
+// --- Đề cập, tài liệu và bộ thẻ của nhóm ---
+
+export async function mentionTargets(req: Request, res: Response): Promise<void> {
+  res.json(await groupService.listMentionTargets(parseId(req.params.id), currentUser(req).id));
+}
+
+export async function documents(req: Request, res: Response): Promise<void> {
+  res.json(
+    await groupService.listDocuments(
+      parseId(req.params.id),
+      currentUser(req).id,
+      getValidatedQuery(req, groupDocumentQuerySchema),
+    ),
+  );
+}
+
+export async function studySets(req: Request, res: Response): Promise<void> {
+  res.json(await groupService.listStudySets(parseId(req.params.id), currentUser(req).id));
+}
+
+export async function shareStudySet(req: Request, res: Response): Promise<void> {
+  res
+    .status(201)
+    .json(
+      await groupService.shareStudySet(
+        parseId(req.params.id),
+        currentUser(req).id,
+        req.body as ShareStudySetInput,
+      ),
+    );
+}
+
+export async function unshareStudySet(req: Request, res: Response): Promise<void> {
+  await groupService.unshareStudySet(
+    parseId(req.params.id),
+    parseId(req.params.setId),
     currentUser(req).id,
   );
   res.status(204).send();

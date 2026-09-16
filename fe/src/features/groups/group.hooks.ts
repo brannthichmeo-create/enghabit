@@ -9,15 +9,21 @@ import type {
   AddMemberInput,
   CreateGroupInput,
   GroupDetail,
+  GroupDocumentQueryInput,
+  GroupDocumentRow,
   GroupMemberRole,
   GroupMemberRow,
   GroupSearchInput,
+  GroupStudySetRow,
   GroupSummary,
   JoinGroupResult,
+  MentionTarget,
   Paginated,
   UpdateGroupInput,
 } from '@enghabit/shared';
 import { communityKeys } from '../community/community.hooks';
+import { libraryKeys } from '../library/library.hooks';
+import { studyKeys } from '../study/study.hooks';
 import * as groupApi from './group.api';
 
 export const groupKeys = {
@@ -26,6 +32,10 @@ export const groupKeys = {
   search: (query: Partial<GroupSearchInput>) => ['groups', 'search', query] as const,
   detail: (id: number) => ['groups', 'detail', id] as const,
   byCode: (code: string) => ['groups', 'code', code] as const,
+  mentions: (id: number) => ['groups', 'mentions', id] as const,
+  documents: (id: number, query: Partial<GroupDocumentQueryInput>) =>
+    ['groups', 'documents', id, query] as const,
+  studySets: (id: number) => ['groups', 'study-sets', id] as const,
 };
 
 export function useMyGroups(): UseQueryResult<GroupSummary[]> {
@@ -133,6 +143,65 @@ export function useRemoveMember(): UseMutationResult<
 }
 
 /**
+ * Danh sách người có thể nhắc bằng @.
+ *
+ * `staleTime` dài vì danh sách thành viên đổi rất thưa, còn hook này bị gọi mỗi lần mở
+ * ô soạn bài hay ô bình luận — hỏi lại server mỗi lần chỉ làm ô gợi ý hiện chậm hơn.
+ * Người vừa được thêm vào nhóm vẫn nhắc được ngay vì mọi thao tác thành viên đều
+ * `invalidate` cả `groupKeys.all`.
+ */
+export function useMentionTargets(groupId: number | null): UseQueryResult<MentionTarget[]> {
+  return useQuery({
+    queryKey: groupKeys.mentions(groupId ?? 0),
+    queryFn: () => groupApi.listMentionTargets(groupId as number),
+    enabled: groupId !== null,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useGroupDocuments(
+  groupId: number,
+  query: Partial<GroupDocumentQueryInput>,
+): UseQueryResult<Paginated<GroupDocumentRow>> {
+  return useQuery({
+    queryKey: groupKeys.documents(groupId, query),
+    queryFn: () => groupApi.listGroupDocuments(groupId, query),
+    // Giữ trang cũ trong lúc tải trang mới để danh sách không nháy trắng khi gõ tìm kiếm
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useGroupStudySets(groupId: number): UseQueryResult<GroupStudySetRow[]> {
+  return useQuery({
+    queryKey: groupKeys.studySets(groupId),
+    queryFn: () => groupApi.listGroupStudySets(groupId),
+  });
+}
+
+/**
+ * Chia sẻ / gỡ bộ thẻ khỏi nhóm.
+ *
+ * Kéo theo `libraryKeys` và `studyKeys`: chia sẻ mở thêm quyền đọc cho thành viên, nên
+ * nhóm ôn và danh sách bộ học được của họ đổi theo ngay — không làm mới thì người vừa
+ * được chia sẻ vẫn thấy thư viện cũ cho tới lần tải lại trang.
+ */
+export function useShareStudySet(): UseMutationResult<
+  GroupStudySetRow[],
+  Error,
+  { groupId: number; setId: number }
+> {
+  return useGroupMutation(({ groupId, setId }) => groupApi.shareStudySet(groupId, setId));
+}
+
+export function useUnshareStudySet(): UseMutationResult<
+  void,
+  Error,
+  { groupId: number; setId: number }
+> {
+  return useGroupMutation(({ groupId, setId }) => groupApi.unshareStudySet(groupId, setId));
+}
+
+/**
  * Mọi thao tác với nhóm đều làm mới cả dữ liệu nhóm lẫn bài đăng.
  *
  * Kéo theo `communityKeys` vì bài của nhóm nằm chung kho với diễn đàn chung: rời nhóm
@@ -147,6 +216,10 @@ function useGroupMutation<TData, TVariables>(
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: groupKeys.all });
       void queryClient.invalidateQueries({ queryKey: communityKeys.all });
+      // Bộ thẻ chia sẻ trong nhóm mở thêm quyền đọc, nên vào/rời nhóm và chia sẻ/gỡ bộ
+      // đều làm đổi những gì người này học được ở Thư viện và Ôn tập.
+      void queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: studyKeys.all });
     },
   });
 }

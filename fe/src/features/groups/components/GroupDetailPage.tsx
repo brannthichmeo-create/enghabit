@@ -46,6 +46,8 @@ import { PostCard } from '../../community/components/CommunityPage';
 import { PostComposer } from '../../community/components/PostComposer';
 import { Modal } from '../../../shared/components/Modal';
 import { PostDetailView } from '../../community/components/PostDetailView';
+import { GroupDocumentsTab } from './GroupDocumentsTab';
+import { GroupStudySetsTab } from './GroupStudySetsTab';
 import {
   useAddMember,
   useDecideRequest,
@@ -57,7 +59,7 @@ import {
   useUpdateMemberRole,
 } from '../group.hooks';
 
-type Tab = 'feed' | 'members' | 'requests' | 'settings';
+type Tab = 'feed' | 'documents' | 'studySets' | 'members' | 'requests' | 'settings';
 
 /**
  * Một nhóm cụ thể: bảng tin, thành viên, yêu cầu chờ duyệt và cài đặt.
@@ -132,6 +134,8 @@ export function GroupDetailPage(): JSX.Element {
 
   const tabs: { key: Tab; label: string; badge?: number }[] = [
     { key: 'feed', label: t('Bảng tin') },
+    { key: 'documents', label: t('Tài liệu nhóm') },
+    { key: 'studySets', label: t('Flashcard') },
     { key: 'members', label: t('Thành viên'), badge: data.memberCount },
     ...(isLeader
       ? ([
@@ -184,6 +188,8 @@ export function GroupDetailPage(): JSX.Element {
       </div>
 
       {tab === 'feed' && <GroupFeed groupId={data.id} />}
+      {tab === 'documents' && <GroupDocumentsTab groupId={data.id} />}
+      {tab === 'studySets' && <GroupStudySetsTab groupId={data.id} isLeader={isLeader} />}
       {tab === 'members' && <MemberList group={data} />}
       {tab === 'requests' && isLeader && <RequestList group={data} />}
       {tab === 'settings' && isLeader && <GroupSettings group={data} />}

@@ -5,23 +5,35 @@ import {
   GroupViewerState,
   GroupVisibility,
   NotificationType,
+  isImageMime,
   type AddMemberInput,
   type CreateGroupInput,
   type GroupBlockInfo,
   type GroupDetail,
+  type GroupDocumentQueryInput,
+  type GroupDocumentRow,
   type GroupJoinRequestRow,
   type GroupMemberRow,
   type GroupSearchInput,
+  type GroupStudySetRow,
   type GroupSummary,
   type JoinGroupResult,
+  type MentionTarget,
   type Paginated,
+  type ShareStudySetInput,
   type UpdateGroupInput,
 } from '@enghabit/shared';
 import type { Group, Prisma } from '@prisma/client';
 import { randomInt } from 'node:crypto';
 import { prisma } from '../../lib/prisma.js';
 import { logger } from '../../lib/logger.js';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors/app-error.js';
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../common/errors/app-error.js';
+import { isUniqueViolation } from '../../common/utils/prisma-error.js';
 import { createNotification } from '../notifications/notification.service.js';
 
 /**
@@ -574,6 +586,243 @@ export async function leaveGroup(groupId: number, userId: number): Promise<void>
 
   await prisma.groupMember.delete({ where: { id: membership.id } });
   await prisma.groupJoinRequest.deleteMany({ where: { groupId, userId } });
+}
+
+// ---------------------------------------------------------------------------
+// Đề cập (@mention)
+// ---------------------------------------------------------------------------
+
+/**
+ * Những người có thể được nhắc trong nhóm — chính là danh sách thành viên.
+ *
+ * Dùng cho CẢ ô gợi ý khi gõ `@` lẫn việc chấm lại lúc gửi thông báo (xem
+ * `community/mention.service.ts`). Một nguồn duy nhất nên không thể có chuyện ô gợi ý
+ * mời một người mà hệ thống lại không gửi thông báo cho họ.
+ */
+export async function listMentionTargets(
+  groupId: number,
+  userId: number,
+): Promise<MentionTarget[]> {
+  await assertActiveMember(groupId, userId);
+
+  const members = await prisma.groupMember.findMany({
+    where: { groupId },
+    orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
+    select: { user: { select: { id: true, name: true, username: true } } },
+  });
+
+  return members.map((m) => ({ userId: m.user.id, name: m.user.name, username: m.user.username }));
+}
+
+// ---------------------------------------------------------------------------
+// Tài liệu nhóm
+// ---------------------------------------------------------------------------
+
+/**
+ * Thành viên của một nhóm ĐANG HOẠT ĐỘNG.
+ *
+ * Khác `assertMember`: hàm này chặn cả khi nhóm bị chặn, và trả 404 thay vì 403 — cùng
+ * cách với community.service, vì báo "bạn không có quyền" cũng là xác nhận nhóm tồn tại.
+ * `getGroupDetail` cố ý KHÔNG dùng hàm này: thành viên phải vào được để đọc lý do chặn.
+ */
+async function assertActiveMember(groupId: number, userId: number): Promise<void> {
+  if (!(await isMember(groupId, userId))) throw new NotFoundError('Không tìm thấy nhóm');
+}
+
+/**
+ * Tài liệu chung của nhóm: mọi tệp đính kèm của bài đăng trong nhóm, bài mới nhất lên đầu.
+ *
+ * KHÔNG `select` cột `data` — đó là BLOB, kéo theo một trang danh sách là kéo về hàng
+ * chục MB không ai dùng tới. Tải tệp vẫn đi qua `/community/attachments/:id`, nơi đã
+ * kiểm tra tư cách thành viên sẵn.
+ */
+export async function listDocuments(
+  groupId: number,
+  userId: number,
+  query: GroupDocumentQueryInput,
+): Promise<Paginated<GroupDocumentRow>> {
+  await assertActiveMember(groupId, userId);
+
+  const where: Prisma.PostAttachmentWhereInput = {
+    post: { groupId },
+    ...(query.search ? { fileName: { contains: query.search } } : {}),
+  };
+
+  const [rows, total] = await Promise.all([
+    prisma.postAttachment.findMany({
+      where,
+      // Khoá phụ `id` là bắt buộc cho phân trang: nhiều tệp của cùng một bài có chung
+      // `created_at` tới từng mili giây, không có khoá phụ thì thứ tự giữa chúng là tuỳ
+      // ý và một tệp có thể hiện ở cả hai trang — hoặc biến mất khỏi cả hai.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      select: {
+        id: true,
+        fileName: true,
+        mimeType: true,
+        sizeBytes: true,
+        createdAt: true,
+        post: { select: { id: true, title: true, author: { select: { name: true } } } },
+      },
+    }),
+    prisma.postAttachment.count({ where }),
+  ]);
+
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      fileName: row.fileName,
+      mimeType: row.mimeType,
+      sizeBytes: row.sizeBytes,
+      isImage: isImageMime(row.mimeType),
+      createdAt: row.createdAt.toISOString(),
+      postId: row.post.id,
+      postTitle: row.post.title,
+      uploaderName: row.post.author.name,
+    })),
+    total,
+    page: query.page,
+    pageSize: query.pageSize,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Bộ thẻ chia sẻ trong nhóm
+// ---------------------------------------------------------------------------
+
+/**
+ * Bộ thẻ đang được chia sẻ trong nhóm.
+ *
+ * Bộ bị quản trị viên chặn bị loại ngay trong câu truy vấn, đúng như `readableSetWhere`
+ * bên library.access — nếu không, danh sách vẫn mời người học mở một bộ mà họ sẽ nhận 404.
+ */
+export async function listStudySets(groupId: number, userId: number): Promise<GroupStudySetRow[]> {
+  await assertActiveMember(groupId, userId);
+
+  const shares = await prisma.groupStudySet.findMany({
+    where: { groupId, topic: { blockedAt: null } },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    select: {
+      createdAt: true,
+      sharedBy: { select: { name: true } },
+      topic: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          level: true,
+          visibility: true,
+          ownerId: true,
+          _count: { select: { vocabularies: true } },
+        },
+      },
+    },
+  });
+
+  return shares.map((share) => ({
+    setId: share.topic.id,
+    name: share.topic.name,
+    description: share.topic.description,
+    level: share.topic.level,
+    cardCount: share.topic._count.vocabularies,
+    visibility: share.topic.visibility,
+    sharedByName: share.sharedBy?.name ?? null,
+    sharedAt: share.createdAt.toISOString(),
+    isOwner: share.topic.ownerId === userId,
+  }));
+}
+
+/**
+ * Trưởng nhóm chia sẻ một bộ thẻ CỦA CHÍNH MÌNH vào nhóm.
+ *
+ * Chỉ bộ do người bấm sở hữu: chia sẻ bộ của người khác là tự ý mở bộ riêng tư của họ
+ * cho cả nhóm. Bộ "Hệ thống" cũng không chia sẻ được — nó đã công khai với tất cả mọi
+ * người rồi, thêm vào nhóm chỉ là một lối đi thừa.
+ */
+export async function shareStudySet(
+  groupId: number,
+  leaderId: number,
+  input: ShareStudySetInput,
+): Promise<GroupStudySetRow[]> {
+  await assertLeader(groupId, leaderId);
+  await assertNotBlocked(groupId);
+
+  const set = await prisma.topic.findFirst({
+    where: { id: input.setId, ownerId: leaderId },
+    select: { id: true, name: true, blockedAt: true },
+  });
+  if (!set) throw new NotFoundError('Không tìm thấy bộ thẻ của bạn');
+  if (set.blockedAt) throw new BadRequestError('Bộ thẻ đang bị chặn nên không chia sẻ được');
+
+  try {
+    await prisma.groupStudySet.create({
+      data: { groupId, topicId: set.id, sharedById: leaderId },
+    });
+  } catch (error: unknown) {
+    // Ràng buộc unique là thứ chặn được hai trưởng nhóm bấm cùng lúc — kiểm tra
+    // đọc-rồi-ghi thì cả hai request đều thấy "chưa có".
+    if (!isUniqueViolation(error)) throw error;
+    throw new ConflictError('Bộ thẻ này đã có trong nhóm');
+  }
+
+  await notifyStudySetShared(groupId, leaderId, set.id, set.name);
+  return listStudySets(groupId, leaderId);
+}
+
+/** Báo cho mọi thành viên (trừ người chia sẻ) rằng nhóm có bộ thẻ mới. */
+async function notifyStudySetShared(
+  groupId: number,
+  sharedById: number,
+  setId: number,
+  setName: string,
+): Promise<void> {
+  const [group, members, sharer] = await Promise.all([
+    prisma.group.findUniqueOrThrow({ where: { id: groupId }, select: { name: true } }),
+    prisma.groupMember.findMany({
+      where: { groupId, userId: { not: sharedById } },
+      select: { userId: true },
+    }),
+    prisma.user.findUnique({ where: { id: sharedById }, select: { name: true } }),
+  ]);
+
+  for (const member of members) {
+    await createNotification({
+      userId: member.userId,
+      type: NotificationType.GROUP_STUDY_SET_SHARED,
+      title: 'Nhóm có bộ thẻ mới',
+      body: `${sharer?.name ?? 'Trưởng nhóm'} vừa chia sẻ bộ thẻ "${setName}" vào nhóm "${group.name}".`,
+      link: `/library/${setId}`,
+      // Gắn id bộ thẻ: chia sẻ hai bộ khác nhau vào cùng một nhóm là hai thông báo
+      // khác nhau. Không gắn thời gian vì gỡ rồi chia sẻ lại cùng một bộ thì người
+      // nhận không cần biết thêm lần nữa.
+      dedupeKey: `${NotificationType.GROUP_STUDY_SET_SHARED}:${groupId}:${setId}`,
+    });
+  }
+}
+
+/**
+ * Gỡ một bộ thẻ khỏi nhóm.
+ *
+ * Mọi trưởng nhóm gỡ được, không riêng người đã chia sẻ: người chia sẻ có thể đã rời
+ * nhóm, mà nhóm thì vẫn phải dọn được nội dung của mình. Tiến độ SRS của thành viên
+ * giữ nguyên — chia sẻ lại là học tiếp được.
+ */
+export async function unshareStudySet(
+  groupId: number,
+  setId: number,
+  leaderId: number,
+): Promise<void> {
+  await assertLeader(groupId, leaderId);
+  await assertNotBlocked(groupId);
+
+  const share = await prisma.groupStudySet.findUnique({
+    where: { groupId_topicId: { groupId, topicId: setId } },
+    select: { id: true },
+  });
+  if (!share) throw new NotFoundError('Bộ thẻ này không có trong nhóm');
+
+  await prisma.groupStudySet.delete({ where: { id: share.id } });
 }
 
 // ---------------------------------------------------------------------------

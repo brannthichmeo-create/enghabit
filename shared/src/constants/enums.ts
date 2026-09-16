@@ -99,6 +99,10 @@ export const NotificationType = {
   STUDY_SET_UNBLOCKED: 'STUDY_SET_UNBLOCKED',
   /** Báo cáo của mình đã được xử lý (chặn hoặc bỏ qua) — gửi cho người báo cáo */
   STUDY_SET_REPORT_RESOLVED: 'STUDY_SET_REPORT_RESOLVED',
+  /** Được ai đó đề cập bằng @ trong bài đăng hoặc bình luận của nhóm */
+  MENTIONED: 'MENTIONED',
+  /** Trưởng nhóm chia sẻ một bộ thẻ vào nhóm — gửi cho MỌI thành viên */
+  GROUP_STUDY_SET_SHARED: 'GROUP_STUDY_SET_SHARED',
 } as const;
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
 

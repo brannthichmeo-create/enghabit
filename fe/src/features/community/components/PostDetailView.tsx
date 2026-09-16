@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { ArrowLeft, Heart, MessageCircle, Send, Trash2 } from 'lucide-react';
-import { UserRole, type PostAuthor, type PostDetail } from '@enghabit/shared';
+import {
+  UserRole,
+  type MentionTarget,
+  type PostAuthor,
+  type PostDetail,
+} from '@enghabit/shared';
 import { Button, Card, Skeleton } from '../../../shared/components/ui';
 import { Avatar } from '../../../shared/components/Sidebar';
 import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
@@ -8,6 +13,8 @@ import { useToast } from '../../../shared/components/Toast';
 import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { AttachmentList } from './AttachmentView';
+import { MentionBox, MentionText } from './MentionBox';
+import { useMentionTargets } from '../../groups/group.hooks';
 import {
   useCreateComment,
   useDeleteComment,
@@ -68,6 +75,10 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
   const toggleLike = useToggleLike();
   const deletePost = useDeletePost();
 
+  // Bài ở diễn đàn chung không có nhóm nên không có ai để nhắc — hook tự tắt khi null.
+  const mentionTargets = useMentionTargets(post.groupId ?? null);
+  const mentionNames = (mentionTargets.data ?? []).map((target) => target.username);
+
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack}>
@@ -108,10 +119,15 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
         <h1 className="mt-3 text-xl font-bold text-content">{post.title}</h1>
 
         {/*
-          `whitespace-pre-wrap` giữ xuống dòng người dùng gõ. Nội dung được React chèn
-          làm text node nên thẻ HTML trong đó hiện ra như chữ thường, không chạy.
+          `MentionText` giữ xuống dòng người dùng gõ và tô đậm các @tên khớp thành viên.
+          Nội dung vẫn được React chèn làm text node nên thẻ HTML trong đó hiện ra như
+          chữ thường, không chạy.
         */}
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-content-soft">{post.body}</p>
+        <MentionText
+          text={post.body}
+          usernames={mentionNames}
+          className="mt-2 text-sm leading-relaxed text-content-soft"
+        />
 
         <AttachmentList attachments={post.attachments} />
 
@@ -140,21 +156,28 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
         </div>
       </Card>
 
-      <CommentSection post={post} />
+      <CommentSection post={post} mentionTargets={mentionTargets.data ?? []} />
     </div>
   );
 }
 
-function CommentSection({ post }: { post: PostDetail }): JSX.Element {
+function CommentSection({
+  post,
+  mentionTargets,
+}: {
+  post: PostDetail;
+  mentionTargets: MentionTarget[];
+}): JSX.Element {
   const t = useT();
   const confirm = useConfirm();
   const toast = useToast();
   const [body, setBody] = useState('');
   const createComment = useCreateComment(post.id);
   const deleteComment = useDeleteComment();
+  const mentionNames = mentionTargets.map((target) => target.username);
 
-  const submit = (event: React.FormEvent): void => {
-    event.preventDefault();
+  const submit = (event?: React.FormEvent): void => {
+    event?.preventDefault();
     const trimmed = body.trim();
     if (!trimmed) return;
 
@@ -173,14 +196,24 @@ function CommentSection({ post }: { post: PostDetail }): JSX.Element {
         {t('Bình luận ({n})', { n: post.comments.length })}
       </h2>
 
-      <form noValidate onSubmit={submit} className="mt-3 flex gap-2">
-        <input
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          placeholder={t('Viết bình luận của bạn…')}
-          maxLength={2000}
-          className="min-w-0 flex-1 rounded-lg border border-line-control bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10"
-        />
+      <form noValidate onSubmit={submit} className="mt-3 flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <MentionBox
+            value={body}
+            onChange={setBody}
+            targets={mentionTargets}
+            placeholder={
+              mentionTargets.length > 0
+                ? t('Viết bình luận, gõ @ để nhắc ai đó…')
+                : t('Viết bình luận của bạn…')
+            }
+            rows={2}
+            maxLength={2000}
+            // Enter gửi, Shift+Enter xuống dòng — nhưng khi danh sách gợi ý đang mở thì
+            // Enter thuộc về việc chọn người (xem MentionBox).
+            onSubmitShortcut={submit}
+          />
+        </div>
         <Button type="submit" icon={Send} loading={createComment.isPending} disabled={!body.trim()}>
           {t('Gửi')}
         </Button>
@@ -220,7 +253,11 @@ function CommentSection({ post }: { post: PostDetail }): JSX.Element {
                     </button>
                   )}
                 </div>
-                <p className="mt-0.5 whitespace-pre-wrap text-sm text-content-soft">{comment.body}</p>
+                <MentionText
+                  text={comment.body}
+                  usernames={mentionNames}
+                  className="mt-0.5 text-sm text-content-soft"
+                />
               </div>
             </li>
           ))}
