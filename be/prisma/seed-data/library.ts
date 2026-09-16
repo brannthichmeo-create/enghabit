@@ -164,6 +164,43 @@ export const STUDY_SETS: StudySetSeed[] = [
     ],
   },
   {
+    // Bộ của long.tran và ha.le có mặt để 20 nhóm mẫu đủ chủ sở hữu khác nhau: trưởng
+    // nhóm chỉ chia sẻ được bộ CỦA CHÍNH MÌNH, nên thiếu chủ là thiếu luôn cặp
+    // (nhóm, bộ thẻ) hợp lệ để dựng dữ liệu tab Flashcard.
+    owner: 'long.tran@enghabit.com',
+    name: 'Từ vựng đọc báo tiếng Anh',
+    description: 'Từ hay gặp khi đọc tin tức BBC, Reuters: chính trị, kinh tế, xã hội.',
+    level: VocabLevel.INTERMEDIATE,
+    visibility: StudySetVisibility.PUBLIC,
+    daysAgo: 16,
+    cards: [
+      { word: 'headline', meaning: 'tiêu đề bài báo', phonetic: '/ˈhedlaɪn/', example: 'The headline says the deal collapsed.' },
+      { word: 'coverage', meaning: 'sự đưa tin', phonetic: '/ˈkʌvərɪdʒ/', example: 'The election got wide coverage.' },
+      { word: 'allegedly', meaning: 'bị cho là', phonetic: '/əˈledʒɪdli/', example: 'He allegedly took the money.' },
+      { word: 'surge', meaning: 'tăng vọt', phonetic: '/sɜːrdʒ/', example: 'Prices surged last month.' },
+      { word: 'crackdown', meaning: 'đợt siết chặt', phonetic: '/ˈkrækdaʊn/', example: 'A crackdown on illegal parking.' },
+      { word: 'unveil', meaning: 'công bố', phonetic: '/ʌnˈveɪl/', example: 'The firm unveiled a new phone.' },
+      { word: 'backlash', meaning: 'phản ứng dữ dội', phonetic: '/ˈbæklæʃ/', example: 'The plan faced a public backlash.' },
+      { word: 'plummet', meaning: 'lao dốc', phonetic: '/ˈplʌmɪt/', example: 'Shares plummeted after the report.' },
+    ],
+  },
+  {
+    owner: 'ha.le@enghabit.com',
+    name: 'Phát âm — cặp âm dễ nhầm',
+    description: 'Các cặp âm người Việt hay lẫn: /i/ và /iː/, /s/ và /ʃ/, âm cuối /t/ và /d/.',
+    level: VocabLevel.BEGINNER,
+    visibility: StudySetVisibility.PUBLIC,
+    daysAgo: 11,
+    cards: [
+      { word: 'ship / sheep', meaning: '/ɪ/ ngắn và /iː/ dài', example: 'I saw a sheep on the ship.' },
+      { word: 'sit / seat', meaning: '/ɪ/ ngắn và /iː/ dài', example: 'Please sit on this seat.' },
+      { word: 'see / she', meaning: '/s/ và /ʃ/', example: 'Did she see it?' },
+      { word: 'wanted / wanting', meaning: 'âm cuối /ɪd/', example: 'He wanted to go.' },
+      { word: 'card / cart', meaning: 'âm cuối /d/ và /t/', example: 'Put the card in the cart.' },
+      { word: 'thin / tin', meaning: '/θ/ và /t/', example: 'The tin box is thin.' },
+    ],
+  },
+  {
     owner: 'long.tran@enghabit.com',
     name: 'Khoá học giá rẻ — inbox ngay',
     description: 'Liên hệ để mua trọn bộ tài liệu với giá ưu đãi.',

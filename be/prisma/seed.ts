@@ -27,11 +27,13 @@ import {
   checkInDedupeKey,
   computeStreak,
   initialSrsState,
+  matchMentions,
   missionDedupeKey,
   qualityForMultipleChoice,
   reviewCard,
   toLocalDate,
   ReviewQuality,
+  type MentionTarget,
 } from '@enghabit/shared';
 import { TOPICS } from './seed-data/content.js';
 import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
@@ -474,20 +476,31 @@ async function seedCommunityMembers(): Promise<Map<string, number>> {
 
 /** Bộ thẻ người học tự tạo, báo cáo vi phạm, và thông báo đi kèm các trạng thái đó. */
 async function seedLibrary(adminId: number, people: ReadonlyMap<string, number>): Promise<void> {
-  const existing = await prisma.topic.count({ where: { ownerId: { not: null } } });
-  if (existing > 0) {
-    console.log(`  (đã có ${existing} bộ thẻ người học tạo — bỏ qua Thư viện)`);
-    return;
-  }
-
   const setIds = new Map<string, number>();
   const notifications: Prisma.NotificationCreateManyInput[] = [];
   let cardCount = 0;
+  let createdSets = 0;
 
   for (const seed of STUDY_SETS) {
     const ownerId = idOf(people, seed.owner);
     const createdAt = instantAtOffset(seed.daysAgo, 21);
     const blockedAt = seed.blockedReason ? pastInstantAtOffset(Math.max(seed.daysAgo - 1, 0), 10) : null;
+
+    /*
+      Bỏ qua TỪNG bộ đã có, không bỏ qua cả hàm khi thư viện đã có dữ liệu.
+
+      Cách cũ (đếm tổng rồi return) làm seed không bao giờ bổ sung được bộ thẻ mới thêm
+      vào `STUDY_SETS` trên một DB đã seed từ bản trước — mà đó chính là việc seed phải
+      làm được, theo quy tắc idempotent ở CLAUDE.md.
+    */
+    const already = await prisma.topic.findFirst({
+      where: { name: seed.name, ownerId },
+      select: { id: true },
+    });
+    if (already) {
+      setIds.set(seed.name, already.id);
+      continue;
+    }
 
     const set = await prisma.topic.create({
       data: {
@@ -516,6 +529,7 @@ async function seedLibrary(adminId: number, people: ReadonlyMap<string, number>)
     });
     setIds.set(seed.name, set.id);
     cardCount += seed.cards.length;
+    createdSets += 1;
 
     if (seed.blockedReason && blockedAt) {
       notifications.push({
@@ -534,6 +548,15 @@ async function seedLibrary(adminId: number, people: ReadonlyMap<string, number>)
     const topicId = setIds.get(seed.set);
     if (topicId === undefined) throw new Error(`Báo cáo mẫu trỏ tới bộ thẻ không có trong STUDY_SETS: ${seed.set}`);
     const reporterId = idOf(people, seed.reporter);
+
+    // Báo cáo cũng bỏ qua từng dòng: chạy lại seed không được tạo báo cáo trùng, mà
+    // `pendingKey` chỉ chặn được các báo cáo còn ở trạng thái PENDING.
+    const reported = await prisma.studySetReport.findFirst({
+      where: { topicId, reporterId, reason: seed.reason },
+      select: { id: true },
+    });
+    if (reported) continue;
+
     const createdAt = pastInstantAtOffset(seed.daysAgo, 9);
     const isPending = seed.status === StudySetReportStatus.PENDING;
     const resolvedAt = isPending ? null : new Date(createdAt.getTime() + 5 * 3_600_000);
@@ -581,7 +604,8 @@ async function seedLibrary(adminId: number, people: ReadonlyMap<string, number>)
 
   await notify(notifications);
   console.log(
-    `  Đã tạo ${STUDY_SETS.length} bộ thẻ người học (${cardCount} thẻ) và ${STUDY_SET_REPORTS.length} báo cáo vi phạm`,
+    `  Đã tạo ${createdSets}/${STUDY_SETS.length} bộ thẻ người học (${cardCount} thẻ mới), ` +
+      `${STUDY_SET_REPORTS.length} báo cáo vi phạm đã có đủ`,
   );
 }
 
@@ -718,16 +742,33 @@ async function seedStudyHistory(userId: number): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function seedGroups(adminId: number, people: ReadonlyMap<string, number>): Promise<void> {
-  const existing = await prisma.group.count();
-  if (existing > 0) {
-    console.log(`  (đã có ${existing} nhóm — bỏ qua Nhóm lớp)`);
-    return;
-  }
-
+  let groupCount = 0;
   let postCount = 0;
+  let fileCount = 0;
+  let shareCount = 0;
+  let mentionCount = 0;
   const notifications: Prisma.NotificationCreateManyInput[] = [];
 
+  // Tên hiển thị và tên tài khoản của mọi người, lấy một lần cho cả 20 nhóm. Đọc từ DB
+  // chứ không suy từ email: tên tài khoản là thứ `@mention` so khớp, nên nó phải là
+  // đúng giá trị đã lưu, không phải một phép đoán song song.
+  const profiles = new Map(
+    (await prisma.user.findMany({ select: { id: true, name: true, username: true } })).map((user) => [
+      user.id,
+      user,
+    ]),
+  );
+  const profileOf = (userId: number): { name: string; username: string } => {
+    const profile = profiles.get(userId);
+    if (!profile) throw new Error(`Không tìm thấy hồ sơ người dùng id=${userId} khi seed Nhóm lớp`);
+    return profile;
+  };
+
   for (const seed of GROUPS) {
+    // Bỏ qua TỪNG nhóm đã có, không bỏ qua cả hàm — cùng lý do với seedLibrary: thêm
+    // nhóm mẫu mới phải vào được một DB đã seed từ bản trước.
+    if (await prisma.group.findFirst({ where: { name: seed.name }, select: { id: true } })) continue;
+
     const createdAt = instantAtOffset(seed.daysAgo, 20);
     const leaderIds = seed.leaders.map((email) => idOf(people, email));
     const memberIds = seed.members.map((email) => idOf(people, email));
@@ -829,11 +870,18 @@ async function seedGroups(adminId: number, people: ReadonlyMap<string, number>):
       }
     }
 
+    // Ai có thể được nhắc trong nhóm này — đúng danh sách mà `listMentionTargets` trả về.
+    const mentionTargets: MentionTarget[] = [...leaderIds, ...memberIds].map((userId) => ({
+      userId,
+      ...profileOf(userId),
+    }));
+
     for (const post of seed.posts) {
       const postedAt = instantAtOffset(post.daysAgo, post.hour);
+      const authorId = idOf(people, post.by);
       const created = await prisma.post.create({
         data: {
-          authorId: idOf(people, post.by),
+          authorId,
           groupId: group.id,
           title: post.title,
           body: post.body,
@@ -842,23 +890,158 @@ async function seedGroups(adminId: number, people: ReadonlyMap<string, number>):
         },
         select: { id: true },
       });
+
+      /*
+        Tệp đính kèm = tài liệu nhóm. Chèn TỪNG tệp một chứ không dùng nested create:
+        Prisma gộp nhiều dòng vào một câu INSERT và tổng dung lượng sẽ vượt
+        `max_allowed_packet` của MySQL (xem chú thích ở community.service).
+      */
+      for (const file of post.files ?? []) {
+        const data =
+          file.kind === 'image'
+            ? makeBandedPng(file.bands ?? [])
+            : Buffer.from(file.content ?? '', 'utf8');
+        await prisma.postAttachment.create({
+          data: {
+            postId: created.id,
+            data,
+            mimeType: file.kind === 'image' ? 'image/png' : 'text/plain',
+            fileName: file.fileName,
+            sizeBytes: data.length,
+            createdAt: postedAt,
+          },
+        });
+        fileCount += 1;
+      }
+
       await prisma.postLike.createMany({
         data: post.likedBy.map((email) => ({ postId: created.id, userId: idOf(people, email), createdAt: postedAt })),
       });
-      await prisma.postComment.createMany({
-        data: post.comments.map((comment) => ({
-          postId: created.id,
-          authorId: idOf(people, comment.by),
-          body: comment.body,
-          createdAt: new Date(postedAt.getTime() + comment.hoursAfter * 3_600_000),
-        })),
+
+      // Bình luận tạo TỪNG dòng chứ không `createMany`: cần id của mỗi bình luận để
+      // đặt khoá chống trùng cho thông báo đề cập, đúng định dạng của mention.service.
+      for (const comment of post.comments) {
+        const commentedAt = new Date(postedAt.getTime() + comment.hoursAfter * 3_600_000);
+        const commentAuthorId = idOf(people, comment.by);
+        const createdComment = await prisma.postComment.create({
+          data: { postId: created.id, authorId: commentAuthorId, body: comment.body, createdAt: commentedAt },
+          select: { id: true },
+        });
+
+        mentionCount += pushMentionNotifications(notifications, {
+          text: comment.body,
+          targets: mentionTargets,
+          authorId: commentAuthorId,
+          authorName: profileOf(commentAuthorId).name,
+          groupId: group.id,
+          postTitle: post.title,
+          key: `COMMENT:${createdComment.id}`,
+          title: 'Bạn được nhắc trong một bình luận',
+          createdAt: commentedAt,
+        });
+      }
+
+      mentionCount += pushMentionNotifications(notifications, {
+        // Cả tiêu đề lẫn nội dung, giống hệt `createPost` của community.service —
+        // người ta hay nhắc tên ngay ở tiêu đề ("@all họp nhóm").
+        text: `${post.title}\n${post.body}`,
+        targets: mentionTargets,
+        authorId,
+        authorName: profileOf(authorId).name,
+        groupId: group.id,
+        postTitle: post.title,
+        key: `POST:${created.id}`,
+        title: 'Bạn được nhắc trong một bài đăng',
+        createdAt: postedAt,
       });
+
       postCount += 1;
     }
+
+    shareCount += await seedGroupStudySets(group.id, seed, leaderIds, createdAt);
+    groupCount += 1;
   }
 
   await notify(notifications);
-  console.log(`  Đã tạo ${GROUPS.length} nhóm lớp và ${postCount} bài đăng trong nhóm`);
+  console.log(
+    `  Đã tạo ${groupCount}/${GROUPS.length} nhóm lớp · ${postCount} bài đăng · ${fileCount} tệp tài liệu · ` +
+      `${shareCount} lượt chia sẻ bộ thẻ · ${mentionCount} thông báo đề cập`,
+  );
+}
+
+/**
+ * Chia sẻ các bộ thẻ của nhóm vào tab Flashcard.
+ *
+ * Kiểm lại điều kiện "chủ bộ thẻ phải là một trong các trưởng nhóm" y như
+ * `group.service.shareStudySet` — dữ liệu mẫu đi vòng qua Prisma nên không có ai chặn
+ * hộ, mà một dòng chia sẻ sai luật sẽ mở bộ riêng tư của người ngoài cho cả nhóm đọc.
+ */
+async function seedGroupStudySets(
+  groupId: number,
+  seed: { name: string; studySets: string[] },
+  leaderIds: number[],
+  createdAt: Date,
+): Promise<number> {
+  let count = 0;
+
+  for (const setName of seed.studySets) {
+    const set = await prisma.topic.findFirst({
+      where: { name: setName, ownerId: { in: leaderIds } },
+      select: { id: true, ownerId: true },
+    });
+    if (!set) {
+      throw new Error(
+        `Nhóm "${seed.name}" chia sẻ bộ thẻ "${setName}" nhưng không trưởng nhóm nào sở hữu bộ đó`,
+      );
+    }
+
+    await prisma.groupStudySet.create({
+      data: { groupId, topicId: set.id, sharedById: set.ownerId, createdAt },
+    });
+    count += 1;
+  }
+
+  return count;
+}
+
+/**
+ * Gom thông báo đề cập cho một đoạn văn bản, trả về số thông báo đã thêm.
+ *
+ * Dùng CHÍNH `matchMentions` của shared — cùng hàm mà backend gọi khi người dùng đăng
+ * bài thật. Liệt kê tay người được nhắc thì dữ liệu mẫu sẽ lệch khỏi hành vi thật ngay
+ * lần đầu ai đó sửa một câu trong `GROUPS`.
+ */
+function pushMentionNotifications(
+  sink: Prisma.NotificationCreateManyInput[],
+  params: {
+    text: string;
+    targets: MentionTarget[];
+    authorId: number;
+    authorName: string;
+    groupId: number;
+    postTitle: string;
+    /** Phần phân biệt của khoá chống trùng, dạng `POST:<id>` hoặc `COMMENT:<id>`. */
+    key: string;
+    title: string;
+    createdAt: Date;
+  },
+): number {
+  const mentioned = matchMentions(params.text, params.targets, params.authorId);
+
+  for (const target of mentioned) {
+    sink.push({
+      userId: target.userId,
+      type: NotificationType.MENTIONED,
+      title: params.title,
+      body: `${params.authorName} nhắc bạn ở "${params.postTitle}"`.slice(0, 500),
+      // Bài đăng không có URL riêng, nó mở bên trong trang nhóm.
+      link: `/groups/${params.groupId}`,
+      dedupeKey: `${NotificationType.MENTIONED}:${params.key}:${target.userId}`,
+      createdAt: params.createdAt,
+    });
+  }
+
+  return mentioned.length;
 }
 
 /** Mã nhóm 8 chữ số, cùng cách sinh với group.service (randomInt, không Math.random). */
@@ -1296,25 +1479,50 @@ function pastInstantAtOffset(offset: number, hour: number): Date {
 }
 
 async function printSummary(): Promise<void> {
-  const [users, systemSets, userSets, vocab, logs, reviews, posts, comments, groups, reports, resets] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.topic.count({ where: { ownerId: null } }),
-      prisma.topic.count({ where: { ownerId: { not: null } } }),
-      prisma.vocabulary.count(),
-      prisma.activityLog.count(),
-      prisma.cardReview.count(),
-      prisma.post.count(),
-      prisma.postComment.count(),
-      prisma.group.count(),
-      prisma.studySetReport.count(),
-      prisma.passwordResetRequest.count(),
-    ]);
+  const [
+    users,
+    systemSets,
+    userSets,
+    vocab,
+    logs,
+    reviews,
+    posts,
+    comments,
+    groups,
+    reports,
+    resets,
+    groupDocuments,
+    groupSets,
+    groupRequests,
+    mentions,
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.topic.count({ where: { ownerId: null } }),
+    prisma.topic.count({ where: { ownerId: { not: null } } }),
+    prisma.vocabulary.count(),
+    prisma.activityLog.count(),
+    prisma.cardReview.count(),
+    prisma.post.count(),
+    prisma.postComment.count(),
+    prisma.group.count(),
+    prisma.studySetReport.count(),
+    prisma.passwordResetRequest.count(),
+    // Tài liệu nhóm không có bảng riêng — đếm đúng thứ tab đó liệt kê: tệp đính kèm
+    // của các bài có `group_id` (xem CLAUDE.md > Nhóm lớp).
+    prisma.postAttachment.count({ where: { post: { groupId: { not: null } } } }),
+    prisma.groupStudySet.count(),
+    prisma.groupJoinRequest.count(),
+    prisma.notification.count({ where: { type: NotificationType.MENTIONED } }),
+  ]);
 
   console.log('\nSeed hoàn tất.');
   console.log(`  ${users} người dùng | ${systemSets} bộ thẻ Hệ thống | ${userSets} bộ thẻ người học | ${vocab} thẻ`);
   console.log(`  ${logs} hoạt động | ${reviews} lượt ôn`);
   console.log(`  ${posts} bài đăng (${comments} bình luận) | ${groups} nhóm lớp`);
+  console.log(
+    `  Nhóm lớp: ${groupDocuments} tài liệu | ${groupSets} bộ thẻ chia sẻ | ` +
+      `${groupRequests} yêu cầu vào nhóm | ${mentions} thông báo đề cập`,
+  );
   console.log(`  ${reports} báo cáo bộ thẻ | ${resets} yêu cầu cấp lại mật khẩu`);
   console.log('\nTài khoản đăng nhập:');
   console.log('  admin@enghabit.com  / A1234567   (quản trị viên)');
