@@ -50,6 +50,9 @@ Ba màn này **không** đi qua `AppLayout` nên không có sidebar và không c
 | `/habits` | Thói quen | `Learner` | `features/habits/components/HabitsPage.tsx` | `habits/habit.api.ts` |
 | `/goals` | Mục tiêu | `Learner` | `features/goals/components/GoalsPage.tsx` | `goals/goal.api.ts` |
 | `/leaderboard` | Bảng xếp hạng | `Learner` | `features/leaderboard/components/LeaderboardPage.tsx` | `leaderboard/leaderboard.api.ts` |
+| `/shop` | Cửa hàng | `Learner` | `features/shop/components/ShopPage.tsx` | `shop/shop.api.ts` |
+| `/wallet` | Ví của tôi | `Learner` | `features/shop/components/WalletPage.tsx` | `shop/shop.api.ts` |
+| `/inventory` | Kho vật phẩm | `Learner` | `features/shop/components/InventoryPage.tsx` | `shop/shop.api.ts` |
 | `/groups` | Nhóm lớp | `Learner` | `features/groups/components/GroupsPage.tsx` | `groups/group.api.ts` |
 | `/groups/:id` | Nhóm lớp (chi tiết) | `Learner` | `features/groups/components/GroupDetailPage.tsx` | `groups/group.api.ts` |
 
@@ -72,6 +75,7 @@ Ba màn này **không** đi qua `AppLayout` nên không có sidebar và không c
 | `/admin/content` | Nội dung học tập | `Admin` | `features/admin/components/AdminContentPage.tsx` | `admin/admin.api.ts` |
 | `/admin/groups` | Quản lý nhóm | `Admin` | `features/admin/components/AdminGroupsPage.tsx` | `admin/admin.api.ts` |
 | `/admin/requests` | Quản lý yêu cầu | `Admin` | `features/admin/components/AdminRequestsPage.tsx` | `admin/admin.api.ts` |
+| `/admin/shop` | Quản lý cửa hàng | `Admin` | `features/admin/components/AdminShopPage.tsx` | `admin/admin.api.ts` |
 | `/admin/announcements` | Gửi thông báo | `Admin` | `features/notifications/components/AnnouncementPage.tsx` | `notifications/notification.api.ts` |
 
 > **Lưu ý:** `/admin/announcements` là màn **quản trị** nhưng file nằm trong feature

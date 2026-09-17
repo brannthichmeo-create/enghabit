@@ -20,6 +20,7 @@ Các feature FE còn lại (habits, goals, admin) đã có sẵn API backend và
 - Học một bộ thẻ bằng flashcard hoặc trắc nghiệm (`/learn`), ôn thẻ tới hạn/quá hạn/yếu theo SM-2 (`/review`)
 - Xem chuỗi ngày học liên tiếp (streak), tỷ lệ hoàn thành thói quen, thống kê theo ngày/tuần/tháng
 - Điểm danh mỗi ngày nhận xu, làm ba nhiệm vụ ngày, mua vật phẩm giữ chuỗi để không mất streak khi lỡ nghỉ một hôm
+- Dùng xu mua vật phẩm trang trí trong cửa hàng (`/shop`), xem số dư và lịch sử thu chi trong ví (`/wallet`), giữ vật phẩm đã thích và đã mua trong kho (`/inventory`) rồi chọn một vật phẩm mỗi loại để hiển thị
 - Xem bảng xếp hạng theo tuần/tháng/toàn thời gian, biết mình đứng thứ mấy trong số người học
 - Lập nhóm lớp, đăng bài nội bộ, nhắc nhau bằng `@`, dùng chung kho tài liệu của nhóm và học các bộ thẻ trưởng nhóm chia sẻ
 - Nhận thông báo nhắc nhở học hàng ngày (theo giờ local, timezone riêng mỗi user), cảnh báo chuỗi sắp đứt, chúc mừng đạt mục tiêu — xem trong chuông thông báo và trang `/notifications`
@@ -133,6 +134,7 @@ Quản trị viên **vận hành hệ thống, không phải người học**: �
 - **Lượt truy cập** (`/admin/access`) — nhật ký đăng nhập (cả lần thất bại), lượt truy cập theo ngày, phiên đang mở
 - **Nội dung học tập** (`/admin/content`) — bộ thẻ "Hệ thống" (chủ đề, từ vựng); không sửa được bộ người học tự tạo
 - **Kiểm duyệt bộ thẻ** (`/admin/study-sets`) — xem báo cáo vi phạm, chặn/mở chặn bộ thẻ công khai, bỏ qua báo cáo
+- **Quản lý cửa hàng** (`/admin/shop`) — CRUD loại vật phẩm và vật phẩm bán bằng xu; không xoá được vật phẩm đã có người mua
 - **Quản lý tính năng** (`/admin/features`) — bật/tắt từng tính năng của người học
 
 Ba quy tắc an toàn bắt buộc giữ khi sửa module này (đã cài trong `admin.service.ts`):
@@ -205,7 +207,7 @@ thấy một dãy số 0 vô nghĩa và tưởng hệ thống đếm sai:
 
 ```
 enghabit/
-├── fe/                # Web (React + Vite) — features/{auth,goals,habits,library,study,statistics,notifications,admin}/
+├── fe/                # Web (React + Vite) — features/{auth,goals,habits,library,study,statistics,notifications,rewards,shop,admin}/
 ├── be/                # Backend (Node + Prisma) — modules/{...cùng tên feature với fe...}/
 ├── mobile/            # React Native (Expo) — thêm sau, cùng tên feature
 ├── shared/            # @enghabit/shared: schemas (Zod), constants/enum, srs/ (SM-2), streak/ (tính streak)
@@ -216,7 +218,7 @@ enghabit/
 Bên trong `be/src/modules/<feature>/`: `routes.ts → controller.ts → service.ts → schema.ts`.
 Bên trong `fe/src/features/<feature>/`: `components/`, `hooks/`, `api.ts`, `types.ts`.
 
-Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `library`, `study`, `statistics`, `notifications`, `rewards`, `leaderboard`, `feature-flags`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
+Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `library`, `study`, `statistics`, `notifications`, `rewards`, `shop`, `leaderboard`, `feature-flags`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
 
 **Hai quy ước bắt buộc khi scaffold:**
 
@@ -267,6 +269,53 @@ Vật phẩm giữ chuỗi (`streak_freezes`) là ngoại lệ duy nhất đư�
   nút bấm: hôm người dùng quên học cũng là hôm họ không mở app, để họ tự bấm thì vật phẩm vô dụng.
 - `recompute-streak` **phải đọc cả `streak_freezes`**, nếu không mỗi lần chạy script là một
   lần xoá sạch công dụng của vật phẩm người dùng đã mua.
+
+### Cửa hàng, Ví và Kho vật phẩm (module `shop`)
+
+Đầu ra thứ hai của xu, sau vật phẩm giữ chuỗi. Ba màn của người học — `/shop`, `/wallet`,
+`/inventory` — cùng một feature vì mua một món là cả ba phải đổi. Quản trị viên CRUD ở
+`/admin/shop`. Đặc tả đầy đủ: **`docs/ke-hoach-cua-hang-vat-pham.md`** — đọc trước khi sửa.
+
+Bảy quyết định bắt buộc giữ:
+
+- **Mua hàng KHÔNG ghi `ActivityLog`** và không cộng XP, đúng như `rewards`. Mua một con
+  linh vật không giúp ai nhớ thêm từ vựng.
+- **Chống mua trùng bằng `dedupeKey = SHOP_ITEM:<itemId>`** của `coin_transactions`. Mỗi
+  vật phẩm mua một lần vĩnh viễn, nên khoá không cần phần ngày hay phần ngẫu nhiên —
+  `@@unique([userId, dedupeKey])` vừa chặn bấm hai lần vừa chặn sở hữu trùng. Nếu sau này
+  có vật phẩm tiêu hao thì khoá của RIÊNG loại đó mới thêm phần ngẫu nhiên.
+- **Trừ xu là ghi MỘT DÒNG ÂM**, số dư vẫn là `SUM(amount)`. Việc kiểm tra số dư và ghi
+  dòng trừ nằm trong cùng một transaction có `SELECT ... FOR UPDATE` trên dòng user, y
+  như `buyStreakFreeze` — hai lệnh mua hai vật phẩm KHÁC NHAU cùng lúc thì khoá
+  `dedupeKey` không cứu được vì hai khoá khác nhau.
+- **Danh mục LOẠI nằm dưới DB** (`shop_item_types`), ngược với `FeatureKey`: quản trị viên
+  tự thêm loại mới và việc đó không cần deploy. FE chỉ biết hiển thị các `slug` có trong
+  `KnownItemSlug` (`shared/shop`) và **có nhánh mặc định** — loại lạ vẫn mua, vẫn chọn dùng
+  được, chỉ chưa gắn vào đâu trong giao diện. Loại lạ không được làm vỡ màn hình nào.
+- **"Mỗi loại một vật phẩm" ép bằng khoá chính `(user_id, type_id)`** của
+  `user_equipped_items`. Xoá-rồi-ghi trong service thì hai request cùng lúc để lại hai
+  dòng cho một loại và giao diện vẽ hai con linh vật chồng nhau.
+- **Không xoá thứ người dùng đã trả xu để có.** `user_items → shop_items` dùng
+  `onDelete: Restrict`; vật phẩm đã bán chỉ ngừng bán được bằng `isActive`. Loại đang có
+  vật phẩm cũng chỉ tắt được, không xoá.
+- **Ảnh vật phẩm có endpoint CÔNG KHAI** `GET /shop/items/:id/image`, mount TRƯỚC nhánh có
+  guard trong `app.ts`. Thẻ `<img>` không gửi được header `Authorization`, và ảnh là tranh
+  minh hoạ do quản trị viên soạn chứ không phải dữ liệu người dùng — khác hẳn tệp đính kèm
+  của nhóm, thứ bắt buộc kiểm tra tư cách thành viên nên phải tải bằng fetch kèm token.
+  Ảnh lưu blob ở bảng riêng `shop_item_images` (cùng lý do với `user_avatars`), URL mang
+  `?v=<updated_at>` nên cache được một năm.
+
+Hai điều nhỏ dễ làm sai ở màn Ví:
+
+- **Dòng 0 xu (vật phẩm tặng miễn phí) xếp vào CHI.** Bộ lọc Chi phải là `amount <= 0`;
+  nếu Thu là `> 0` mà Chi là `< 0` thì dòng 0 xu biến mất khỏi **cả hai** tab.
+- **`pricePaid` lưu giá tại thời điểm mua.** Lịch sử ví đọc cột đó, không join sang
+  `shop_items.price` — quản trị viên đổi giá về sau không được làm sai lịch sử của người đã mua.
+
+Ảnh linh vật mẫu trong seed **do chính seed vẽ ra** (`makeMascotPng`, PNG nền trong suốt),
+không tải từ trang nào: đồ án có thể công bố nên ảnh không rõ giấy phép là rủi ro thật, và
+20 tệp PNG trong git thì không ai xem được lúc đọc diff. Quản trị viên tải ảnh thật lên ở
+`/admin/shop` là ghi đè hình tự sinh.
 
 ### Quy ước thời gian & định nghĩa "một ngày học"
 
@@ -419,8 +468,9 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - Query param kiểu boolean **không dùng `z.coerce.boolean()`**: query string luôn là chuỗi và `Boolean('false') === true`, nên bộ lọc sẽ luôn bật. Dùng `z.preprocess` so khớp `'true'`/`'1'` (xem `notificationQuerySchema`).
 - Mọi route `/admin/*` bắt buộc đi qua role-guard middleware.
 - **Và ngược lại: module học tập chặn `requireRole(UserRole.USER)` ngay ở tầng router** —
-  `rewards`, `library`, `study`, `habits`, `goals`, `statistics`, cùng
-  `/notifications/settings`. Ẩn trên giao diện là chưa đủ: token admin gọi thẳng API vẫn
+  `rewards`, `shop`, `library`, `study`, `habits`, `goals`, `statistics`, cùng
+  `/notifications/settings`. Ngoại lệ trong `shop`: đường ảnh vật phẩm cố ý công khai,
+  vì thẻ `<img>` không gửi được token (xem mục Cửa hàng). Ẩn trên giao diện là chưa đủ: token admin gọi thẳng API vẫn
   điểm danh lấy xu hay ghi `ActivityLog` được. `/topics` giờ ngược lại — chỉ quản trị viên
   đọc, để soạn bộ "Hệ thống". Ngoại lệ cố ý mở cho cả hai vai trò: danh sách
   `/notifications` (quản trị viên vẫn nhận thông báo hệ thống trong chuông).
