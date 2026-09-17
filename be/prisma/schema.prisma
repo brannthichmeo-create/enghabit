@@ -167,6 +167,8 @@ enum CoinReason {
   MISSION_CLAIM
   /// Mua vật phẩm giữ chuỗi (amount âm)
   STREAK_FREEZE_PURCHASE
+  /// Mua vật phẩm trong cửa hàng (amount âm)
+  SHOP_PURCHASE
 }
 
 // ---------------------------------------------------------------------------
@@ -211,6 +213,10 @@ model User {
   notifications       Notification[]
   coinTransactions    CoinTransaction[]
   streakFreezes       StreakFreeze[]
+  shopItems           UserItem[]
+  favoriteShopItems   UserItemFavorite[]
+  equippedShopItems   UserEquippedItem[]
+  createdShopItems    ShopItem[]           @relation("ShopItemCreatedBy")
   createdTopics       Topic[]              @relation("TopicCreatedBy")
   ownedTopics         Topic[]              @relation("TopicOwner")
   blockedTopics       Topic[]              @relation("TopicBlockedBy")
@@ -1046,4 +1052,182 @@ model FeatureFlag {
 
   @@index([updatedById])
   @@map("feature_flags")
+}
+
+// ---------------------------------------------------------------------------
+// Cửa hàng vật phẩm — đầu ra thứ hai của xu, sau vật phẩm giữ chuỗi
+//
+// Toàn bộ thiết kế và lý do: docs/ke-hoach-cua-hang-vat-pham.md — đọc trước khi sửa.
+//
+// Ba điều dễ làm sai nhất, ghi ngay đây:
+//
+// 1. Mua hàng KHÔNG ghi ActivityLog. Mua linh vật không phải hoạt động học; ghi vào đó
+//    thì bấm nút mua là đủ giữ chuỗi ngày và mọi thống kê học tập sẽ nói dối.
+// 2. Trừ xu là ghi MỘT DÒNG ÂM vào coin_transactions, không có cột số dư ở đâu cả.
+// 3. Vật phẩm giữ chuỗi (streak_freezes) KHÔNG thuộc về đây: nó tiêu hao, có job tự
+//    tiêu và recompute-streak phải đọc nó. Vật phẩm cửa hàng thì trang trí và sở hữu
+//    vĩnh viễn. Gộp hai thứ là kéo usedOnDate cùng giới hạn kho vào mô hình không cần.
+// ---------------------------------------------------------------------------
+
+/// Một LOẠI vật phẩm, vd linh vật.
+///
+/// Danh mục loại nằm dưới DB chứ không trong mã nguồn — NGƯỢC với FeatureKey, và cố ý:
+/// quản trị viên tự thêm loại mới, việc đó không cần deploy code. Bù lại, giao diện chỉ
+/// biết cách hiển thị các `slug` mà nó đã có code (xem shared/shop > KnownItemSlug);
+/// loại mang slug lạ vẫn mua và vẫn chọn dùng được, chỉ chưa gắn vào đâu trong màn hình.
+model ShopItemType {
+  id Int @id @default(autoincrement())
+
+  /// Mã loại dạng MASCOT, AVATAR_FRAME. CHỮ HOA + số + gạch dưới (ITEM_SLUG_PATTERN).
+  /// KHÔNG cho sửa sau khi tạo: FE gắn code hiển thị theo giá trị này.
+  slug String @unique @db.VarChar(30)
+
+  label       String  @db.VarChar(60)
+  description String? @db.VarChar(255)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  /// Tắt thì loại biến mất khỏi cửa hàng nhưng KHÔNG thu hồi vật phẩm đã bán —
+  /// người đã trả xu vẫn giữ và vẫn dùng được, cùng tinh thần với tắt tính năng.
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items    ShopItem[]
+  equipped UserEquippedItem[]
+
+  @@map("shop_item_types")
+}
+
+/// Một vật phẩm bán trong cửa hàng.
+model ShopItem {
+  id Int @id @default(autoincrement())
+
+  /// Restrict: xoá một loại đang có vật phẩm phải bị chặn, không được kéo theo cả kho
+  /// hàng của loại đó.
+  typeId Int          @map("type_id")
+  type   ShopItemType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+
+  name        String  @db.VarChar(100)
+  description String? @db.VarChar(500)
+
+  /// Giá bằng xu. 0 là hợp lệ — dùng cho vật phẩm tặng người mới.
+  price Int
+
+  /// Ngừng bán. Người đã mua vẫn dùng bình thường.
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  /// SetNull vì xoá một tài khoản quản trị không được kéo theo vật phẩm họ đã soạn.
+  createdById Int?  @map("created_by_id")
+  createdBy   User? @relation("ShopItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  image     ShopItemImage?
+  owners    UserItem[]
+  favorites UserItemFavorite[]
+  equipped  UserEquippedItem[]
+
+  @@index([typeId, isActive, sortOrder])
+  @@map("shop_items")
+}
+
+/// Ảnh vật phẩm, lưu thẳng trong DB.
+///
+/// Bảng RIÊNG chứ không phải cột trên shop_items, đúng như user_avatars: danh sách cửa
+/// hàng là truy vấn chạy nhiều nhất của module này, để chung thì mỗi lần liệt kê là kéo
+/// theo hàng megabyte nhị phân không dùng tới.
+///
+/// Trong DB thay vì ghi ra thư mục máy chủ vì nền tảng deploy free tier có ổ đĩa tạm —
+/// mỗi lần deploy lại là mất sạch ảnh.
+model ShopItemImage {
+  itemId Int      @id @map("item_id")
+  item   ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  /// MEDIUMBLOB đủ rộng cho ngưỡng SHOP_IMAGE_MAX_BYTES (300KB).
+  data Bytes @db.MediumBlob
+
+  /// image/png | image/webp | image/jpeg — cần để đặt Content-Type khi trả ảnh.
+  mimeType String @map("mime_type") @db.VarChar(30)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("shop_item_images")
+}
+
+/// Sổ sở hữu: ai đang có vật phẩm nào.
+///
+/// Restrict phía vật phẩm: đã có người mua thì không xoá cứng được nữa, chỉ ngừng bán
+/// bằng isActive. Xoá thứ người dùng đã trả xu là thiệt hại không đảo ngược được —
+/// cùng lẽ với "chặn nhóm thay vì xoá nhóm".
+model UserItem {
+  id Int @id @default(autoincrement())
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  itemId Int      @map("item_id")
+  item   ShopItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  /// Giá TẠI THỜI ĐIỂM MUA. Quản trị viên đổi giá về sau không được làm sai lịch sử ví,
+  /// nên màn Ví đọc cột này chứ không join sang shop_items.price.
+  pricePaid   Int      @map("price_paid")
+  purchasedAt DateTime @default(now()) @map("purchased_at")
+
+  /// Một người sở hữu một vật phẩm đúng một lần. Ràng buộc này đi cùng khoá
+  /// "SHOP_ITEM:<id>" của coin_transactions — hai lớp chặn cho cùng một việc, vì lớp
+  /// kia mới là lớp giữ cho tiền không bị trừ hai lần.
+  @@unique([userId, itemId])
+  @@index([itemId])
+  @@map("user_items")
+}
+
+/// Vật phẩm người dùng bấm yêu thích trong cửa hàng.
+///
+/// ĐỘC LẬP hoàn toàn với sở hữu: bỏ thích không đụng vật phẩm đã mua, mua rồi vẫn giữ
+/// nguyên trạng thái thích. Nhờ vậy tab Yêu thích chỉ là một bộ lọc khác của cùng danh
+/// mục cửa hàng — không có bản sao trạng thái nào để hai màn hình nói khác nhau.
+model UserItemFavorite {
+  id Int @id @default(autoincrement())
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  itemId Int      @map("item_id")
+  item   ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, itemId])
+  @@index([itemId])
+  @@map("user_item_favorites")
+}
+
+/// Vật phẩm đang dùng của một người, MỖI LOẠI ĐÚNG MỘT CÁI.
+///
+/// Quy tắc "một loại một vật phẩm" ép bằng khoá chính (user_id, type_id), không ép bằng
+/// mã trong service: để service tự xoá-rồi-ghi thì hai request cùng lúc có thể để lại
+/// hai dòng cho cùng một loại, và giao diện sẽ vẽ hai con linh vật chồng lên nhau.
+/// Chọn vật phẩm khác là upsert đúng một dòng; bỏ dùng là xoá dòng.
+model UserEquippedItem {
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  typeId Int          @map("type_id")
+  type   ShopItemType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+
+  /// Cascade: gỡ vật phẩm khỏi hệ thống thì bỏ luôn khỏi chỗ đang dùng. Trên thực tế
+  /// vật phẩm đã có người mua không xoá được (UserItem dùng Restrict), nên nhánh này
+  /// chỉ chạm tới vật phẩm chưa ai mua.
+  itemId Int      @map("item_id")
+  item   ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([userId, typeId])
+  @@index([itemId])
+  @@index([typeId])
+  @@map("user_equipped_items")
 }
