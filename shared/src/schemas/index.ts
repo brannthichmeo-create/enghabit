@@ -11,6 +11,7 @@ export * from './admin.schema.js';
 export * from './feature.schema.js';
 export * from './password-reset.schema.js';
 export * from './rewards.schema.js';
+export * from './shop.schema.js';
 export * from './leaderboard.schema.js';
 export * from './community.schema.js';
 export * from './group.schema.js';

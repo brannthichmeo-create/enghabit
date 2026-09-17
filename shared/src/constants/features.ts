@@ -24,6 +24,7 @@ export const FeatureKey = {
   COMMUNITY: 'COMMUNITY',
   GROUPS: 'GROUPS',
   REWARDS: 'REWARDS',
+  SHOP: 'SHOP',
 } as const;
 export type FeatureKey = (typeof FeatureKey)[keyof typeof FeatureKey];
 
@@ -114,6 +115,23 @@ export const FEATURES: readonly FeatureDefinition[] = [
     label: 'Phần thưởng',
     description: 'Điểm danh nhận xu, nhiệm vụ ngày và vật phẩm giữ chuỗi. Nằm trong trang Tổng quan.',
     routes: [],
+  },
+  /*
+    Một cờ cho CẢ BA màn Cửa hàng, Ví và Kho vật phẩm: không có xu thì ví và kho đều
+    vô nghĩa, tách ba cờ chỉ tạo ra những tổ hợp trạng thái không ai cần tới.
+
+    `dependsOn: [REWARDS]` vì xu chỉ sinh ra từ điểm danh và nhiệm vụ ngày — tắt nguồn
+    thu mà vẫn mở cửa hàng là bày ra một quầy hàng không ai mua nổi.
+
+    Màn quản trị /admin/shop KHÔNG chịu cờ này: tắt cửa hàng phía người học không được
+    làm quản trị viên mất chỗ soạn vật phẩm (cùng lý do với /topics).
+  */
+  {
+    key: FeatureKey.SHOP,
+    label: 'Cửa hàng',
+    description: 'Dùng xu mua vật phẩm trang trí, xem ví và kho vật phẩm đã mua.',
+    routes: ['/shop', '/wallet', '/inventory'],
+    dependsOn: [FeatureKey.REWARDS],
   },
 ];
 

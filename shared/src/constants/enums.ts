@@ -188,8 +188,22 @@ export const CoinReason = {
   MISSION_CLAIM: 'MISSION_CLAIM',
   /** Mua một vật phẩm giữ chuỗi (số âm) */
   STREAK_FREEZE_PURCHASE: 'STREAK_FREEZE_PURCHASE',
+  /** Mua một vật phẩm trong cửa hàng (số âm) */
+  SHOP_PURCHASE: 'SHOP_PURCHASE',
 } as const;
 export type CoinReason = (typeof CoinReason)[keyof typeof CoinReason];
+
+/**
+ * Chiều biến động của một dòng sổ cái xu — dùng cho bộ lọc của màn Ví.
+ *
+ * Không lưu xuống DB: suy ra từ dấu của `amount` (dương là Thu, âm là Chi). Lưu thêm
+ * một cột chiều là tạo ra thứ có thể lệch với chính con số nó mô tả.
+ */
+export const CoinDirection = {
+  IN: 'IN',
+  OUT: 'OUT',
+} as const;
+export type CoinDirection = (typeof CoinDirection)[keyof typeof CoinDirection];
 
 /**
  * Nhiệm vụ ngày. Cố ý là hằng số trong code chứ không phải bảng trong DB:

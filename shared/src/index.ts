@@ -15,6 +15,7 @@ export * from './study/study.js';
 export * from './study/multiple-choice.js';
 export * from './study/card-import.js';
 export * from './rewards/rewards.js';
+export * from './shop/shop.js';
 export * from './report/report.js';
 export * from './avatar/avatar.js';
 export * from './attachment/attachment.js';
