@@ -19,6 +19,7 @@ import { studyRoutes } from './modules/study/study.routes.js';
 import { statisticsRoutes } from './modules/statistics/statistics.routes.js';
 import { notificationRoutes } from './modules/notifications/notification.routes.js';
 import { rewardsRoutes } from './modules/rewards/rewards.routes.js';
+import { shopImageRoutes, shopRoutes } from './modules/shop/shop.routes.js';
 import { leaderboardRoutes } from './modules/leaderboard/leaderboard.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
 import { featureRoutes } from './modules/feature-flags/feature.routes.js';
@@ -97,6 +98,16 @@ export function createApp(): Express {
   api.use('/statistics', statisticsRoutes);
   api.use('/notifications', notificationRoutes);
   api.use('/rewards', requireAuth, requireFeature(FeatureKey.REWARDS), rewardsRoutes);
+  /*
+    Ảnh vật phẩm mount TRƯỚC nhánh /shop có guard, và cố ý không có requireAuth: thẻ
+    <img> của trình duyệt không gửi được header Authorization. Ảnh là tranh minh hoạ do
+    quản trị viên soạn, không mang dữ liệu của người dùng nào — khác hẳn tệp đính kèm
+    của nhóm, thứ bắt buộc kiểm tra tư cách thành viên (xem shop.routes.ts).
+
+    Router này chỉ nhận đúng GET /items/:id/image, mọi đường khác rơi xuống nhánh dưới.
+  */
+  api.use('/shop', shopImageRoutes);
+  api.use('/shop', requireAuth, requireFeature(FeatureKey.SHOP), shopRoutes);
   api.use('/leaderboard', requireAuth, requireFeature(FeatureKey.LEADERBOARD), leaderboardRoutes);
   api.use('/admin', adminRoutes);
   /*
