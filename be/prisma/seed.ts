@@ -26,6 +26,7 @@ import {
   STREAK_FREEZE_PRICE,
   checkInDedupeKey,
   computeStreak,
+  shopItemDedupeKey,
   initialSrsState,
   matchMentions,
   missionDedupeKey,
@@ -39,6 +40,7 @@ import { TOPICS } from './seed-data/content.js';
 import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
 import { STUDY_SETS, STUDY_SET_REPORTS } from './seed-data/library.js';
 import { GROUPS } from './seed-data/groups.js';
+import { MASCOTS, MASCOT_TYPE } from './seed-data/shop.js';
 
 /**
  * Seed dữ liệu mẫu — IDEMPOTENT, chạy nhiều lần không tạo bản ghi trùng.
@@ -91,6 +93,9 @@ async function main(): Promise<void> {
   await seedGroups(admin.id, people);
   await seedPasswordResetRequests(admin.id, people);
   await seedRewards(learner.id);
+  // Cua hang chay SAU Phan thuong: nguoi hoc chi mua duoc trong pham vi so xu ma phan
+  // tren vua tao ra, neu khong seed se de lai mot cai vi am.
+  await seedShop(admin.id, learner.id);
   await seedFeatureFlags();
 
   await printSummary();
@@ -1216,6 +1221,210 @@ async function seedRewards(userId: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Cửa hàng vật phẩm
+// ---------------------------------------------------------------------------
+
+/**
+ * Loại "Linh vật" + 20 vật phẩm, và một ít dữ liệu cho tài khoản demo.
+ *
+ * Idempotent theo từng bản ghi: tra theo (loại, tên) rồi mới tạo. Bảng `shop_items`
+ * không có unique cho cặp đó nên không dùng được `upsert` — đây là script chạy tay,
+ * thêm vài câu truy vấn tra cứu không đáng để ràng buộc thêm lược đồ.
+ *
+ * Phần của tài khoản demo cố ý đi đúng đường mà người dùng thật đi: mỗi lần "mua" ghi
+ * một dòng ÂM vào sổ cái với đúng `dedupeKey` của cửa hàng, nên màn Ví có dữ liệu thật
+ * và số dư khớp với kho vật phẩm. Nếu seed chỉ chèn `user_items` thì người mở màn Ví sẽ
+ * thấy vật phẩm từ trên trời rơi xuống mà không có dòng chi nào.
+ */
+async function seedShop(adminId: number, learnerId: number): Promise<void> {
+  // update: {} — chạy lại seed không ghi đè nhãn hay trạng thái quản trị viên đã sửa.
+  const type = await prisma.shopItemType.upsert({
+    where: { slug: MASCOT_TYPE.slug },
+    update: {},
+    create: {
+      slug: MASCOT_TYPE.slug,
+      label: MASCOT_TYPE.label,
+      description: MASCOT_TYPE.description,
+      sortOrder: 0,
+    },
+  });
+
+  let created = 0;
+
+  for (const [index, mascot] of MASCOTS.entries()) {
+    const existing = await prisma.shopItem.findFirst({
+      where: { typeId: type.id, name: mascot.name },
+      select: { id: true },
+    });
+    if (existing) continue;
+
+    const item = await prisma.shopItem.create({
+      data: {
+        typeId: type.id,
+        name: mascot.name,
+        description: mascot.description,
+        price: mascot.price,
+        sortOrder: index,
+        createdById: adminId,
+      },
+    });
+
+    await prisma.shopItemImage.create({
+      data: {
+        itemId: item.id,
+        data: makeMascotPng(mascot.body, mascot.accent),
+        mimeType: 'image/png',
+      },
+    });
+
+    created += 1;
+  }
+
+  const ownedAlready = await prisma.userItem.count({ where: { userId: learnerId } });
+  if (ownedAlready > 0) {
+    console.log(
+      `  Cửa hàng: thêm ${created} vật phẩm (user demo đã có ${ownedAlready} vật phẩm — bỏ qua phần mua)`,
+    );
+    return;
+  }
+
+  const balanceRow = await prisma.coinTransaction.aggregate({
+    where: { userId: learnerId },
+    _sum: { amount: true },
+  });
+  let balance = balanceRow._sum.amount ?? 0;
+
+  const catalog = await prisma.shopItem.findMany({
+    where: { typeId: type.id },
+    orderBy: [{ price: 'asc' }, { id: 'asc' }],
+    select: { id: true, name: true, price: true },
+  });
+
+  // Mua từ rẻ tới đắt, dừng khi hết xu — tối đa 2 món để kho không đầy ngay.
+  const today = dateAtOffsetLocal(0);
+  const bought: { id: number; name: string }[] = [];
+
+  for (const item of catalog) {
+    if (bought.length >= 2 || item.price > balance) break;
+
+    await prisma.coinTransaction.create({
+      data: {
+        userId: learnerId,
+        amount: -item.price,
+        reason: CoinReason.SHOP_PURCHASE,
+        // Cùng khoá với shop.service: "SHOP_ITEM:<id>", mỗi vật phẩm mua đúng một lần.
+        dedupeKey: shopItemDedupeKey(item.id),
+        localDate: new Date(`${today}T00:00:00.000Z`),
+      },
+    });
+
+    await prisma.userItem.create({
+      data: { userId: learnerId, itemId: item.id, pricePaid: item.price },
+    });
+
+    balance -= item.price;
+    bought.push({ id: item.id, name: item.name });
+  }
+
+  // Ba vật phẩm yêu thích, gồm cả món chưa mua — tab Yêu thích phải có cả hai trạng thái
+  // để xem được nút "Mua" và nhãn "Đã sở hữu" nằm cạnh nhau.
+  const favorites = catalog.slice(0, 3);
+  if (favorites.length > 0) {
+    await prisma.userItemFavorite.createMany({
+      data: favorites.map((item) => ({ userId: learnerId, itemId: item.id })),
+      skipDuplicates: true,
+    });
+  }
+
+  // Đang dùng món đầu tiên, để trang Tổng quan có linh vật ngay sau khi seed.
+  const first = bought[0];
+  if (first) {
+    await prisma.userEquippedItem.upsert({
+      where: { userId_typeId: { userId: learnerId, typeId: type.id } },
+      create: { userId: learnerId, typeId: type.id, itemId: first.id },
+      update: { itemId: first.id },
+    });
+  }
+
+  const usingText = first ? ` và đang dùng "${first.name}"` : '';
+  console.log(
+    `  Cửa hàng: thêm ${created} vật phẩm, user demo mua ${bought.length} món${usingText}, còn ${balance} xu`,
+  );
+}
+
+/**
+ * Vẽ một linh vật PNG nền TRONG SUỐT: thân tròn, hai má, hai mắt.
+ *
+ * Nền trong suốt nên phải dùng kiểu màu 6 (RGBA) chứ không phải kiểu 2 (RGB) như
+ * `makeBandedPng`. Đây cũng là lý do ảnh vật phẩm ở màn quản trị không đi qua canvas:
+ * xuất JPEG là mất hết phần trong suốt và linh vật sẽ có một khung vuông quanh mình.
+ */
+function makeMascotPng(
+  body: readonly [number, number, number],
+  accent: readonly [number, number, number],
+): Buffer {
+  const size = 128;
+  const raw = Buffer.alloc(size * (1 + size * 4));
+
+  const center = size / 2;
+  const bodyRadius = size * 0.42;
+
+  for (let y = 0; y < size; y += 1) {
+    const rowStart = y * (1 + size * 4);
+    raw[rowStart] = 0; // byte kiểu lọc
+
+    for (let x = 0; x < size; x += 1) {
+      const pixel = rowStart + 1 + x * 4;
+      const dx = x - center;
+      const dy = y - center;
+
+      // Ngoài thân thì để trong suốt hoàn toàn.
+      if (Math.hypot(dx, dy) > bodyRadius) continue;
+
+      let [r, g, b] = body as [number, number, number];
+
+      // Hai má, đối xứng quanh trục dọc.
+      for (const side of [-1, 1]) {
+        const cheek = Math.hypot(
+          x - (center + side * bodyRadius * 0.55),
+          y - (center + bodyRadius * 0.3),
+        );
+        if (cheek < bodyRadius * 0.22) [r, g, b] = accent as [number, number, number];
+      }
+
+      // Hai mắt: lòng trắng rồi con ngươi.
+      for (const side of [-1, 1]) {
+        const eye = Math.hypot(
+          x - (center + side * bodyRadius * 0.32),
+          y - (center - bodyRadius * 0.15),
+        );
+        if (eye < bodyRadius * 0.2) [r, g, b] = [255, 255, 255];
+        if (eye < bodyRadius * 0.09) [r, g, b] = [40, 44, 52];
+      }
+
+      raw[pixel] = r;
+      raw[pixel + 1] = g;
+      raw[pixel + 2] = b;
+      raw[pixel + 3] = 255;
+    }
+  }
+
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8; // 8 bit mỗi kênh màu
+  ihdr[9] = 6; // kiểu màu 6 = RGBA
+
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', deflateSync(raw)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+
+// ---------------------------------------------------------------------------
 // Tiện ích chung
 // ---------------------------------------------------------------------------
 
@@ -1495,6 +1704,8 @@ async function printSummary(): Promise<void> {
     groupSets,
     groupRequests,
     mentions,
+    shopItems,
+    ownedItems,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.topic.count({ where: { ownerId: null } }),
@@ -1513,6 +1724,8 @@ async function printSummary(): Promise<void> {
     prisma.groupStudySet.count(),
     prisma.groupJoinRequest.count(),
     prisma.notification.count({ where: { type: NotificationType.MENTIONED } }),
+    prisma.shopItem.count(),
+    prisma.userItem.count(),
   ]);
 
   console.log('\nSeed hoàn tất.');
@@ -1524,6 +1737,7 @@ async function printSummary(): Promise<void> {
       `${groupRequests} yêu cầu vào nhóm | ${mentions} thông báo đề cập`,
   );
   console.log(`  ${reports} báo cáo bộ thẻ | ${resets} yêu cầu cấp lại mật khẩu`);
+  console.log(`  Cửa hàng: ${shopItems} vật phẩm | ${ownedItems} lượt sở hữu`);
   console.log('\nTài khoản đăng nhập:');
   console.log('  admin@enghabit.com  / A1234567   (quản trị viên)');
   console.log('  user@enghabit.com   / A1234567   (có sẵn dữ liệu học tập)');
