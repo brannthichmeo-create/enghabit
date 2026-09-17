@@ -24,6 +24,7 @@ export const EN: Dictionary = {
   'Thói quen': 'Habits',
   'Mục tiêu': 'Goals',
   'Duy trì': 'Keep it up',
+  'Cá nhân': 'Personal',
   'Quản trị': 'Administration',
   'Tổng quan hệ thống': 'System overview',
   'Tài khoản': 'Accounts',
@@ -1390,4 +1391,128 @@ export const EN: Dictionary = {
   'Đã gỡ bộ thẻ khỏi nhóm': 'Card set removed from the group',
   '{name} chia sẻ ngày {date}': 'Shared by {name} on {date}',
   'Nhóm có bộ thẻ mới': 'New card set in your group',
+
+  // --- Cửa hàng, Ví và Kho vật phẩm ---
+  'Cửa hàng': 'Shop',
+  'Ví của tôi': 'My wallet',
+  'Kho vật phẩm': 'My items',
+  'Quản lý cửa hàng': 'Shop management',
+  'Dùng xu tích được để mua vật phẩm trang trí cho tài khoản của bạn':
+    'Spend the coins you earned on decorations for your account',
+  'Số xu hiện có và toàn bộ lịch sử thu chi của bạn': 'Your coin balance and full transaction history',
+  'Vật phẩm bạn đã thích và đã mua. Mỗi loại chọn một vật phẩm để hiển thị.':
+    'Items you liked and bought. Pick one item per category to display.',
+  'Thêm và sửa loại vật phẩm, vật phẩm bán cho người học bằng xu':
+    'Add and edit item categories and the items learners buy with coins',
+
+  // Thẻ vật phẩm và thao tác mua
+  'Mua với {price} xu': 'Buy for {price} coins',
+  'Mua {name}?': 'Buy {name}?',
+  'Bạn sẽ tiêu {price} xu. Số dư còn lại {rest} xu.':
+    'This costs {price} coins. You will have {rest} coins left.',
+  'Đã mua {name}': '{name} purchased',
+  'Còn thiếu {n} xu': '{n} coins short',
+  'Đã sở hữu': 'Owned',
+  'Dùng': 'Use',
+  'Dùng {name}': 'Use {name}',
+  'Bỏ dùng': 'Stop using',
+  'Bỏ dùng {name}': 'Stop using {name}',
+  'Đang dùng': 'In use',
+  'Đang dùng {name}': 'Now using {name}',
+  'Đã bỏ dùng {name}': 'Stopped using {name}',
+  'Yêu thích': 'Favorites',
+  'Bỏ yêu thích': 'Remove from favorites',
+  'Chưa có ảnh': 'No image yet',
+  'Tìm vật phẩm': 'Search items',
+  'Cửa hàng chưa có vật phẩm': 'The shop has no items yet',
+  'Quản trị viên chưa thêm vật phẩm nào. Quay lại sau nhé.':
+    'No items have been added yet. Check back later.',
+  'Không tìm thấy vật phẩm nào': 'No items found',
+  'Thử từ khoá khác hoặc chọn một loại khác': 'Try another keyword or a different category',
+
+  // Ví
+  'Số dư hiện tại': 'Current balance',
+  'Tổng đã nhận': 'Total earned',
+  'Tổng đã tiêu': 'Total spent',
+  'Thu': 'In',
+  'Chi': 'Out',
+  'Thời gian': 'Time',
+  'Diễn giải': 'Description',
+  'Số xu': 'Coins',
+  'Chưa có biến động nào': 'No transactions yet',
+  'Điểm danh mỗi ngày và hoàn thành nhiệm vụ để nhận xu.':
+    'Check in daily and finish missions to earn coins.',
+  'Điểm danh hằng ngày': 'Daily check-in',
+  'Thưởng nhiệm vụ ngày': 'Daily mission reward',
+  'Mua vật phẩm giữ chuỗi': 'Streak freeze purchase',
+  'Mua vật phẩm trong cửa hàng': 'Shop purchase',
+
+  // Kho vật phẩm
+  'Chưa có vật phẩm yêu thích': 'No favorite items yet',
+  'Bấm biểu tượng trái tim trên một vật phẩm ở cửa hàng để lưu vào đây.':
+    'Tap the heart on any shop item to save it here.',
+  'Kho của bạn còn trống': 'Your inventory is empty',
+  'Mua vật phẩm đầu tiên ở cửa hàng để bắt đầu trang trí tài khoản.':
+    'Buy your first item in the shop to start decorating your account.',
+  'Tới cửa hàng': 'Go to shop',
+  'Giá đã trả': 'Price paid',
+  'Ngày mua': 'Purchased on',
+  'Sử dụng': 'In use',
+
+  // Quản trị cửa hàng
+  'Loại vật phẩm': 'Item categories',
+  'Thêm loại': 'Add category',
+  'Thêm vật phẩm': 'Add item',
+  'Thêm loại vật phẩm': 'Add item category',
+  'Sửa loại vật phẩm': 'Edit item category',
+  'Sửa vật phẩm': 'Edit item',
+  'Chưa có loại nào. Hãy tạo loại đầu tiên, ví dụ Linh vật.':
+    'No categories yet. Create the first one, for example Mascot.',
+  'Chưa có vật phẩm nào': 'No items yet',
+  'Thêm vật phẩm để người học có thứ để mua bằng xu.':
+    'Add items so learners have something to buy with their coins.',
+  'Hãy tạo một loại vật phẩm trước': 'Create an item category first',
+  'Tất cả loại': 'All categories',
+  'Lọc theo loại': 'Filter by category',
+  '{n} vật phẩm': '{n} items',
+  'Đã tắt': 'Disabled',
+  'Đã bán': 'Sold',
+  'Đang bán': 'On sale',
+  'Đang bán {name}': '{name} on sale',
+  'Giá': 'Price',
+  'Giá (xu)': 'Price (coins)',
+  'Đặt 0 để tặng miễn phí': 'Set 0 to give it away for free',
+  'Giá phải là số nguyên không âm': 'Price must be a whole number, zero or more',
+  'Mã loại': 'Category code',
+  'CHỮ HOA, số và gạch dưới. Ví dụ: MASCOT': 'UPPERCASE, digits and underscores. Example: MASCOT',
+  'Mã loại không sửa được vì giao diện gắn chỗ hiển thị theo mã này.':
+    'The code cannot be changed: the interface decides where an item shows up by this code.',
+  'Tên loại': 'Category name',
+  'Tên hiện trên tab của cửa hàng': 'The name shown on the shop tab',
+  'Tên vật phẩm': 'Item name',
+  'Linh vật': 'Mascot',
+  'Hiện trong cửa hàng': 'Show in shop',
+  'Chọn ảnh': 'Choose image',
+  'PNG, WebP hoặc JPG, tối đa {n}KB. Nên dùng PNG nền trong suốt.':
+    'PNG, WebP or JPG, up to {n}KB. A transparent PNG works best.',
+  'Không đọc được ảnh': 'Could not read the image',
+  'Đã thêm loại vật phẩm': 'Item category added',
+  'Đã lưu loại vật phẩm': 'Item category saved',
+  'Đã thêm vật phẩm': 'Item added',
+  'Đã lưu vật phẩm': 'Item saved',
+  'Sửa loại {name}': 'Edit category {name}',
+  'Xoá loại {name}': 'Delete category {name}',
+  'Xoá loại {name}?': 'Delete category {name}?',
+  'Chỉ xoá được loại chưa có vật phẩm nào. Muốn giấu khỏi cửa hàng thì hãy tắt loại.':
+    'Only empty categories can be deleted. To hide one from the shop, switch it off instead.',
+  'Đã xoá loại {name}': 'Category {name} deleted',
+  'Xoá vật phẩm': 'Delete item',
+  'Xoá {name}?': 'Delete {name}?',
+  'Thao tác này không hoàn tác được.': 'This cannot be undone.',
+  'Đã có {n} người mua nên không xoá được. Hãy tắt "Đang bán".':
+    '{n} people already bought it, so it cannot be deleted. Switch off "On sale" instead.',
+  'Đã xoá {name}': '{name} deleted',
+  'Vật phẩm': 'Item',
+  'Mô tả': 'Description',
+  'Thao tác': 'Actions',
 };

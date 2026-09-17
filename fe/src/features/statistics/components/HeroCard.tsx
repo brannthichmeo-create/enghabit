@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { LevelSummary, StreakSummary } from '@enghabit/shared';
 import { ErrorState, Skeleton } from '../../../shared/components/ui';
+import { EquippedMascot } from '../../shop/components/EquippedMascot';
 import { useT } from '../../../shared/i18n/language';
 
 /**
@@ -76,7 +77,7 @@ export function HeroCard({
             />
           </span>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm text-content-muted">{t('Chuỗi hiện tại')}</p>
             <p className="text-4xl font-bold leading-none tabular-nums text-content">
               {streak.currentStreak}
@@ -98,6 +99,13 @@ export function HeroCard({
                 : t('Hôm nay chưa được tính — học một bài để giữ chuỗi')}
             </p>
           </div>
+
+          {/*
+            Linh vật người học đang chọn dùng. Tự trả null khi chưa chọn, chưa tải xong
+            hoặc tính năng Cửa hàng đang tắt — thẻ này phải nguyên vẹn trong cả ba
+            trường hợp đó, nên không chừa sẵn khoảng trống cho nó.
+          */}
+          <EquippedMascot size="lg" />
         </div>
 
         {/* Cấp độ — thông tin phụ nên nằm dưới, không tranh chỗ với chuỗi ngày */}

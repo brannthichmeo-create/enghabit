@@ -13,6 +13,9 @@ import { StudySetDetailPage } from '../features/library/components/StudySetDetai
 import { LearnPage } from '../features/study/components/LearnPage';
 import { ReviewPage } from '../features/study/components/ReviewPage';
 import { LeaderboardPage } from '../features/leaderboard/components/LeaderboardPage';
+import { ShopPage } from '../features/shop/components/ShopPage';
+import { WalletPage } from '../features/shop/components/WalletPage';
+import { InventoryPage } from '../features/shop/components/InventoryPage';
 import { ProfilePage } from '../features/profile/components/ProfilePage';
 import { AdminOverviewPage } from '../features/admin/components/AdminOverviewPage';
 import { AdminUsersPage } from '../features/admin/components/AdminUsersPage';
@@ -21,6 +24,7 @@ import { AdminGroupsPage } from '../features/admin/components/AdminGroupsPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
 import { AdminRequestsPage } from '../features/admin/components/AdminRequestsPage';
 import { AdminStudySetsPage } from '../features/admin/components/AdminStudySetsPage';
+import { AdminShopPage } from '../features/admin/components/AdminShopPage';
 import { AdminFeaturesPage } from '../features/feature-flags/components/AdminFeaturesPage';
 import { ForgotPasswordPage } from '../features/auth/components/ForgotPasswordPage';
 import { GroupsPage } from '../features/groups/components/GroupsPage';
@@ -69,6 +73,15 @@ export function AppRoutes(): JSX.Element {
           element={<Gated flag={FeatureKey.LEADERBOARD} name="Bảng xếp hạng"><LeaderboardPage /></Gated>}
         />
 
+        {/* Cửa hàng, Ví và Kho vật phẩm dùng CHUNG một cờ: không có xu thì ví và kho
+            đều vô nghĩa (xem shared/constants/features.ts). */}
+        <Route path="/shop" element={<Gated flag={FeatureKey.SHOP} name="Cửa hàng"><ShopPage /></Gated>} />
+        <Route path="/wallet" element={<Gated flag={FeatureKey.SHOP} name="Ví của tôi"><WalletPage /></Gated>} />
+        <Route
+          path="/inventory"
+          element={<Gated flag={FeatureKey.SHOP} name="Kho vật phẩm"><InventoryPage /></Gated>}
+        />
+
         {/* Trang cá nhân, thông báo và diễn đàn dùng chung cho cả hai vai trò */}
         {/* Diễn đàn: tắt Cộng đồng thì người học mất lối vào, nhưng quản trị viên vẫn
             vào được để kiểm duyệt — khoá cả người dọn là bỏ lại đúng đống bài cần dọn
@@ -92,6 +105,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/admin/content" element={<Admin name="Nội dung học tập"><AdminContentPage /></Admin>} />
         <Route path="/admin/groups" element={<Admin name="Quản lý nhóm"><AdminGroupsPage /></Admin>} />
         <Route path="/admin/study-sets" element={<Admin name="Kiểm duyệt bộ thẻ"><AdminStudySetsPage /></Admin>} />
+        <Route path="/admin/shop" element={<Admin name="Quản lý cửa hàng"><AdminShopPage /></Admin>} />
         <Route path="/admin/requests" element={<Admin name="Quản lý yêu cầu"><AdminRequestsPage /></Admin>} />
         <Route path="/admin/features" element={<Admin name="Quản lý tính năng"><AdminFeaturesPage /></Admin>} />
         <Route

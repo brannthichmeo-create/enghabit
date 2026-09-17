@@ -7,6 +7,12 @@ import {
 } from '@tanstack/react-query';
 import type {
   AdminGroupDetail,
+  AdminShopItemView,
+  AdminShopTypeView,
+  CreateShopItemInput,
+  CreateShopTypeInput,
+  UpdateShopItemInput,
+  UpdateShopTypeInput,
   AdminGroupQueryInput,
   AdminGroupRow,
   AdminStudySetDetail,
@@ -45,6 +51,8 @@ export const adminKeys = {
   accessOverview: (days: number) => ['admin', 'access', 'overview', days] as const,
   accessLogs: (query: Partial<AccessLogQueryInput>) => ['admin', 'access', 'logs', query] as const,
   resetRequests: (query: Partial<ResetRequestQueryInput>) => ['admin', 'reset-requests', query] as const,
+  shopTypes: () => ['admin', 'shop', 'types'] as const,
+  shopItems: (typeId?: number) => ['admin', 'shop', 'items', typeId ?? 'all'] as const,
 };
 
 /** Số liệu tổng quan đổi liên tục nên làm mới định kỳ thay vì để người dùng bấm F5. */
@@ -259,4 +267,56 @@ export function useBlockStudySet(): UseMutationResult<AdminStudySetDetail, Error
 
 export function useUnblockStudySet(): UseMutationResult<AdminStudySetDetail, Error, number> {
   return useAdminMutation(adminApi.unblockStudySet);
+}
+
+// --- Cửa hàng vật phẩm ---
+//
+// Mọi thao tác đi qua `useAdminMutation` nên sau khi xong sẽ làm mới cả danh sách loại
+// lẫn danh sách vật phẩm: đổi loại của một vật phẩm là số đếm của HAI loại cùng lệch.
+
+export function useAdminShopTypes(): UseQueryResult<AdminShopTypeView[]> {
+  return useQuery({ queryKey: adminKeys.shopTypes(), queryFn: adminApi.listShopTypes });
+}
+
+export function useAdminShopItems(typeId?: number): UseQueryResult<AdminShopItemView[]> {
+  return useQuery({
+    queryKey: adminKeys.shopItems(typeId),
+    queryFn: () => adminApi.listShopItems(typeId),
+  });
+}
+
+export function useCreateShopType(): UseMutationResult<AdminShopTypeView, Error, CreateShopTypeInput> {
+  return useAdminMutation(adminApi.createShopType);
+}
+
+export function useUpdateShopType(): UseMutationResult<
+  AdminShopTypeView,
+  Error,
+  { id: number; input: UpdateShopTypeInput }
+> {
+  return useAdminMutation(({ id, input }) => adminApi.updateShopType(id, input));
+}
+
+export function useDeleteShopType(): UseMutationResult<void, Error, number> {
+  return useAdminMutation(adminApi.deleteShopType);
+}
+
+export function useCreateShopItem(): UseMutationResult<AdminShopItemView, Error, CreateShopItemInput> {
+  return useAdminMutation(adminApi.createShopItem);
+}
+
+export function useUpdateShopItem(): UseMutationResult<
+  AdminShopItemView,
+  Error,
+  { id: number; input: UpdateShopItemInput }
+> {
+  return useAdminMutation(({ id, input }) => adminApi.updateShopItem(id, input));
+}
+
+export function useDeleteShopItem(): UseMutationResult<void, Error, number> {
+  return useAdminMutation(adminApi.deleteShopItem);
+}
+
+export function useDeleteShopItemImage(): UseMutationResult<AdminShopItemView, Error, number> {
+  return useAdminMutation(adminApi.deleteShopItemImage);
 }

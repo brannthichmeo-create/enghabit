@@ -28,6 +28,9 @@ const TRAILS: Record<string, Crumb[]> = {
   '/learn': [{ label: 'Học' }],
   '/review': [{ label: 'Ôn tập' }],
   '/leaderboard': [{ label: 'Bảng xếp hạng' }],
+  '/shop': [{ label: 'Cửa hàng' }],
+  '/wallet': [{ label: 'Ví của tôi' }],
+  '/inventory': [{ label: 'Kho vật phẩm' }],
   '/habits': [{ label: 'Thói quen' }],
   '/goals': [{ label: 'Mục tiêu' }],
   '/community': [{ label: 'Cộng đồng' }],
@@ -42,6 +45,7 @@ const TRAILS: Record<string, Crumb[]> = {
   '/admin/announcements': [{ label: 'Gửi thông báo' }],
   '/admin/groups': [{ label: 'Quản lý nhóm' }],
   '/admin/study-sets': [{ label: 'Kiểm duyệt bộ thẻ' }],
+  '/admin/shop': [{ label: 'Quản lý cửa hàng' }],
   '/admin/requests': [{ label: 'Quản lý yêu cầu' }],
   '/admin/features': [{ label: 'Quản lý tính năng' }],
 };

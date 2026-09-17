@@ -12,6 +12,9 @@ import {
   LayoutDashboard,
   Megaphone,
   ListChecks,
+  PackageOpen,
+  Store,
+  Wallet,
   LogOut,
   MessagesSquare,
   UsersRound,
@@ -102,6 +105,22 @@ export function Sidebar({
     flags,
   );
 
+  /*
+    Nhóm "Cá nhân" — ba màn nói về TÀI SẢN của người học, không phải việc học.
+
+    Đặt cuối cùng và tách khỏi nhóm trên vì chúng không phải việc cần làm hôm nay: người
+    học mở Cửa hàng hay Ví khi đã học xong và muốn tiêu xu, chứ không phải lúc đang tìm
+    bài để học. Cùng một cờ SHOP nên tắt cửa hàng là cả nhãn nhóm biến mất theo.
+  */
+  const personalItems: NavItem[] = visibleItems(
+    [
+      { to: '/shop', label: 'Cửa hàng', icon: Store, flag: FeatureKey.SHOP },
+      { to: '/inventory', label: 'Kho vật phẩm', icon: PackageOpen, flag: FeatureKey.SHOP },
+      { to: '/wallet', label: 'Ví của tôi', icon: Wallet, flag: FeatureKey.SHOP },
+    ],
+    flags,
+  );
+
   /** Quản trị viên vận hành hệ thống, không đi học — nên thấy đúng bộ mục của mình. */
   const adminItems: NavItem[] = [
     { to: '/admin', label: 'Tổng quan hệ thống', icon: LayoutDashboard },
@@ -116,6 +135,7 @@ export function Sidebar({
     // Diễn đàn mở cho cả hai vai trò — quản trị viên vào để trả lời và kiểm duyệt.
     { to: '/admin/groups', label: 'Quản lý nhóm', icon: UsersRound },
     { to: '/admin/study-sets', label: 'Kiểm duyệt bộ thẻ', icon: Flag },
+    { to: '/admin/shop', label: 'Quản lý cửa hàng', icon: Store },
     { to: '/community', label: 'Cộng đồng', icon: MessagesSquare },
   ];
 
@@ -157,6 +177,20 @@ export function Sidebar({
                 <GroupLabel collapsed={collapsed}>{'Duy trì'}</GroupLabel>
                 <ul className="space-y-0.5">
                   {habitItems.map((item) => (
+                    <li key={item.to}>
+                      <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {/* Cùng luật với nhóm trên: tắt tính năng hết mục thì ẩn cả nhãn nhóm. */}
+            {personalItems.length > 0 && (
+              <>
+                <GroupLabel collapsed={collapsed}>{'Cá nhân'}</GroupLabel>
+                <ul className="space-y-0.5">
+                  {personalItems.map((item) => (
                     <li key={item.to}>
                       <Item item={item} collapsed={collapsed} onNavigate={onNavigate} />
                     </li>

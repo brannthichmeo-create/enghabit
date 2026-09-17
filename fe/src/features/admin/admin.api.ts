@@ -1,5 +1,11 @@
 import type {
   AdminGroupDetail,
+  AdminShopItemView,
+  AdminShopTypeView,
+  CreateShopItemInput,
+  CreateShopTypeInput,
+  UpdateShopItemInput,
+  UpdateShopTypeInput,
   AdminGroupQueryInput,
   AdminGroupRow,
   AdminStudySetDetail,
@@ -200,5 +206,61 @@ export async function blockStudySet(setId: number, reason: string): Promise<Admi
 
 export async function unblockStudySet(setId: number): Promise<AdminStudySetDetail> {
   const { data } = await apiClient.post<AdminStudySetDetail>(`/admin/study-sets/${setId}/unblock`);
+  return data;
+}
+
+// --- Cửa hàng vật phẩm ---
+//
+// Nhánh /admin/shop KHÔNG chịu cờ tính năng SHOP: tắt cửa hàng phía người học không
+// được làm quản trị viên mất chỗ soạn vật phẩm (xem be/src/app.ts).
+
+export async function listShopTypes(): Promise<AdminShopTypeView[]> {
+  const { data } = await apiClient.get<AdminShopTypeView[]>('/admin/shop/types');
+  return data;
+}
+
+export async function createShopType(input: CreateShopTypeInput): Promise<AdminShopTypeView> {
+  const { data } = await apiClient.post<AdminShopTypeView>('/admin/shop/types', input);
+  return data;
+}
+
+export async function updateShopType(
+  id: number,
+  input: UpdateShopTypeInput,
+): Promise<AdminShopTypeView> {
+  const { data } = await apiClient.patch<AdminShopTypeView>(`/admin/shop/types/${id}`, input);
+  return data;
+}
+
+export async function deleteShopType(id: number): Promise<void> {
+  await apiClient.delete(`/admin/shop/types/${id}`);
+}
+
+export async function listShopItems(typeId?: number): Promise<AdminShopItemView[]> {
+  const { data } = await apiClient.get<AdminShopItemView[]>('/admin/shop/items', {
+    params: typeId ? { typeId } : undefined,
+  });
+  return data;
+}
+
+export async function createShopItem(input: CreateShopItemInput): Promise<AdminShopItemView> {
+  const { data } = await apiClient.post<AdminShopItemView>('/admin/shop/items', input);
+  return data;
+}
+
+export async function updateShopItem(
+  id: number,
+  input: UpdateShopItemInput,
+): Promise<AdminShopItemView> {
+  const { data } = await apiClient.patch<AdminShopItemView>(`/admin/shop/items/${id}`, input);
+  return data;
+}
+
+export async function deleteShopItem(id: number): Promise<void> {
+  await apiClient.delete(`/admin/shop/items/${id}`);
+}
+
+export async function deleteShopItemImage(id: number): Promise<AdminShopItemView> {
+  const { data } = await apiClient.delete<AdminShopItemView>(`/admin/shop/items/${id}/image`);
   return data;
 }

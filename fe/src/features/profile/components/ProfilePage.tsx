@@ -31,6 +31,7 @@ import {
 } from '../../../shared/components/ui';
 import { Avatar } from '../../../shared/components/Sidebar';
 import { AvatarPicker } from './AvatarPicker';
+import { EquippedMascot } from '../../shop/components/EquippedMascot';
 import { useToast } from '../../../shared/components/Toast';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useChangePassword, useUpdateProfile } from '../profile.hooks';
@@ -99,6 +100,10 @@ export function ProfilePage(): JSX.Element {
               </p>
             )}
           </div>
+
+          {/* Quản trị viên không có vật phẩm nên KHÔNG gọi API của người học — gọi rồi
+              bỏ đi chỉ tốn request và làm log nhiễu (cùng lý do với useLevel ở trên). */}
+          <EquippedMascot size="lg" enabled={isLearner} />
         </div>
 
         {isLearner && level.data && (
