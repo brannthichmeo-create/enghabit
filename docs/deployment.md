@@ -99,3 +99,20 @@ Sau khi có tên miền Vercel thật, quay lại Render cập nhật `CORS_ORIG
 **Build trên monorepo.** Cả Render lẫn Vercel đều phải build `shared` trước `be`/`fe`, vì hai app import từ bản `dist` của nó.
 
 **Migration.** `start` script đã có `prisma migrate deploy` chạy trước khi mở cổng, nên schema luôn khớp với code sau mỗi lần deploy. Không chạy `migrate dev` trên production.
+
+**Migration tạo BẢNG, không mang DỮ LIỆU.** Đây là chỗ dễ tưởng là "deploy chưa lên":
+API và giao diện có đủ tính năng mới, nhưng màn hình vẫn rỗng vì bảng chưa có dòng nào.
+Với cửa hàng vật phẩm, nạp danh mục một lần từ máy bạn (gói free của Render không có tab
+Shell nên không chạy được từ trên đó):
+
+```powershell
+$env:DATABASE_URL = "mysql://avnadmin:MẬT_KHẨU@HOST:PORT/defaultdb?connection_limit=5&connect_timeout=15"
+pnpm --filter @enghabit/be db:seed-shop
+```
+
+Script in ra host đích trước khi ghi — đọc dòng đó để chắc chắn không nạp nhầm vào
+`enghabit_dev`. Nó idempotent và **không** ghi đè vật phẩm đã có, nên chạy lại an toàn:
+quản trị viên sửa giá hay đổi ảnh trên production thì lần chạy sau giữ nguyên công sửa đó.
+
+Đừng chạy `pnpm db:seed` đầy đủ lên production chỉ để có mấy con linh vật: phần cửa hàng
+trong đó còn mua hộ tài khoản demo, tức trừ xu thật trong ví một người dùng thật.

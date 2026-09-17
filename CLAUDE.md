@@ -312,6 +312,13 @@ Hai điều nhỏ dễ làm sai ở màn Ví:
 - **`pricePaid` lưu giá tại thời điểm mua.** Lịch sử ví đọc cột đó, không join sang
   `shop_items.price` — quản trị viên đổi giá về sau không được làm sai lịch sử của người đã mua.
 
+**Migration tạo bảng nhưng không mang dữ liệu.** Deploy xong, bảng cửa hàng có mà rỗng
+nên người học thấy trạng thái "Cửa hàng chưa có vật phẩm" — không phải lỗi deploy. Nạp
+danh mục bằng `db:seed-shop`, chạy được lên cả dev lẫn production và idempotent. Script đó
+**không** mua hộ tài khoản nào: trên production, mua hộ là trừ xu thật trong ví người dùng
+thật. Phần mua hộ chỉ nằm ở `seed.ts` cho DB dev. Cả hai đường dùng chung
+`seedShopCatalog`, nên dev và production không bao giờ có hai bộ linh vật khác nhau.
+
 Ảnh linh vật mẫu trong seed **do chính seed vẽ ra** (`makeMascotPng`, PNG nền trong suốt),
 không tải từ trang nào: đồ án có thể công bố nên ảnh không rõ giấy phép là rủi ro thật, và
 20 tệp PNG trong git thì không ai xem được lúc đọc diff. Quản trị viên tải ảnh thật lên ở
@@ -540,6 +547,7 @@ Chạy từ thư mục gốc:
 | `pnpm --filter @enghabit/fe check:i18n` | **Soát câu chưa có bản dịch tiếng Anh** — chạy sau mỗi lần thêm chữ mới lên giao diện (CI cũng chạy lệnh này) |
 | `pnpm db:migrate` | `prisma migrate dev` — tạo & áp migration |
 | `pnpm db:seed` | Nạp dữ liệu mẫu (idempotent) |
+| `pnpm --filter @enghabit/be db:seed-shop` | **Nạp danh mục cửa hàng (20 linh vật)** — chỉ danh mục, không mua hộ ai. Đây là thứ duy nhất cần chạy tay lên production sau khi deploy tính năng cửa hàng |
 | `pnpm db:studio` | Prisma Studio xem/sửa dữ liệu |
 | `pnpm --filter @enghabit/be db:generate` | Generate lại Prisma Client sau khi sửa schema |
 | `pnpm --filter @enghabit/be db:recompute-streak` | **Tính lại streak từ ActivityLog** khi số liệu sai (thêm `-- <userId>` để chạy cho 1 user) |

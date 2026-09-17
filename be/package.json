@@ -15,6 +15,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed-shop": "tsx prisma/scripts/seed-shop.ts",
     "db:recompute-streak": "tsx prisma/scripts/recompute-streak.ts"
   },
   "prisma": {
