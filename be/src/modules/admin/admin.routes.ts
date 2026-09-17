@@ -8,6 +8,8 @@ import {
   blockGroupSchema,
   blockStudySetSchema,
   createAnnouncementSchema,
+  createShopItemSchema,
+  createShopTypeSchema,
   createTopicSchema,
   createVocabularySchema,
   featureKeyParamSchema,
@@ -15,6 +17,8 @@ import {
   type UpdateFeatureFlagInput,
   rejectResetRequestSchema,
   resetRequestQuerySchema,
+  updateShopItemSchema,
+  updateShopTypeSchema,
   updateTopicSchema,
   updateUserRoleSchema,
   updateUserStatusSchema,
@@ -23,9 +27,13 @@ import {
   type BlockGroupInput,
   type BlockStudySetInput,
   type CreateAnnouncementInput,
+  type CreateShopItemInput,
+  type CreateShopTypeInput,
   type CreateTopicInput,
   type CreateVocabularyInput,
   type RejectResetRequestInput,
+  type UpdateShopItemInput,
+  type UpdateShopTypeInput,
   type UpdateTopicInput,
   type UpdateUserRoleInput,
   type UpdateUserStatusInput,
@@ -43,6 +51,7 @@ import * as topicService from '../topics/topic.service.js';
 import * as adminService from './admin.service.js';
 import * as adminGroupService from './admin-group.service.js';
 import * as adminStudySetService from './admin-study-set.service.js';
+import * as adminShopService from './admin-shop.service.js';
 
 export const adminRoutes: Router = Router();
 
@@ -331,6 +340,81 @@ adminRoutes.patch(
 
     const { isEnabled } = req.body as UpdateFeatureFlagInput;
     res.json(await featureService.setEnabled(parsed.data.key, isEnabled, currentUser(req).id));
+  }),
+);
+
+// --- Cửa hàng vật phẩm ---
+//
+// Nhánh này KHÔNG chịu cờ tính năng SHOP: tắt cửa hàng phía người học không được làm
+// quản trị viên mất chỗ soạn vật phẩm (cùng lý do với /topics). Cờ chỉ gắn ở /shop.
+adminRoutes.get(
+  '/shop/types',
+  asyncHandler(async (_req, res) => {
+    res.json(await adminShopService.listTypes());
+  }),
+);
+
+adminRoutes.post(
+  '/shop/types',
+  validateBody(createShopTypeSchema),
+  asyncHandler(async (req, res) => {
+    res.status(201).json(await adminShopService.createType(req.body as CreateShopTypeInput));
+  }),
+);
+
+adminRoutes.patch(
+  '/shop/types/:id',
+  validateBody(updateShopTypeSchema),
+  asyncHandler(async (req, res) => {
+    res.json(await adminShopService.updateType(parseId(req.params.id), req.body as UpdateShopTypeInput));
+  }),
+);
+
+adminRoutes.delete(
+  '/shop/types/:id',
+  asyncHandler(async (req, res) => {
+    await adminShopService.deleteType(parseId(req.params.id));
+    res.status(204).send();
+  }),
+);
+
+adminRoutes.get(
+  '/shop/items',
+  asyncHandler(async (req, res) => {
+    const typeId = req.query.typeId ? parseId(String(req.query.typeId)) : undefined;
+    res.json(await adminShopService.listItems(typeId));
+  }),
+);
+
+adminRoutes.post(
+  '/shop/items',
+  validateBody(createShopItemSchema),
+  asyncHandler(async (req, res) => {
+    const item = await adminShopService.createItem(currentUser(req).id, req.body as CreateShopItemInput);
+    res.status(201).json(item);
+  }),
+);
+
+adminRoutes.patch(
+  '/shop/items/:id',
+  validateBody(updateShopItemSchema),
+  asyncHandler(async (req, res) => {
+    res.json(await adminShopService.updateItem(parseId(req.params.id), req.body as UpdateShopItemInput));
+  }),
+);
+
+adminRoutes.delete(
+  '/shop/items/:id',
+  asyncHandler(async (req, res) => {
+    await adminShopService.deleteItem(parseId(req.params.id));
+    res.status(204).send();
+  }),
+);
+
+adminRoutes.delete(
+  '/shop/items/:id/image',
+  asyncHandler(async (req, res) => {
+    res.json(await adminShopService.deleteItemImage(parseId(req.params.id)));
   }),
 );
 
