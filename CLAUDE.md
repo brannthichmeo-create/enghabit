@@ -304,6 +304,12 @@ Bảy quyết định bắt buộc giữ:
   của nhóm, thứ bắt buộc kiểm tra tư cách thành viên nên phải tải bằng fetch kèm token.
   Ảnh lưu blob ở bảng riêng `shop_item_images` (cùng lý do với `user_avatars`), URL mang
   `?v=<updated_at>` nên cache được một năm.
+  Hai chỗ **chỉ vỡ trên production**, local không lộ vì Vite proxy làm FE và API cùng
+  origin: (1) backend trả `imageUrl` là đường dẫn **dưới gốc API** (`/shop/items/…`), tầng
+  api của FE ghép với `API_BASE_URL` bằng `withImageSrc` — dùng thẳng làm `src` thì trình
+  duyệt gọi ảnh vào Vercel và nhận về `index.html`; (2) route ảnh ghi đè
+  `Cross-Origin-Resource-Policy` của helmet thành `cross-origin` — để `same-origin` thì
+  trình duyệt tải ảnh từ Render về rồi từ chối vẽ lên trang Vercel.
 
 Hai điều nhỏ dễ làm sai ở màn Ví:
 

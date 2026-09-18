@@ -57,6 +57,19 @@ export async function getItemImage(req: Request, res: Response): Promise<void> {
   const image = await shopService.getItemImage(parseId(req.params.id));
   const etag = `"shop-item-${req.params.id}-${image.updatedAt.getTime()}"`;
 
+  /*
+    Ghi đè `Cross-Origin-Resource-Policy: same-origin` mà helmet đặt cho MỌI response.
+
+    Trên production trang nằm ở Vercel còn ảnh ở Render — khác origin — nên với
+    `same-origin` trình duyệt tải ảnh về rồi TỪ CHỐI vẽ, thẻ img hiện như ảnh vỡ mà
+    console chỉ báo một dòng khó hiểu. Local không lộ lỗi vì Vite proxy làm hai bên
+    cùng origin.
+
+    Chỉ nới cho đúng route này, không tắt ở helmet: ảnh là tranh minh hoạ công khai, còn
+    các response khác vẫn nên giữ `same-origin`.
+  */
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
   if (req.headers['if-none-match'] === etag) {
     res.status(304).end();
     return;

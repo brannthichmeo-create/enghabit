@@ -29,6 +29,7 @@ import type {
   UserStatus,
 } from '@enghabit/shared';
 import { apiClient } from '../../shared/lib/api-client';
+import { withImageSrc } from '../shop/shop.api';
 
 /** Lời gọi API của khu quản trị. Mọi endpoint đều nằm sau role-guard ADMIN ở backend. */
 
@@ -240,12 +241,13 @@ export async function listShopItems(typeId?: number): Promise<AdminShopItemView[
   const { data } = await apiClient.get<AdminShopItemView[]>('/admin/shop/items', {
     params: typeId ? { typeId } : undefined,
   });
-  return data;
+  // Cùng lý do với shop.api: imageUrl của backend là đường dẫn dưới gốc API.
+  return data.map(withImageSrc);
 }
 
 export async function createShopItem(input: CreateShopItemInput): Promise<AdminShopItemView> {
   const { data } = await apiClient.post<AdminShopItemView>('/admin/shop/items', input);
-  return data;
+  return withImageSrc(data);
 }
 
 export async function updateShopItem(
@@ -253,7 +255,7 @@ export async function updateShopItem(
   input: UpdateShopItemInput,
 ): Promise<AdminShopItemView> {
   const { data } = await apiClient.patch<AdminShopItemView>(`/admin/shop/items/${id}`, input);
-  return data;
+  return withImageSrc(data);
 }
 
 export async function deleteShopItem(id: number): Promise<void> {
@@ -262,5 +264,5 @@ export async function deleteShopItem(id: number): Promise<void> {
 
 export async function deleteShopItemImage(id: number): Promise<AdminShopItemView> {
   const { data } = await apiClient.delete<AdminShopItemView>(`/admin/shop/items/${id}/image`);
-  return data;
+  return withImageSrc(data);
 }

@@ -397,10 +397,21 @@ export async function getCoinBalance(
   return result._sum.amount ?? 0;
 }
 
-/** Đường dẫn ảnh kèm tham số phiên bản, để cache dài mà vẫn đổi ngay khi thay ảnh. */
+/**
+ * Đường dẫn ảnh kèm tham số phiên bản, để cache dài mà vẫn đổi ngay khi thay ảnh.
+ *
+ * Trả đường dẫn DƯỚI GỐC API (`/shop/items/…`), KHÔNG kèm `/api/v1` và không kèm tên miền.
+ * Frontend ghép với `API_BASE_URL` của nó ở tầng api (`fe/src/shared/lib/config.ts`).
+ *
+ * Từng trả `/api/v1/shop/items/…` và ảnh vỡ trên production dù local chạy tốt: đường
+ * tương đối được trình duyệt ghép với tên miền của TRANG, tức Vercel — nơi rewrite SPA
+ * trả về `index.html`. Local không lộ lỗi vì Vite proxy `/api` sang backend. Backend
+ * không tự dựng URL tuyệt đối được vì nó đứng sau proxy của Render và không biết tên
+ * miền công khai của chính mình; frontend thì đã biết sẵn qua `VITE_API_URL`.
+ */
 export function imageUrlFor(itemId: number, updatedAt: Date | null | undefined): string | null {
   if (!updatedAt) return null;
-  return `/api/v1/shop/items/${itemId}/image?v=${updatedAt.getTime()}`;
+  return `/shop/items/${itemId}/image?v=${updatedAt.getTime()}`;
 }
 
 const itemInclude = (userId: number) =>

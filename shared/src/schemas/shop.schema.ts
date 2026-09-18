@@ -85,7 +85,13 @@ export interface ShopItemView {
   name: string;
   description: string | null;
   price: number;
-  /** Đường dẫn ảnh kèm tham số phiên bản, hoặc null nếu quản trị viên chưa tải ảnh. */
+  /**
+   * Đường dẫn ảnh kèm tham số phiên bản, hoặc null nếu quản trị viên chưa tải ảnh.
+   *
+   * Backend trả đường dẫn DƯỚI GỐC API (`/shop/items/1/image?v=…`), KHÔNG dùng thẳng làm
+   * `src` được: tầng api của frontend ghép nó với `API_BASE_URL` trước khi tới component.
+   * Dùng thẳng thì trên production trình duyệt gọi ảnh vào tên miền của frontend.
+   */
   imageUrl: string | null;
   isOwned: boolean;
   isFavorite: boolean;
@@ -194,6 +200,7 @@ export interface AdminShopItemView {
   price: number;
   isActive: boolean;
   sortOrder: number;
+  /** Cùng quy ước với `ShopItemView.imageUrl`: đường dẫn dưới gốc API, FE tự ghép. */
   imageUrl: string | null;
   /** Số người đã mua. Khác 0 thì không xoá cứng được, chỉ ngừng bán. */
   ownerCount: number;
