@@ -1,11 +1,11 @@
 import { crc32, deflateSync } from 'node:zlib';
 
 /**
- * Vẽ ảnh PNG cho dữ liệu mẫu — không tải tệp, không gọi mạng.
+ * Vẽ ảnh PNG cho danh mục cửa hàng — không tải tệp, không gọi mạng.
  *
- * Dùng bởi CẢ `seed.ts` và `scripts/seed-shop.ts`, nên đặt ở đây chứ không để private
- * trong seed: hai bản triển khai của cùng một hình vẽ thì DB dev và DB production sẽ có
- * hai bộ linh vật trông khác nhau.
+ * Dùng bởi CẢ đường nạp danh mục (`shop.catalog.ts`) và `prisma/seed.ts`, nên định nghĩa
+ * đúng một lần ở đây: hai bản triển khai của cùng một hình vẽ thì DB dev và DB production
+ * sẽ có hai bộ linh vật trông khác nhau — lỗi rất khó thấy vì cả hai đều "có đủ 20 con".
  */
 
 /** Một khối dữ liệu PNG: độ dài, tên khối, nội dung, rồi CRC của tên cộng nội dung. */
@@ -27,10 +27,17 @@ export function pngChunk(type: string, data: Buffer): Buffer {
  * `makeBandedPng`. Đây cũng là lý do ảnh vật phẩm ở màn quản trị không đi qua canvas:
  * xuất JPEG là mất hết phần trong suốt và linh vật sẽ có một khung vuông quanh mình.
  */
+/**
+ * Trả `Uint8Array` chứ không phải `Buffer`.
+ *
+ * Cột `Bytes` của Prisma khai kiểu `Uint8Array<ArrayBuffer>`, mà `Buffer` của Node là
+ * `Buffer<ArrayBufferLike>` — gán thẳng không qua được typecheck. Chuyển đúng một lần ở
+ * đây, thay vì bắt mọi chỗ gọi tự bọc lại.
+ */
 export function makeMascotPng(
   body: readonly [number, number, number],
   accent: readonly [number, number, number],
-): Buffer {
+): Uint8Array<ArrayBuffer> {
   const size = 128;
   const raw = Buffer.alloc(size * (1 + size * 4));
 
@@ -83,10 +90,12 @@ export function makeMascotPng(
   ihdr[8] = 8; // 8 bit mỗi kênh màu
   ihdr[9] = 6; // kiểu màu 6 = RGBA
 
-  return Buffer.concat([
+  const png = Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     pngChunk('IHDR', ihdr),
     pngChunk('IDAT', deflateSync(raw)),
     pngChunk('IEND', Buffer.alloc(0)),
   ]);
+
+  return new Uint8Array(png);
 }

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
-    "start": "prisma migrate deploy && node dist/server.js",
+    "start": "prisma migrate deploy && node dist/scripts/seed-shop.js --soft && node dist/server.js",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -15,7 +15,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "db:seed-shop": "tsx prisma/scripts/seed-shop.ts",
+    "db:seed-shop": "tsx src/scripts/seed-shop.ts",
     "db:recompute-streak": "tsx prisma/scripts/recompute-streak.ts"
   },
   "prisma": {

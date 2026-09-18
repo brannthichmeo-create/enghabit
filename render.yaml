@@ -20,6 +20,16 @@ services:
     # mà build cần tsup, typescript và prisma. Thiếu cờ này thì build đỏ với
     # "tsup: not found" ngay bước đầu.
     buildCommand: mkdir -p "$HOME/.bin" && corepack enable --install-directory "$HOME/.bin" && export PATH="$HOME/.bin:$PATH" && pnpm install --frozen-lockfile --prod=false && pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/be build
+    # `start` của be làm ba việc, đúng thứ tự đó và không đổi được:
+    #
+    #   1. prisma migrate deploy      — schema khớp code trước khi mở cổng
+    #   2. seed-shop.js --soft        — nạp danh mục cửa hàng (migration tạo BẢNG, không
+    #                                   mang DỮ LIỆU, nên thiếu bước này là push git xong
+    #                                   cửa hàng trên production vẫn rỗng)
+    #   3. node dist/server.js        — mở cổng
+    #
+    # `--soft` là bắt buộc: ba lệnh nối bằng `&&`, không có nó thì một lỗi DB tạm thời lúc
+    # nạp danh mục sẽ chặn luôn bước 3 và cả API sập chỉ vì mấy con linh vật.
     startCommand: pnpm --filter @enghabit/be start
     healthCheckPath: /health
     envVars:

@@ -40,9 +40,9 @@ import { TOPICS } from './seed-data/content.js';
 import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
 import { STUDY_SETS, STUDY_SET_REPORTS } from './seed-data/library.js';
 import { GROUPS } from './seed-data/groups.js';
-import { MASCOT_TYPE } from './seed-data/shop.js';
-import { pngChunk } from './seed-data/mascot-image.js';
-import { seedShopCatalog } from './scripts/seed-shop.js';
+import { MASCOT_TYPE } from '../src/modules/shop/shop.catalog-data.js';
+import { pngChunk } from '../src/modules/shop/shop.mascot-image.js';
+import { seedShopCatalog } from '../src/modules/shop/shop.catalog.js';
 
 /**
  * Seed dữ liệu mẫu — IDEMPOTENT, chạy nhiều lần không tạo bản ghi trùng.
@@ -1240,11 +1240,11 @@ async function seedRewards(userId: number): Promise<void> {
  */
 async function seedShop(learnerId: number): Promise<void> {
   /*
-    Danh muc dung LAI `seedShopCatalog` cua scripts/seed-shop.ts.
+    Danh mục dùng LẠI `seedShopCatalog` của module shop.
 
-    Do la script duy nhat chay len production, nen neu cho seed tu tao danh muc rieng thi
-    DB dev va DB production se co hai bo linh vat khac nhau — dung thu loi rat kho thay vi
-    ca hai deu "co du 20 vat pham".
+    Đó là đường mà production nạp danh mục (trong startCommand của Render), nên nếu cho
+    seed tự tạo danh mục riêng thì DB dev và DB production sẽ có hai bộ linh vật khác
+    nhau — lỗi rất khó thấy vì cả hai đều "có đủ 20 vật phẩm".
   */
   const catalogResult = await seedShopCatalog(prisma);
   const created = catalogResult.createdItems;

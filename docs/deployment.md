@@ -100,19 +100,26 @@ Sau khi có tên miền Vercel thật, quay lại Render cập nhật `CORS_ORIG
 
 **Migration.** `start` script đã có `prisma migrate deploy` chạy trước khi mở cổng, nên schema luôn khớp với code sau mỗi lần deploy. Không chạy `migrate dev` trên production.
 
-**Migration tạo BẢNG, không mang DỮ LIỆU.** Đây là chỗ dễ tưởng là "deploy chưa lên":
-API và giao diện có đủ tính năng mới, nhưng màn hình vẫn rỗng vì bảng chưa có dòng nào.
-Với cửa hàng vật phẩm, nạp danh mục một lần từ máy bạn (gói free của Render không có tab
-Shell nên không chạy được từ trên đó):
+**Migration tạo BẢNG, không mang DỮ LIỆU.** Đây là chỗ dễ tưởng là "deploy chưa lên": API
+và giao diện có đủ tính năng mới, nhưng màn hình vẫn rỗng vì bảng chưa có dòng nào.
+
+Với danh mục cửa hàng, việc này đã **tự động**: `startCommand` chạy
+`node dist/scripts/seed-shop.js --soft` giữa `migrate deploy` và `node dist/server.js`,
+nên push git xong là production có đủ 20 linh vật, không phải nạp tay lần nào. Chi tiết và
+lý do từng quyết định: CLAUDE.md > Cửa hàng, Ví và Kho vật phẩm.
+
+Chạy tay chỉ cần khi muốn nạp vào một DB khác:
 
 ```powershell
-$env:DATABASE_URL = "mysql://avnadmin:MẬT_KHẨU@HOST:PORT/defaultdb?connection_limit=5&connect_timeout=15"
+$env:DATABASE_URL = Read-Host "Dan DATABASE_URL"
 pnpm --filter @enghabit/be db:seed-shop
+Remove-Item Env:\DATABASE_URL
 ```
 
-Script in ra host đích trước khi ghi — đọc dòng đó để chắc chắn không nạp nhầm vào
-`enghabit_dev`. Nó idempotent và **không** ghi đè vật phẩm đã có, nên chạy lại an toàn:
-quản trị viên sửa giá hay đổi ảnh trên production thì lần chạy sau giữ nguyên công sửa đó.
+Dùng `Read-Host` thay vì gõ thẳng chuỗi vào lệnh: PSReadLine lưu nguyên mật khẩu vào
+`ConsoleHost_history.txt` trên ổ đĩa. Script in ra host đích trước khi ghi — đọc dòng đó để
+chắc chắn không nạp nhầm chỗ. Nhớ xoá biến sau khi xong, nếu không mọi lệnh `dev:be`,
+`db:seed`, `prisma studio` tiếp theo **trong cùng cửa sổ** đều trỏ vào DB đó.
 
-Đừng chạy `pnpm db:seed` đầy đủ lên production chỉ để có mấy con linh vật: phần cửa hàng
-trong đó còn mua hộ tài khoản demo, tức trừ xu thật trong ví một người dùng thật.
+Đừng chạy `pnpm db:seed` đầy đủ lên production: phần cửa hàng trong đó còn mua hộ tài khoản
+demo, tức trừ xu thật trong ví một người dùng thật.

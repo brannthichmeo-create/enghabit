@@ -1,5 +1,11 @@
 /**
- * Dữ liệu mẫu cho cửa hàng: một loại "Linh vật" và 20 vật phẩm.
+ * Danh mục cửa hàng mặc định: một loại "Linh vật" và 20 vật phẩm.
+ *
+ * Nằm trong `src/` chứ không phải `prisma/seed-data/` vì đây là dữ liệu của ỨNG DỤNG,
+ * không phải dữ liệu mẫu: `startCommand` của Render nạp nó vào production mỗi lần khởi
+ * động (xem shop.catalog.ts), nên nó phải được biên dịch vào `dist`. Để ở `prisma/` thì
+ * production chỉ chạy được nó qua `tsx` — một devDependency, và cả server sẽ không khởi
+ * động nổi ở bất kỳ môi trường nào cài đặt bằng `--prod`.
  *
  * Ảnh KHÔNG lấy từ nguồn trên mạng. Mỗi linh vật là một hình PNG nền trong suốt do
  * chính seed vẽ ra từ `body` và `accent` (xem `makeMascotPng` trong seed.ts). Hai lý do:

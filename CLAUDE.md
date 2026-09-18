@@ -312,12 +312,25 @@ Hai điều nhỏ dễ làm sai ở màn Ví:
 - **`pricePaid` lưu giá tại thời điểm mua.** Lịch sử ví đọc cột đó, không join sang
   `shop_items.price` — quản trị viên đổi giá về sau không được làm sai lịch sử của người đã mua.
 
-**Migration tạo bảng nhưng không mang dữ liệu.** Deploy xong, bảng cửa hàng có mà rỗng
-nên người học thấy trạng thái "Cửa hàng chưa có vật phẩm" — không phải lỗi deploy. Nạp
-danh mục bằng `db:seed-shop`, chạy được lên cả dev lẫn production và idempotent. Script đó
-**không** mua hộ tài khoản nào: trên production, mua hộ là trừ xu thật trong ví người dùng
-thật. Phần mua hộ chỉ nằm ở `seed.ts` cho DB dev. Cả hai đường dùng chung
-`seedShopCatalog`, nên dev và production không bao giờ có hai bộ linh vật khác nhau.
+**Danh mục cửa hàng nằm trong MÃ NGUỒN và tự lên production khi deploy.** Migration tạo
+bảng nhưng không mang dữ liệu, nên nếu để danh mục trong `prisma/seed.ts` thì deploy xong
+cửa hàng vẫn rỗng — gói free của Render không có tab Shell, seed chỉ chạy tay từ máy dev.
+Vì vậy:
+
+- Danh mục 20 linh vật ở `be/src/modules/shop/shop.catalog-data.ts`, **trong `src/`** để
+  được biên dịch vào `dist`. Để ở `prisma/seed-data/` thì production phải gọi qua `tsx`,
+  một devDependency — môi trường nào cài bằng `--prod` là server không khởi động nổi.
+- `startCommand` của Render làm ba việc theo đúng thứ tự: `migrate deploy` →
+  `node dist/scripts/seed-shop.js --soft` → `node dist/server.js`.
+- **`--soft` là bắt buộc.** Ba lệnh nối bằng `&&`; thiếu cờ này thì một lỗi DB tạm thời
+  lúc nạp danh mục sẽ chặn luôn bước mở cổng và cả API sập chỉ vì mấy con linh vật.
+- `seedShopCatalog` có **đường nhanh**: đủ vật phẩm và đủ ảnh thì thoát sau 2 câu đếm.
+  Cần nó vì gói free ngủ sau 15 phút nên service tỉnh lại rất nhiều lần mỗi ngày.
+- **Không ghi đè vật phẩm đã có**, chỉ bù ảnh nếu thiếu: quản trị viên sửa giá ở
+  `/admin/shop` thì lần service tỉnh sau không được đặt lại giá về mặc định.
+- Script **không** mua hộ tài khoản nào — trên production, mua hộ là trừ xu thật trong ví
+  một người dùng thật. Phần mua hộ chỉ nằm ở `prisma/seed.ts` cho DB dev, và nó gọi lại
+  đúng `seedShopCatalog` nên dev với production không bao giờ có hai bộ linh vật khác nhau.
 
 Ảnh linh vật mẫu trong seed **do chính seed vẽ ra** (`makeMascotPng`, PNG nền trong suốt),
 không tải từ trang nào: đồ án có thể công bố nên ảnh không rõ giấy phép là rủi ro thật, và
@@ -547,7 +560,7 @@ Chạy từ thư mục gốc:
 | `pnpm --filter @enghabit/fe check:i18n` | **Soát câu chưa có bản dịch tiếng Anh** — chạy sau mỗi lần thêm chữ mới lên giao diện (CI cũng chạy lệnh này) |
 | `pnpm db:migrate` | `prisma migrate dev` — tạo & áp migration |
 | `pnpm db:seed` | Nạp dữ liệu mẫu (idempotent) |
-| `pnpm --filter @enghabit/be db:seed-shop` | **Nạp danh mục cửa hàng (20 linh vật)** — chỉ danh mục, không mua hộ ai. Đây là thứ duy nhất cần chạy tay lên production sau khi deploy tính năng cửa hàng |
+| `pnpm --filter @enghabit/be db:seed-shop` | Nạp danh mục cửa hàng (20 linh vật) vào DB đang trỏ tới. Thường KHÔNG phải chạy tay: `startCommand` của Render đã chạy nó mỗi lần khởi động |
 | `pnpm db:studio` | Prisma Studio xem/sửa dữ liệu |
 | `pnpm --filter @enghabit/be db:generate` | Generate lại Prisma Client sau khi sửa schema |
 | `pnpm --filter @enghabit/be db:recompute-streak` | **Tính lại streak từ ActivityLog** khi số liệu sai (thêm `-- <userId>` để chạy cho 1 user) |
