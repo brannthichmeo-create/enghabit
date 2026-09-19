@@ -1,5 +1,4 @@
 import { prisma } from '../lib/prisma.js';
-import { MASCOT_TYPE } from '../modules/shop/shop.catalog-data.js';
 import { seedShopCatalog } from '../modules/shop/shop.catalog.js';
 
 /**
@@ -35,7 +34,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log(`  Loại vật phẩm "${MASCOT_TYPE.label}" (id ${result.typeId})`);
+  const types = Object.entries(result.typeIds).map(([slug, id]) => `${slug} (id ${id})`);
+  console.log(`  Loại vật phẩm: ${types.join(', ')}`);
   console.log(`  Thêm mới: ${result.createdItems} vật phẩm, ${result.createdImages} ảnh`);
   console.log(`  Đã có sẵn, giữ nguyên: ${result.keptItems} vật phẩm`);
 }

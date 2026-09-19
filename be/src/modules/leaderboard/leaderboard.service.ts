@@ -14,6 +14,7 @@ import {
 import { prisma } from '../../lib/prisma.js';
 import { toDbDate } from '../../common/utils/db-date.js';
 import { getLevelsFor } from '../statistics/statistics.service.js';
+import { getEquippedFrameUrls } from '../shop/shop.frame.js';
 
 /**
  * Bảng xếp hạng người học.
@@ -86,7 +87,15 @@ export async function getLeaderboard(
 
   // Cấp độ tính từ TOÀN BỘ lịch sử, không phải từ `xp` của khoảng đang xem — xem ghi
   // chú ở `LeaderboardEntry.level`. Một truy vấn cho cả bảng, không phải mỗi người một lần.
-  const [profiles, levels] = await Promise.all([loadProfiles(rankedIds), getLevelsFor(rankedIds)]);
+  //
+  // Khung viền chỉ hỏi cho những dòng SẼ HIỆN (top `limit` + chính người xem), không cho
+  // cả bảng: xếp hạng toàn thời gian có thể có hàng trăm người mà chỉ vài chục dòng lên màn.
+  const visibleIds = [...rankedIds.slice(0, query.limit), userId];
+  const [profiles, levels, frames] = await Promise.all([
+    loadProfiles(rankedIds),
+    getLevelsFor(rankedIds),
+    getEquippedFrameUrls(visibleIds),
+  ]);
 
   const all: LeaderboardEntry[] = scored.map((item, index) => ({
     rank: index + 1,
@@ -97,6 +106,7 @@ export async function getLeaderboard(
     activities: item.activities,
     currentStreak: profiles.get(item.userId)?.currentStreak ?? 0,
     isMe: item.userId === userId,
+    avatarFrameUrl: frames.get(item.userId) ?? null,
   }));
 
   const entries = all.slice(0, query.limit);

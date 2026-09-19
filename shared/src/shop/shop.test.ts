@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AVATAR_FRAME_SCALE,
   ITEM_SLUG_PATTERN,
   SHOP_IMAGE_MAX_BYTES,
   isKnownItemSlug,
@@ -65,6 +66,10 @@ describe('isKnownItemSlug', () => {
     expect(isKnownItemSlug('MASCOT')).toBe(true);
   });
 
+  it('AVATAR_FRAME đã có chỗ hiển thị', () => {
+    expect(isKnownItemSlug('AVATAR_FRAME')).toBe(true);
+  });
+
   it('loại lạ chỉ là chưa có chỗ hiển thị, không phải lỗi', () => {
     expect(isKnownItemSlug('WALLPAPER')).toBe(false);
   });
@@ -103,5 +108,19 @@ describe('walletQuerySchema', () => {
 
   it('từ chối chiều lạ', () => {
     expect(walletQuerySchema.safeParse({ direction: 'SIDEWAYS' }).success).toBe(false);
+  });
+});
+
+describe('AVATAR_FRAME_SCALE', () => {
+  /*
+    Backend vẽ ảnh khung theo tỉ lệ này, frontend phóng ảnh phủ theo đúng tỉ lệ này.
+    Nhỏ hơn hoặc bằng 1 thì khung nằm LỌT vào trong mặt người dùng thay vì bao quanh.
+  */
+  it('lớn hơn 1 để khung bao ngoài ảnh đại diện', () => {
+    expect(AVATAR_FRAME_SCALE).toBeGreaterThan(1);
+  });
+
+  it('không quá lớn để khung không tràn sang dòng bên cạnh', () => {
+    expect(AVATAR_FRAME_SCALE).toBeLessThanOrEqual(1.5);
   });
 });

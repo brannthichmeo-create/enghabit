@@ -94,6 +94,14 @@ export interface PostAuthor {
    * họ thay chỗ đó — mỗi người luôn có đúng một nhãn, không bao giờ có cả hai.
    */
   level: number | null;
+  /**
+   * Khung viền đang dùng — URL ảnh DƯỚI GỐC API, tầng api của frontend tự ghép như ảnh
+   * vật phẩm. `null` = khung mặc định (viền trắng), vẽ bằng CSS chứ không phải ảnh.
+   *
+   * Cũng là `null` khi quản trị viên tắt Cửa hàng: tắt là đảo ngược được, khung vẫn nằm
+   * trong kho của người dùng và hiện lại khi bật (xem shop.frame.ts).
+   */
+  avatarFrameUrl: string | null;
 }
 
 /** Thông tin mô tả một tệp đính kèm. KHÔNG bao giờ chứa nội dung tệp. */

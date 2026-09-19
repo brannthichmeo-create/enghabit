@@ -123,6 +123,14 @@ export interface GroupMemberRow {
   /** Số hoạt động học của thành viên, để trưởng nhóm thấy ai đang học đều. */
   activityCount: number;
   currentStreak: number;
+  /**
+   * Khung viền đang dùng — URL ảnh DƯỚI GỐC API, tầng api của frontend tự ghép như ảnh
+   * vật phẩm. `null` = khung mặc định (viền trắng), vẽ bằng CSS chứ không phải ảnh.
+   *
+   * Cũng là `null` khi quản trị viên tắt Cửa hàng: tắt là đảo ngược được, khung vẫn nằm
+   * trong kho của người dùng và hiện lại khi bật (xem shop.frame.ts).
+   */
+  avatarFrameUrl: string | null;
 }
 
 export interface GroupJoinRequestRow {

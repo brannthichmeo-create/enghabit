@@ -97,8 +97,27 @@ export function parseShopImageDataUrl(dataUrl: string): ParsedShopImage {
 export const KnownItemSlug = {
   /** Linh vật hiển thị ở trang Tổng quan và trang cá nhân. */
   MASCOT: 'MASCOT',
+  /**
+   * Khung viền quanh ảnh đại diện. KHÁC linh vật ở chỗ NGƯỜI KHÁC cũng thấy: nó đi kèm
+   * tác giả bài đăng, bình luận, bảng xếp hạng và danh sách thành viên nhóm.
+   */
+  AVATAR_FRAME: 'AVATAR_FRAME',
 } as const;
 export type KnownItemSlug = (typeof KnownItemSlug)[keyof typeof KnownItemSlug];
+
+/**
+ * Ảnh khung viền to hơn ảnh đại diện bao nhiêu lần.
+ *
+ * Khung là một ảnh PNG VUÔNG, tâm trong suốt, phủ lên avatar. Avatar chiếm đúng vòng tròn
+ * ở giữa có đường kính = cạnh ảnh / AVATAR_FRAME_SCALE; phần dư ra là chỗ để vẽ viền.
+ *
+ * Dùng chung vì hai phía phải khớp tuyệt đối: backend VẼ ảnh khung theo tỉ lệ này
+ * (`shop.frame-image.ts`), frontend PHÓNG ảnh phủ theo đúng tỉ lệ này (`Avatar`). Lệch
+ * nhau vài phần trăm là viền đè lên mặt người dùng hoặc hở một khe giữa viền và ảnh.
+ *
+ * Quản trị viên tự tải khung lên thì phải vẽ theo cùng tỉ lệ — màn /admin/shop có ghi.
+ */
+export const AVATAR_FRAME_SCALE = 1.3;
 
 /** Slug này đã có chỗ hiển thị trong giao diện chưa. */
 export function isKnownItemSlug(slug: string): slug is KnownItemSlug {

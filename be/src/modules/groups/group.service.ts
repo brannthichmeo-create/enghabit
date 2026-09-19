@@ -35,6 +35,7 @@ import {
 } from '../../common/errors/app-error.js';
 import { isUniqueViolation } from '../../common/utils/prisma-error.js';
 import { createNotification } from '../notifications/notification.service.js';
+import { getEquippedFrameUrls } from '../shop/shop.frame.js';
 
 /**
  * Nhóm lớp — không gian trao đổi nội bộ do người học tự lập.
@@ -323,7 +324,11 @@ export async function getGroupDetail(groupId: number, userId: number): Promise<G
     },
   });
 
-  const pendingRequests = isLeader ? await listPendingRequests(groupId) : [];
+  const [pendingRequests, frames] = await Promise.all([
+    isLeader ? listPendingRequests(groupId) : Promise.resolve([]),
+    // Một truy vấn cho cả danh sách thành viên, không phải mỗi người một lần.
+    getEquippedFrameUrls(members.map((m) => m.user.id)),
+  ]);
 
   return {
     ...toSummary(group, {
@@ -340,6 +345,7 @@ export async function getGroupDetail(groupId: number, userId: number): Promise<G
       joinedAt: m.joinedAt.toISOString(),
       activityCount: m.user._count.activityLogs,
       currentStreak: m.user.streak?.currentStreak ?? 0,
+      avatarFrameUrl: frames.get(m.user.id) ?? null,
     })),
     pendingRequests,
   };
@@ -522,6 +528,7 @@ export async function addMember(
     joinedAt: member.joinedAt.toISOString(),
     activityCount: user._count.activityLogs,
     currentStreak: user.streak?.currentStreak ?? 0,
+    avatarFrameUrl: (await getEquippedFrameUrls([user.id])).get(user.id) ?? null,
   };
 }
 

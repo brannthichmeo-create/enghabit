@@ -20,6 +20,7 @@ import { prisma } from '../../lib/prisma.js';
 import { isMember } from '../groups/group.service.js';
 import { notifyMentions } from './mention.service.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors/app-error.js';
+import { getEquippedFrameUrls } from '../shop/shop.frame.js';
 import { getLevelsFor } from '../statistics/statistics.service.js';
 
 /**
@@ -137,7 +138,7 @@ export async function listPosts(
     prisma.post.count({ where }),
   ]);
 
-  const levels = await loadLevels(posts.map((post) => post.author));
+  const extras = await loadAuthorExtras(posts.map((post) => post.author));
 
   return {
     items: posts.map((post) => ({
@@ -145,7 +146,7 @@ export async function listPosts(
       groupId: post.groupId,
       title: post.title,
       excerpt: toExcerpt(post.body),
-      author: toAuthor(post.author, levels),
+      author: toAuthor(post.author, extras),
       createdAt: post.createdAt.toISOString(),
       likeCount: post._count.likes,
       commentCount: post._count.comments,
@@ -182,7 +183,7 @@ export async function getPost(
   if (post.groupId !== null) await assertGroupAccess(post.groupId, viewer.id);
 
   // Một truy vấn cho cả tác giả bài lẫn tất cả người bình luận.
-  const levels = await loadLevels([post.author, ...post.comments.map((c) => c.author)]);
+  const extras = await loadAuthorExtras([post.author, ...post.comments.map((c) => c.author)]);
 
   return {
     id: post.id,
@@ -190,7 +191,7 @@ export async function getPost(
     groupId: post.groupId,
     title: post.title,
     body: post.body,
-    author: toAuthor(post.author, levels),
+    author: toAuthor(post.author, extras),
     createdAt: post.createdAt.toISOString(),
     likeCount: post._count.likes,
     commentCount: post._count.comments,
@@ -201,7 +202,7 @@ export async function getPost(
       (comment): PostCommentRow => ({
         id: comment.id,
         body: comment.body,
-        author: toAuthor(comment.author, levels),
+        author: toAuthor(comment.author, extras),
         createdAt: comment.createdAt.toISOString(),
         canDelete: canDelete(comment.authorId, viewer),
       }),
@@ -331,7 +332,7 @@ export async function createComment(
   return {
     id: comment.id,
     body: comment.body,
-    author: toAuthor(comment.author, await loadLevels([comment.author])),
+    author: toAuthor(comment.author, await loadAuthorExtras([comment.author])),
     createdAt: comment.createdAt.toISOString(),
     canDelete: true,
   };
@@ -440,16 +441,29 @@ type AuthorRow = { id: number; name: string; role: UserRole };
  * Lọc bỏ quản trị viên trước khi hỏi: họ không có cấp độ nên đếm hoạt động của họ cũng
  * vô nghĩa (xem CLAUDE.md > Chức năng cho quản trị viên).
  */
-async function loadLevels(authors: AuthorRow[]): Promise<Map<number, number>> {
-  return getLevelsFor(authors.filter((a) => a.role !== UserRole.ADMIN).map((a) => a.id));
+async function loadAuthorExtras(authors: AuthorRow[]): Promise<AuthorExtras> {
+  const [levels, frames] = await Promise.all([
+    getLevelsFor(authors.filter((a) => a.role !== UserRole.ADMIN).map((a) => a.id)),
+    // Khung viền lấy cho mọi tác giả, kể cả quản trị viên: họ không mua được vật phẩm
+    // (shop chặn requireRole USER) nên luôn ra khung mặc định — không cần lọc tay ở đây.
+    getEquippedFrameUrls(authors.map((a) => a.id)),
+  ]);
+  return { levels, frames };
 }
 
-function toAuthor(author: AuthorRow, levels: Map<number, number>): PostAuthor {
+/** Cấp độ và khung viền của cả trang, tải cùng lúc để mỗi trang chỉ tốn một lượt. */
+interface AuthorExtras {
+  levels: Map<number, number>;
+  frames: Map<number, string>;
+}
+
+function toAuthor(author: AuthorRow, extras: AuthorExtras): PostAuthor {
   return {
     id: author.id,
     name: author.name,
     role: author.role,
-    level: author.role === UserRole.ADMIN ? null : (levels.get(author.id) ?? 1),
+    level: author.role === UserRole.ADMIN ? null : (extras.levels.get(author.id) ?? 1),
+    avatarFrameUrl: extras.frames.get(author.id) ?? null,
   };
 }
 

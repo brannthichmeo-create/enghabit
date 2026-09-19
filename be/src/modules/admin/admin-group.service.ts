@@ -11,6 +11,7 @@ import { prisma } from '../../lib/prisma.js';
 import { BadRequestError, NotFoundError } from '../../common/errors/app-error.js';
 import { createNotification } from '../notifications/notification.service.js';
 import { toBlockInfo } from '../groups/group.service.js';
+import { getEquippedFrameUrls } from '../shop/shop.frame.js';
 
 /**
  * Quản trị nhóm lớp — góc nhìn vận hành, KHÁC hẳn góc nhìn thành viên.
@@ -118,6 +119,10 @@ export async function getGroupDetail(groupId: number): Promise<AdminGroupDetail>
     lastPostByGroup([groupId]),
   ]);
 
+  // Quản trị viên cũng là "người khác": họ thấy khung viền thành viên đã mua, như mọi
+  // màn hình khác hiện người dùng. Một truy vấn cho cả danh sách.
+  const frames = await getEquippedFrameUrls(members.map((m) => m.user.id));
+
   return {
     ...toRow(group),
     leaders: leaders.get(groupId) ?? [],
@@ -131,6 +136,7 @@ export async function getGroupDetail(groupId: number): Promise<AdminGroupDetail>
       joinedAt: m.joinedAt.toISOString(),
       activityCount: m.user._count.activityLogs,
       currentStreak: m.user.streak?.currentStreak ?? 0,
+      avatarFrameUrl: frames.get(m.user.id) ?? null,
     })),
     recentPosts: recentPosts.map((post) => ({
       id: post.id,
