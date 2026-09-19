@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ImageOff, PackageOpen, Store } from 'lucide-react';
 import { KnownItemSlug, type OwnedItemView } from '@enghabit/shared';
-import { Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../../../shared/components/ui';
+import { Button, Card, EmptyState, ErrorState, PageHeader, Select, Skeleton } from '../../../shared/components/ui';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { useLocale, useT } from '../../../shared/i18n/language';
 import { useToast } from '../../../shared/components/Toast';
 import { useRewards } from '../../rewards/rewards.hooks';
 import { useCurrentUser } from '../../auth/auth.store';
 import { Avatar } from '../../../shared/components/Sidebar';
-import { useEquipItem, useInventory, useShopItems, useUnequipItem } from '../shop.hooks';
+import { useEquipItem, useInventory, useShopItems, useShopTypes, useUnequipItem } from '../shop.hooks';
 import { ShopItemCard } from './ShopItemCard';
 
 /**
@@ -30,6 +30,25 @@ type Tab = 'favorites' | 'mine';
 export function InventoryPage(): JSX.Element {
   const t = useT();
   const [tab, setTab] = useState<Tab>('favorites');
+  const [pickedTypeId, setPickedTypeId] = useState<number | undefined>(undefined);
+
+  /*
+    Danh sách LOẠI lấy từ API, không phải mảng hằng trong code — quản trị viên thêm loại
+    mới hay đổi tên loại ở /admin/shop là bộ lọc ở đây đổi theo, không cần deploy.
+    TanStack Query tải lại khi vào trang và khi quay lại tab trình duyệt, nên sửa xong
+    bên quản trị rồi mở kho là thấy ngay.
+
+    Cộng thêm các loại lấy từ CHÍNH đồ đã mua: `/shop/types` chỉ trả loại đang bật, mà
+    quản trị viên tắt một loại thì người đã mua vẫn giữ đồ loại đó (xem CLAUDE.md). Chỉ
+    dựa vào `/shop/types` thì đồ của loại đã tắt nằm trong kho mà không lọc ra được.
+  */
+  const types = useShopTypes();
+  const inventory = useInventory();
+  const typeOptions = mergeTypeOptions(types.data ?? [], inventory.data?.items ?? []);
+
+  // Loại đang chọn vừa bị xoá hoặc đổi → tự quay về "Tất cả", không kẹt ở một bộ lọc
+  // không còn tồn tại và hiện danh sách rỗng mà không ai hiểu vì sao.
+  const typeId = typeOptions.some((option) => option.id === pickedTypeId) ? pickedTypeId : undefined;
 
   return (
     <div>
@@ -45,24 +64,41 @@ export function InventoryPage(): JSX.Element {
         }
       />
 
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <TabButton active={tab === 'favorites'} onClick={() => setTab('favorites')}>
           {t('Yêu thích')}
         </TabButton>
         <TabButton active={tab === 'mine'} onClick={() => setTab('mine')}>
           {t('Của tôi')}
         </TabButton>
+
+        {/* Ô chọn chứ không phải thêm một dải nút: hai dải nút chồng nhau thì không rõ
+            dải nào là tab, dải nào là bộ lọc. Bộ lọc giữ nguyên khi đổi tab. */}
+        <Select
+          value={typeId ?? ''}
+          onChange={(event) => setPickedTypeId(event.target.value ? Number(event.target.value) : undefined)}
+          aria-label={t('Loại vật phẩm')}
+          className="!mt-0 ml-auto w-48"
+        >
+          <option value="">{t('Tất cả loại')}</option>
+          {typeOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {/* Nhãn loại do quản trị viên nhập — dữ liệu động, KHÔNG đưa qua t(). */}
+              {option.label}
+            </option>
+          ))}
+        </Select>
       </div>
 
-      {tab === 'favorites' ? <FavoritesTab /> : <MineTab />}
+      {tab === 'favorites' ? <FavoritesTab typeId={typeId} /> : <MineTab typeId={typeId} />}
     </div>
   );
 }
 
-function FavoritesTab(): JSX.Element {
+function FavoritesTab({ typeId }: { typeId: number | undefined }): JSX.Element {
   const t = useT();
 
-  const query = { favorite: true, page: 1, pageSize: 48 };
+  const query = { favorite: true, typeId, page: 1, pageSize: 48 };
   const items = useShopItems(query);
   const rewards = useRewards();
   const coins = rewards.data?.coins ?? 0;
@@ -85,8 +121,12 @@ function FavoritesTab(): JSX.Element {
     return (
       <EmptyState
         icon={Heart}
-        title={t('Chưa có vật phẩm yêu thích')}
-        description={t('Bấm biểu tượng trái tim trên một vật phẩm ở cửa hàng để lưu vào đây.')}
+        title={typeId ? t('Không có vật phẩm yêu thích thuộc loại này') : t('Chưa có vật phẩm yêu thích')}
+        description={
+          typeId
+            ? t('Chọn "Tất cả loại" để xem mọi vật phẩm bạn đã thích.')
+            : t('Bấm biểu tượng trái tim trên một vật phẩm ở cửa hàng để lưu vào đây.')
+        }
         action={
           <Link to="/shop">
             <Button icon={Store}>{t('Tới cửa hàng')}</Button>
@@ -105,10 +145,14 @@ function FavoritesTab(): JSX.Element {
   );
 }
 
-function MineTab(): JSX.Element {
+function MineTab({ typeId }: { typeId: number | undefined }): JSX.Element {
   const t = useT();
 
+  // Lọc ngay trên dữ liệu kho đã tải — kho của một người chỉ vài chục món, gọi lại API
+  // cho mỗi lần đổi bộ lọc chỉ thêm độ trễ. Cùng khoá cache với trang cha nên không tốn
+  // thêm request nào.
   const inventory = useInventory();
+  const rows = inventory.data?.items.filter((item) => !typeId || item.typeId === typeId) ?? [];
 
   if (inventory.isLoading) return <Skeleton className="h-72 w-full" />;
 
@@ -150,7 +194,14 @@ function MineTab(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {inventory.data.items.map((item) => (
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-10 text-center text-sm text-content-muted">
+                  {t('Bạn chưa mua vật phẩm nào thuộc loại này.')}
+                </td>
+              </tr>
+            )}
+            {rows.map((item) => (
               <OwnedRow
                 key={item.id}
                 item={item}
@@ -271,4 +322,24 @@ function TabButton({
       {children}
     </button>
   );
+}
+
+interface TypeOption {
+  id: number;
+  label: string;
+}
+
+/**
+ * Lựa chọn cho bộ lọc Loại: các loại đang bật, cộng các loại của đồ đã mua mà không còn
+ * trong danh sách đó (loại quản trị viên đã tắt). Nhãn lấy theo `/shop/types` trước vì
+ * đó là tên mới nhất quản trị viên vừa sửa.
+ */
+function mergeTypeOptions(
+  types: readonly { id: number; label: string }[],
+  owned: readonly { typeId: number; typeLabel: string }[],
+): TypeOption[] {
+  const options = new Map<number, string>();
+  for (const type of types) options.set(type.id, type.label);
+  for (const item of owned) if (!options.has(item.typeId)) options.set(item.typeId, item.typeLabel);
+  return [...options].map(([id, label]) => ({ id, label }));
 }

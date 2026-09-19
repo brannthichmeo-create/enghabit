@@ -1539,4 +1539,10 @@ export const EN: Dictionary = {
   'Đã bỏ hạn mục tiêu': 'Goal deadline removed',
   'Khung viền: ảnh vuông, tâm trong suốt. Ảnh đại diện nằm ở vòng giữa, đường kính bằng cạnh ảnh chia {scale}.':
     'Avatar frame: a square image with a transparent centre. The avatar sits in the middle circle, its diameter equal to the image side divided by {scale}.',
+  'Bạn chưa mua vật phẩm nào thuộc loại này.': 'You have not bought any items of this category yet.',
+  'Bạn đã sở hữu hết vật phẩm ở đây': 'You already own everything here',
+  'Chọn "Tất cả loại" để xem mọi vật phẩm bạn đã thích.': 'Choose "All categories" to see every item you liked.',
+  'Đã mua {name}. Vật phẩm nằm trong Kho vật phẩm.': 'Bought {name}. You will find it in My items.',
+  'Không có vật phẩm yêu thích thuộc loại này': 'No favorite items in this category',
+  'Vật phẩm đã mua nằm trong Kho vật phẩm, ở tab Của tôi.': 'Items you bought are in My items, under the Mine tab.',
 };
