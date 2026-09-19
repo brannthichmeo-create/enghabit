@@ -952,6 +952,12 @@ model GroupJoinRequest {
   /// Lời nhắn gửi trưởng nhóm, vd "Em là sinh viên lớp K65".
   message String? @db.VarChar(300)
 
+  /// Lý do từ chối — HIỆN CHO NGƯỜI XIN VÀO đọc ở tab "Chờ duyệt", nên viết cho họ
+  /// hiểu. Bắt buộc khi từ chối (xem `rejectJoinRequestSchema`), nhưng cột vẫn cho null
+  /// vì các yêu cầu bị từ chối trước khi có quy tắc này không có lý do nào để điền.
+  /// Xin lại thì cột này được xoá về null cùng lúc với trạng thái quay về PENDING.
+  rejectReason String? @map("reject_reason") @db.VarChar(300)
+
   decidedById Int?      @map("decided_by_id")
   decidedAt   DateTime? @map("decided_at")
 

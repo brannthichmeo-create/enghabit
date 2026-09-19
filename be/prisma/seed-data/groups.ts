@@ -75,7 +75,8 @@ export interface GroupSeed {
   leaders: string[];
   members: string[];
   pendingRequests: { email: string; message?: string }[];
-  rejectedRequests: { email: string; message?: string }[];
+  /** `reason` bắt buộc như ở API thật (`rejectJoinRequestSchema`) — người xin vào đọc nó ở tab "Chờ duyệt". */
+  rejectedRequests: { email: string; message?: string; reason: string }[];
   /**
    * Tên các bộ thẻ trong `STUDY_SETS` được chia sẻ vào nhóm.
    *
@@ -111,7 +112,13 @@ export const GROUPS: GroupSeed[] = [
     leaders: [USER, LAN],
     members: [NAM, CHI, LONG],
     pendingRequests: [{ email: DUY, message: 'Em là sinh viên lớp K65, cho em vào nhóm với ạ.' }],
-    rejectedRequests: [{ email: HA, message: 'Cho mình tham gia với.' }],
+    rejectedRequests: [
+      {
+        email: HA,
+        message: 'Cho mình tham gia với.',
+        reason: 'Nhóm chỉ dành cho sinh viên lớp K65. Bạn học lớp khác thì xin vào nhóm Lớp K66 nhé.',
+      },
+    ],
     studySets: ['IELTS Speaking Part 1', 'Từ vựng công sở của tôi', 'TOEIC Part 5 — Collocations'],
     posts: [
       {
@@ -199,7 +206,13 @@ export const GROUPS: GroupSeed[] = [
     leaders: [CHI],
     members: [USER, LONG],
     pendingRequests: [{ email: NAM, message: 'Mình cùng phòng, cho mình ôn cùng với.' }],
-    rejectedRequests: [{ email: DUY, message: 'Cho mình vào giới thiệu tài liệu ôn thi nhé.' }],
+    rejectedRequests: [
+      {
+        email: DUY,
+        message: 'Cho mình vào giới thiệu tài liệu ôn thi nhé.',
+        reason: 'Nhóm không nhận giới thiệu hay bán tài liệu. Muốn ôn thi cùng thì gửi lại yêu cầu, không kèm quảng cáo.',
+      },
+    ],
     studySets: ['Tiếng Anh ngành IT'],
     posts: [
       {
@@ -400,7 +413,12 @@ export const GROUPS: GroupSeed[] = [
     leaders: [USER],
     members: [NAM, CHI],
     pendingRequests: [{ email: LAN, message: 'Mình tham gia thử thách với được không?' }],
-    rejectedRequests: [{ email: DUY }],
+    rejectedRequests: [
+      {
+        email: DUY,
+        reason: 'Thử thách đã chạy được 13 ngày nên nhóm không nhận thêm người giữa chừng. Đợt sau mình sẽ mở lại.',
+      },
+    ],
     studySets: ['Phrasal verbs hay gặp', 'Từ vựng công sở của tôi'],
     // Cố ý chưa có bài nào: nhóm lập ra để học chứ không để tán gẫu, và bảng tin rỗng
     // cũng là một trạng thái giao diện phải vẽ được.
@@ -417,7 +435,13 @@ export const GROUPS: GroupSeed[] = [
     leaders: [CHI],
     members: [USER, LAN, HA],
     pendingRequests: [{ email: NAM, message: 'Mình cần luyện email cho công việc, xin vào nhóm.' }],
-    rejectedRequests: [{ email: DUY, message: 'Mình có khoá học muốn giới thiệu cho nhóm.' }],
+    rejectedRequests: [
+      {
+        email: DUY,
+        message: 'Mình có khoá học muốn giới thiệu cho nhóm.',
+        reason: 'Nhóm không nhận quảng cáo khoá học. Bạn muốn học cùng thì gửi lại yêu cầu nhé.',
+      },
+    ],
     studySets: ['Tiếng Anh ngành IT'],
     posts: [
       {
@@ -518,9 +542,17 @@ export const GROUPS: GroupSeed[] = [
     requireApproval: true,
     daysAgo: 12,
     leaders: [DUY],
-    members: [USER, HA],
-    pendingRequests: [{ email: CHI, message: 'Mình cũng thi đợt này, cho mình ôn cùng.' }],
-    rejectedRequests: [],
+    members: [HA],
+    pendingRequests: [],
+    // Tài khoản mẫu bị từ chối ở đây — để tab "Chờ duyệt" của user@ có sẵn một thẻ
+    // "Bị từ chối" với nút Xem lý do và Yêu cầu lại.
+    rejectedRequests: [
+      {
+        email: USER,
+        message: 'Mình cũng thi đợt này, cho mình ôn cùng.',
+        reason: 'Nhóm đã đủ người cho đợt thi này. Bạn để ý đợt sau nhé, mình sẽ mở lại nhóm.',
+      },
+    ],
     studySets: ['Từ vựng thi cấp tốc'],
     posts: [
       {
@@ -529,7 +561,7 @@ export const GROUPS: GroupSeed[] = [
         hour: 19,
         title: 'Lịch ôn ba tuần cuối',
         body: 'Tuần 1 ôn Reading, tuần 2 Listening, tuần 3 thi thử toàn bộ. Lịch chi tiết ở tệp đính kèm.',
-        likedBy: [USER, HA],
+        likedBy: [HA],
         comments: [],
         files: [
           {
@@ -623,10 +655,11 @@ export const GROUPS: GroupSeed[] = [
     requireApproval: true,
     daysAgo: 24,
     leaders: [LAN, NAM],
-    members: [USER, CHI],
+    members: [CHI],
     pendingRequests: [
       { email: HA, message: 'Mình muốn thử vai người phản biện.' },
-      { email: LONG, message: 'Cho mình vào xem trước vài buổi được không?' },
+      // Tài khoản mẫu đang chờ duyệt ở đây — thẻ "Đang chờ duyệt" trong tab của user@.
+      { email: USER, message: 'Cho mình vào xem trước vài buổi được không?' },
     ],
     rejectedRequests: [],
     studySets: ['TOEIC Part 5 — Collocations', 'Idioms thông dụng'],
@@ -637,7 +670,7 @@ export const GROUPS: GroupSeed[] = [
         hour: 19,
         title: 'Chủ đề buổi tới: mạng xã hội và giới trẻ',
         body: '@nam.do bạn điều phối buổi này nhé. @all đọc trước tài liệu tham khảo đính kèm.',
-        likedBy: [NAM, USER, CHI],
+        likedBy: [NAM, CHI],
         comments: [{ by: NAM, hoursAfter: 2, body: 'Ok mình nhận. Ai muốn nhận phe ủng hộ thì nhắn trước.' }],
         files: [
           {
@@ -661,7 +694,13 @@ export const GROUPS: GroupSeed[] = [
     leaders: [LAN],
     members: [USER, NAM],
     pendingRequests: [{ email: CHI }],
-    rejectedRequests: [{ email: LONG, message: 'Cho mình thi ké với.' }],
+    rejectedRequests: [
+      {
+        email: LONG,
+        message: 'Cho mình thi ké với.',
+        reason: 'Nhóm thi thử chỉ dành cho nhân viên phòng Kinh doanh.',
+      },
+    ],
     studySets: ['TOEIC Part 5 — Collocations'],
     posts: [
       {
@@ -726,7 +765,7 @@ export const GROUPS: GroupSeed[] = [
     daysAgo: 6,
     leaders: [HA],
     members: [DUY],
-    pendingRequests: [{ email: LONG, message: 'Mình học lại từ đầu sau 10 năm, xin vào nhóm ạ.' }],
+    pendingRequests: [{ email: USER, message: 'Mình học lại từ đầu sau 10 năm, xin vào nhóm ạ.' }],
     rejectedRequests: [],
     studySets: [],
     posts: [

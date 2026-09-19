@@ -18,6 +18,7 @@ import type {
   GroupSummary,
   JoinGroupResult,
   MentionTarget,
+  MyJoinRequestRow,
   Paginated,
   UpdateGroupInput,
 } from '@enghabit/shared';
@@ -29,6 +30,7 @@ import * as groupApi from './group.api';
 export const groupKeys = {
   all: ['groups'] as const,
   mine: () => ['groups', 'mine'] as const,
+  myRequests: () => ['groups', 'mine', 'requests'] as const,
   search: (query: Partial<GroupSearchInput>) => ['groups', 'search', query] as const,
   detail: (id: number) => ['groups', 'detail', id] as const,
   byCode: (code: string) => ['groups', 'code', code] as const,
@@ -109,11 +111,21 @@ export function useLeaveGroup(): UseMutationResult<void, Error, number> {
 export function useDecideRequest(): UseMutationResult<
   void,
   Error,
-  { groupId: number; userId: number; approve: boolean }
+  { groupId: number; userId: number; approve: boolean; reason?: string }
 > {
-  return useGroupMutation(({ groupId, userId, approve }) =>
-    groupApi.decideRequest(groupId, userId, approve),
+  return useGroupMutation(({ groupId, userId, approve, reason }) =>
+    groupApi.decideRequest(groupId, userId, approve, reason),
   );
+}
+
+/**
+ * Yêu cầu vào nhóm của chính mình — tab "Chờ duyệt".
+ *
+ * Nằm dưới `groupKeys.all` nên xin lại, rời nhóm hay được thêm vào nhóm đều làm mới nó
+ * cùng lúc với "Nhóm của tôi": một nhóm không bao giờ hiện ở cả hai tab.
+ */
+export function useMyJoinRequests(): UseQueryResult<MyJoinRequestRow[]> {
+  return useQuery({ queryKey: groupKeys.myRequests(), queryFn: groupApi.listMyJoinRequests });
 }
 
 export function useAddMember(): UseMutationResult<

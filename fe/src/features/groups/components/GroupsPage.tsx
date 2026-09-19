@@ -1,12 +1,32 @@
-import { useState, type FormEvent } from 'react';
-import { Check, Compass, Copy, Delete, Hash, Lock, Globe, Plus, Search, UserPlus, Users, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useState, type FormEvent, type ReactNode } from 'react';
+import {
+  ArrowRight,
+  Check,
+  Clock,
+  Compass,
+  Copy,
+  Delete,
+  FileText,
+  Globe,
+  Hash,
+  Lock,
+  Plus,
+  RotateCcw,
+  Search,
+  UserPlus,
+  Users,
+  X,
+  XCircle,
+} from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   GROUP_CODE_LENGTH,
+  GroupJoinStatus,
   GroupViewerState,
   GroupVisibility,
   createGroupSchema,
   type GroupSummary,
+  type MyJoinRequestRow,
 } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import {
@@ -23,31 +43,59 @@ import {
 } from '../../../shared/components/ui';
 import { Modal } from '../../../shared/components/Modal';
 import { useToast } from '../../../shared/components/Toast';
-import { useT } from '../../../shared/i18n/language';
-import { useCreateGroup, useGroupByCode, useGroupSearch, useJoinGroup, useMyGroups } from '../group.hooks';
+import { useLocale, useT } from '../../../shared/i18n/language';
+import {
+  useCreateGroup,
+  useGroupByCode,
+  useGroupSearch,
+  useJoinGroup,
+  useMyGroups,
+  useMyJoinRequests,
+} from '../group.hooks';
 
-type Tab = 'mine' | 'discover';
+type Tab = 'mine' | 'pending' | 'discover';
 
 const TABS: { key: Tab; label: string; icon: typeof Users }[] = [
   { key: 'mine', label: 'Nhóm của tôi', icon: Users },
+  { key: 'pending', label: 'Chờ duyệt', icon: Clock },
   { key: 'discover', label: 'Khám phá nhóm', icon: Compass },
 ];
 
+/** Tab trên URL lạ (gõ tay, liên kết cũ) thì về tab mặc định thay vì vẽ một trang trống. */
+function parseTab(value: string | null): Tab {
+  return TABS.some((item) => item.key === value) ? (value as Tab) : 'mine';
+}
+
 /**
- * Trang nhóm lớp — hai tab: nhóm đã tham gia và nhóm công khai để khám phá.
+ * Trang nhóm lớp — ba tab: nhóm đã tham gia, yêu cầu đang chờ duyệt, và nhóm công khai
+ * để khám phá.
  *
- * Chia tab vì hai việc này khác nhau về ý định: một bên là quay lại chỗ quen, một bên
- * là đi tìm chỗ mới. Xếp chồng trên cùng một trang thì danh sách nhóm của mình bị đẩy
- * xuống dưới kết quả tìm kiếm ngay khi nhóm nhiều lên.
+ * Chia tab vì các việc này khác nhau về ý định: một bên là quay lại chỗ quen, một bên
+ * là theo dõi chỗ mình đang xin vào, một bên là đi tìm chỗ mới.
+ *
+ * Tab đang mở nằm trên URL (`?tab=pending`) chứ không trong state của component: mở một
+ * nhóm rồi bấm Quay lại phải về ĐÚNG tab vừa đứng, và thông báo "bị từ chối" dẫn thẳng
+ * được tới tab Chờ duyệt. State cục bộ thì mỗi lần quay lại đều rơi về tab đầu tiên.
  *
  * Vào nhóm bằng mã nằm trong hộp thoại riêng chứ không phải một mục trên trang: nó chỉ
  * dùng khi đã có mã trong tay, mà lúc đó người dùng không cần nhìn thấy gì khác.
  */
 export function GroupsPage(): JSX.Element {
   const t = useT();
-  const [tab, setTab] = useState<Tab>('mine');
+  const [params, setParams] = useSearchParams();
+  const tab = parseTab(params.get('tab'));
   const [creating, setCreating] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
+
+  // Số trên tab Chờ duyệt. Cùng khoá truy vấn với chính tab đó nên không tốn thêm request.
+  const myRequests = useMyJoinRequests();
+  const counts: Partial<Record<Tab, number>> = { pending: myRequests.data?.length ?? 0 };
+
+  // `replace` để đổi tab không chồng thêm mục vào lịch sử: bấm Quay lại của trình duyệt
+  // phải rời trang Nhóm lớp, không phải lùi qua từng tab đã bấm.
+  const selectTab = (next: Tab): void => {
+    setParams(next === 'mine' ? {} : { tab: next }, { replace: true });
+  };
 
   return (
     <div>
@@ -73,7 +121,8 @@ export function GroupsPage(): JSX.Element {
       {creating && <CreateGroupForm onDone={() => setCreating(false)} />}
 
       <div
-        className="mb-4 flex gap-1 rounded-lg bg-sunken p-1"
+        // Ba tab không vừa bề ngang điện thoại — cuộn ngang thay vì để chữ xuống dòng.
+        className="mb-4 flex gap-1 overflow-x-auto rounded-lg bg-sunken p-1"
         role="tablist"
         aria-label={t('Loại danh sách')}
       >
@@ -82,18 +131,23 @@ export function GroupsPage(): JSX.Element {
             key={key}
             role="tab"
             aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={`flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm transition ${
+            onClick={() => selectTab(key)}
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-4 py-1.5 text-sm transition ${
               tab === key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
             }`}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             {t(label)}
+            {(counts[key] ?? 0) > 0 && (
+              <span className="tabular-nums text-content-muted">{counts[key]}</span>
+            )}
           </button>
         ))}
       </div>
 
-      {tab === 'mine' ? <MyGroupsTab /> : <DiscoverTab />}
+      {tab === 'mine' && <MyGroupsTab />}
+      {tab === 'pending' && <PendingTab />}
+      {tab === 'discover' && <DiscoverTab />}
 
       <JoinByCodeModal open={codeOpen} onClose={() => setCodeOpen(false)} />
     </div>
@@ -134,10 +188,13 @@ function MyGroupsTab(): JSX.Element {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-sm text-on-page-soft">{t('Vai trò')}</span>
         <div className="w-52">
+          {/* `!mt-0`: ô chọn mặc định có khoảng đệm trên để đứng dưới nhãn của `Field`;
+              ở đây nhãn đứng NGANG hàng nên khoảng đó đẩy ô tụt xuống lệch khỏi chữ "Vai trò". */}
           <Select
             value={filter}
             onChange={(e) => setFilter(e.target.value as MineFilter)}
             aria-label={t('Lọc theo vai trò trong nhóm')}
+            className="!mt-0"
           >
             {MINE_FILTERS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -241,6 +298,180 @@ function DiscoverTab(): JSX.Element {
         {results.data?.items.map((group) => <GroupCard key={group.id} group={group} />)}
       </div>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tab "Chờ duyệt"
+// ---------------------------------------------------------------------------
+
+/**
+ * Nhóm mình đã xin vào mà chưa thành thành viên: đang chờ, hoặc đã bị từ chối.
+ *
+ * Được duyệt thì nhóm tự rời tab này sang "Nhóm của tôi" — cả hai danh sách cùng nằm
+ * dưới `groupKeys.all` nên làm mới cùng lúc. Bị từ chối thì thẻ ở lại với lý do và nút
+ * xin lại, thay vì biến mất khiến người dùng không biết yêu cầu của mình đã đi đâu.
+ */
+function PendingTab(): JSX.Element {
+  const t = useT();
+  const requests = useMyJoinRequests();
+
+  return (
+    <section>
+      {requests.isLoading && <SkeletonList rows={2} />}
+      {requests.isError && <ErrorMessage>{getErrorMessage(requests.error)}</ErrorMessage>}
+
+      {requests.data?.length === 0 && (
+        <EmptyState
+          icon={Clock}
+          title={t('Không có yêu cầu nào đang chờ')}
+          description={t('Yêu cầu vào nhóm bạn gửi sẽ hiện ở đây cho tới khi trưởng nhóm duyệt.')}
+        />
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {requests.data?.map((request) => (
+          <JoinRequestCard key={request.group.id} request={request} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Một yêu cầu của mình: trạng thái, lúc gửi hoặc lúc bị từ chối, và việc làm tiếp. */
+function JoinRequestCard({ request }: { request: MyJoinRequestRow }): JSX.Element {
+  const t = useT();
+  const locale = useLocale();
+  const toast = useToast();
+  const join = useJoinGroup();
+  const [reasonOpen, setReasonOpen] = useState(false);
+
+  const { group } = request;
+  const rejected = request.status === GroupJoinStatus.REJECTED;
+  // Nhóm bị chặn không nhận thành viên mới — backend cũng từ chối, nhưng khoá nút ngay
+  // ở đây để người dùng không phải bấm rồi mới đọc lỗi.
+  const blocked = group.block !== null;
+
+  const when = (iso: string | null): string =>
+    iso
+      ? new Date(iso).toLocaleString(locale, {
+          day: 'numeric',
+          month: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '';
+
+  const requestAgain = (): void => {
+    join.mutate(
+      { id: group.id },
+      {
+        onSuccess: (result) => {
+          setReasonOpen(false);
+          toast.success(
+            result.joined ? t('Đã vào nhóm') : t('Đã gửi lại yêu cầu, chờ trưởng nhóm duyệt'),
+          );
+        },
+        onError: (err) => toast.error(getErrorMessage(err)),
+      },
+    );
+  };
+
+  const againButton = (
+    <Button
+      size="sm"
+      icon={RotateCcw}
+      loading={join.isPending}
+      disabled={blocked}
+      onClick={requestAgain}
+    >
+      {t('Yêu cầu lại')}
+    </Button>
+  );
+
+  return (
+    <>
+      <GroupCard
+        group={group}
+        status={
+          rejected ? (
+            <Badge tone="red" icon={XCircle}>
+              {t('Bị từ chối')}
+            </Badge>
+          ) : (
+            <Badge tone="amber" icon={Clock}>
+              {t('Đang chờ duyệt')}
+            </Badge>
+          )
+        }
+        note={
+          rejected
+            ? t('Bị từ chối lúc {time}', { time: when(request.decidedAt) })
+            : t('Đã gửi lúc {time}', { time: when(request.requestedAt) })
+        }
+        footer={
+          rejected ? (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={FileText}
+                onClick={() => setReasonOpen(true)}
+              >
+                {t('Xem lý do')}
+              </Button>
+              {againButton}
+              {blocked && (
+                <span className="text-xs text-content-muted">{t('Nhóm đang bị chặn')}</span>
+              )}
+            </>
+          ) : (
+            <span className="text-xs text-content-muted">
+              {t('Bạn sẽ nhận thông báo khi trưởng nhóm duyệt hoặc từ chối.')}
+            </span>
+          )
+        }
+      />
+
+      <Modal
+        open={reasonOpen}
+        onClose={() => setReasonOpen(false)}
+        title={t('Lý do từ chối')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setReasonOpen(false)}>
+              {t('Đóng')}
+            </Button>
+            {againButton}
+          </>
+        }
+      >
+        <p className="text-sm text-content-soft">
+          {t('Yêu cầu vào nhóm "{name}" bị từ chối lúc {time}.', {
+            name: group.name,
+            time: when(request.decidedAt),
+          })}
+        </p>
+
+        {/* Lý do do trưởng nhóm viết — dữ liệu động, không đưa qua t(). Yêu cầu bị từ
+            chối trước khi lý do thành bắt buộc thì không có gì để hiện: nói thẳng là
+            không có, đừng để một khung trống khiến người đọc tưởng tải lỗi. */}
+        <div className="mt-3 rounded-lg border border-line bg-sunken px-3 py-2.5 text-sm">
+          {request.rejectReason ? (
+            <p className="whitespace-pre-wrap text-content">{request.rejectReason}</p>
+          ) : (
+            <p className="italic text-content-muted">{t('Trưởng nhóm không để lại lý do.')}</p>
+          )}
+        </div>
+
+        {request.message && (
+          <p className="mt-3 text-xs text-content-muted">
+            {t('Lời nhắn bạn đã gửi: "{message}"', { message: request.message })}
+          </p>
+        )}
+      </Modal>
+    </>
   );
 }
 
@@ -564,8 +795,89 @@ function GroupCreatedModal({ code, onClose }: { code: string; onClose: () => voi
 // Thẻ nhóm
 // ---------------------------------------------------------------------------
 
-/** Một thẻ nhóm. Nút bên phải đổi theo quan hệ của người xem với nhóm đó. */
-function GroupCard({ group }: { group: GroupSummary }): JSX.Element {
+/**
+ * Một thẻ nhóm — dùng chung cho cả ba tab và hộp thoại nhập mã.
+ *
+ * Bố cục cố định ba tầng, từ trên xuống: tên / hàng nhãn / mô tả và số liệu, rồi hàng
+ * nút DÍNH ĐÁY thẻ (`mt-auto`). Nhờ vậy hai thẻ đứng cạnh nhau trong lưới luôn có nút
+ * thẳng một đường dù mô tả dài ngắn khác nhau. Trước đây tên và nhãn nằm chung một dòng
+ * còn nhãn "chờ duyệt" trôi riêng bên phải: tên dài là nhãn bị bẻ thành hai dòng và mỗi
+ * thẻ một kiểu lệch.
+ *
+ * KHÔNG hiện mã nhóm ở đây. Mã là chìa khoá vào nhóm riêng tư, nên nó chỉ hiện bên trong
+ * trang nhóm — nơi chỉ thành viên mở được.
+ *
+ * `status`, `note` và `footer` để tab "Chờ duyệt" gắn trạng thái yêu cầu vào CÙNG một
+ * khung thẻ, không dựng một kiểu thẻ thứ hai trông gần giống.
+ */
+function GroupCard({
+  group,
+  status,
+  note,
+  footer,
+}: {
+  group: GroupSummary;
+  /** Nhãn trạng thái thêm vào cuối hàng nhãn. */
+  status?: ReactNode;
+  /** Một dòng chữ nhỏ dưới số liệu, vd "Đã gửi lúc …". */
+  note?: string;
+  /** Thay hàng nút mặc định (Xem nhóm / Yêu cầu vào). */
+  footer?: ReactNode;
+}): JSX.Element {
+  const t = useT();
+
+  return (
+    <Card className="flex h-full flex-col">
+      <h3 className="truncate font-semibold text-content" title={group.name}>
+        {group.name}
+      </h3>
+
+      {/* `whitespace-nowrap` giữ chữ TRONG mỗi nhãn trên một dòng; hàng vẫn xuống dòng
+          GIỮA các nhãn nhờ `flex-wrap`. Thiếu nó thì "2 chờ duyệt" bị bẻ đôi khi hẹp. */}
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 whitespace-nowrap">
+        {group.visibility === GroupVisibility.PRIVATE ? (
+          <Badge icon={Lock}>{t('Riêng tư')}</Badge>
+        ) : (
+          <Badge icon={Globe} tone="green">
+            {t('Công khai')}
+          </Badge>
+        )}
+        {group.viewerState === GroupViewerState.LEADER && (
+          <Badge tone="brand">{t('Trưởng nhóm')}</Badge>
+        )}
+        {group.pendingCount > 0 && (
+          <Badge tone="amber" icon={Clock}>
+            {t('{n} chờ duyệt', { n: group.pendingCount })}
+          </Badge>
+        )}
+        {status}
+      </div>
+
+      {group.description && (
+        <p className="mt-3 line-clamp-2 text-sm text-content-soft">{group.description}</p>
+      )}
+
+      <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-muted">
+        <span className="inline-flex items-center gap-1">
+          <Users className="h-3.5 w-3.5" aria-hidden />
+          {t('{n} thành viên', { n: group.memberCount })}
+        </span>
+        <span>{t('{n} bài đăng', { n: group.postCount })}</span>
+      </p>
+
+      {note && <p className="mt-1 text-xs text-content-muted">{note}</p>}
+
+      <div className="mt-auto pt-4">
+        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+          {footer ?? <GroupCardActions group={group} />}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** Hàng nút mặc định của thẻ nhóm — đổi theo quan hệ của người xem với nhóm. */
+function GroupCardActions({ group }: { group: GroupSummary }): JSX.Element {
   const t = useT();
   const toast = useToast();
   const navigate = useNavigate();
@@ -574,80 +886,48 @@ function GroupCard({ group }: { group: GroupSummary }): JSX.Element {
   const isMember =
     group.viewerState === GroupViewerState.MEMBER || group.viewerState === GroupViewerState.LEADER;
 
+  if (isMember) {
+    return (
+      <Button
+        variant="secondary"
+        size="sm"
+        icon={ArrowRight}
+        onClick={() => navigate(`/groups/${group.id}`)}
+      >
+        {t('Xem nhóm')}
+      </Button>
+    );
+  }
+
+  if (group.viewerState === GroupViewerState.PENDING) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-sm text-content-muted">
+        <Clock className="h-3.5 w-3.5" aria-hidden />
+        {t('Đang chờ trưởng nhóm duyệt')}
+      </span>
+    );
+  }
+
   return (
-    <Card className="flex flex-col">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate font-semibold text-content">{group.name}</span>
-            {group.visibility === GroupVisibility.PRIVATE ? (
-              <Badge icon={Lock}>{t('Riêng tư')}</Badge>
-            ) : (
-              <Badge icon={Globe} tone="green">
-                {t('Công khai')}
-              </Badge>
-            )}
-            {group.viewerState === GroupViewerState.LEADER && (
-              <Badge tone="brand">{t('Trưởng nhóm')}</Badge>
-            )}
-          </div>
-
-          {group.description && (
-            <p className="mt-1 line-clamp-2 text-sm text-content-soft">{group.description}</p>
-          )}
-
-          <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-muted">
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" aria-hidden />
-              {t('{n} thành viên', { n: group.memberCount })}
-            </span>
-            <span>{t('{n} bài đăng', { n: group.postCount })}</span>
-            {isMember && (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <Hash className="h-3.5 w-3.5" aria-hidden />
-                {group.code}
-              </span>
-            )}
-          </p>
-        </div>
-
-        {group.pendingCount > 0 && (
-          <Badge tone="amber">{t('{n} chờ duyệt', { n: group.pendingCount })}</Badge>
-        )}
-      </div>
-
-      <div className="mt-4 flex gap-2 border-t border-line pt-3">
-        {isMember ? (
-          <Button variant="secondary" size="sm" onClick={() => navigate(`/groups/${group.id}`)}>
-            {t('Mở nhóm')}
-          </Button>
-        ) : group.viewerState === GroupViewerState.PENDING ? (
-          <span className="text-sm text-content-muted">{t('Đang chờ trưởng nhóm duyệt')}</span>
-        ) : (
-          <Button
-            size="sm"
-            icon={UserPlus}
-            loading={join.isPending && join.variables?.id === group.id}
-            onClick={() =>
-              join.mutate(
-                { id: group.id },
-                {
-                  onSuccess: (result) =>
-                    toast.success(
-                      result.joined
-                        ? t('Đã vào nhóm')
-                        : t('Đã gửi yêu cầu, chờ trưởng nhóm duyệt'),
-                    ),
-                  onError: (err) => toast.error(getErrorMessage(err)),
-                },
-              )
-            }
-          >
-            {t('Yêu cầu vào')}
-          </Button>
-        )}
-      </div>
-    </Card>
+    <Button
+      size="sm"
+      icon={UserPlus}
+      loading={join.isPending && join.variables?.id === group.id}
+      onClick={() =>
+        join.mutate(
+          { id: group.id },
+          {
+            onSuccess: (result) =>
+              toast.success(
+                result.joined ? t('Đã vào nhóm') : t('Đã gửi yêu cầu, xem ở tab Chờ duyệt'),
+              ),
+            onError: (err) => toast.error(getErrorMessage(err)),
+          },
+        )
+      }
+    >
+      {t('Yêu cầu vào')}
+    </Button>
   );
 }
 

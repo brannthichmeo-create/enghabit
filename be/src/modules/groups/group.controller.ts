@@ -6,6 +6,7 @@ import {
   type AddMemberInput,
   type CreateGroupInput,
   type JoinGroupInput,
+  type RejectJoinRequestInput,
   type ShareStudySetInput,
   type UpdateGroupInput,
   type UpdateMemberRoleInput,
@@ -73,13 +74,19 @@ export async function approve(req: Request, res: Response): Promise<void> {
 }
 
 export async function reject(req: Request, res: Response): Promise<void> {
+  const { reason } = req.body as RejectJoinRequestInput;
   await groupService.decideRequest(
     parseId(req.params.id),
     parseId(req.params.userId),
     currentUser(req).id,
     false,
+    reason,
   );
   res.status(204).send();
+}
+
+export async function listMyRequests(req: Request, res: Response): Promise<void> {
+  res.json(await groupService.listMyJoinRequests(currentUser(req).id));
 }
 
 export async function addMember(req: Request, res: Response): Promise<void> {

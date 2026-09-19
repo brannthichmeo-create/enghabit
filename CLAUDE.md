@@ -70,6 +70,15 @@ Không gian trao đổi nội bộ do chính người học lập ra, tách hẳ
   thứ duy nhất bảo vệ nhóm riêng tư.
 - Trưởng nhóm bật/tắt **phê duyệt thành viên**: bật thì người xin vào phải chờ duyệt, tắt
   thì vào thẳng. Duyệt hoặc từ chối đều sinh thông báo cho người xin.
+- **Từ chối bắt buộc có lý do** (`rejectJoinRequestSchema`, cột `reject_reason`). Người xin
+  vào đọc nó ở tab **Chờ duyệt** của `/groups` — tab này liệt kê yêu cầu đang chờ và bị từ
+  chối, có nút Xem lý do và Yêu cầu lại; được duyệt thì nhóm tự sang tab Nhóm của tôi.
+  Xin lại **xoá lý do cũ** cùng lúc trạng thái về PENDING.
+- **Tab của `/groups` nằm trên URL** (`?tab=pending`), không trong state: nút Quay lại ở
+  trang nhóm dùng `navigate(-1)` và phải trả về đúng tab vừa đứng; thông báo bị từ chối
+  cũng dẫn thẳng tới tab đó.
+- **Mã nhóm chỉ hiện BÊN TRONG trang nhóm**, không hiện trên thẻ ở danh sách — mã là chìa
+  khoá vào nhóm riêng tư.
 
 **Quản trị viên KHÔNG dùng khu nhóm của người học.** Route `/groups` bọc guard `Learner`,
 sidebar quản trị không có mục đó. Quản trị viên có `/admin/groups` với đúng ba việc: xem

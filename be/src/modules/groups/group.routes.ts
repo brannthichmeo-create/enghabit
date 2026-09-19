@@ -5,6 +5,7 @@ import {
   groupDocumentQuerySchema,
   groupSearchSchema,
   joinGroupSchema,
+  rejectJoinRequestSchema,
   shareStudySetSchema,
   updateGroupSchema,
   updateMemberRoleSchema,
@@ -26,6 +27,8 @@ groupRoutes.use(requireAuth);
 
 // Đặt TRƯỚC '/:id' — nếu không, "mine" và "search" sẽ bị coi là id nhóm và trả lỗi ID không hợp lệ.
 groupRoutes.get('/mine', asyncHandler(controller.listMine));
+// Yêu cầu vào nhóm của chính người gọi — tab "Chờ duyệt".
+groupRoutes.get('/mine/requests', asyncHandler(controller.listMyRequests));
 groupRoutes.get('/search', validateQuery(groupSearchSchema), asyncHandler(controller.search));
 groupRoutes.get('/code/:code', asyncHandler(controller.findByCode));
 
@@ -40,7 +43,12 @@ groupRoutes.post('/:id/leave', asyncHandler(controller.leave));
 
 // --- Trưởng nhóm duyệt yêu cầu ---
 groupRoutes.post('/:id/requests/:userId/approve', asyncHandler(controller.approve));
-groupRoutes.post('/:id/requests/:userId/reject', asyncHandler(controller.reject));
+// Từ chối bắt buộc có lý do — người xin vào đọc nó ở tab "Chờ duyệt".
+groupRoutes.post(
+  '/:id/requests/:userId/reject',
+  validateBody(rejectJoinRequestSchema),
+  asyncHandler(controller.reject),
+);
 
 // --- Trưởng nhóm quản lý thành viên ---
 groupRoutes.post('/:id/members', validateBody(addMemberSchema), asyncHandler(controller.addMember));

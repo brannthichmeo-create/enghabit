@@ -19,6 +19,7 @@ import {
   type GroupSummary,
   type JoinGroupResult,
   type MentionTarget,
+  type MyJoinRequestRow,
   type Paginated,
   type ShareStudySetInput,
   type UpdateGroupInput,
@@ -409,6 +410,9 @@ export async function requestJoin(
       message: message ?? null,
       decidedById: null,
       decidedAt: null,
+      // Xoá lý do cũ: yêu cầu mới chưa bị ai từ chối, để lại thì tab "Chờ duyệt" của
+      // người xin vào sẽ lẫn lý do của lần trước vào lần này.
+      rejectReason: null,
     },
   });
 
@@ -440,13 +444,21 @@ async function notifyLeaders(group: Group, applicantId: number): Promise<void> {
   }
 }
 
+/**
+ * Duyệt hoặc từ chối một yêu cầu vào nhóm.
+ *
+ * `reason` chỉ dùng khi từ chối — route đã bắt buộc có nó qua `rejectJoinRequestSchema`,
+ * kiểm lại ở đây để không ai gọi service này từ chỗ khác mà quên lý do.
+ */
 export async function decideRequest(
   groupId: number,
   targetUserId: number,
   leaderId: number,
   approve: boolean,
+  reason?: string,
 ): Promise<void> {
   await assertLeader(groupId, leaderId);
+  if (!approve && !reason) throw new BadRequestError('Hãy ghi lý do từ chối');
 
   const request = await prisma.groupJoinRequest.findUnique({
     where: { groupId_userId: { groupId, userId: targetUserId } },
@@ -456,14 +468,23 @@ export async function decideRequest(
     throw new NotFoundError('Yêu cầu không tồn tại hoặc đã được xử lý');
   }
 
-  await prisma.groupJoinRequest.update({
-    where: { id: request.id },
+  /*
+    Cập nhật CÓ ĐIỀU KIỆN trạng thái còn PENDING, không phải cập nhật theo id.
+
+    Hai trưởng nhóm bấm cùng lúc — một người duyệt, một người từ chối — thì cả hai đều
+    đọc thấy PENDING ở trên. Cập nhật theo id là người bấm sau đè kết quả người bấm
+    trước, và người xin vào có thể vừa là thành viên vừa nhận thông báo bị từ chối.
+  */
+  const updated = await prisma.groupJoinRequest.updateMany({
+    where: { id: request.id, status: GroupJoinStatus.PENDING },
     data: {
       status: approve ? GroupJoinStatus.APPROVED : GroupJoinStatus.REJECTED,
       decidedById: leaderId,
       decidedAt: new Date(),
+      rejectReason: approve ? null : (reason ?? null),
     },
   });
+  if (updated.count === 0) throw new NotFoundError('Yêu cầu không tồn tại hoặc đã được xử lý');
 
   if (approve) await addMemberRecord(groupId, targetUserId);
 
@@ -473,12 +494,65 @@ export async function decideRequest(
     title: approve ? 'Yêu cầu vào nhóm được duyệt' : 'Yêu cầu vào nhóm bị từ chối',
     body: approve
       ? `Bạn đã là thành viên nhóm "${request.group.name}".`
-      : `Yêu cầu tham gia nhóm "${request.group.name}" chưa được chấp nhận.`,
-    // Chỉ dẫn tới nhóm khi đã vào được; bị từ chối mà bấm vào lại gặp trang báo lỗi
-    // không phải thành viên.
-    link: approve ? `/groups/${groupId}` : '/groups',
+      : `Yêu cầu tham gia nhóm "${request.group.name}" chưa được chấp nhận. Lý do: ${reason}`.slice(0, 500),
+    // Được duyệt thì dẫn thẳng vào nhóm. Bị từ chối thì dẫn tới tab "Chờ duyệt" — nơi
+    // có lý do đầy đủ và nút xin lại; vào trang nhóm thì chỉ gặp báo lỗi không phải
+    // thành viên.
+    link: approve ? `/groups/${groupId}` : '/groups?tab=pending',
     dedupeKey: `GROUP_DECISION:${groupId}:${targetUserId}:${Date.now()}`,
   });
+}
+
+/**
+ * Yêu cầu vào nhóm của CHÍNH người xem — tab "Chờ duyệt".
+ *
+ * Chỉ lấy yêu cầu đang chờ và yêu cầu bị từ chối. Yêu cầu đã duyệt không cần hiện: người
+ * đó đã là thành viên và nhóm nằm ở tab "Nhóm của tôi".
+ *
+ * Loại cả nhóm mà người xem ĐÃ là thành viên dù yêu cầu cũ vẫn ghi REJECTED — trường hợp
+ * trưởng nhóm từ chối rồi sau đó lại tự tay thêm họ vào. Không loại thì cùng một nhóm
+ * hiện ở hai tab với hai trạng thái trái ngược nhau.
+ */
+export async function listMyJoinRequests(userId: number): Promise<MyJoinRequestRow[]> {
+  const requests = await prisma.groupJoinRequest.findMany({
+    where: {
+      userId,
+      status: { in: [GroupJoinStatus.PENDING, GroupJoinStatus.REJECTED] },
+      group: { members: { none: { userId } } },
+    },
+    // Enum MySQL sắp theo thứ tự khai báo (PENDING trước REJECTED), nên yêu cầu đang
+    // chờ lên đầu; trong cùng trạng thái thì lần gửi hoặc quyết định gần nhất lên trước.
+    orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
+    include: {
+      group: {
+        include: {
+          _count: { select: { members: true, posts: true } },
+          blockedBy: { select: { name: true } },
+        },
+      },
+    },
+  });
+
+  return requests.map((request) => ({
+    group: toSummary(request.group, {
+      memberCount: request.group._count.members,
+      postCount: request.group._count.posts,
+      viewerState:
+        request.status === GroupJoinStatus.PENDING ? GroupViewerState.PENDING : GroupViewerState.NONE,
+    }),
+    status: request.status,
+    message: request.message,
+    // Đang chờ thì dùng `updatedAt`: xin lại cập nhật chính dòng cũ, nên `createdAt` vẫn
+    // là lần xin ĐẦU TIÊN — hiện mốc đó thì như thể chưa hề xin lại. Bị từ chối thì
+    // `updatedAt` đã thành lúc từ chối, nên lùi về `createdAt`; giao diện của thẻ bị từ
+    // chối hiện `decidedAt` là chính, mốc này chỉ để xếp và tham khảo.
+    requestedAt: (request.status === GroupJoinStatus.PENDING
+      ? request.updatedAt
+      : request.createdAt
+    ).toISOString(),
+    decidedAt: request.decidedAt?.toISOString() ?? null,
+    rejectReason: request.rejectReason,
+  }));
 }
 
 /** Trưởng nhóm thêm thẳng một người, bỏ qua bước xin vào. */
@@ -543,9 +617,12 @@ async function addMemberRecord(groupId: number, userId: number) {
     data: [{ groupId, userId, role: GroupMemberRole.MEMBER }],
     skipDuplicates: true,
   });
+  // Khép cả yêu cầu đang chờ LẪN yêu cầu từng bị từ chối: trưởng nhóm tự tay thêm một
+  // người họ từng từ chối thì dòng REJECTED cũ không còn đúng nữa, để lại thì tab
+  // "Chờ duyệt" của người đó vẫn báo "Bị từ chối" cho một nhóm họ đang ở trong.
   await prisma.groupJoinRequest.updateMany({
-    where: { groupId, userId, status: GroupJoinStatus.PENDING },
-    data: { status: GroupJoinStatus.APPROVED, decidedAt: new Date() },
+    where: { groupId, userId, status: { in: [GroupJoinStatus.PENDING, GroupJoinStatus.REJECTED] } },
+    data: { status: GroupJoinStatus.APPROVED, decidedAt: new Date(), rejectReason: null },
   });
   return prisma.groupMember.findUniqueOrThrow({ where: { groupId_userId: { groupId, userId } } });
 }

@@ -11,6 +11,7 @@ import type {
   GroupSummary,
   JoinGroupResult,
   MentionTarget,
+  MyJoinRequestRow,
   Paginated,
   UpdateGroupInput,
 } from '@enghabit/shared';
@@ -61,12 +62,23 @@ export async function leaveGroup(groupId: number): Promise<void> {
   await apiClient.post(`/groups/${groupId}/leave`);
 }
 
+/** Từ chối thì bắt buộc có `reason` — backend kiểm bằng `rejectJoinRequestSchema`. */
 export async function decideRequest(
   groupId: number,
   userId: number,
   approve: boolean,
+  reason?: string,
 ): Promise<void> {
-  await apiClient.post(`/groups/${groupId}/requests/${userId}/${approve ? 'approve' : 'reject'}`);
+  await apiClient.post(
+    `/groups/${groupId}/requests/${userId}/${approve ? 'approve' : 'reject'}`,
+    approve ? undefined : { reason },
+  );
+}
+
+/** Yêu cầu vào nhóm mình đã gửi — đang chờ hoặc bị từ chối (tab "Chờ duyệt"). */
+export async function listMyJoinRequests(): Promise<MyJoinRequestRow[]> {
+  const { data } = await apiClient.get<MyJoinRequestRow[]>('/groups/mine/requests');
+  return data;
 }
 
 export async function addMember(groupId: number, input: AddMemberInput): Promise<GroupMemberRow> {

@@ -66,6 +66,22 @@ export const addMemberSchema = z.object({
 });
 export type AddMemberInput = z.infer<typeof addMemberSchema>;
 
+/**
+ * Trưởng nhóm từ chối một yêu cầu vào nhóm.
+ *
+ * Lý do BẮT BUỘC, cùng luật với từ chối yêu cầu cấp lại mật khẩu: người xin vào đọc
+ * đúng chuỗi này ở tab "Chờ duyệt" (nút "Xem lý do"). Từ chối không nói lý do thì họ
+ * không biết nên sửa gì rồi xin lại, hay thôi hẳn.
+ */
+export const rejectJoinRequestSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(5, 'Lý do từ chối phải có ít nhất 5 ký tự')
+    .max(300, 'Lý do từ chối tối đa 300 ký tự'),
+});
+export type RejectJoinRequestInput = z.infer<typeof rejectJoinRequestSchema>;
+
 export const updateMemberRoleSchema = z.object({
   role: z.nativeEnum(GroupMemberRole),
 });
@@ -146,6 +162,32 @@ export interface GroupDetail extends GroupSummary {
   members: GroupMemberRow[];
   /** Chỉ trả về cho trưởng nhóm; người thường nhận mảng rỗng. */
   pendingRequests: GroupJoinRequestRow[];
+}
+
+/**
+ * Một yêu cầu vào nhóm do CHÍNH người xem gửi — một thẻ trong tab "Chờ duyệt".
+ *
+ * Chỉ có hai trạng thái ở đây: PENDING (đang chờ) và REJECTED (bị từ chối). Được duyệt
+ * thì người đó đã là thành viên, nhóm chuyển sang tab "Nhóm của tôi" và không còn là
+ * một yêu cầu nữa.
+ */
+export interface MyJoinRequestRow {
+  group: GroupSummary;
+  status: GroupJoinStatus;
+  /** Lời nhắn người xem đã gửi kèm. */
+  message: string | null;
+  /** Lần gửi gần nhất — xin lại sau khi bị từ chối thì mốc này đổi theo. */
+  requestedAt: string;
+  /** Lúc trưởng nhóm từ chối. Null khi còn đang chờ. */
+  decidedAt: string | null;
+  /**
+   * Lý do từ chối, viết cho người xin vào đọc.
+   *
+   * Có thể null ngay cả khi bị từ chối: các yêu cầu bị từ chối TRƯỚC khi lý do trở thành
+   * bắt buộc không có giá trị này, và giao diện phải nói rõ là "không có lý do" chứ
+   * không được hiện một khung trống.
+   */
+  rejectReason: string | null;
 }
 
 /** Kết quả sau khi bấm xin vào nhóm — nhóm tắt phê duyệt thì vào thẳng. */

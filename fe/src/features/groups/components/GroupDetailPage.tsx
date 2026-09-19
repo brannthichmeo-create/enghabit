@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Ban,
@@ -21,7 +21,9 @@ import {
   GroupMemberRole,
   GroupViewerState,
   GroupVisibility,
+  rejectJoinRequestSchema,
   type GroupDetail,
+  type GroupJoinRequestRow,
   type GroupMemberRow,
 } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
@@ -113,9 +115,7 @@ export function GroupDetailPage(): JSX.Element {
   if (data.block) {
     return (
       <div>
-        <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/groups')} className="mb-2">
-          {t('Nhóm lớp')}
-        </Button>
+        <BackButton />
         <PageHeader title={data.name} description={data.description ?? undefined} />
         <Card className="border-danger/40">
           <p className="flex items-center gap-2 font-semibold text-danger">
@@ -148,9 +148,7 @@ export function GroupDetailPage(): JSX.Element {
 
   return (
     <div>
-      {/* Không tự chèn nút "về danh sách" ở đây nữa — breadcrumb của khung app đã
-          làm việc đó (xem `useBreadcrumbTail` ở trên), đặt cả hai thành hai lối
-          quay lại chồng lên nhau ngay trên PageHeader. */}
+      <BackButton />
       <PageHeader
         title={data.name}
         description={data.description ?? undefined}
@@ -195,6 +193,36 @@ export function GroupDetailPage(): JSX.Element {
       {tab === 'requests' && isLeader && <RequestList group={data} />}
       {tab === 'settings' && isLeader && <GroupSettings group={data} />}
     </div>
+  );
+}
+
+/**
+ * Quay lại ĐÚNG màn trước đó, không phải luôn về danh sách nhóm.
+ *
+ * Breadcrumb của khung app vẫn còn, nhưng nó chỉ dẫn về gốc "/groups" — mất tab đang
+ * đứng (Chờ duyệt, Khám phá) và mất trang người dùng thật sự đến từ (thông báo, tab
+ * Flashcard của nhóm khác…). `navigate(-1)` trả về đúng chỗ đó, kể cả tab, vì tab của
+ * trang Nhóm lớp nằm trên URL.
+ *
+ * Ngoại lệ: mở trang nhóm bằng liên kết dán thẳng hoặc tab mới thì chưa có lịch sử nào
+ * trong app (`location.key === 'default'`). Lùi lúc đó là rời khỏi app hẳn, nên về danh
+ * sách nhóm thay thế.
+ */
+function BackButton(): JSX.Element {
+  const t = useT();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      icon={ArrowLeft}
+      onClick={() => (location.key === 'default' ? navigate('/groups') : navigate(-1))}
+      className="mb-2"
+    >
+      {t('Quay lại')}
+    </Button>
   );
 }
 
@@ -459,6 +487,8 @@ function RequestList({ group }: { group: GroupDetail }): JSX.Element {
   const t = useT();
   const toast = useToast();
   const decide = useDecideRequest();
+  // Người đang bị từ chối — mở hộp thoại hỏi lý do. Null là hộp thoại đóng.
+  const [rejecting, setRejecting] = useState<GroupJoinRequestRow | null>(null);
 
   if (group.pendingRequests.length === 0) {
     return (
@@ -470,11 +500,11 @@ function RequestList({ group }: { group: GroupDetail }): JSX.Element {
     );
   }
 
-  const act = (userId: number, approve: boolean): void => {
+  const approve = (userId: number): void => {
     decide.mutate(
-      { groupId: group.id, userId, approve },
+      { groupId: group.id, userId, approve: true },
       {
-        onSuccess: () => toast.success(approve ? t('Đã duyệt') : t('Đã từ chối')),
+        onSuccess: () => toast.success(t('Đã duyệt')),
         onError: (err) => toast.error(getErrorMessage(err)),
       },
     );
@@ -505,7 +535,7 @@ function RequestList({ group }: { group: GroupDetail }): JSX.Element {
                 icon={Check}
                 loading={isLoadingFor(request.userId, true)}
                 disabled={isBusyFor(request.userId)}
-                onClick={() => act(request.userId, true)}
+                onClick={() => approve(request.userId)}
               >
                 {t('Duyệt')}
               </Button>
@@ -515,7 +545,7 @@ function RequestList({ group }: { group: GroupDetail }): JSX.Element {
                 icon={X}
                 loading={isLoadingFor(request.userId, false)}
                 disabled={isBusyFor(request.userId)}
-                onClick={() => act(request.userId, false)}
+                onClick={() => setRejecting(request)}
               >
                 {t('Từ chối')}
               </Button>
@@ -523,7 +553,95 @@ function RequestList({ group }: { group: GroupDetail }): JSX.Element {
           </div>
         </Card>
       ))}
+
+      {rejecting && (
+        <RejectRequestModal
+          groupId={group.id}
+          request={rejecting}
+          onClose={() => setRejecting(null)}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Hỏi lý do trước khi từ chối một yêu cầu vào nhóm.
+ *
+ * Lý do bắt buộc: người xin vào đọc đúng câu này ở tab "Chờ duyệt" (nút "Xem lý do"), rồi
+ * dựa vào đó quyết định có xin lại hay không. Kiểm bằng CHÍNH `rejectJoinRequestSchema`
+ * mà backend dùng, nên thông báo lỗi hai phía không bao giờ lệch nhau.
+ */
+function RejectRequestModal({
+  groupId,
+  request,
+  onClose,
+}: {
+  groupId: number;
+  request: GroupJoinRequestRow;
+  onClose: () => void;
+}): JSX.Element {
+  const t = useT();
+  const toast = useToast();
+  const decide = useDecideRequest();
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = (): void => {
+    const parsed = rejectJoinRequestSchema.safeParse({ reason });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? t('Lý do không hợp lệ'));
+      return;
+    }
+
+    decide.mutate(
+      { groupId, userId: request.userId, approve: false, reason: parsed.data.reason },
+      {
+        onSuccess: () => {
+          toast.success(t('Đã từ chối'));
+          onClose();
+        },
+        onError: (err) => setError(getErrorMessage(err)),
+      },
+    );
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t('Từ chối yêu cầu của {name}', { name: request.name })}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {t('Huỷ')}
+          </Button>
+          <Button variant="danger" icon={X} loading={decide.isPending} onClick={submit}>
+            {t('Từ chối')}
+          </Button>
+        </>
+      }
+    >
+      <p className="mb-2 text-sm text-content-soft">
+        {t('{name} sẽ đọc được lý do này, nên hãy nói rõ vì sao và họ có nên xin lại không.', {
+          name: request.name,
+        })}
+      </p>
+      <textarea
+        value={reason}
+        onChange={(e) => {
+          setReason(e.target.value);
+          setError(null);
+        }}
+        rows={3}
+        maxLength={300}
+        autoFocus
+        placeholder={t('Ví dụ: Nhóm chỉ dành cho sinh viên lớp K65.')}
+        className="w-full rounded-lg border border-line-control bg-surface px-3 py-2 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-brand focus:ring-4 focus:ring-brand/10"
+      />
+      <p className="mt-1 text-right text-xs tabular-nums text-content-muted">{reason.length}/300</p>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+    </Modal>
   );
 }
 

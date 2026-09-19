@@ -775,7 +775,24 @@ async function seedGroups(adminId: number, people: ReadonlyMap<string, number>):
   for (const seed of GROUPS) {
     // Bỏ qua TỪNG nhóm đã có, không bỏ qua cả hàm — cùng lý do với seedLibrary: thêm
     // nhóm mẫu mới phải vào được một DB đã seed từ bản trước.
-    if (await prisma.group.findFirst({ where: { name: seed.name }, select: { id: true } })) continue;
+    const existingGroup = await prisma.group.findFirst({ where: { name: seed.name }, select: { id: true } });
+    if (existingGroup) {
+      // Nhóm seed từ trước khi có cột `reject_reason`: điền lý do cho các yêu cầu bị từ
+      // chối còn trống. Chỉ điền chỗ NULL nên chạy lại bao nhiêu lần cũng vậy, và không
+      // đè lý do mà trưởng nhóm đã tự ghi trên giao diện.
+      for (const request of seed.rejectedRequests) {
+        await prisma.groupJoinRequest.updateMany({
+          where: {
+            groupId: existingGroup.id,
+            userId: idOf(people, request.email),
+            status: GroupJoinStatus.REJECTED,
+            rejectReason: null,
+          },
+          data: { rejectReason: request.reason },
+        });
+      }
+      continue;
+    }
 
     const createdAt = instantAtOffset(seed.daysAgo, 20);
     const leaderIds = seed.leaders.map((email) => idOf(people, email));
@@ -820,21 +837,26 @@ async function seedGroups(adminId: number, people: ReadonlyMap<string, number>):
     const rejectedAt = instantAtOffset(3, 9);
     await prisma.groupJoinRequest.createMany({
       data: [
+        // `updatedAt` đặt tường minh: tab "Chờ duyệt" lấy nó làm mốc gửi của yêu cầu đang
+        // chờ, để mặc định thì mọi yêu cầu mẫu đều như vừa gửi đúng lúc chạy seed.
         ...seed.pendingRequests.map((request) => ({
           groupId: group.id,
           userId: idOf(people, request.email),
           status: GroupJoinStatus.PENDING,
           message: request.message ?? null,
           createdAt: requestedAt,
+          updatedAt: requestedAt,
         })),
         ...seed.rejectedRequests.map((request) => ({
           groupId: group.id,
           userId: idOf(people, request.email),
           status: GroupJoinStatus.REJECTED,
           message: request.message ?? null,
+          rejectReason: request.reason,
           decidedById: leaderIds[0] ?? null,
           decidedAt: rejectedAt,
           createdAt: instantAtOffset(4, 21),
+          updatedAt: rejectedAt,
         })),
       ],
     });
@@ -858,8 +880,9 @@ async function seedGroups(adminId: number, people: ReadonlyMap<string, number>):
         userId: idOf(people, request.email),
         type: NotificationType.GROUP_JOIN_REJECTED,
         title: 'Yêu cầu vào nhóm bị từ chối',
-        body: `Trưởng nhóm đã từ chối yêu cầu vào nhóm "${seed.name}" của bạn.`,
-        link: '/groups',
+        body: `Yêu cầu tham gia nhóm "${seed.name}" chưa được chấp nhận. Lý do: ${request.reason}`.slice(0, 500),
+        // Cùng đích với thông báo thật của group.service: tab có lý do và nút xin lại.
+        link: '/groups?tab=pending',
         dedupeKey: `${NotificationType.GROUP_JOIN_REJECTED}:seed:${group.id}`,
         createdAt: rejectedAt,
       });

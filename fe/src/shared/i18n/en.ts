@@ -1545,4 +1545,26 @@ export const EN: Dictionary = {
   'Đã mua {name}. Vật phẩm nằm trong Kho vật phẩm.': 'Bought {name}. You will find it in My items.',
   'Không có vật phẩm yêu thích thuộc loại này': 'No favorite items in this category',
   'Vật phẩm đã mua nằm trong Kho vật phẩm, ở tab Của tôi.': 'Items you bought are in My items, under the Mine tab.',
+
+  // --- Nhóm lớp: tab Chờ duyệt, thẻ nhóm, lý do từ chối ----------------------------
+  'Xem nhóm': 'View group',
+  'Đang chờ duyệt': 'Pending',
+  'Bị từ chối': 'Declined',
+  'Đã gửi lúc {time}': 'Sent {time}',
+  'Bị từ chối lúc {time}': 'Declined {time}',
+  'Xem lý do': 'See reason',
+  'Yêu cầu lại': 'Request again',
+  'Đã gửi lại yêu cầu, chờ trưởng nhóm duyệt': 'Request sent again, waiting for a group leader',
+  'Đã gửi yêu cầu, xem ở tab Chờ duyệt': 'Request sent, track it in the Pending tab',
+  'Bạn sẽ nhận thông báo khi trưởng nhóm duyệt hoặc từ chối.':
+    'You will get a notification when a group leader accepts or declines.',
+  'Yêu cầu vào nhóm bạn gửi sẽ hiện ở đây cho tới khi trưởng nhóm duyệt.':
+    'Requests you send to join a group show up here until a group leader decides.',
+  'Yêu cầu vào nhóm "{name}" bị từ chối lúc {time}.': 'Your request to join "{name}" was declined {time}.',
+  'Trưởng nhóm không để lại lý do.': 'The group leader did not leave a reason.',
+  'Lời nhắn bạn đã gửi: "{message}"': 'Your message: "{message}"',
+  'Từ chối yêu cầu của {name}': "Decline {name}'s request",
+  '{name} sẽ đọc được lý do này, nên hãy nói rõ vì sao và họ có nên xin lại không.':
+    '{name} will read this reason, so say why and whether they should ask again.',
+  'Ví dụ: Nhóm chỉ dành cho sinh viên lớp K65.': 'For example: this group is only for class K65 students.',
 };
