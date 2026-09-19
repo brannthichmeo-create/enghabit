@@ -311,6 +311,29 @@ Bảy quyết định bắt buộc giữ:
   `Cross-Origin-Resource-Policy` của helmet thành `cross-origin` — để `same-origin` thì
   trình duyệt tải ảnh từ Render về rồi từ chối vẽ lên trang Vercel.
 
+**Khung viền ảnh đại diện (`AVATAR_FRAME`)** — loại vật phẩm duy nhất NGƯỜI KHÁC thấy.
+Năm quyết định bắt buộc giữ:
+
+- **Khung mặc định KHÔNG phải vật phẩm.** Chưa đeo khung nào thì `Avatar` vẽ vòng trắng
+  bằng CSS (`ring-white` + một nét `--line` ngoài cùng — thiếu nét đó thì vòng trắng trên
+  thẻ trắng không ai thấy). Không có khung giá 0 trong kho.
+- **Khung là ảnh PNG vuông, tâm trong suốt, phủ lên avatar**, to hơn avatar đúng
+  `AVATAR_FRAME_SCALE` lần (`shared/shop`). Backend vẽ ảnh theo con số đó
+  (`shop.frame-image.ts`), frontend phóng ảnh theo đúng con số đó — lệch là viền đè lên mặt.
+- **Khung của người khác đi kèm DTO**: `avatarFrameUrl` ở `PostAuthor`, `LeaderboardEntry`,
+  `GroupMemberRow`. Chỉ lấy qua `getEquippedFrameUrls` của `shop.frame.ts`, **một truy vấn
+  cho cả trang** — không tự viết truy vấn ở module khác, không truy vấn theo từng dòng.
+- **Khung của chính mình đọc từ kho** (`useMyFrameUrl`), không từ `/auth/me`: kho được ghi
+  lại ngay khi đổi khung, còn thông tin đăng nhập nằm trong store. Đổi khung thì làm mới
+  cả `communityKeys`, `leaderboardKeys`, `groupKeys` — không thì bài của chính mình vẫn
+  mang khung cũ.
+- **Tắt Cửa hàng là ẩn khung của MỌI người** (`getEquippedFrameUrls` trả rỗng, FE không gọi
+  kho). Khung vẫn nằm trong `user_equipped_items`, bật lại là hiện lại.
+
+`Avatar` (`shared/components/Sidebar.tsx`) là chỗ **duy nhất** vẽ khung. Thêm màn mới hiện
+người dùng thì truyền `frameUrl`, đừng tự vẽ khung. `apiUrl` gọi hai lần không ghép hai lần,
+vì khung của mình (từ kho, đã ghép) và của người khác (từ DTO, chưa ghép) cùng vào đây.
+
 Hai điều nhỏ dễ làm sai ở màn Ví:
 
 - **Dòng 0 xu (vật phẩm tặng miễn phí) xếp vào CHI.** Bộ lọc Chi phải là `amount <= 0`;
