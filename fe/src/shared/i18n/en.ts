@@ -1567,4 +1567,7 @@ export const EN: Dictionary = {
   '{name} sẽ đọc được lý do này, nên hãy nói rõ vì sao và họ có nên xin lại không.':
     '{name} will read this reason, so say why and whether they should ask again.',
   'Ví dụ: Nhóm chỉ dành cho sinh viên lớp K65.': 'For example: this group is only for class K65 students.',
+
+  // --- Khung app: nút lên đầu trang --------------------------------------------------
+  'Lên đầu trang': 'Back to top',
 };

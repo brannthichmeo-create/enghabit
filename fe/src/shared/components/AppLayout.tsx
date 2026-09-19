@@ -10,6 +10,7 @@ import { NotificationBell } from '../../features/notifications/components/Notifi
 import { useT } from '../i18n/language';
 import { Breadcrumb, BreadcrumbProvider } from './Breadcrumb';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ScrollToTopButton } from './ScrollToTopButton';
 import { Sidebar } from './Sidebar';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -127,13 +128,19 @@ function AppShell(): JSX.Element {
           </div>
         </header>
 
-        <main className="mx-auto max-w-5xl px-4 py-6">
+        {/* `tabIndex={-1}` để nút "Lên đầu trang" chuyển focus về đây được; không ai
+            Tab tới vùng này vì -1 nằm ngoài thứ tự Tab. */}
+        <main id={MAIN_CONTENT_ID} tabIndex={-1} className="mx-auto max-w-5xl px-4 py-6 outline-none">
           <Outlet />
         </main>
       </div>
+
+      <ScrollToTopButton focusTargetId={MAIN_CONTENT_ID} />
     </div>
   );
 }
+
+const MAIN_CONTENT_ID = 'main-content';
 
 /**
  * Xu, chuỗi ngày và cấp độ ngay trên thanh trên cùng.
