@@ -17,6 +17,7 @@ export * from './study/card-import.js';
 export * from './rewards/rewards.js';
 export * from './shop/shop.js';
 export * from './report/report.js';
+export * from './goal/goal-deadline.js';
 export * from './avatar/avatar.js';
 export * from './attachment/attachment.js';
 export * from './mention/mention.js';

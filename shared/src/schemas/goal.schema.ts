@@ -11,7 +11,7 @@ export const createGoalSchema = z
     endDate: localDateSchema.optional(),
   })
   .refine((data) => !data.endDate || data.endDate >= data.startDate, {
-    message: 'Ngày kết thúc phải sau ngày bắt đầu',
+    message: 'Hạn phải từ ngày bắt đầu mục tiêu trở đi',
     path: ['endDate'],
   });
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;

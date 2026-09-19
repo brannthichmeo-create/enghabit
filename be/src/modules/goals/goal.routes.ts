@@ -32,7 +32,8 @@ goalRoutes.post(
   '/',
   validateBody(createGoalSchema),
   asyncHandler(async (req, res) => {
-    res.status(201).json(await goalService.createGoal(currentUser(req).id, req.body as CreateGoalInput));
+    const user = currentUser(req);
+    res.status(201).json(await goalService.createGoal(user.id, user.timezone, req.body as CreateGoalInput));
   }),
 );
 
@@ -40,8 +41,9 @@ goalRoutes.patch(
   '/:id',
   validateBody(updateGoalSchema),
   asyncHandler(async (req, res) => {
+    const user = currentUser(req);
     res.json(
-      await goalService.updateGoal(currentUser(req).id, parseId(req.params.id), req.body as UpdateGoalInput),
+      await goalService.updateGoal(user.id, user.timezone, parseId(req.params.id), req.body as UpdateGoalInput),
     );
   }),
 );

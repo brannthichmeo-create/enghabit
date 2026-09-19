@@ -4,6 +4,7 @@ import {
   GoalStatus,
   GoalType,
   isCumulativeGoal,
+  isGoalInEffect,
   startOfWeek,
   todayLocalDate,
   type CreateGoalInput,
@@ -13,15 +14,21 @@ import {
 } from '@enghabit/shared';
 import type { Goal } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { NotFoundError } from '../../common/errors/app-error.js';
-import { toDbDate } from '../../common/utils/db-date.js';
+import { BadRequestError, NotFoundError } from '../../common/errors/app-error.js';
+import { fromDbDate, toDbDate } from '../../common/utils/db-date.js';
 import { getStreak } from '../statistics/statistics.service.js';
 
 export async function listGoals(userId: number): Promise<Goal[]> {
   return prisma.goal.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
 }
 
-export async function createGoal(userId: number, input: CreateGoalInput): Promise<Goal> {
+export async function createGoal(
+  userId: number,
+  timezone: string,
+  input: CreateGoalInput,
+): Promise<Goal> {
+  if (input.endDate) assertDeadlineNotPast(input.endDate, timezone);
+
   return prisma.goal.create({
     data: {
       userId,
@@ -34,8 +41,21 @@ export async function createGoal(userId: number, input: CreateGoalInput): Promis
   });
 }
 
-export async function updateGoal(userId: number, goalId: number, input: UpdateGoalInput): Promise<Goal> {
-  await assertOwnership(userId, goalId);
+export async function updateGoal(
+  userId: number,
+  timezone: string,
+  goalId: number,
+  input: UpdateGoalInput,
+): Promise<Goal> {
+  const goal = await assertOwnership(userId, goalId);
+
+  if (input.endDate) {
+    assertDeadlineNotPast(input.endDate, timezone);
+    if (input.endDate < fromDbDate(goal.startDate)) {
+      throw new BadRequestError('Hạn phải từ ngày bắt đầu mục tiêu trở đi');
+    }
+  }
+
   return prisma.goal.update({
     where: { id: goalId },
     data: {
@@ -54,10 +74,22 @@ export async function deleteGoal(userId: number, goalId: number): Promise<void> 
 /**
  * Tiến độ các mục tiêu đang hoạt động, tính từ ActivityLog trong kỳ hiện tại
  * (hôm nay với mục tiêu DAILY, tuần này với WEEKLY).
+ *
+ * Chỉ đo mục tiêu còn trong hạn. Mục tiêu đã quá hạn (hoặc chưa tới ngày bắt đầu) bị
+ * loại ở đây chứ không chỉ ẩn trên giao diện: hàm này còn là nguồn của thông báo
+ * "Đã đạt mục tiêu!", và không lọc thì một mục tiêu đã chết vẫn được chúc mừng mỗi ngày.
+ * Trang Báo cáo cũng lọc theo đúng khoảng ngày này (`findGoalsOverlapping`).
  */
 export async function getProgress(userId: number, timezone: string): Promise<GoalProgress[]> {
-  const goals = await prisma.goal.findMany({ where: { userId, status: GoalStatus.ACTIVE } });
   const today = todayLocalDate(timezone);
+  const goals = (await prisma.goal.findMany({ where: { userId, status: GoalStatus.ACTIVE } })).filter(
+    (goal) =>
+      isGoalInEffect(
+        fromDbDate(goal.startDate),
+        goal.endDate ? fromDbDate(goal.endDate) : null,
+        today,
+      ),
+  );
 
   return Promise.all(
     goals.map(async (goal) => {
@@ -99,6 +131,16 @@ async function measureProgress(
   });
 
   return result._count._all;
+}
+
+/**
+ * Hạn không được nằm trong quá khứ. Đặt hạn đã qua là tạo ra một mục tiêu hết hạn
+ * ngay lúc sinh ra — không bao giờ đo được tiến độ, chỉ nằm đó chiếm chỗ.
+ */
+function assertDeadlineNotPast(endDate: LocalDate, timezone: string): void {
+  if (endDate < todayLocalDate(timezone)) {
+    throw new BadRequestError('Hạn phải từ hôm nay trở đi');
+  }
 }
 
 async function assertOwnership(userId: number, goalId: number): Promise<Goal> {

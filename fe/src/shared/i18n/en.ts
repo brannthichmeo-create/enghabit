@@ -1515,4 +1515,26 @@ export const EN: Dictionary = {
   'Vật phẩm': 'Item',
   'Mô tả': 'Description',
   'Thao tác': 'Actions',
+
+  // --- Hạn của mục tiêu ---
+  'Hạn hoàn thành': 'Deadline',
+  'Không bắt buộc. Bỏ trống là mục tiêu không có hạn.': 'Optional. Leave empty for a goal with no deadline.',
+  'Mục tiêu được theo dõi tới hết ngày này.': 'The goal is tracked until the end of this day.',
+  'Không có hạn': 'No deadline',
+  'Bắt đầu từ {date}': 'Starts on {date}',
+  'Hạn {date} — còn {n} ngày': 'Due {date} — {n} days left',
+  'Hạn {date} — hôm nay là ngày cuối': 'Due {date} — today is the last day',
+  'Hết hạn ngày {date}': 'Expired on {date}',
+  'Đã hết hạn': 'Expired',
+  'Đã qua hạn nên không còn theo dõi tiến độ. Gia hạn để tiếp tục.':
+    'Past its deadline, so progress is no longer tracked. Extend it to continue.',
+  'Đặt hạn': 'Set deadline',
+  'Đổi hạn': 'Change deadline',
+  'Gia hạn': 'Extend',
+  'Bỏ hạn': 'Remove deadline',
+  'Đặt hạn mục tiêu': 'Set goal deadline',
+  'Đổi hạn mục tiêu': 'Change goal deadline',
+  'Hạn phải từ hôm nay trở đi': 'The deadline must be today or later',
+  'Đã lưu hạn mục tiêu': 'Goal deadline saved',
+  'Đã bỏ hạn mục tiêu': 'Goal deadline removed',
 };
