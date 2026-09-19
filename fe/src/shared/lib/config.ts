@@ -26,5 +26,14 @@ export const API_BASE_URL = import.meta.env.VITE_API_URL
  * Vercel còn API ở Render, nên thiếu bước ghép này là ảnh gọi nhầm vào Vercel và vỡ.
  */
 export function apiUrl(path: string): string {
+  /*
+    Gọi hai lần không được ghép hai lần.
+
+    Cùng một ảnh có thể đến tay `Avatar` theo hai đường: khung của NGƯỜI KHÁC đi thẳng từ
+    DTO (chưa ghép), khung của CHÍNH MÌNH đi từ kho vật phẩm (tầng api đã ghép). Không
+    kiểm tra thì đường thứ hai ra `/api/v1/api/v1/shop/…` và khung của mình vỡ trong khi
+    khung của người khác vẫn hiện — đúng kiểu lỗi mất cả buổi mới tìm ra.
+  */
+  if (/^(https?:|data:|blob:)/.test(path) || path.startsWith(`${API_BASE_URL}/`)) return path;
   return `${API_BASE_URL}${path}`;
 }

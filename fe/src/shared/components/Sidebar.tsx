@@ -25,14 +25,16 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
-import { FeatureKey, UserRole, type FeatureFlagMap } from '@enghabit/shared';
+import { AVATAR_FRAME_SCALE, FeatureKey, UserRole, type FeatureFlagMap } from '@enghabit/shared';
 import { useFeatureFlags, useFeatureQueryEnabled } from '../../features/feature-flags/feature-flag.hooks';
 import { useCurrentUser } from '../../features/auth/auth.store';
 import { useLogout } from '../../features/auth/auth.hooks';
 import { useDueCount } from '../../features/study/study.hooks';
 import { useLevel } from '../../features/statistics/statistics.hooks';
 import { useUnreadCount } from '../../features/notifications/notification.hooks';
+import { useMyFrameUrl } from '../../features/shop/shop.hooks';
 import { useT } from '../i18n/language';
+import { apiUrl } from '../lib/config';
 import { Logo } from './Logo';
 
 /**
@@ -79,6 +81,7 @@ export function Sidebar({
   const dueCount = useDueCount(isLearner && reviewEnabled);
   const level = useLevel(isLearner);
   const unread = useUnreadCount();
+  const myFrame = useMyFrameUrl(isLearner);
 
   const isAdmin = !isLearner;
 
@@ -215,6 +218,7 @@ export function Sidebar({
           <Avatar
             name={user?.name ?? '?'}
             src={user?.avatarDataUrl}
+            frameUrl={myFrame}
             level={isAdmin ? undefined : level.data?.level}
           />
           {!collapsed && (
@@ -315,23 +319,57 @@ function GroupLabel({ children, collapsed }: { children: string; collapsed: bool
   );
 }
 
+/** Khung phủ: to hơn avatar AVATAR_FRAME_SCALE lần, lệch về trên-trái nửa phần dư. */
+const FRAME_OVERLAY_STYLE = {
+  width: `${AVATAR_FRAME_SCALE * 100}%`,
+  height: `${AVATAR_FRAME_SCALE * 100}%`,
+  left: `${((1 - AVATAR_FRAME_SCALE) / 2) * 100}%`,
+  top: `${((1 - AVATAR_FRAME_SCALE) / 2) * 100}%`,
+} as const;
+
+const AVATAR_BOX = {
+  md: 'h-9 w-9 text-xs',
+  lg: 'h-16 w-16 text-xl',
+  /** Chỉ dùng ở ô xem thử khung viền trong cửa hàng. */
+  xl: 'h-24 w-24 text-2xl',
+} as const;
+
 /**
- * Ảnh đại diện, kèm huy hiệu cấp độ ở góc.
+ * Viền MẶC ĐỊNH khi chưa dùng khung nào: vòng trắng 2px, ngoài cùng một nét `line` 1px.
+ *
+ * Nét `line` là bắt buộc chứ không phải trang trí: avatar hay nằm trong thẻ nền trắng
+ * (bài đăng, bảng xếp hạng), mà vòng trắng trên nền trắng thì không ai thấy — người dùng
+ * sẽ tưởng khung mặc định không tồn tại. Dùng token `--line` nên tự đổi theo chế độ tối.
+ */
+const DEFAULT_FRAME = 'ring-2 ring-white shadow-[0_0_0_3px_rgb(var(--line))]';
+
+/**
+ * Ảnh đại diện, kèm khung viền và huy hiệu cấp độ ở góc.
  *
  * Chưa đặt ảnh thì hiện chữ cái đầu của tên — luôn có gì đó để nhìn, không bao giờ là
  * một ô trống hay ảnh vỡ.
+ *
+ * Đây là chỗ DUY NHẤT vẽ khung viền, cho cả khung của mình lẫn của người khác. Thêm một
+ * màn hình mới hiện người dùng thì chỉ cần truyền `frameUrl` — đừng tự vẽ khung ở đó.
  */
 export function Avatar({
   name,
   level,
   src,
+  frameUrl,
   size = 'md',
 }: {
   name: string;
   level?: number;
   /** Ảnh dạng data URL lấy từ `PublicUser.avatarDataUrl`. */
   src?: string | null;
-  size?: 'md' | 'lg';
+  /**
+   * Ảnh khung viền đang dùng — `avatarFrameUrl` của DTO, hoặc `imageUrl` của vật phẩm.
+   * Nhận được cả đường dẫn dưới gốc API lẫn URL đã ghép: `apiUrl` không ghép hai lần.
+   * `null`/bỏ trống = khung mặc định viền trắng.
+   */
+  frameUrl?: string | null;
+  size?: keyof typeof AVATAR_BOX;
 }): JSX.Element {
   const initials = name
     .trim()
@@ -340,24 +378,39 @@ export function Avatar({
     .map((part) => part.charAt(0).toUpperCase())
     .join('');
 
-  const box = size === 'lg' ? 'h-16 w-16 text-xl' : 'h-9 w-9 text-xs';
+  const box = AVATAR_BOX[size];
+  // Có khung ảnh thì bỏ viền mặc định: hai viền chồng nhau là viền trắng lòi ra ở mép trong.
+  const ring = frameUrl ? '' : DEFAULT_FRAME;
 
   return (
-    <span className="relative shrink-0">
+    // inline-flex: bản `relative` trần là phần tử inline nên để thừa một khe dưới chân
+    // ảnh (khoảng dành cho phần đuôi chữ), làm khung phủ lên lệch xuống vài điểm ảnh.
+    <span className="relative inline-flex shrink-0">
       {src ? (
         <img
           src={src}
           alt=""
-          className={`rounded-full object-cover ${box}`}
+          className={`rounded-full object-cover ${ring} ${box}`}
           // Ảnh là avatar của chính người đang xem, không mang thông tin gì thêm ngoài
           // cái tên đã hiện ngay cạnh — để alt rỗng cho trình đọc màn hình bỏ qua.
         />
       ) : (
         <span
-          className={`flex items-center justify-center rounded-full bg-brand font-semibold text-on-brand ${box}`}
+          className={`flex items-center justify-center rounded-full bg-brand font-semibold text-on-brand ${ring} ${box}`}
         >
           {initials || '?'}
         </span>
+      )}
+      {frameUrl && (
+        <img
+          src={apiUrl(frameUrl)}
+          alt=""
+          aria-hidden
+          // Khung là ảnh vuông to hơn avatar đúng AVATAR_FRAME_SCALE lần, căn giữa. Tỉ lệ
+          // lấy từ shared — backend vẽ ảnh khung theo cùng con số, lệch là viền đè lên mặt.
+          style={FRAME_OVERLAY_STYLE}
+          className="pointer-events-none absolute max-w-none"
+        />
       )}
       {level !== undefined && (
         <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface bg-accent px-1 text-[10px] font-bold leading-[14px] text-on-brand">

@@ -45,6 +45,7 @@ import { usePosts } from '../../community/community.hooks';
 import { PostCard } from '../../community/components/CommunityPage';
 import { PostComposer } from '../../community/components/PostComposer';
 import { Modal } from '../../../shared/components/Modal';
+import { Avatar } from '../../../shared/components/Sidebar';
 import { PostDetailView } from '../../community/components/PostDetailView';
 import { GroupDocumentsTab } from './GroupDocumentsTab';
 import { GroupStudySetsTab } from './GroupStudySetsTab';
@@ -359,8 +360,15 @@ function MemberList({ group }: { group: GroupDetail }): JSX.Element {
             {group.members.map((member) => (
               <tr key={member.userId}>
                 <td className="py-2.5">
-                  <span className="block font-medium text-content">{member.name}</span>
-                  <span className="block text-xs text-content-muted">@{member.username}</span>
+                  {/* Trước đây chỉ có tên chữ. Thêm avatar để thành viên thấy khung viền của
+                      nhau — đó là lý do người ta bỏ xu ra mua khung. */}
+                  <span className="flex items-center gap-2.5">
+                    <Avatar name={member.name} frameUrl={member.avatarFrameUrl} />
+                    <span className="min-w-0">
+                      <span className="block font-medium text-content">{member.name}</span>
+                      <span className="block text-xs text-content-muted">@{member.username}</span>
+                    </span>
+                  </span>
                 </td>
                 <td className="py-2.5">
                   {member.role === GroupMemberRole.LEADER ? (

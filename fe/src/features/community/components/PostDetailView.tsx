@@ -227,7 +227,7 @@ function CommentSection({
         <ul className="mt-4 space-y-4">
           {post.comments.map((comment) => (
             <li key={comment.id} className="flex gap-2.5">
-              <Avatar name={comment.author.name} />
+              <Avatar name={comment.author.name} frameUrl={comment.author.avatarFrameUrl} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <AuthorLine author={comment.author} createdAt={comment.createdAt} compact />
@@ -309,7 +309,7 @@ export function AuthorLine({
 
   return (
     <span className={compact ? '' : 'flex items-center gap-2.5'}>
-      {!compact && <Avatar name={author.name} />}
+      {!compact && <Avatar name={author.name} frameUrl={author.avatarFrameUrl} />}
       <span className="min-w-0">
         <span className="flex flex-wrap items-center gap-1.5">
           <span className="text-sm font-medium text-content">{author.name}</span>

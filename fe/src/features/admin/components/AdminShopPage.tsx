@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ImageOff, Pencil, Plus, Store, Tag, Trash2, Upload } from 'lucide-react';
 import {
   ALLOWED_SHOP_IMAGE_MIME,
+  AVATAR_FRAME_SCALE,
+  KnownItemSlug,
   SHOP_IMAGE_MAX_BYTES,
   parseShopImageDataUrl,
   type AdminShopItemView,
@@ -433,6 +435,9 @@ function ItemFormModal({
 
   const isEdit = item !== undefined;
   const preview = imageDataUrl ?? item?.imageUrl ?? null;
+  // Khung viền cần đúng tỉ lệ với ảnh đại diện (xem AVATAR_FRAME_SCALE), vẽ sai là viền
+  // đè lên mặt người dùng — nên riêng loại này có thêm một dòng hướng dẫn.
+  const isFrame = types.find((type) => type.id === typeId)?.slug === KnownItemSlug.AVATAR_FRAME;
 
   /**
    * Đọc file thành data URL, KHÔNG đi qua canvas.
@@ -541,6 +546,13 @@ function ItemFormModal({
                 n: Math.round(SHOP_IMAGE_MAX_BYTES / 1000),
               })}
             </p>
+            {isFrame && (
+              <p className="mt-1 text-xs text-content-muted">
+                {t('Khung viền: ảnh vuông, tâm trong suốt. Ảnh đại diện nằm ở vòng giữa, đường kính bằng cạnh ảnh chia {scale}.', {
+                  scale: AVATAR_FRAME_SCALE,
+                })}
+              </p>
+            )}
             {imageError && (
               <p className="mt-1 text-xs text-danger" role="alert">
                 {imageError}

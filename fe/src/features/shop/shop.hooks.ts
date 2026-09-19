@@ -2,9 +2,11 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
+import { FeatureKey, KnownItemSlug } from '@enghabit/shared';
 import type {
   InventoryView,
   Paginated,
@@ -16,6 +18,10 @@ import type {
   WalletView,
 } from '@enghabit/shared';
 import { rewardsKeys } from '../rewards/rewards.hooks';
+import { communityKeys } from '../community/community.hooks';
+import { leaderboardKeys } from '../leaderboard/leaderboard.hooks';
+import { groupKeys } from '../groups/group.hooks';
+import { useFeatureQueryEnabled } from '../feature-flags/feature-flag.hooks';
 import * as shopApi from './shop.api';
 
 /**
@@ -117,12 +123,7 @@ export function useEquipItem(): UseMutationResult<
 
   return useMutation({
     mutationFn: ({ typeId, itemId }) => shopApi.equipItem(typeId, itemId),
-    onSuccess: (inventory) => {
-      queryClient.setQueryData(shopKeys.inventory(), inventory);
-      // Danh sách cửa hàng mang cờ `isEquipped` nên cũng phải làm mới, nếu không thẻ
-      // vừa chọn vẫn ghi "Đã sở hữu" thay vì "Đang dùng".
-      void queryClient.invalidateQueries({ queryKey: shopKeys.itemsRoot() });
-    },
+    onSuccess: (inventory) => afterEquipChange(queryClient, inventory),
   });
 }
 
@@ -131,9 +132,41 @@ export function useUnequipItem(): UseMutationResult<InventoryView, Error, number
 
   return useMutation({
     mutationFn: shopApi.unequipItem,
-    onSuccess: (inventory) => {
-      queryClient.setQueryData(shopKeys.inventory(), inventory);
-      void queryClient.invalidateQueries({ queryKey: shopKeys.itemsRoot() });
-    },
+    onSuccess: (inventory) => afterEquipChange(queryClient, inventory),
   });
+}
+
+/**
+ * Việc chung sau khi đổi hoặc bỏ vật phẩm đang dùng.
+ *
+ * Ghi thẳng kho mới vào cache (sidebar và trang cá nhân đọc khung của mình từ đó nên đổi
+ * ngay), rồi làm mới mọi màn hiện khung viền của NGƯỜI DÙNG: bài đăng, bình luận, bảng
+ * xếp hạng, thành viên nhóm. Không làm mới thì người vừa đổi khung mở diễn đàn vẫn thấy
+ * khung cũ trên chính bài của mình, và tưởng việc đổi khung không có tác dụng.
+ */
+function afterEquipChange(queryClient: QueryClient, inventory: InventoryView): void {
+  queryClient.setQueryData(shopKeys.inventory(), inventory);
+  // Danh sách cửa hàng mang cờ `isEquipped`, không làm mới thì thẻ vừa chọn vẫn ghi
+  // "Đã sở hữu" thay vì "Đang dùng".
+  void queryClient.invalidateQueries({ queryKey: shopKeys.itemsRoot() });
+  void queryClient.invalidateQueries({ queryKey: communityKeys.all });
+  void queryClient.invalidateQueries({ queryKey: leaderboardKeys.all });
+  void queryClient.invalidateQueries({ queryKey: groupKeys.all });
+}
+
+/**
+ * Khung viền của CHÍNH người đang đăng nhập, cho sidebar và trang cá nhân.
+ *
+ * Đọc từ kho vật phẩm chứ không từ `/auth/me`: kho được ghi lại ngay khi đổi khung nên
+ * sidebar đổi theo tức thì, còn thông tin đăng nhập nằm trong store và chỉ tải lại khi
+ * đăng nhập lại.
+ *
+ * Trả `null` (khung mặc định) cho quản trị viên và khi Cửa hàng đang tắt — đúng như
+ * backend làm với khung của người khác (`shop.frame.ts`), nên mình thấy gì thì người
+ * khác thấy nấy.
+ */
+export function useMyFrameUrl(isLearner: boolean): string | null {
+  const shopEnabled = useFeatureQueryEnabled(FeatureKey.SHOP);
+  const inventory = useInventory(isLearner && shopEnabled);
+  return inventory.data?.equippedBySlug[KnownItemSlug.AVATAR_FRAME]?.imageUrl ?? null;
 }

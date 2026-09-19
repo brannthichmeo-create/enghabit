@@ -3,6 +3,7 @@ import { Camera, Trash2 } from 'lucide-react';
 import {
   ALLOWED_AVATAR_MIME,
   AVATAR_DIMENSION,
+  UserRole,
   parseImageDataUrl,
   type PublicUser,
 } from '@enghabit/shared';
@@ -12,6 +13,7 @@ import { Avatar } from '../../../shared/components/Sidebar';
 import { useToast } from '../../../shared/components/Toast';
 import { useT } from '../../../shared/i18n/language';
 import { useRemoveAvatar, useUpdateAvatar } from '../profile.hooks';
+import { useMyFrameUrl } from '../../shop/shop.hooks';
 
 /**
  * Chọn ảnh từ thiết bị và đổi ảnh đại diện.
@@ -31,6 +33,8 @@ export function AvatarPicker({ user }: { user: PublicUser }): JSX.Element {
   const update = useUpdateAvatar();
   const remove = useRemoveAvatar();
   const toast = useToast();
+  // Trang cá nhân chỉ mở cho chính mình; quản trị viên không có khung nên ra khung mặc định.
+  const myFrame = useMyFrameUrl(user.role !== UserRole.ADMIN);
 
   const pick = async (file: File): Promise<void> => {
     setError(null);
@@ -57,7 +61,12 @@ export function AvatarPicker({ user }: { user: PublicUser }): JSX.Element {
 
   return (
     <div className="flex flex-wrap items-center gap-4">
-      <Avatar name={user.name} src={user.avatarDataUrl} size="lg" />
+      <Avatar
+        name={user.name}
+        src={user.avatarDataUrl}
+        frameUrl={myFrame}
+        size="lg"
+      />
 
       <div className="min-w-0">
         <div className="flex flex-wrap gap-2">

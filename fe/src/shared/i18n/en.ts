@@ -1537,4 +1537,6 @@ export const EN: Dictionary = {
   'Hạn phải từ hôm nay trở đi': 'The deadline must be today or later',
   'Đã lưu hạn mục tiêu': 'Goal deadline saved',
   'Đã bỏ hạn mục tiêu': 'Goal deadline removed',
+  'Khung viền: ảnh vuông, tâm trong suốt. Ảnh đại diện nằm ở vòng giữa, đường kính bằng cạnh ảnh chia {scale}.':
+    'Avatar frame: a square image with a transparent centre. The avatar sits in the middle circle, its diameter equal to the image side divided by {scale}.',
 };

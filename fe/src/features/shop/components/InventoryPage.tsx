@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ImageOff, PackageOpen, Store } from 'lucide-react';
-import type { OwnedItemView } from '@enghabit/shared';
+import { KnownItemSlug, type OwnedItemView } from '@enghabit/shared';
 import { Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../../../shared/components/ui';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { useLocale, useT } from '../../../shared/i18n/language';
 import { useToast } from '../../../shared/components/Toast';
 import { useRewards } from '../../rewards/rewards.hooks';
+import { useCurrentUser } from '../../auth/auth.store';
+import { Avatar } from '../../../shared/components/Sidebar';
 import { useEquipItem, useInventory, useShopItems, useUnequipItem } from '../shop.hooks';
 import { ShopItemCard } from './ShopItemCard';
 
@@ -168,6 +170,7 @@ function OwnedRow({ item, equipped }: { item: OwnedItemView; equipped: boolean }
   const toast = useToast();
   const equip = useEquipItem();
   const unequip = useUnequipItem();
+  const user = useCurrentUser();
 
   const busy = equip.isPending || unequip.isPending;
 
@@ -175,7 +178,13 @@ function OwnedRow({ item, equipped }: { item: OwnedItemView; equipped: boolean }
     <tr className="border-b border-line/60 last:border-0">
       <td className="px-4 py-3">
         <span className="flex items-center gap-3">
-          {item.imageUrl ? (
+          {item.typeSlug === KnownItemSlug.AVATAR_FRAME ? (
+            // Khung viền xem trên mặt mình, cùng lý do với thẻ ở cửa hàng. Bọc một ô 40px
+            // giữ cho cột tên thẳng hàng với dòng linh vật bên dưới.
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+              <Avatar name={user?.name ?? '?'} src={user?.avatarDataUrl} frameUrl={item.imageUrl} />
+            </span>
+          ) : item.imageUrl ? (
             <img
               src={item.imageUrl}
               alt=""

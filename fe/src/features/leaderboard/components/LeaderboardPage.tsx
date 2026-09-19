@@ -269,7 +269,7 @@ function PodiumCard({
         <span className="sr-only">{t(style.label)}</span>
       </span>
 
-      <Avatar name={entry.name} size={entry.rank === 1 ? 'lg' : 'md'} />
+      <Avatar name={entry.name} frameUrl={entry.avatarFrameUrl} size={entry.rank === 1 ? 'lg' : 'md'} />
 
       <p className="mt-2 w-full truncate font-semibold text-content">{entry.name}</p>
 
@@ -300,7 +300,7 @@ function Row({ entry, metric }: { entry: LeaderboardEntry; metric: LeaderboardMe
         {entry.rank}
       </span>
 
-      <Avatar name={entry.name} />
+      <Avatar name={entry.name} frameUrl={entry.avatarFrameUrl} />
 
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-2">

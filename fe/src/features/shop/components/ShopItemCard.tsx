@@ -1,6 +1,8 @@
 import { Check, Coins, Heart, ImageOff, ShoppingCart, Sparkles } from 'lucide-react';
-import type { ShopItemView } from '@enghabit/shared';
+import { KnownItemSlug, type ShopItemView } from '@enghabit/shared';
 import { Button } from '../../../shared/components/ui';
+import { Avatar } from '../../../shared/components/Sidebar';
+import { useCurrentUser } from '../../auth/auth.store';
 import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { useToast } from '../../../shared/components/Toast';
 import { getErrorMessage } from '../../../shared/lib/api-client';
@@ -58,7 +60,11 @@ export function ShopItemCard({ item, coins }: { item: ShopItemView; coins: numbe
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-card transition-shadow hover:shadow-card-hover">
       <div className="relative">
-        <ItemImage src={item.imageUrl} alt={item.name} />
+        {item.typeSlug === KnownItemSlug.AVATAR_FRAME ? (
+          <FramePreview frameUrl={item.imageUrl} />
+        ) : (
+          <ItemImage src={item.imageUrl} alt={item.name} />
+        )}
 
         <button
           type="button"
@@ -185,5 +191,23 @@ function ItemImage({ src, alt }: { src: string | null; alt: string }): JSX.Eleme
       loading="lazy"
       className="aspect-square w-full bg-sunken object-contain"
     />
+  );
+}
+
+/**
+ * Xem thử khung viền quanh ảnh đại diện của CHÍNH người đang xem.
+ *
+ * Một vòng viền trống trơn đứng một mình rất khó hình dung khi đeo lên sẽ ra sao; đặt nó
+ * quanh đúng mặt mình thì người dùng quyết định mua nhanh hơn. Dùng lại `Avatar` — đúng
+ * component vẽ khung ở mọi màn khác — nên xem thử ở đây giống hệt những gì người khác sẽ
+ * thấy trên bài đăng hay bảng xếp hạng.
+ */
+function FramePreview({ frameUrl }: { frameUrl: string | null }): JSX.Element {
+  const user = useCurrentUser();
+
+  return (
+    <div className="flex aspect-square w-full items-center justify-center bg-sunken">
+      <Avatar name={user?.name ?? '?'} src={user?.avatarDataUrl} frameUrl={frameUrl} size="xl" />
+    </div>
   );
 }

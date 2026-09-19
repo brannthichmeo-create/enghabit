@@ -21,6 +21,7 @@ import {
   SkeletonList,
 } from '../../../shared/components/ui';
 import { Modal } from '../../../shared/components/Modal';
+import { Avatar } from '../../../shared/components/Sidebar';
 import { useToast } from '../../../shared/components/Toast';
 import { useLocale, useT } from '../../../shared/i18n/language';
 import {
@@ -306,9 +307,12 @@ function GroupDetailModal({ groupId, onClose }: { groupId: number; onClose: () =
               <ul className="divide-y divide-line">
                 {group.members.map((member) => (
                   <li key={member.userId} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-                    <span className="min-w-0">
-                      <span className="block truncate text-content">{member.name}</span>
-                      <span className="block text-xs text-content-muted">@{member.username}</span>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <Avatar name={member.name} frameUrl={member.avatarFrameUrl} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-content">{member.name}</span>
+                        <span className="block text-xs text-content-muted">@{member.username}</span>
+                      </span>
                     </span>
                     {member.role === GroupMemberRole.LEADER && (
                       <Badge tone="brand">{t('Trưởng nhóm')}</Badge>
