@@ -79,6 +79,8 @@ export async function listItems(
     ...(query.typeId ? { typeId: query.typeId } : {}),
     ...(query.favorite ? { favorites: { some: { userId } } } : {}),
     ...(query.owned ? { owners: { some: { userId } } } : {}),
+    // Đi CÙNG điều kiện OR ở trên (AND ngầm): còn đúng các món đang bán mà chưa sở hữu.
+    ...(query.hideOwned ? { owners: { none: { userId } } } : {}),
     ...(query.q ? { name: { contains: query.q } } : {}),
   };
 

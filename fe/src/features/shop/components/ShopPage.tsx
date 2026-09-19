@@ -24,10 +24,23 @@ export function ShopPage(): JSX.Element {
   const types = useShopTypes();
   const rewards = useRewards();
 
-  const query = { typeId, q: search.trim() || undefined, page, pageSize: 24 };
+  // hideOwned: món đã mua nằm ở tab "Của tôi" của kho, không lẫn vào quầy hàng nữa.
+  const query = { typeId, q: search.trim() || undefined, hideOwned: true, page, pageSize: 24 };
   const items = useShopItems(query);
 
   const coins = rewards.data?.coins ?? 0;
+
+  /*
+    Danh sách rỗng mà loại đang chọn vẫn CÓ hàng đang bán = người dùng đã mua hết.
+
+    Phải tách trường hợp này khỏi "cửa hàng chưa có vật phẩm": từ khi cửa hàng ẩn đồ đã
+    sở hữu, người mua hết một loại sẽ thấy tab đó trống trơn, và câu "quản trị viên chưa
+    thêm vật phẩm" là nói sai — họ vừa mua 20 món ở đây.
+  */
+  const availableInTab = typeId
+    ? (types.data?.find((type) => type.id === typeId)?.itemCount ?? 0)
+    : (types.data?.reduce((sum, type) => sum + type.itemCount, 0) ?? 0);
+  const ownedEverything = availableInTab > 0;
   const totalPages = items.data ? Math.max(1, Math.ceil(items.data.total / items.data.pageSize)) : 1;
 
   return (
@@ -99,11 +112,26 @@ export function ShopPage(): JSX.Element {
       {items.data && items.data.items.length === 0 && (
         <EmptyState
           icon={Store}
-          title={search ? t('Không tìm thấy vật phẩm nào') : t('Cửa hàng chưa có vật phẩm')}
+          title={
+            search
+              ? t('Không tìm thấy vật phẩm nào')
+              : ownedEverything
+                ? t('Bạn đã sở hữu hết vật phẩm ở đây')
+                : t('Cửa hàng chưa có vật phẩm')
+          }
           description={
             search
               ? t('Thử từ khoá khác hoặc chọn một loại khác')
-              : t('Quản trị viên chưa thêm vật phẩm nào. Quay lại sau nhé.')
+              : ownedEverything
+                ? t('Vật phẩm đã mua nằm trong Kho vật phẩm, ở tab Của tôi.')
+                : t('Quản trị viên chưa thêm vật phẩm nào. Quay lại sau nhé.')
+          }
+          action={
+            ownedEverything && !search ? (
+              <Link to="/inventory">
+                <Button icon={PackageOpen}>{t('Kho vật phẩm')}</Button>
+              </Link>
+            ) : undefined
           }
         />
       )}

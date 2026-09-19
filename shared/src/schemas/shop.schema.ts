@@ -28,6 +28,13 @@ export const shopItemQuerySchema = paginationSchema.extend({
   favorite: booleanQuery.default(false),
   /** Chỉ vật phẩm đã sở hữu — nguồn của tab Của tôi. */
   owned: booleanQuery.default(false),
+  /**
+   * Bỏ vật phẩm đã sở hữu — màn Cửa hàng dùng. Món đã mua nằm ở tab "Của tôi" của kho;
+   * để lẫn trong cửa hàng thì người dùng phải lướt qua đồ của chính mình mới tới món chưa có.
+   *
+   * Tab Yêu thích KHÔNG bật cờ này: nó phải hiện cả món đã mua để đồng bộ trạng thái mua.
+   */
+  hideOwned: booleanQuery.default(false),
   /** Tìm theo tên vật phẩm. */
   q: z.string().trim().max(100).optional(),
 });

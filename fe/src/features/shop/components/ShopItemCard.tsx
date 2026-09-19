@@ -52,7 +52,9 @@ export function ShopItemCard({ item, coins }: { item: ShopItemView; coins: numbe
     if (!ok) return;
 
     buy.mutate(item.id, {
-      onSuccess: () => toast.success(t('Đã mua {name}', { name: item.name })),
+      // Nói rõ món vừa mua đi đâu: cửa hàng ẩn đồ đã sở hữu, nên thẻ biến mất ngay khi
+      // mua xong — không có câu này người dùng tưởng mua hụt.
+      onSuccess: () => toast.success(t('Đã mua {name}. Vật phẩm nằm trong Kho vật phẩm.', { name: item.name })),
       onError: (error) => toast.error(getErrorMessage(error)),
     });
   }
