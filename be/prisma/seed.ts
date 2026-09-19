@@ -40,7 +40,7 @@ import { TOPICS } from './seed-data/content.js';
 import { COMMUNITY_MEMBERS, POSTS } from './seed-data/community.js';
 import { STUDY_SETS, STUDY_SET_REPORTS } from './seed-data/library.js';
 import { GROUPS } from './seed-data/groups.js';
-import { MASCOT_TYPE } from '../src/modules/shop/shop.catalog-data.js';
+import { FRAME_TYPE, MASCOT_TYPE } from '../src/modules/shop/shop.catalog-data.js';
 import { pngChunk } from '../src/modules/shop/shop.mascot-image.js';
 import { seedShopCatalog } from '../src/modules/shop/shop.catalog.js';
 
@@ -98,6 +98,7 @@ async function main(): Promise<void> {
   // Cua hang chay SAU Phan thuong: nguoi hoc chi mua duoc trong pham vi so xu ma phan
   // tren vua tao ra, neu khong seed se de lai mot cai vi am.
   await seedShop(learner.id);
+  await seedFrameTestData(learner.id, [...members.values()]);
   await seedFeatureFlags();
 
   await printSummary();
@@ -1248,7 +1249,7 @@ async function seedShop(learnerId: number): Promise<void> {
   */
   const catalogResult = await seedShopCatalog(prisma);
   const created = catalogResult.createdItems;
-  const typeId = catalogResult.typeId;
+  const typeId = catalogResult.typeIds[MASCOT_TYPE.slug] as number;
 
   const ownedAlready = await prisma.userItem.count({ where: { userId: learnerId } });
   if (ownedAlready > 0) {
@@ -1320,6 +1321,120 @@ async function seedShop(learnerId: number): Promise<void> {
   console.log(
     `  Cửa hàng: thêm ${created} vật phẩm, user demo mua ${bought.length} món${usingText}, còn ${balance} xu`,
   );
+}
+
+/**
+ * Dữ liệu thử cho khung viền: vài người đeo sẵn khung để THẤY được khung của người khác.
+ *
+ * Chỉ có 20 khung nằm trong cửa hàng thì chưa kiểm được yêu cầu chính của tính năng —
+ * "người khác cũng thấy". Nên ở đây:
+ *
+ *  - Mỗi thành viên cộng đồng đeo một khung khác nhau, trải đủ ba bậc giá, để bảng xếp
+ *    hạng, bài đăng, bình luận và danh sách thành viên nhóm hiện khung đa dạng.
+ *  - Tài khoản demo đeo sẵn một khung và CÒN XU để tự mua thêm, thử luồng đổi khung.
+ *
+ * Xu lấy từ lịch sử điểm danh của những ngày TRƯỚC (đúng khoá `DAILY_CHECKIN:<ngày>`),
+ * rồi mua bằng đúng dòng sổ cái của cửa hàng. Không tạo `user_items` chay: màn Ví của
+ * từng người phải khớp với kho của họ, như với người dùng thật.
+ *
+ * Idempotent theo người: ai đã có ít nhất một khung thì bỏ qua người đó.
+ */
+async function seedFrameTestData(learnerId: number, memberIds: readonly number[]): Promise<void> {
+  const frameType = await prisma.shopItemType.findUnique({ where: { slug: FRAME_TYPE.slug } });
+  if (!frameType) {
+    console.log('  (chưa có loại Khung viền — bỏ qua dữ liệu thử khung viền)');
+    return;
+  }
+
+  const frames = await prisma.shopItem.findMany({
+    where: { typeId: frameType.id },
+    orderBy: [{ price: 'asc' }, { sortOrder: 'asc' }],
+    select: { id: true, name: true, price: true },
+  });
+  if (frames.length === 0) return;
+
+  // Rải khung trên cả ba bậc giá cho thành viên — nhìn bảng xếp hạng là thấy đủ kiểu.
+  const pick = (index: number) => frames[(index * 7) % frames.length]!;
+
+  const plans: { userId: number; buy: { id: number; name: string; price: number }[]; wear: number; spare: number }[] = [
+    ...memberIds.slice(0, 6).map((userId, index) => ({ userId, buy: [pick(index)], wear: 0, spare: 0 })),
+    // Demo: một khung rẻ + một khung giữa, đeo khung giữa, và còn dư 500 xu để tự mua thêm.
+    {
+      userId: learnerId,
+      buy: [frames[0]!, frames.find((f) => f.price >= 800) ?? frames[1]!],
+      wear: 1,
+      spare: 500,
+    },
+  ];
+
+  let dressed = 0;
+
+  for (const plan of plans) {
+    const owned = await prisma.userItem.count({
+      where: { userId: plan.userId, item: { typeId: frameType.id } },
+    });
+    if (owned > 0) continue;
+
+    const need = plan.buy.reduce((sum, f) => sum + f.price, 0) + plan.spare;
+    await topUpWithPastCheckIns(plan.userId, need);
+
+    const today = new Date(`${dateAtOffsetLocal(0)}T00:00:00.000Z`);
+    for (const frame of plan.buy) {
+      await prisma.coinTransaction.create({
+        data: {
+          userId: plan.userId,
+          amount: -frame.price,
+          reason: CoinReason.SHOP_PURCHASE,
+          dedupeKey: shopItemDedupeKey(frame.id),
+          localDate: today,
+        },
+      });
+      await prisma.userItem.create({
+        data: { userId: plan.userId, itemId: frame.id, pricePaid: frame.price },
+      });
+    }
+
+    const worn = plan.buy[plan.wear]!;
+    await prisma.userEquippedItem.upsert({
+      where: { userId_typeId: { userId: plan.userId, typeId: frameType.id } },
+      create: { userId: plan.userId, typeId: frameType.id, itemId: worn.id },
+      update: { itemId: worn.id },
+    });
+
+    dressed += 1;
+  }
+
+  console.log(`  Khung viền: ${dressed} người đeo sẵn khung (gồm cả user demo, còn dư xu để tự mua thêm)`);
+}
+
+/**
+ * Bù xu cho đủ `target` bằng điểm danh của những ngày ĐÃ QUA, lùi dần từ hôm qua.
+ *
+ * Dùng khoá `DAILY_CHECKIN:<ngày>` y như rewards.service, và `skipDuplicates` nên ngày nào
+ * đã điểm danh thì không ghi đè — chỉ lấp ngày còn trống. Không đụng tới hôm nay, để
+ * người dùng vẫn tự bấm điểm danh được khi thử.
+ */
+async function topUpWithPastCheckIns(userId: number, target: number): Promise<void> {
+  for (let offset = 1; offset <= 120; offset += 1) {
+    const balance =
+      (await prisma.coinTransaction.aggregate({ where: { userId }, _sum: { amount: true } }))._sum.amount ?? 0;
+    if (balance >= target) return;
+
+    const day = dateAtOffsetLocal(offset);
+    await prisma.coinTransaction.createMany({
+      data: [
+        {
+          userId,
+          amount: DAILY_CHECKIN_REWARD,
+          reason: CoinReason.DAILY_CHECKIN,
+          dedupeKey: checkInDedupeKey(day),
+          localDate: new Date(`${day}T00:00:00.000Z`),
+          createdAt: new Date(`${day}T13:00:00.000Z`),
+        },
+      ],
+      skipDuplicates: true,
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
