@@ -87,9 +87,25 @@ export function Breadcrumb(): JSX.Element | null {
           const isLast = index === lastIndex;
 
           return (
-            <li key={`${crumb.label}-${index}`} className={`flex items-center gap-1 ${isLast ? 'min-w-0' : 'shrink-0'}`}>
+            /*
+              Màn hình hẹp chỉ hiện cấp CUỐI — tức là "đang ở đâu".
+
+              Các cấp trên là `shrink-0`, cố ý, để chúng không bị cắt chữ thành vô nghĩa;
+              nhưng hệ quả là trên điện thoại chúng đẩy cả cụm nút bên phải ra ngoài
+              màn hình. Đường về vẫn còn nguyên ở ngăn kéo điều hướng và ở nút Quay lại
+              của trình duyệt, nên bỏ chúng đi ở cỡ này không mất lối đi nào.
+            */
+            <li
+              key={`${crumb.label}-${index}`}
+              className={`items-center gap-1 ${isLast ? 'flex min-w-0' : 'hidden shrink-0 sm:flex'}`}
+            >
               {index > 0 && (
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-on-page-muted" aria-hidden />
+                <ChevronRight
+                  // Cấp cuối là mục đầu tiên nhìn thấy dưới `sm`, nên dấu mũi tên dẫn
+                  // vào nó sẽ treo lơ lửng ở đầu dòng.
+                  className={`h-3.5 w-3.5 shrink-0 text-on-page-muted ${isLast ? 'hidden sm:block' : ''}`}
+                  aria-hidden
+                />
               )}
 
               {isLast || !crumb.to ? (

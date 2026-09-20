@@ -19,8 +19,11 @@ import {
   Card,
   EmptyState,
   ErrorMessage,
+  ErrorState,
   Field,
   Input,
+  ProgressBar,
+  Skeleton,
   SkeletonList,
   PageHeader,
   Select,
@@ -33,6 +36,12 @@ import { useCurrentUser } from '../../auth/auth.store';
 import { useCreateGoal, useDeleteGoal, useGoalProgress, useGoals, useUpdateGoal } from '../goal.hooks';
 import type { Goal } from '../goal.api';
 import { useLocale, useT } from '../../../shared/i18n/language';
+
+/** Nút "+ Thêm mục tiêu" khai `aria-controls` trỏ tới khối form nó mở ra. */
+const GOAL_FORM_ID = 'goal-form';
+
+/** Tiến độ là truy vấn riêng: chưa biết, hỏi hỏng, hay đã có số — ba chuyện khác nhau. */
+type ProgressState = 'loading' | 'error' | 'ready';
 
 /** API trả cột DATE dạng `2026-09-30T00:00:00.000Z`; phần ngày chính là ngày theo lịch. */
 function toLocalDate(value: string): LocalDate {
@@ -68,37 +77,55 @@ export function GoalsPage(): JSX.Element {
       <PageHeader
         title={t('Mục tiêu học tập')}
         description={t('Đặt mục tiêu cụ thể để theo dõi tiến độ mỗi ngày')}
-        action={<Button onClick={() => setShowForm((v) => !v)}>{showForm ? t('Đóng') : t('+ Thêm mục tiêu')}</Button>}
+        action={
+          <Button
+            onClick={() => setShowForm((v) => !v)}
+            aria-expanded={showForm}
+            aria-controls={GOAL_FORM_ID}
+          >
+            {showForm ? t('Đóng') : t('+ Thêm mục tiêu')}
+          </Button>
+        }
       />
 
       {showForm && (
-        <div className="mb-6">
+        <div className="mb-6" id={GOAL_FORM_ID}>
           <GoalForm today={today} onCreated={() => setShowForm(false)} />
         </div>
       )}
 
       {goals.isLoading && <SkeletonList rows={3} />}
-      {goals.isError && <ErrorMessage>{getErrorMessage(goals.error)}</ErrorMessage>}
-
-      {goals.data?.length === 0 && (
-        <EmptyState title={t('Chưa có mục tiêu nào')} description={t('Ví dụ: học 20 từ vựng mỗi ngày')} />
+      {goals.isError && (
+        <ErrorState message={getErrorMessage(goals.error)} onRetry={() => void goals.refetch()} />
       )}
 
-      <div className="space-y-3">
+      {goals.data?.length === 0 && (
+        <EmptyState
+          title={t('Chưa có mục tiêu nào')}
+          description={t('Ví dụ: học 20 từ vựng mỗi ngày')}
+          action={<Button onClick={() => setShowForm(true)}>{t('+ Thêm mục tiêu')}</Button>}
+        />
+      )}
+
+      <ul className="space-y-3">
         {goals.data?.map((goal) => (
-          <GoalCard
-            key={goal.id}
-            goal={goal}
-            timeline={goalTimeline(
-              toLocalDate(goal.startDate),
-              goal.endDate ? toLocalDate(goal.endDate) : null,
-              today,
-            )}
-            progress={progressByGoal.get(goal.id)}
-            onEditDeadline={() => setEditing(goal)}
-          />
+          <li key={goal.id}>
+            <GoalCard
+              goal={goal}
+              timeline={goalTimeline(
+                toLocalDate(goal.startDate),
+                goal.endDate ? toLocalDate(goal.endDate) : null,
+                today,
+              )}
+              progress={progressByGoal.get(goal.id)}
+              progressState={
+                progress.isPending ? 'loading' : progress.isError ? 'error' : 'ready'
+              }
+              onEditDeadline={() => setEditing(goal)}
+            />
+          </li>
         ))}
-      </div>
+      </ul>
 
       <DeadlineModal goal={editing} today={today} onClose={() => setEditing(null)} />
     </div>
@@ -109,24 +136,29 @@ function GoalCard({
   goal,
   timeline,
   progress,
+  progressState,
   onEditDeadline,
 }: {
   goal: Goal;
   timeline: GoalTimeline;
   progress?: GoalProgress;
+  /** Trạng thái của truy vấn tiến độ — nó về sau danh sách mục tiêu, xem `GoalProgressLine`. */
+  progressState: ProgressState;
   onEditDeadline: () => void;
 }): JSX.Element {
   const t = useT();
+  const toast = useToast();
   const confirm = useConfirm();
   const deleteGoal = useDeleteGoal();
   const expired = timeline.state === GoalTimelineState.EXPIRED;
+  const name = t(GOAL_TYPE_LABELS[goal.type]);
 
   return (
     <Card>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-content">{t(GOAL_TYPE_LABELS[goal.type])}</h3>
+            <h2 className="font-semibold text-content">{name}</h2>
             <Badge tone={goal.status === GoalStatus.ACTIVE && !expired ? 'brand' : 'slate'}>
               {goal.period === GoalPeriod.DAILY ? t('Mỗi ngày') : t('Mỗi tuần')}
             </Badge>
@@ -142,16 +174,39 @@ function GoalCard({
               {t('Đã qua hạn nên không còn theo dõi tiến độ. Gia hạn để tiếp tục.')}
             </p>
           ) : (
-            <ProgressBar target={goal.targetValue} progress={progress} />
+            <GoalProgressLine
+              name={name}
+              target={goal.targetValue}
+              progress={progress}
+              state={progressState}
+            />
           )}
         </div>
 
+        {/*
+          Nhãn của hai nút mang theo TÊN mục tiêu. Danh sách năm mục tiêu thì trình đọc
+          màn hình chỉ nghe năm lần "Xoá" giống hệt nhau, không cách nào biết nút nào
+          thuộc thẻ nào. Chữ hiện ra vẫn ngắn như cũ vì nền thẻ đã nói rõ ngữ cảnh.
+        */}
         <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center">
-          <Button variant="ghost" icon={CalendarClock} onClick={onEditDeadline}>
+          <Button
+            variant="ghost"
+            icon={CalendarClock}
+            onClick={onEditDeadline}
+            aria-label={
+              expired
+                ? t('Gia hạn mục tiêu {name}', { name })
+                : goal.endDate
+                  ? t('Đổi hạn mục tiêu {name}', { name })
+                  : t('Đặt hạn mục tiêu {name}', { name })
+            }
+          >
             {expired ? t('Gia hạn') : goal.endDate ? t('Đổi hạn') : t('Đặt hạn')}
           </Button>
           <Button
             variant="ghost"
+            loading={deleteGoal.isPending}
+            aria-label={t('Xoá mục tiêu {name}', { name })}
             onClick={async () => {
               const ok = await confirm({
                 title: t('Xoá mục tiêu này?'),
@@ -159,7 +214,12 @@ function GoalCard({
                 confirmLabel: t('Xoá mục tiêu'),
                 tone: 'danger',
               });
-              if (ok) deleteGoal.mutate(goal.id);
+              if (!ok) return;
+
+              deleteGoal.mutate(goal.id, {
+                onSuccess: () => toast.success(t('Đã xoá mục tiêu')),
+                onError: (error) => toast.error(getErrorMessage(error)),
+              });
             }}
           >
             {t('Xoá')}
@@ -205,27 +265,54 @@ function DeadlineLine({ goal, timeline }: { goal: Goal; timeline: GoalTimeline }
   );
 }
 
-function ProgressBar({ target, progress }: { target: number; progress?: GoalProgress }): JSX.Element {
+/**
+ * Số đã đạt và thanh tiến độ của một mục tiêu.
+ *
+ * Tiến độ là truy vấn RIÊNG, về sau danh sách mục tiêu — nên phải phân biệt được ba
+ * chuyện: chưa biết, hỏi không được, và đúng là chưa làm gì. Vẽ thẳng 0% cho cả ba là
+ * nói với người vừa học xong rằng họ chưa học gì, đúng ở màn hình mà cả sản phẩm dựa
+ * vào để giữ động lực.
+ */
+function GoalProgressLine({
+  name,
+  target,
+  progress,
+  state,
+}: {
+  name: string;
+  target: number;
+  progress?: GoalProgress;
+  state: ProgressState;
+}): JSX.Element {
   const t = useT();
+
+  if (state === 'loading') {
+    return (
+      <div className="mt-3">
+        <Skeleton className="mb-1 h-5 w-28" />
+        <Skeleton className="h-2 w-full" />
+      </div>
+    );
+  }
+
+  if (state === 'error') {
+    return <p className="mt-3 text-sm text-content-muted">{t('Chưa tải được tiến độ của mục tiêu này.')}</p>;
+  }
+
   const current = progress?.currentValue ?? 0;
   const rate = progress?.completionRate ?? 0;
 
   return (
     <div className="mt-3">
       <div className="mb-1 flex justify-between text-sm">
-        <span className="text-content-soft">
+        <span className="tabular-nums text-content-soft">
           {current} / {target}
         </span>
-        <span className={progress?.isCompleted ? 'font-medium text-success' : 'text-content-muted'}>
+        <span className={progress?.isCompleted ? 'font-medium text-success' : 'tabular-nums text-content-muted'}>
           {progress?.isCompleted ? t('✓ Hoàn thành') : `${rate}%`}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-sunken">
-        <div
-          className={`h-full rounded-full transition-all ${progress?.isCompleted ? 'bg-success' : 'bg-brand'}`}
-          style={{ width: `${rate}%` }}
-        />
-      </div>
+      <ProgressBar percent={rate} done={progress?.isCompleted} label={name} />
     </div>
   );
 }
@@ -238,12 +325,19 @@ function GoalForm({ today, onCreated }: { today: LocalDate; onCreated: () => voi
   const [period, setPeriod] = useState<GoalPeriod>(GoalPeriod.DAILY);
   const [endDate, setEndDate] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [endDateError, setEndDateError] = useState<string | null>(null);
+  /*
+    Lỗi của TỪNG ô, hiện ngay dưới ô đó.
+
+    Trước đây mọi lỗi trừ `endDate` đều dồn lên dải đỏ đầu biểu mẫu: nhập chỉ tiêu 0 thì
+    câu báo lỗi nằm cách ô sai ba hàng, và người dùng bàn phím không có gì dẫn về chỗ cần
+    sửa. Giữ dải đỏ cho thứ không thuộc ô nào — lỗi máy chủ trả về.
+  */
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'targetValue' | 'endDate', string>>>({});
 
   const handleSubmit = (event: FormEvent): void => {
     event.preventDefault();
     setValidationError(null);
-    setEndDateError(null);
+    setFieldErrors({});
 
     const parsed = createGoalSchema.safeParse({
       type,
@@ -254,13 +348,26 @@ function GoalForm({ today, onCreated }: { today: LocalDate; onCreated: () => voi
     });
 
     if (!parsed.success) {
-      const issue = parsed.error.issues[0];
-      if (issue?.path[0] === 'endDate') setEndDateError(issue.message);
-      else setValidationError(issue?.message ?? t('Dữ liệu không hợp lệ'));
+      const next: Partial<Record<'targetValue' | 'endDate', string>> = {};
+      let rest: string | null = null;
+
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if (field === 'targetValue' || field === 'endDate') next[field] ??= issue.message;
+        else rest ??= issue.message;
+      }
+
+      setFieldErrors(next);
+      // Chỉ nói "dữ liệu không hợp lệ" khi thật sự không gắn được lỗi nào vào ô nào.
+      if (rest || Object.keys(next).length === 0) setValidationError(rest ?? t('Dữ liệu không hợp lệ'));
       return;
     }
 
-    createGoal.mutate(parsed.data, { onSuccess: onCreated });
+    createGoal.mutate(parsed.data, {
+      onSuccess: onCreated,
+      // Lỗi máy chủ (vd trùng mục tiêu) đi vào dải đỏ, và ô nhập giữ nguyên thứ đã gõ.
+      onError: () => setFieldErrors({}),
+    });
   };
 
   const errorMessage = validationError ?? (createGoal.error ? getErrorMessage(createGoal.error) : null);
@@ -281,11 +388,13 @@ function GoalForm({ today, onCreated }: { today: LocalDate; onCreated: () => voi
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label={t('Chỉ tiêu')}>
+          <Field label={t('Chỉ tiêu')} error={fieldErrors.targetValue}>
             <Input
               type="number"
               min={1}
+              inputMode="numeric"
               value={targetValue}
+              aria-invalid={fieldErrors.targetValue !== undefined}
               onChange={(e) => setTargetValue(e.target.value)}
             />
           </Field>
@@ -300,9 +409,15 @@ function GoalForm({ today, onCreated }: { today: LocalDate; onCreated: () => voi
           <Field
             label={t('Hạn hoàn thành')}
             hint={t('Không bắt buộc. Bỏ trống là mục tiêu không có hạn.')}
-            error={endDateError ?? undefined}
+            error={fieldErrors.endDate}
           >
-            <Input type="date" min={today} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <Input
+              type="date"
+              min={today}
+              value={endDate}
+              aria-invalid={fieldErrors.endDate !== undefined}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
           </Field>
         </div>
 
@@ -353,6 +468,11 @@ function DeadlineModal({
     if (!goal) return;
     setError(null);
 
+    if (endDate === '') {
+      setError(t('Chọn ngày hạn trước khi lưu'));
+      return;
+    }
+
     if (endDate !== null && endDate < today) {
       setError(t('Hạn phải từ hôm nay trở đi'));
       return;
@@ -385,11 +505,11 @@ function DeadlineModal({
           <Button variant="secondary" onClick={close}>
             {t('Huỷ')}
           </Button>
-          <Button
-            loading={updateGoal.isPending}
-            disabled={value === ''}
-            onClick={() => save(value)}
-          >
+          {/*
+            Cố ý KHÔNG khoá nút khi chưa chọn ngày: nút mờ đi mà không nói vì sao là câu
+            đố. Bấm thì `save` nói thẳng "Chọn ngày hạn trước khi lưu" ngay dưới ô nhập.
+          */}
+          <Button loading={updateGoal.isPending} onClick={() => save(value)}>
             {t('Lưu')}
           </Button>
         </>

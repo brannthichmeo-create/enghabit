@@ -8,6 +8,7 @@ import { DashboardPage } from '../features/statistics/components/DashboardPage';
 import { ReportPage } from '../features/statistics/components/ReportPage';
 import { HabitsPage } from '../features/habits/components/HabitsPage';
 import { GoalsPage } from '../features/goals/components/GoalsPage';
+import { TodosPage } from '../features/todos/components/TodosPage';
 import { LibraryPage } from '../features/library/components/LibraryPage';
 import { StudySetDetailPage } from '../features/library/components/StudySetDetailPage';
 import { LearnPage } from '../features/study/components/LearnPage';
@@ -61,6 +62,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/report" element={<Gated flag={FeatureKey.REPORT} name="Báo cáo"><ReportPage /></Gated>} />
         <Route path="/habits" element={<Gated flag={FeatureKey.HABITS} name="Thói quen"><HabitsPage /></Gated>} />
         <Route path="/goals" element={<Gated flag={FeatureKey.GOALS} name="Mục tiêu"><GoalsPage /></Gated>} />
+        <Route path="/todos" element={<Gated flag={FeatureKey.TODO} name="Việc cần làm"><TodosPage /></Gated>} />
         <Route path="/library" element={<Gated flag={FeatureKey.VOCABULARY} name="Thư viện"><LibraryPage /></Gated>} />
         <Route
           path="/library/:id"

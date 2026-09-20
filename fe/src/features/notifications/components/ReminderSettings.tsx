@@ -60,7 +60,11 @@ export function ReminderSettings(): JSX.Element {
   const save = (): void => {
     update.mutate(
       { isEnabled, remindStreakAtRisk, remindReviewDue },
-      { onSuccess: () => toast.success(t('Đã lưu cài đặt nhắc nhở')) },
+      {
+        onSuccess: () => toast.success(t('Đã lưu cài đặt nhắc nhở')),
+        // Không báo lỗi thì người dùng tưởng đã bật nhắc, rồi trách hệ thống im lặng.
+        onError: (error) => toast.error(getErrorMessage(error)),
+      },
     );
   };
 

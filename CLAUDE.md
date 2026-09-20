@@ -16,6 +16,7 @@ Các feature FE còn lại (habits, goals, admin) đã có sẵn API backend và
 - Tạo tài khoản, quản lý thông tin cá nhân
 - Thiết lập mục tiêu học (số từ/ngày, số phút/ngày, số bài/tuần, streak N ngày)
 - Tạo và quản lý thói quen học tập (tần suất daily/weekly/custom), check-in hoàn thành
+- Ghi danh sách việc cần làm trong ngày (`/todos`), đánh dấu xong ngay trên thanh trên cùng mà không rời màn hình đang mở
 - Khám phá bộ thẻ công khai, tự tạo bộ thẻ riêng tư/công khai, chia sẻ và báo cáo vi phạm (`/library`)
 - Học một bộ thẻ bằng flashcard hoặc trắc nghiệm (`/learn`), ôn thẻ tới hạn/quá hạn/yếu theo SM-2 (`/review`)
 - Xem chuỗi ngày học liên tiếp (streak), tỷ lệ hoàn thành thói quen, thống kê theo ngày/tuần/tháng
@@ -216,7 +217,7 @@ thấy một dãy số 0 vô nghĩa và tưởng hệ thống đếm sai:
 
 ```
 enghabit/
-├── fe/                # Web (React + Vite) — features/{auth,goals,habits,library,study,statistics,notifications,rewards,shop,admin}/
+├── fe/                # Web (React + Vite) — features/{auth,goals,habits,todos,library,study,statistics,notifications,rewards,shop,admin}/
 ├── be/                # Backend (Node + Prisma) — modules/{...cùng tên feature với fe...}/
 ├── mobile/            # React Native (Expo) — thêm sau, cùng tên feature
 ├── shared/            # @enghabit/shared: schemas (Zod), constants/enum, srs/ (SM-2), streak/ (tính streak)
@@ -227,7 +228,7 @@ enghabit/
 Bên trong `be/src/modules/<feature>/`: `routes.ts → controller.ts → service.ts → schema.ts`.
 Bên trong `fe/src/features/<feature>/`: `components/`, `hooks/`, `api.ts`, `types.ts`.
 
-Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `library`, `study`, `statistics`, `notifications`, `rewards`, `shop`, `leaderboard`, `feature-flags`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
+Tên feature/module phải **giống hệt nhau giữa `fe` và `be`** (`auth`, `goals`, `habits`, `todos`, `library`, `study`, `statistics`, `notifications`, `rewards`, `shop`, `leaderboard`, `feature-flags`, `admin`) — không đổi tên tuỳ tiện giữa hai phía.
 
 **Hai quy ước bắt buộc khi scaffold:**
 
@@ -251,6 +252,33 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 - Khi phát hiện streak sai: chạy lại script này, **không sửa tay** giá trị trong bảng.
 - Thống kê ngày/tuần/tháng **tính trực tiếp từ `ActivityLog`** (query on-the-fly), không tạo bảng tổng hợp riêng — ở quy mô vài trăm user, thêm bảng tổng hợp chỉ làm tăng nguy cơ lệch số liệu mà không có lợi ích thực tế.
 - **Bảng xếp hạng cũng vậy**: `leaderboard.service` group `ActivityLog` theo user mỗi lần đọc, không có bảng điểm riêng. Điểm xếp hạng dùng lại đúng `xpFromActivityCounts` của `shared/level` — dựng thang điểm riêng cho bảng xếp hạng là tạo ra hai cách tính song song, và người dùng sẽ thấy "cấp độ nói một đằng, thứ hạng nói một nẻo". Chỉ xếp hạng tài khoản `USER` đang `ACTIVE`.
+
+### Việc cần làm (module `todos`)
+
+Danh sách việc trong ngày, mở từ sidebar (trang `/todos`) hoặc từ nút trên thanh trên
+cùng (bảng thả xuống, không rời màn hình đang mở). Đặc tả đầy đủ:
+**`docs/ke-hoach-viec-can-lam.md`** — đọc trước khi sửa.
+
+Năm quyết định bắt buộc giữ:
+
+- **KHÔNG ghi `ActivityLog`**, đúng như `rewards`. Bấm tích một dòng không phải hoạt động
+  học — ghi vào đó thì gõ "abc" rồi bấm tích là đủ giữ streak vô hạn mà không học chữ nào.
+  Hệ quả: **không thêm "việc lặp lại"** vào module này. Việc lặp theo lịch đã là `Habit`,
+  thứ CÓ ghi `ActivityLog`; dựng cơ chế lặp thứ hai là hai chỗ cùng nhắc một chuyện.
+- **Ba chỗ hiện việc cần làm dùng CHUNG một khoá cache** `todoKeys.day(today)`: trang,
+  bảng thả xuống và huy hiệu trên sidebar. Đây là toàn bộ cơ chế "đồng bộ đồng thời" —
+  chúng đọc chung một ô cache chứ không giữ state riêng rồi đồng bộ với nhau, nên không
+  thể lệch, và ba chỗ chỉ tốn một request. Đừng tách endpoint đếm riêng cho huy hiệu.
+- **`GET /todos` trả kèm `overdue`** — việc chưa xong của các ngày TRƯỚC, và chỉ khi đang
+  xem hôm nay. Thiếu khối này thì việc quên làm hôm qua biến mất lặng lẽ lúc sang ngày
+  mới. Ở giao diện nó nằm trong thẻ riêng, không trộn vào danh sách hôm nay: nó thuộc
+  ngày khác, trộn vào rồi bấm xong là ghi nhận nhầm ngày.
+- **`DELETE /todos/done` phải khai TRƯỚC `DELETE /todos/:id`.** Express khớp theo thứ tự
+  khai báo; đặt sau thì `done` rơi vào nhánh `/:id` và người dùng nhận "ID không hợp lệ"
+  cho một nút hoàn toàn hợp lệ.
+- **Danh sách không đẩy việc đã xong xuống cuối**, và `done_at` do backend đặt. Danh sách
+  nhảy chỗ ngay lúc vừa bấm tích khiến người dùng bấm nhầm dòng kế tiếp; còn để client gửi
+  `done_at` thì đồng hồ máy người dùng sai là dữ liệu sai theo.
 
 ### Phần thưởng động viên (module `rewards`)
 
@@ -526,7 +554,7 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - Query param kiểu boolean **không dùng `z.coerce.boolean()`**: query string luôn là chuỗi và `Boolean('false') === true`, nên bộ lọc sẽ luôn bật. Dùng `z.preprocess` so khớp `'true'`/`'1'` (xem `notificationQuerySchema`).
 - Mọi route `/admin/*` bắt buộc đi qua role-guard middleware.
 - **Và ngược lại: module học tập chặn `requireRole(UserRole.USER)` ngay ở tầng router** —
-  `rewards`, `shop`, `library`, `study`, `habits`, `goals`, `statistics`, cùng
+  `rewards`, `shop`, `library`, `study`, `habits`, `goals`, `todos`, `statistics`, cùng
   `/notifications/settings`. Ngoại lệ trong `shop`: đường ảnh vật phẩm cố ý công khai,
   vì thẻ `<img>` không gửi được token (xem mục Cửa hàng). Ẩn trên giao diện là chưa đủ: token admin gọi thẳng API vẫn
   điểm danh lấy xu hay ghi `ActivityLog` được. `/topics` giờ ngược lại — chỉ quản trị viên

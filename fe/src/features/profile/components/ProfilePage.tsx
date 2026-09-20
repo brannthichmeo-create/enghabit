@@ -117,7 +117,10 @@ export function ProfilePage(): JSX.Element {
                 {t('còn {n} XP', { n: level.data.xpToNextLevel })}
               </span>
             </div>
-            <ProgressBar percent={level.data.progressPercent} />
+            <ProgressBar
+              percent={level.data.progressPercent}
+              label={t('Tiến độ lên cấp {n}', { n: level.data.level + 1 })}
+            />
           </div>
         )}
       </Card>

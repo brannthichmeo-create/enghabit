@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Megaphone,
   ListChecks,
+  ListTodo,
   PackageOpen,
   Store,
   Wallet,
@@ -32,10 +33,13 @@ import { useLogout } from '../../features/auth/auth.hooks';
 import { useDueCount } from '../../features/study/study.hooks';
 import { useLevel } from '../../features/statistics/statistics.hooks';
 import { useUnreadCount } from '../../features/notifications/notification.hooks';
+import { remainingCount, useTodayLocalDate, useTodos } from '../../features/todos/todo.hooks';
 import { useMyFrameUrl } from '../../features/shop/shop.hooks';
 import { useT } from '../i18n/language';
 import { apiUrl } from '../lib/config';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { Logo } from './Logo';
+import { ThemeToggle } from './ThemeToggle';
 
 /**
  * Thanh điều hướng dọc bên trái.
@@ -83,6 +87,11 @@ export function Sidebar({
   const unread = useUnreadCount();
   const myFrame = useMyFrameUrl(isLearner);
 
+  // Cùng khoá cache với bảng thả xuống trên thanh trên cùng và với trang /todos, nên
+  // con số ở ba chỗ không bao giờ lệch nhau và cả ba chỉ tốn MỘT request.
+  const todoEnabled = useFeatureQueryEnabled(FeatureKey.TODO);
+  const todos = useTodos(useTodayLocalDate(), isLearner && todoEnabled);
+
   const isAdmin = !isLearner;
 
   const mainItems: NavItem[] = visibleItems(
@@ -103,6 +112,13 @@ export function Sidebar({
     [
       { to: '/habits', label: 'Thói quen', icon: ListChecks, flag: FeatureKey.HABITS },
       { to: '/goals', label: 'Mục tiêu', icon: Target, flag: FeatureKey.GOALS },
+      {
+        to: '/todos',
+        label: 'Việc cần làm',
+        icon: ListTodo,
+        badge: remainingCount(todos.data),
+        flag: FeatureKey.TODO,
+      },
       { to: '/report', label: 'Báo cáo', icon: ChartColumn, flag: FeatureKey.REPORT },
     ],
     flags,
@@ -146,12 +162,35 @@ export function Sidebar({
     /* Nền hệ thống, không phải nền thẻ — sidebar là một phần của khung app */
     <div className="flex h-full flex-col bg-page">
       <div className={`flex items-center px-4 py-4 ${collapsed ? 'justify-center px-2' : ''}`}>
-        <Link to="/" onClick={onNavigate}>
+        {/*
+          `aria-label` là BẮT BUỘC, không phải cho đẹp: lúc thu gọn, `Logo` chỉ còn một
+          `<img alt="" aria-hidden>` nên link này không còn tên truy cập nào cả — trình
+          đọc màn hình đọc đúng chữ "link" rồi thôi.
+        */}
+        <Link to="/" onClick={onNavigate} aria-label={t('Trang chủ ENG//HABIT')}>
           <Logo size="sm" withText={!collapsed} />
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2.5 pb-2">
+      {/*
+        Ngôn ngữ và giao diện chỉ xuất hiện ở đây DƯỚI `lg` — trên đó chúng đã ở thanh
+        trên cùng, nơi không đủ chỗ cho chúng ở màn hình điện thoại (xem phép tính trong
+        `AppLayout`). Ngăn kéo là chỗ hợp lý: người dùng mở nó ra là đang đi tìm chỗ
+        khác, còn đây là hai cài đặt đặt một lần rồi thôi.
+
+        Hai ràng buộc ép ra đúng vị trí này, không phải thẩm mỹ:
+          - `justify-end` vì bảng thả xuống của chúng neo `right-0`; đặt bên trái ngăn
+            kéo rộng 240px thì bảng rộng 176–192px sẽ đổ ra ngoài mép trái màn hình;
+          - đặt NGAY DƯỚI logo chứ không ở khối người dùng dưới đáy, vì bảng mở XUỐNG
+            (`mt-1.5`) — ở đáy ngăn kéo thì nó rơi khỏi màn hình.
+      */}
+      <div className="flex items-center justify-end gap-1 px-2.5 pb-1 lg:hidden">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
+
+      {/* Trang có hai landmark điều hướng (đây và breadcrumb) nên cả hai phải có tên */}
+      <nav aria-label={t('Điều hướng chính')} className="flex-1 overflow-y-auto px-2.5 pb-2">
         {isAdmin ? (
           <>
             <GroupLabel collapsed={collapsed}>{'Quản trị'}</GroupLabel>
@@ -231,7 +270,7 @@ export function Sidebar({
 
         <button
           onClick={() => logout.mutate()}
-          className={`mt-0.5 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-on-page-muted transition-colors hover:bg-hover hover:text-on-page ${
+          className={`mt-0.5 flex w-full items-center gap-2.5 rounded-lg px-2 py-3 text-sm text-on-page-muted transition-colors hover:bg-hover hover:text-on-page lg:py-2 ${
             collapsed ? 'justify-center' : ''
           }`}
           title={collapsed ? t('Đăng xuất') : undefined}
@@ -246,6 +285,7 @@ export function Sidebar({
         onClick={onToggleCollapse}
         className="hidden items-center gap-2 border-t border-line-page px-4 py-2.5 text-xs text-on-page-muted transition-colors hover:bg-hover hover:text-on-page lg:flex"
         aria-label={collapsed ? t('Mở rộng thanh điều hướng') : t('Thu gọn thanh điều hướng')}
+        aria-expanded={!collapsed}
       >
         <ChevronLeft className={`h-4 w-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} aria-hidden />
         {!collapsed && t('Thu gọn')}
@@ -271,6 +311,16 @@ function Item({
   const t = useT();
   const Icon = item.icon;
 
+  const count = item.badge !== undefined && item.badge > 0 ? item.badge : undefined;
+  const label = t(item.label);
+  /*
+    Lúc thu gọn, cái tên duy nhất của link là `aria-label` này: chữ đã ẩn và biểu tượng
+    thì `aria-hidden`. Con số phải đi kèm vào đây, nếu không thì thu gọn xong người dùng
+    trình đọc màn hình mất sạch thông tin "3 thẻ tới hạn" — chấm báo hiệu là thứ trang
+    trí, không đọc được.
+  */
+  const name = count === undefined ? label : t('{label} ({n})', { label, n: count });
+
   // `end`: mục gốc của mỗi khu ("/" và "/admin") phải khớp chính xác, nếu không nó
   // vẫn sáng khi người dùng đang ở trang con.
 
@@ -279,33 +329,50 @@ function Item({
       to={item.to}
       end={item.to === '/' || item.to === '/admin'}
       onClick={onNavigate}
-      title={collapsed ? t(item.label) : undefined}
+      title={collapsed ? name : undefined}
+      aria-label={collapsed ? name : undefined}
+      /*
+        `py-3` dưới `lg` cho đích chạm 44px, `lg:py-2` giữ lại mật độ dày của bản dùng
+        chuột — đây là điều hướng chính trên cảm ứng và các mục chỉ cách nhau 2px.
+        `relative` để chấm báo hiệu bám vào chính mục này (xem bên dưới).
+      */
       className={({ isActive }) =>
-        `flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+        `relative flex items-center gap-2.5 rounded-lg px-2.5 py-3 text-sm font-medium transition-colors lg:py-2 ${
           isActive
             ? 'bg-brand-soft text-brand-strong'
             : 'text-on-page-soft hover:bg-hover hover:text-on-page'
         } ${collapsed ? 'justify-center px-2' : ''}`
       }
     >
-      <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
+      <Icon className={`${NAV_ICON} shrink-0`} aria-hidden />
       {!collapsed && (
         <>
-          <span className="flex-1 truncate">{t(item.label)}</span>
-          {item.badge !== undefined && item.badge > 0 && (
+          <span className="flex-1 truncate">{label}</span>
+          {count !== undefined && (
             <span className="rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold leading-none text-on-brand">
-              {item.badge}
+              {count}
             </span>
           )}
         </>
       )}
-      {/* Thu gọn thì không còn chỗ cho số, chỉ báo bằng một chấm */}
-      {collapsed && item.badge !== undefined && item.badge > 0 && (
-        <span className="absolute ml-5 mt-[-14px] h-2 w-2 rounded-full bg-brand" aria-hidden />
+      {/*
+        Thu gọn thì không còn chỗ cho số, chỉ báo bằng một chấm ở góc trên-phải biểu
+        tượng. Số đã nằm trong `aria-label` nên chấm là thuần trang trí.
+      */}
+      {collapsed && count !== undefined && (
+        <span className="absolute right-2.5 top-1.5 h-2 w-2 rounded-full bg-brand" aria-hidden />
       )}
     </NavLink>
   );
 }
+
+/**
+ * Cỡ biểu tượng của mục điều hướng: một nấc cố ý nằm giữa `h-4` (16px) và `h-5` (20px).
+ *
+ * 16px chìm mất cạnh chữ `text-sm`, 20px thì nặng hơn nhãn nó đứng cạnh. Đặt thành hằng
+ * số thay vì rải giá trị tuỳ ý trong class, để lần sau đổi là đổi đúng một chỗ.
+ */
+const NAV_ICON = 'h-[18px] w-[18px]';
 
 function GroupLabel({ children, collapsed }: { children: string; collapsed: boolean }): JSX.Element {
   const t = useT();
@@ -413,7 +480,13 @@ export function Avatar({
         />
       )}
       {level !== undefined && (
-        <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface bg-accent px-1 text-[10px] font-bold leading-[14px] text-on-brand">
+        // `aria-hidden`: avatar luôn đứng cạnh tên, và chip này nằm TRONG link trang cá
+        // nhân — để nó đọc được thì tên link thành "Minh · Trang cá nhân · 7", một con
+        // số trần không có ngữ cảnh. Cấp độ đã có nhãn đầy đủ ở thanh trên cùng.
+        <span
+          aria-hidden
+          className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface bg-accent px-1 text-[10px] font-bold leading-[14px] text-on-brand"
+        >
           {level}
         </span>
       )}

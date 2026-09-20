@@ -193,6 +193,7 @@ function MissionRow({ mission }: { mission: MissionState }): JSX.Element {
           <ProgressBar
             percent={(mission.progress / mission.target) * 100}
             done={mission.isCompleted}
+            label={mission.label}
           />
         </span>
       </span>

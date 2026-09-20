@@ -55,6 +55,13 @@ export const EN: Dictionary = {
   'Mở rộng thanh điều hướng': 'Expand sidebar',
   'Mở menu': 'Open menu',
   'Đóng menu': 'Close menu',
+  'Bỏ qua tới nội dung': 'Skip to content',
+  'Trang chủ ENG//HABIT': 'ENG//HABIT home',
+  'Điều hướng chính': 'Main navigation',
+  'Thanh điều hướng': 'Navigation sidebar',
+  // Nhãn mục điều hướng kèm số việc còn tồn, dùng khi sidebar thu gọn — lúc đó con số
+  // chỉ còn là một chấm nên nó phải nằm trong tên truy cập của link.
+  '{label} ({n})': '{label} ({n})',
   'Đường dẫn': 'Breadcrumb',
   'Chọn ngôn ngữ': 'Choose language',
   'Chọn chế độ giao diện': 'Choose theme',
@@ -161,6 +168,8 @@ export const EN: Dictionary = {
     'Tap any day to see what you did. The darker the cell, the more you studied.',
   'Phạm vi lịch': 'Calendar range',
   'Tiến độ mục tiêu': 'Goal progress',
+  'Tiến độ lên cấp {n}': 'Progress to level {n}',
+  'Điểm hiệu quả': 'Effectiveness score',
   'Quản lý': 'Manage',
 
   // Thẻ mở đầu và việc cần làm hôm nay
@@ -356,6 +365,13 @@ export const EN: Dictionary = {
   'Chu kỳ': 'Period',
   'Tạo mục tiêu': 'Create goal',
   'Xoá mục tiêu này?': 'Delete this goal?',
+  'Đã xoá mục tiêu': 'Goal deleted',
+  'Xoá mục tiêu {name}': 'Delete goal {name}',
+  'Đặt hạn mục tiêu {name}': 'Set a deadline for goal {name}',
+  'Đổi hạn mục tiêu {name}': 'Change the deadline for goal {name}',
+  'Gia hạn mục tiêu {name}': 'Extend goal {name}',
+  'Chưa tải được tiến độ của mục tiêu này.': 'Could not load progress for this goal.',
+  'Chọn ngày hạn trước khi lưu': 'Pick a deadline date before saving',
   '✓ Hoàn thành': '✓ Done',
   'Hoàn thành': 'Completed',
   'Số từ vựng học mỗi ngày': 'Words learned per day',
@@ -364,6 +380,52 @@ export const EN: Dictionary = {
   'Chuỗi ngày học liên tiếp': 'Consecutive learning days',
   'Mỗi ngày': 'Daily',
   'Mỗi tuần': 'Weekly',
+
+  // --- Việc cần làm ----------------------------------------------------------------------
+  // 'Việc cần làm' là nhãn dùng ở Sidebar, TRAILS và danh mục tính năng — cả ba đi qua
+  // t() ở chỗ hiển thị nên script check:i18n không quét được, phải tự giữ bản dịch này.
+  'Việc cần làm': 'To-do',
+  'Việc cần làm hôm nay': "Today's to-do list",
+  'Ghi những việc của hôm nay và đánh dấu khi xong. Danh sách này không tính vào chuỗi ngày học.':
+    'Jot down what you need to do today and tick it off. This list does not count towards your study streak.',
+  'Thêm một việc cần làm…': 'Add something to do…',
+  'Thêm việc cho ngày này…': 'Add a task for this day…',
+  'Tên việc': 'Task name',
+  'Sửa tên việc': 'Rename task',
+  'Xoá việc': 'Delete task',
+  'Xoá việc "{name}"?': 'Delete the task "{name}"?',
+  'Việc này sẽ biến mất khỏi danh sách và không khôi phục được.':
+    'This task disappears from the list and cannot be restored.',
+  'Hôm nay chưa có việc nào': 'Nothing to do today yet',
+  'Ngày này không có việc nào': 'No tasks on this day',
+  'Chưa có việc nào cho hôm nay.': 'Nothing to do today yet.',
+  'Ghi những việc nhỏ và cụ thể, ví dụ: ôn 20 thẻ bộ "Động từ bất quy tắc".':
+    'Keep tasks small and concrete, for example: review 20 cards from "Irregular verbs".',
+  '{done}/{total} việc đã xong': '{done} of {total} tasks done',
+  'Tiến độ việc cần làm': 'To-do progress',
+  'Xoá việc đã xong': 'Clear finished tasks',
+  'Xoá {n} việc đã xong?': {
+    one: 'Delete {n} finished task?',
+    other: 'Delete {n} finished tasks?',
+  },
+  'Các việc đã đánh dấu xong của ngày này sẽ bị xoá hẳn.':
+    'Every task ticked off on this day is deleted for good.',
+  'Xoá hết': 'Delete all',
+  'Đã xoá {n} việc đã xong': {
+    one: 'Deleted {n} finished task',
+    other: 'Deleted {n} finished tasks',
+  },
+  'Còn nợ từ hôm trước': 'Left over from earlier',
+  'Dời hết sang hôm nay': 'Move all to today',
+  'Ngày trước': 'Previous day',
+  'Ngày sau': 'Next day',
+  'Hôm nay': 'Today',
+  'Về hôm nay': 'Back to today',
+  'Mở trang Việc cần làm': 'Open the to-do page',
+  'Việc cần làm, còn {n} việc': {
+    one: 'To-do, {n} task left',
+    other: 'To-do, {n} tasks left',
+  },
 
   // --- Thông báo -------------------------------------------------------------------------
   'Nhắc học': 'Reminder',
@@ -1107,6 +1169,8 @@ export const EN: Dictionary = {
     'Set your own study habits and check in each day.',
   'Đặt mục tiêu số từ, số phút hoặc độ dài chuỗi ngày học.':
     'Set targets for words, minutes or streak length.',
+  'Danh sách việc trong ngày, đánh dấu xong ngay trên thanh trên cùng. Không tính vào chuỗi ngày học.':
+    'A list of things to do today, tickable straight from the top bar. Does not count towards the study streak.',
   'Thống kê chi tiết theo ngày, tuần, tháng. Trang Tổng quan không bị ảnh hưởng.':
     'Detailed daily, weekly and monthly statistics. The Dashboard is not affected.',
   'So thứ hạng với người học khác theo tuần, tháng và toàn thời gian.':
@@ -1186,6 +1250,7 @@ export const EN: Dictionary = {
   'Mở một bộ thẻ công khai trong Thư viện rồi bấm Học, hoặc tự tạo bộ thẻ của riêng bạn.':
     'Open a public card set in the Library and press Learn, or create your own.',
   'Bộ thẻ của tôi': 'My card sets',
+  'Bộ thẻ công khai': 'Public card sets',
   'Không mở được bộ thẻ này': "Couldn't open this card set",
   'Chọn bộ khác': 'Pick another set',
   'Đổi bộ thẻ': 'Change card set',

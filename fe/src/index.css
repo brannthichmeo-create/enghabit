@@ -371,7 +371,16 @@
 
 /**
  * Tôn trọng cài đặt giảm chuyển động của hệ điều hành.
- * Người bị say chuyển động hoặc rối loạn tiền đình có thể khó chịu với hiệu ứng nền trôi.
+ *
+ * "Giảm chuyển động" nghĩa là BỚT DỊCH CHUYỂN trong không gian, không phải tắt sạch mọi
+ * phản hồi. Bản cũ ép `transition-duration: 0.01ms` cho mọi thứ nên nó cũng giết luôn
+ * phần đổi màu khi rê chuột, khi focus và khi đổi trạng thái — người dùng mất tín hiệu
+ * "máy đã nhận thao tác", mà đổi màu thì chưa bao giờ làm ai say chuyển động.
+ *
+ * Nên ở đây:
+ *   - hiệu ứng chạy vòng (hai khối nền trôi ở màn đăng nhập) dừng hẳn;
+ *   - transition chỉ còn chạy trên các thuộc tính KHÔNG dịch chuyển, rút xuống 100ms;
+ *   - mọi thứ liên quan tới transform, kích thước và vị trí thì nhảy thẳng tới đích.
  */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -379,6 +388,8 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 100ms !important;
+    transition-property: color, background-color, border-color, text-decoration-color, fill,
+      stroke, opacity, box-shadow, outline-color !important;
   }
 }

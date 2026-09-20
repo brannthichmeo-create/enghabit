@@ -17,6 +17,7 @@ import {
   useMarkRead,
   useNotifications,
 } from '../notification.hooks';
+import { useToast } from '../../../shared/components/Toast';
 import { displayFor, timeAgo } from './notification-display';
 import { useLocale, useT } from '../../../shared/i18n/language';
 
@@ -31,6 +32,7 @@ import { useLocale, useT } from '../../../shared/i18n/language';
 export function NotificationsPage(): JSX.Element {
   const locale = useLocale();
   const t = useT();
+  const toast = useToast();
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -54,7 +56,18 @@ export function NotificationsPage(): JSX.Element {
                 {t('Cài đặt nhắc nhở')}
               </Button>
             </Link>
-            <Button variant="secondary" icon={CheckCheck} onClick={() => markAllRead.mutate()}>
+            <Button
+              variant="secondary"
+              icon={CheckCheck}
+              loading={markAllRead.isPending}
+              onClick={() =>
+                markAllRead.mutate(undefined, {
+                  // Thao tác này không đổi gì thấy được ngoài mấy chấm xanh biến mất —
+                  // hỏng mà im lặng thì người dùng bấm lại mãi.
+                  onError: (error) => toast.error(getErrorMessage(error)),
+                })
+              }
+            >
               {t('Đánh dấu đã đọc hết')}
             </Button>
           </div>

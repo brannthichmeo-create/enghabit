@@ -421,7 +421,11 @@ function GoalCard({
                   {goal.currentValue}/{goal.targetValue}
                 </span>
               </div>
-              <ProgressBar percent={goal.completionRate} done={goal.isCompleted} />
+              <ProgressBar
+                percent={goal.completionRate}
+                done={goal.isCompleted}
+                label={t(GOAL_TYPE_LABELS[goal.type])}
+              />
             </li>
           ))}
         </ul>

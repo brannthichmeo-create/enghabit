@@ -230,6 +230,7 @@ function EffectivenessCard({ report }: { report: LearningReport }): JSX.Element 
             <ProgressBar
               percent={report.effectivenessScore}
               done={level === EffectivenessLevel.EXCELLENT}
+              label={t('Điểm hiệu quả')}
             />
           </div>
 
@@ -522,7 +523,11 @@ function GoalRow({ goal }: { goal: ReportGoalProgress }): JSX.Element {
         </span>
       </div>
 
-      <ProgressBar percent={goal.completionRate} done={goal.isCompleted} />
+      <ProgressBar
+        percent={goal.completionRate}
+        done={goal.isCompleted}
+        label={t(GOAL_TYPE_LABELS[goal.type])}
+      />
 
       {/*
         Nói rõ chỉ tiêu của khoảng được suy ra từ đâu. Mục tiêu chuỗi ngày không nhân

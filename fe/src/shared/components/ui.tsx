@@ -309,13 +309,36 @@ export function Badge({
   );
 }
 
-/** Thanh tiến độ dùng chung cho mục tiêu và tỷ lệ hoàn thành. */
-export function ProgressBar({ percent, done = false }: { percent: number; done?: boolean }): JSX.Element {
+/**
+ * Thanh tiến độ dùng chung cho mục tiêu và tỷ lệ hoàn thành.
+ *
+ * `label` bắt buộc: không có nó, trình đọc màn hình chỉ thấy một ô vô danh. Phần trăm
+ * thường đã hiện thành chữ ngay cạnh, nhưng chữ đó là một phần tử khác — không có gì
+ * nối nó với thanh này, nên thanh phải tự khai tên và giá trị của mình.
+ */
+export function ProgressBar({
+  percent,
+  done = false,
+  label,
+}: {
+  percent: number;
+  done?: boolean;
+  label: string;
+}): JSX.Element {
+  const clamped = Math.min(100, Math.max(0, percent));
+
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-sunken">
+    <div
+      className="h-2 overflow-hidden rounded-full bg-sunken"
+      role="progressbar"
+      aria-label={label}
+      aria-valuenow={Math.round(clamped)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <div
         className={`h-full rounded-full transition-all duration-500 ${done ? 'bg-success' : 'bg-brand'}`}
-        style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+        style={{ width: `${clamped}%` }}
       />
     </div>
   );

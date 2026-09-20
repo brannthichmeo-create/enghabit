@@ -200,6 +200,7 @@ async function seedLearnerData(userId: number, vocabByTopic: Map<string, number[
 
   const habits = await seedHabits(userId);
   await seedGoals(userId);
+  await seedTodos(userId);
 
   const learnedVocabIds = [
     ...(vocabByTopic.get('Daily Conversation') ?? []),
@@ -1554,6 +1555,27 @@ async function seedGoals(userId: number): Promise<void> {
       { userId, type: GoalType.MINUTES_PER_DAY, targetValue: 15, period: GoalPeriod.DAILY, startDate },
       { userId, type: GoalType.LESSONS_PER_WEEK, targetValue: 3, period: GoalPeriod.WEEKLY, startDate },
       { userId, type: GoalType.STREAK_TARGET, targetValue: 30, period: GoalPeriod.DAILY, startDate },
+    ],
+  });
+}
+
+/**
+ * Việc cần làm của tài khoản demo.
+ *
+ * Cố ý để lại MỘT việc chưa xong của hôm qua: đó là thứ duy nhất làm hiện khối "Còn nợ
+ * từ hôm trước", mà khối đó không xem được nếu dữ liệu mẫu chỉ có đúng ngày hôm nay.
+ *
+ * Không ghi `ActivityLog` kèm theo — việc cần làm không phải hoạt động học, thêm log ở
+ * đây là bản demo tự bịa ra một ngày học không có thật.
+ */
+async function seedTodos(userId: number): Promise<void> {
+  await prisma.todo.createMany({
+    data: [
+      { userId, title: 'Ôn 20 thẻ bộ "Động từ bất quy tắc"', localDate: dateAtOffset(0), isDone: true,
+        doneAt: pastInstantAtOffset(0, 9) },
+      { userId, title: 'Nghe một podcast 10 phút', localDate: dateAtOffset(0) },
+      { userId, title: 'Viết 3 câu dùng từ mới học hôm nay', localDate: dateAtOffset(0) },
+      { userId, title: 'Đọc lại ghi chú buổi học tuần trước', localDate: dateAtOffset(1) },
     ],
   });
 }

@@ -19,6 +19,7 @@ export const FeatureKey = {
   FLASHCARDS: 'FLASHCARDS',
   HABITS: 'HABITS',
   GOALS: 'GOALS',
+  TODO: 'TODO',
   REPORT: 'REPORT',
   LEADERBOARD: 'LEADERBOARD',
   COMMUNITY: 'COMMUNITY',
@@ -84,6 +85,17 @@ export const FEATURES: readonly FeatureDefinition[] = [
     label: 'Mục tiêu',
     description: 'Đặt mục tiêu số từ, số phút hoặc độ dài chuỗi ngày học.',
     routes: ['/goals'],
+  },
+  /*
+    Việc cần làm KHÔNG phụ thuộc HABITS dù hai thứ trông giống nhau: thói quen là việc
+    lặp lại có lịch và có check-in ghi vào ActivityLog, còn đây là danh sách việc vặt
+    của một ngày, xoá xong là hết. Tắt cái này không được kéo theo cái kia.
+  */
+  {
+    key: FeatureKey.TODO,
+    label: 'Việc cần làm',
+    description: 'Danh sách việc trong ngày, đánh dấu xong ngay trên thanh trên cùng. Không tính vào chuỗi ngày học.',
+    routes: ['/todos'],
   },
   {
     key: FeatureKey.REPORT,

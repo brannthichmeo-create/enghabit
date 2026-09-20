@@ -38,3 +38,6 @@ coverage/
 
 # Expo (mobile)
 .expo/
+
+.vercel
+.env*

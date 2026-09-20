@@ -201,6 +201,7 @@ model User {
   goals               Goal[]
   habits              Habit[]
   habitCheckIns       HabitCheckIn[]
+  todos               Todo[]
   vocabProgress       UserVocabProgress[]
   activityLogs        ActivityLog[]
   streak              UserStreak?
@@ -416,6 +417,42 @@ model HabitCheckIn {
   @@unique([habitId, localDate])
   @@index([userId, localDate])
   @@map("habit_check_ins")
+}
+
+/// Một việc cần làm trong ngày — sổ tay cá nhân, KHÔNG phải hoạt động học.
+///
+/// Khác `Habit` ở chỗ quan trọng nhất: check-in thói quen ghi `ActivityLog` nên nối được
+/// chuỗi ngày và cộng XP, còn đánh dấu xong một việc ở đây thì không ghi gì cả. Nếu không
+/// giữ ranh giới đó, gõ một dòng rồi bấm tích là đủ giữ streak mà không học chữ nào.
+///
+/// Không có bảng "việc lặp lại": việc lặp theo lịch chính là `Habit`, dựng thêm một cơ chế
+/// lặp thứ hai là hai chỗ cùng nhắc người dùng làm một chuyện.
+model Todo {
+  id     Int @id @default(autoincrement())
+  userId Int @map("user_id")
+
+  title String @db.VarChar(200)
+
+  /// Ngày việc này thuộc về, theo timezone user tại lúc tạo. Cùng quy ước với
+  /// `ActivityLog.local_date`: kiểu DATE, không convert timezone trong SQL.
+  localDate DateTime @map("local_date") @db.Date
+
+  isDone Boolean @default(false) @map("is_done")
+
+  /// Thời điểm đánh dấu xong (UTC). Null khi chưa xong. Chỉ để hiển thị, không ai tính
+  /// thống kê từ cột này — thống kê học tập đọc `ActivityLog`.
+  doneAt DateTime? @map("done_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Danh sách một ngày.
+  @@index([userId, localDate])
+  /// Việc quá hạn: userId + chưa xong + localDate < hôm nay.
+  @@index([userId, isDone, localDate])
+  @@map("todos")
 }
 
 // ---------------------------------------------------------------------------

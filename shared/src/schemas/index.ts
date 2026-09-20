@@ -2,6 +2,7 @@ export * from './common.schema.js';
 export * from './auth.schema.js';
 export * from './goal.schema.js';
 export * from './habit.schema.js';
+export * from './todo.schema.js';
 export * from './vocabulary.schema.js';
 export * from './study-set.schema.js';
 export * from './study.schema.js';

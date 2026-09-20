@@ -107,7 +107,7 @@ function HabitCard({ habit }: { habit: Habit }): JSX.Element {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-content">{habit.name}</h3>
+            <h2 className="font-semibold text-content">{habit.name}</h2>
             <Badge tone={habit.frequency === HabitFrequency.DAILY ? 'brand' : 'slate'}>
               {HABIT_FREQUENCY_LABELS[habit.frequency]}
             </Badge>

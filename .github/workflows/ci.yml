@@ -12,9 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Không khai báo `version` ở đây: action tự đọc `packageManager` trong package.json.
+      # Khai báo cả hai chỗ thì pnpm/action-setup@v4 dừng với lỗi "Multiple versions of
+      # pnpm specified" — CI đã đỏ ở đúng bước này từ 14/09/2026.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:

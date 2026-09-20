@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { useT } from '../i18n/language';
+import { useBodyScrollLock, useDialogFocus } from '../lib/focus-trap';
 
 /**
  * Hộp thoại nổi giữa màn hình.
@@ -134,8 +135,8 @@ export function Modal({
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  // Đóng bằng phím Esc và khoá cuộn nền. Gắn ở `document` chứ không ở panel: người dùng
-  // có thể chưa bấm vào đâu trong hộp thoại nên focus vẫn còn nằm ngoài nó.
+  // Đóng bằng phím Esc. Gắn ở `document` chứ không ở panel: người dùng có thể chưa bấm
+  // vào đâu trong hộp thoại nên focus vẫn còn nằm ngoài nó.
   useEffect(() => {
     if (!open) return;
 
@@ -144,24 +145,16 @@ export function Modal({
     };
     document.addEventListener('keydown', onKey);
 
-    const scrollCu = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = scrollCu;
-    };
+    return () => document.removeEventListener('keydown', onKey);
   }, [open]);
+
+  useBodyScrollLock(open);
 
   /*
-    Đưa focus vào hộp thoại đúng MỘT LẦN lúc mở, để người dùng bàn phím không bị bỏ lại
-    ở nền. Tách riêng khỏi hiệu ứng trên và chỉ phụ thuộc `open`: gộp chung thì mỗi lần
-    hiệu ứng kia chạy lại là focus lại nhảy về khung hộp thoại.
+    Focus của hộp thoại — đưa vào lúc mở, trả về nút đã mở lúc đóng, giữ Tab quẩn bên
+    trong. Dùng chung với ngăn kéo điều hướng, xem `shared/lib/focus-trap.ts`.
   */
-  useEffect(() => {
-    if (!open) return;
-    panelRef.current?.focus();
-  }, [open]);
+  const onPanelKeyDown = useDialogFocus(open, panelRef);
 
   if (!open) return null;
 
@@ -198,6 +191,7 @@ export function Modal({
           aria-modal="true"
           aria-label={title}
           tabIndex={-1}
+          onKeyDown={onPanelKeyDown}
           className={`pointer-events-auto flex max-h-[85vh] w-full flex-col rounded-2xl border border-line bg-surface p-5 shadow-xl outline-none ${SIZES[size]}`}
         >
           <div className="mb-3 flex shrink-0 items-start justify-between gap-3">

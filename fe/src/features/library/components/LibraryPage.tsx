@@ -122,6 +122,10 @@ function DiscoverTab(): JSX.Element {
 
       {sets.data && sets.data.items.length > 0 && (
         <>
+          {/* Tiêu đề chỉ dành cho trình đọc màn hình: tên bộ thẻ là h3, không có h2 thì
+              cây tiêu đề nhảy thẳng từ tên trang xuống tên bộ. Trên màn hình thì thanh
+              tab đã nói rõ đang xem danh sách nào. */}
+          <h2 className="sr-only">{t('Bộ thẻ công khai')}</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {sets.data.items.map((set) => (
               <StudySetCard key={set.id} set={set} />
@@ -175,10 +179,13 @@ function MineTab({ onCreate, onImport }: { onCreate: () => void; onImport: () =>
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {mine.data.map((set) => (
-        <StudySetCard key={set.id} set={set} />
-      ))}
-    </div>
+    <>
+      <h2 className="sr-only">{t('Bộ thẻ của tôi')}</h2>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {mine.data.map((set) => (
+          <StudySetCard key={set.id} set={set} />
+        ))}
+      </div>
+    </>
   );
 }
