@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Ban, CircleCheck, Flag, Globe, Lock, ShieldCheck, X } from 'lucide-react';
 import {
+  AuditTargetType,
   StudySetReportStatus,
   StudySetVisibility,
   blockStudySetSchema,
@@ -27,6 +28,7 @@ import {
   useStudySetReports,
   useUnblockStudySet,
 } from '../admin.hooks';
+import { AdminLogTabs } from './AdminLogTabs';
 
 const STATUS_LABELS: Record<StudySetReportStatus, string> = {
   [StudySetReportStatus.PENDING]: 'Chờ xử lý',
@@ -55,70 +57,71 @@ export function AdminStudySetsPage(): JSX.Element {
         title={t('Kiểm duyệt bộ thẻ')}
         description={t('Xử lý báo cáo vi phạm về bộ thẻ công khai do người học tạo')}
       />
+      <AdminLogTabs targetTypes={[AuditTargetType.STUDY_SET, AuditTargetType.STUDY_SET_REPORT]}>
+        <div className="mb-4 w-56">
+          <Select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as '' | StudySetReportStatus);
+              setPage(1);
+            }}
+            aria-label={t('Lọc theo trạng thái')}
+          >
+            <option value="">{t('Tất cả')}</option>
+            {Object.values(StudySetReportStatus).map((value) => (
+              <option key={value} value={value}>
+                {t(STATUS_LABELS[value])}
+              </option>
+            ))}
+          </Select>
+        </div>
 
-      <div className="mb-4 w-56">
-        <Select
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as '' | StudySetReportStatus);
-            setPage(1);
-          }}
-          aria-label={t('Lọc theo trạng thái')}
-        >
-          <option value="">{t('Tất cả')}</option>
-          {Object.values(StudySetReportStatus).map((value) => (
-            <option key={value} value={value}>
-              {t(STATUS_LABELS[value])}
-            </option>
-          ))}
-        </Select>
-      </div>
+        {reports.isLoading && <SkeletonList rows={3} />}
+        {reports.isError && <ErrorMessage>{getErrorMessage(reports.error)}</ErrorMessage>}
 
-      {reports.isLoading && <SkeletonList rows={3} />}
-      {reports.isError && <ErrorMessage>{getErrorMessage(reports.error)}</ErrorMessage>}
+        {reports.data && reports.data.items.length === 0 && (
+          <EmptyState icon={Flag} title={t('Không có báo cáo nào')} />
+        )}
 
-      {reports.data && reports.data.items.length === 0 && (
-        <EmptyState icon={Flag} title={t('Không có báo cáo nào')} />
-      )}
+        {reports.data && reports.data.items.length > 0 && (
+          <>
+            <Card className="overflow-x-auto">
+              <table className="w-full min-w-[820px] text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-content-muted">
+                    <th className="pb-2 font-medium">{t('Bộ thẻ')}</th>
+                    <th className="pb-2 font-medium">{t('Người báo cáo')}</th>
+                    <th className="pb-2 font-medium">{t('Lý do')}</th>
+                    <th className="pb-2 font-medium">{t('Trạng thái')}</th>
+                    <th className="pb-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {reports.data.items.map((report) => (
+                    <ReportRow key={report.id} report={report} onOpen={() => setOpen(report)} />
+                  ))}
+                </tbody>
+              </table>
+            </Card>
 
-      {reports.data && reports.data.items.length > 0 && (
-        <>
-          <Card className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-content-muted">
-                  <th className="pb-2 font-medium">{t('Bộ thẻ')}</th>
-                  <th className="pb-2 font-medium">{t('Người báo cáo')}</th>
-                  <th className="pb-2 font-medium">{t('Lý do')}</th>
-                  <th className="pb-2 font-medium">{t('Trạng thái')}</th>
-                  <th className="pb-2" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {reports.data.items.map((report) => (
-                  <ReportRow key={report.id} report={report} onOpen={() => setOpen(report)} />
-                ))}
-              </tbody>
-            </table>
-          </Card>
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+                  {t('Trước')}
+                </Button>
+                <span className="text-sm tabular-nums text-on-page-muted">
+                  {t('Trang {page} / {total}', { page, total: totalPages })}
+                </span>
+                <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                  {t('Sau')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
 
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-center gap-3">
-              <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-                {t('Trước')}
-              </Button>
-              <span className="text-sm tabular-nums text-on-page-muted">
-                {t('Trang {page} / {total}', { page, total: totalPages })}
-              </span>
-              <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                {t('Sau')}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-
-      {open && <StudySetModal report={open} onClose={() => setOpen(null)} />}
+        {open && <StudySetModal report={open} onClose={() => setOpen(null)} />}
+      </AdminLogTabs>
     </div>
   );
 }

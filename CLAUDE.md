@@ -146,7 +146,7 @@ Quản trị viên **vận hành hệ thống, không phải người học**: �
 - **Kiểm duyệt bộ thẻ** (`/admin/study-sets`) — xem báo cáo vi phạm, chặn/mở chặn bộ thẻ công khai, bỏ qua báo cáo
 - **Quản lý cửa hàng** (`/admin/shop`) — CRUD loại vật phẩm và vật phẩm bán bằng xu; không xoá được vật phẩm đã có người mua
 - **Quản lý tính năng** (`/admin/features`) — bật/tắt từng tính năng của người học
-- **Nhật ký thao tác** (`/admin/audit`) — mọi thao tác chỉnh sửa của quản trị viên: ai làm, lúc nào, đổi từ gì sang gì; lọc theo loại đối tượng và người thực hiện
+- **Nhật ký thao tác** — KHÔNG phải một màn riêng: mỗi màn quản lý có tab **Nhật ký** (`?tab=log`, `AdminLogTabs`) chỉ hiện thao tác trên đúng loại đối tượng của màn đó — Tài khoản (`USER`), Nội dung học tập (`TOPIC`, `VOCABULARY`), Gửi thông báo (`ANNOUNCEMENT`), Quản lý tính năng (`FEATURE`), Quản lý nhóm (`GROUP`), Kiểm duyệt bộ thẻ (`STUDY_SET`, `STUDY_SET_REPORT`), Quản lý cửa hàng (`SHOP_TYPE`, `SHOP_ITEM`), và Cộng đồng — chỉ quản trị viên thấy tab (`POST`, `COMMENT`). "Quản lý yêu cầu" giữ tab Nhật ký riêng của nó (đọc thẳng bảng yêu cầu). Ở tab Nhật ký thì ẩn nút ở tiêu đề (`useAdminLogTab`): hộp thoại nó mở nằm trong tab Quản lý
 
 **Nhật ký thao tác (`admin_audit_logs`) — bốn quy tắc bắt buộc giữ:**
 
@@ -156,6 +156,7 @@ Quản trị viên **vận hành hệ thống, không phải người học**: �
   dòng nhật ký là nhật ký nói dối, còn dòng cho một thao tác đã rollback là bịa. Thao tác
   xoá thì ghi TRƯỚC lệnh xoá — xoá xong không còn tên để chụp. Thêm giá trị vào
   `AdminAction` (`shared/constants/admin-audit.ts`) và nhãn vào `fe/src/features/admin/audit-labels.ts` + `en.ts`.
+  Màn quản lý MỚI thì bọc nội dung trong `AdminLogTabs` với đúng `targetTypes` của nó.
 - **Chỉ thêm, không sửa, không xoá** — kể cả với quản trị viên. API chỉ có hai route đọc.
 - **Chụp TÊN, không chỉ id** (`actor_name`, `target_label`): người thực hiện và đối tượng
   đều có thể bị xoá sau đó. `action`/`target_type` là chuỗi, danh mục nằm trong mã nguồn —

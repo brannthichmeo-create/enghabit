@@ -398,8 +398,8 @@ cùng lúc thì chỉ lệnh đầu tiên có tác dụng.
 
 | Method | Đường dẫn | Tham số đầu vào | Phản hồi |
 |---|---|---|---|
-| GET | `/admin/audit-logs` | query `page`, `pageSize` (1-100), `targetType?`, `actorId?` | 200 · `Paginated<AuditLogRow>` `{id, createdAt, actor{id, name}, action, targetType, targetId, targetLabel, changes, note}` |
-| GET | `/admin/audit-logs/actors` | — | 200 · `AuditActorOption[]` — những người đã có thao tác, cho ô lọc |
+| GET | `/admin/audit-logs` | query `page`, `pageSize` (1-100), `targetTypes?` (danh sách cách nhau bằng dấu phẩy, vd `TOPIC,VOCABULARY`), `actorId?` | 200 · `Paginated<AuditLogRow>` `{id, createdAt, actor{id, name}, action, targetType, targetId, targetLabel, changes, note}` |
+| GET | `/admin/audit-logs/actors` | query `targetTypes?` | 200 · `AuditActorOption[]` — những người đã có thao tác trên các loại đó, cho ô lọc |
 
 Chỉ có route ĐỌC: nhật ký không sửa, không xoá được qua API nào. Dòng mới do chính các
 service ghi (`recordAdminAction`) trong cùng transaction với thao tác — mọi route ghi của

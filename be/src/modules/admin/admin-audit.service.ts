@@ -2,6 +2,7 @@ import {
   AUDIT_ACTION_TARGET,
   type AdminAction,
   type AuditActorOption,
+  type AuditActorQueryInput,
   type AuditChanges,
   type AuditLogQueryInput,
   type AuditLogRow,
@@ -108,7 +109,7 @@ export function toAuditValue(value: unknown): AuditValue {
 
 export async function listAuditLogs(query: AuditLogQueryInput): Promise<Paginated<AuditLogRow>> {
   const where: Prisma.AdminAuditLogWhereInput = {
-    ...(query.targetType ? { targetType: query.targetType } : {}),
+    ...(query.targetTypes ? { targetType: { in: query.targetTypes } } : {}),
     ...(query.actorId ? { actorId: query.actorId } : {}),
   };
 
@@ -142,10 +143,13 @@ export async function listAuditLogs(query: AuditLogQueryInput): Promise<Paginate
 }
 
 /** Những người đã từng có thao tác — ô lọc chỉ liệt kê người có dòng để lọc. */
-export async function listAuditActors(): Promise<AuditActorOption[]> {
+export async function listAuditActors(query: AuditActorQueryInput): Promise<AuditActorOption[]> {
   const rows = await prisma.adminAuditLog.groupBy({
     by: ['actorId', 'actorName'],
-    where: { actorId: { not: null } },
+    where: {
+      actorId: { not: null },
+      ...(query.targetTypes ? { targetType: { in: query.targetTypes } } : {}),
+    },
     orderBy: { actorName: 'asc' },
   });
 

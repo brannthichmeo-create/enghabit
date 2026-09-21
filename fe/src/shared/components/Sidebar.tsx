@@ -1,6 +1,5 @@
 import {
   Activity,
-  History,
   Bell,
   BookOpen,
   ChartColumn,
@@ -146,7 +145,6 @@ export function Sidebar({
     { to: '/admin', label: 'Tổng quan hệ thống', icon: LayoutDashboard },
     { to: '/admin/users', label: 'Tài khoản', icon: Users },
     { to: '/admin/access', label: 'Lượt truy cập', icon: Activity },
-    { to: '/admin/audit', label: 'Nhật ký thao tác', icon: History },
     { to: '/admin/content', label: 'Nội dung học tập', icon: BookOpen },
     { to: '/admin/announcements', label: 'Gửi thông báo', icon: Megaphone },
     // Nhãn phải GIỐNG HỆT `name` của route và nhãn trong TRAILS (xem CLAUDE.md) —

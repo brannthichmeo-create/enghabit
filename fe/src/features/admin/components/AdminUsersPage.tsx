@@ -10,6 +10,7 @@ import {
   UserCog,
 } from 'lucide-react';
 import {
+  AuditTargetType,
   ADMIN_USER_TREND_DAYS,
   ActivityType,
   UserRole,
@@ -49,6 +50,7 @@ import {
   useUpdateUserRole,
   useUpdateUserStatus,
 } from '../admin.hooks';
+import { AdminLogTabs } from './AdminLogTabs';
 
 /**
  * Quản lý tài khoản người dùng.
@@ -95,105 +97,106 @@ export function AdminUsersPage(): JSX.Element {
         title={t('Quản lý tài khoản')}
         description={t('Tìm kiếm, phân quyền, khoá và xoá tài khoản người dùng')}
       />
+      <AdminLogTabs targetTypes={[AuditTargetType.USER]}>
+        <Card className="mb-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                aria-hidden
+              />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('Tìm theo tên, tên tài khoản hoặc email')}
+                aria-label={t('Tìm người dùng')}
+                className="pl-9"
+              />
+            </label>
 
-      <Card className="mb-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="relative">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
-              aria-hidden
-            />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('Tìm theo tên, tên tài khoản hoặc email')}
-              aria-label={t('Tìm người dùng')}
-              className="pl-9"
-            />
-          </label>
+            <Select
+              value={role}
+              onChange={(e) => {
+                setRole(e.target.value as '' | UserRole);
+                setPage(1);
+              }}
+              aria-label={t('Lọc theo vai trò')}
+            >
+              <option value="">{t('Mọi vai trò')}</option>
+              <option value={UserRole.USER}>{t('Người học')}</option>
+              <option value={UserRole.ADMIN}>{t('Quản trị viên')}</option>
+            </Select>
 
-          <Select
-            value={role}
-            onChange={(e) => {
-              setRole(e.target.value as '' | UserRole);
-              setPage(1);
-            }}
-            aria-label={t('Lọc theo vai trò')}
-          >
-            <option value="">{t('Mọi vai trò')}</option>
-            <option value={UserRole.USER}>{t('Người học')}</option>
-            <option value={UserRole.ADMIN}>{t('Quản trị viên')}</option>
-          </Select>
+            <Select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value as '' | UserStatus);
+                setPage(1);
+              }}
+              aria-label={t('Lọc theo trạng thái')}
+            >
+              <option value="">{t('Mọi trạng thái')}</option>
+              <option value={UserStatus.ACTIVE}>{t('Đang hoạt động')}</option>
+              <option value={UserStatus.LOCKED}>{t('Đã khoá')}</option>
+            </Select>
 
-          <Select
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value as '' | UserStatus);
-              setPage(1);
-            }}
-            aria-label={t('Lọc theo trạng thái')}
-          >
-            <option value="">{t('Mọi trạng thái')}</option>
-            <option value={UserStatus.ACTIVE}>{t('Đang hoạt động')}</option>
-            <option value={UserStatus.LOCKED}>{t('Đã khoá')}</option>
-          </Select>
+            <Select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as typeof sort)}
+              aria-label={t('Sắp xếp')}
+            >
+              <option value="newest">{t('Mới đăng ký nhất')}</option>
+              <option value="oldest">{t('Cũ nhất')}</option>
+              <option value="lastLogin">{t('Đăng nhập gần đây')}</option>
+              <option value="mostActive">{t('Học nhiều nhất')}</option>
+            </Select>
+          </div>
+        </Card>
 
-          <Select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as typeof sort)}
-            aria-label={t('Sắp xếp')}
-          >
-            <option value="newest">{t('Mới đăng ký nhất')}</option>
-            <option value="oldest">{t('Cũ nhất')}</option>
-            <option value="lastLogin">{t('Đăng nhập gần đây')}</option>
-            <option value="mostActive">{t('Học nhiều nhất')}</option>
-          </Select>
-        </div>
-      </Card>
+        {users.isLoading && <SkeletonList rows={5} />}
+        {users.isError && <ErrorMessage>{getErrorMessage(users.error)}</ErrorMessage>}
 
-      {users.isLoading && <SkeletonList rows={5} />}
-      {users.isError && <ErrorMessage>{getErrorMessage(users.error)}</ErrorMessage>}
-
-      {users.data && users.data.items.length === 0 && (
-        <EmptyState
-          icon={Search}
-          title={t('Không tìm thấy tài khoản nào')}
-          description={t('Thử bỏ bớt bộ lọc hoặc đổi từ khoá tìm kiếm.')}
-        />
-      )}
-
-      {users.data && users.data.items.length > 0 && (
-        <>
-          <Card className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-content-muted">
-                  <th className="pb-2 font-medium">{t('Người dùng')}</th>
-                  <th className="pb-2 font-medium">{t('Vai trò')}</th>
-                  <th className="pb-2 font-medium">{t('Trạng thái')}</th>
-                  <th className="pb-2 pr-6 text-right font-medium">{t('Hoạt động')}</th>
-                  <th className="pb-2 font-medium">{t('Đăng nhập gần nhất')}</th>
-                  <th className="pb-2" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {users.data.items.map((user) => (
-                  <UserRowView key={user.id} user={user} onOpen={() => setDetailId(user.id)} />
-                ))}
-              </tbody>
-            </table>
-          </Card>
-
-          <Pagination
-            page={page}
-            total={users.data.total}
-            pageSize={users.data.pageSize}
-            onChange={setPage}
+        {users.data && users.data.items.length === 0 && (
+          <EmptyState
+            icon={Search}
+            title={t('Không tìm thấy tài khoản nào')}
+            description={t('Thử bỏ bớt bộ lọc hoặc đổi từ khoá tìm kiếm.')}
           />
-        </>
-      )}
+        )}
 
-      {detailId !== null && <UserDetailModal userId={detailId} onClose={() => setDetailId(null)} />}
+        {users.data && users.data.items.length > 0 && (
+          <>
+            <Card className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-content-muted">
+                    <th className="pb-2 font-medium">{t('Người dùng')}</th>
+                    <th className="pb-2 font-medium">{t('Vai trò')}</th>
+                    <th className="pb-2 font-medium">{t('Trạng thái')}</th>
+                    <th className="pb-2 pr-6 text-right font-medium">{t('Hoạt động')}</th>
+                    <th className="pb-2 font-medium">{t('Đăng nhập gần nhất')}</th>
+                    <th className="pb-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {users.data.items.map((user) => (
+                    <UserRowView key={user.id} user={user} onOpen={() => setDetailId(user.id)} />
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            <Pagination
+              page={page}
+              total={users.data.total}
+              pageSize={users.data.pageSize}
+              onChange={setPage}
+            />
+          </>
+        )}
+
+        {detailId !== null && <UserDetailModal userId={detailId} onClose={() => setDetailId(null)} />}
+      </AdminLogTabs>
     </div>
   );
 }

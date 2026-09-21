@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   UserRole,
   accessLogQuerySchema,
+  auditActorQuerySchema,
   auditLogQuerySchema,
   adminGroupQuerySchema,
   adminUserQuerySchema,
@@ -137,7 +138,8 @@ adminRoutes.get(
 //
 // CHỈ ĐỌC. Không có route sửa hay xoá nhật ký, kể cả cho quản trị viên: nhật ký mà người
 // bị ghi tự xoá được thì không còn là nhật ký. Dòng mới do chính các service ghi, ngay
-// trong thao tác của chúng (xem admin-audit.service).
+// trong thao tác của chúng (xem admin-audit.service). Giao diện đọc qua tab "Nhật ký" của
+// từng màn quản lý, mỗi tab lọc theo `targetTypes` của đúng màn đó.
 adminRoutes.get(
   '/audit-logs',
   validateQuery(auditLogQuerySchema),
@@ -148,8 +150,9 @@ adminRoutes.get(
 
 adminRoutes.get(
   '/audit-logs/actors',
-  asyncHandler(async (_req, res) => {
-    res.json(await adminAuditService.listAuditActors());
+  validateQuery(auditActorQuerySchema),
+  asyncHandler(async (req, res) => {
+    res.json(await adminAuditService.listAuditActors(getValidatedQuery(req, auditActorQuerySchema)));
   }),
 );
 

@@ -16,6 +16,7 @@ import type {
   AuditActorOption,
   AuditLogQueryInput,
   AuditLogRow,
+  AuditTargetType,
   AccessOverview,
   AdminUserDetail,
   AdminUserQueryInput,
@@ -99,13 +100,22 @@ export async function deleteUser(id: number): Promise<void> {
 
 // --- Nhật ký thao tác (chỉ đọc) ---
 
+/** Query string chỉ mang chuỗi: danh sách loại gửi dạng `TOPIC,VOCABULARY`. */
+function targetTypesParam(targetTypes: readonly AuditTargetType[] | undefined): string | undefined {
+  return targetTypes && targetTypes.length > 0 ? targetTypes.join(',') : undefined;
+}
+
 export async function listAuditLogs(query: Partial<AuditLogQueryInput> = {}): Promise<Paginated<AuditLogRow>> {
-  const { data } = await apiClient.get<Paginated<AuditLogRow>>('/admin/audit-logs', { params: query });
+  const { data } = await apiClient.get<Paginated<AuditLogRow>>('/admin/audit-logs', {
+    params: { ...query, targetTypes: targetTypesParam(query.targetTypes) },
+  });
   return data;
 }
 
-export async function listAuditActors(): Promise<AuditActorOption[]> {
-  const { data } = await apiClient.get<AuditActorOption[]>('/admin/audit-logs/actors');
+export async function listAuditActors(targetTypes?: readonly AuditTargetType[]): Promise<AuditActorOption[]> {
+  const { data } = await apiClient.get<AuditActorOption[]>('/admin/audit-logs/actors', {
+    params: { targetTypes: targetTypesParam(targetTypes) },
+  });
   return data;
 }
 

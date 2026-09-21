@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library, Plus, Search } from 'lucide-react';
-import { StudySetVisibility, type StudySetSummary } from '@enghabit/shared';
+import { AuditTargetType, StudySetVisibility, type StudySetSummary } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { Button, EmptyState, ErrorMessage, Input, PageHeader, SkeletonList } from '../../../shared/components/ui';
 import { StudySetCard } from '../../library/components/StudySetCard';
@@ -9,6 +9,7 @@ import { StudySetFormDialog } from '../../library/components/StudySetForms';
 import { useCreateTopic, useTopics } from '../admin.hooks';
 import type { Topic } from '../admin.api';
 import { useT } from '../../../shared/i18n/language';
+import { AdminLogTabs, useAdminLogTab } from './AdminLogTabs';
 
 /**
  * Bộ thẻ "Hệ thống" — do quản trị viên soạn, dùng chung cho mọi người học.
@@ -22,6 +23,8 @@ import { useT } from '../../../shared/i18n/language';
  */
 export function AdminContentPage(): JSX.Element {
   const t = useT();
+  // Ở tab Nhật ký thì ẩn nút ở tiêu đề — hộp thoại nó mở nằm trong tab Quản lý.
+  const logTab = useAdminLogTab();
   const navigate = useNavigate();
   const topics = useTopics();
   const createTopic = useCreateTopic();
@@ -40,67 +43,70 @@ export function AdminContentPage(): JSX.Element {
         title={t('Nội dung học tập')}
         description={t('Bộ thẻ Hệ thống luôn công khai: mọi người học thấy ngay trong Thư viện')}
         action={
-          <Button icon={Plus} onClick={() => setCreating(true)}>
-            {t('Tạo bộ thẻ')}
-          </Button>
-        }
-      />
-
-      {topics.isLoading && <SkeletonList rows={3} />}
-      {topics.isError && <ErrorMessage>{getErrorMessage(topics.error)}</ErrorMessage>}
-
-      {topics.data && topics.data.length === 0 && (
-        <EmptyState
-          icon={Library}
-          title={t('Chưa có bộ thẻ Hệ thống nào')}
-          description={t('Bộ thẻ tạo ở đây hiện ngay cho mọi người học trong Thư viện.')}
-          action={
+          logTab ? undefined : (
             <Button icon={Plus} onClick={() => setCreating(true)}>
               {t('Tạo bộ thẻ')}
             </Button>
-          }
-        />
-      )}
+          )
+        }
+      />
+      <AdminLogTabs targetTypes={[AuditTargetType.TOPIC, AuditTargetType.VOCABULARY]}>
+        {topics.isLoading && <SkeletonList rows={3} />}
+        {topics.isError && <ErrorMessage>{getErrorMessage(topics.error)}</ErrorMessage>}
 
-      {topics.data && topics.data.length > 0 && (
-        <>
-          <label className="relative mb-4 block max-w-md">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
-              aria-hidden
-            />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('Tìm theo tên hoặc mô tả bộ thẻ')}
-              aria-label={t('Tìm bộ thẻ')}
-              className="pl-9"
-            />
-          </label>
+        {topics.data && topics.data.length === 0 && (
+          <EmptyState
+            icon={Library}
+            title={t('Chưa có bộ thẻ Hệ thống nào')}
+            description={t('Bộ thẻ tạo ở đây hiện ngay cho mọi người học trong Thư viện.')}
+            action={
+              <Button icon={Plus} onClick={() => setCreating(true)}>
+                {t('Tạo bộ thẻ')}
+              </Button>
+            }
+          />
+        )}
 
-          {sets.length === 0 ? (
-            <EmptyState icon={Search} title={t('Không tìm thấy bộ thẻ nào')} />
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {sets.map((set) => (
-                <StudySetCard key={set.id} set={set} to={`/admin/content/${set.id}`} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
+        {topics.data && topics.data.length > 0 && (
+          <>
+            <label className="relative mb-4 block max-w-md">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                aria-hidden
+              />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('Tìm theo tên hoặc mô tả bộ thẻ')}
+                aria-label={t('Tìm bộ thẻ')}
+                className="pl-9"
+              />
+            </label>
 
-      {creating && (
-        <StudySetFormDialog
-          open
-          publicOnly
-          onClose={() => setCreating(false)}
-          onSubmit={async ({ name, description, level }) => {
-            const topic = await createTopic.mutateAsync({ name, description, level });
-            navigate(`/admin/content/${topic.id}`);
-          }}
-        />
-      )}
+            {sets.length === 0 ? (
+              <EmptyState icon={Search} title={t('Không tìm thấy bộ thẻ nào')} />
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {sets.map((set) => (
+                  <StudySetCard key={set.id} set={set} to={`/admin/content/${set.id}`} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {creating && (
+          <StudySetFormDialog
+            open
+            publicOnly
+            onClose={() => setCreating(false)}
+            onSubmit={async ({ name, description, level }) => {
+              const topic = await createTopic.mutateAsync({ name, description, level });
+              navigate(`/admin/content/${topic.id}`);
+            }}
+          />
+        )}
+      </AdminLogTabs>
     </div>
   );
 }

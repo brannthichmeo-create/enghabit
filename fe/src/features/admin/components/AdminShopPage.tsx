@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ImageOff, Pencil, Plus, Store, Tag, Trash2, Upload } from 'lucide-react';
 import {
+  AuditTargetType,
   ALLOWED_SHOP_IMAGE_MIME,
   AVATAR_FRAME_SCALE,
   KnownItemSlug,
@@ -37,6 +38,7 @@ import {
   useUpdateShopItem,
   useUpdateShopType,
 } from '../admin.hooks';
+import { AdminLogTabs, useAdminLogTab } from './AdminLogTabs';
 
 /**
  * Quản lý cửa hàng: loại vật phẩm và vật phẩm.
@@ -50,6 +52,8 @@ import {
  */
 export function AdminShopPage(): JSX.Element {
   const t = useT();
+  // Ở tab Nhật ký thì ẩn nút ở tiêu đề — hộp thoại nó mở nằm trong tab Quản lý.
+  const logTab = useAdminLogTab();
   const [typeFilter, setTypeFilter] = useState<number | undefined>(undefined);
   const [itemForm, setItemForm] = useState<{ open: boolean; item?: AdminShopItemView }>({ open: false });
   const [typeForm, setTypeForm] = useState<{ open: boolean; type?: AdminShopTypeView }>({ open: false });
@@ -63,120 +67,123 @@ export function AdminShopPage(): JSX.Element {
         title={t('Quản lý cửa hàng')}
         description={t('Thêm và sửa loại vật phẩm, vật phẩm bán cho người học bằng xu')}
         action={
-          <div className="flex gap-2">
-            <Button variant="secondary" icon={Tag} onClick={() => setTypeForm({ open: true })}>
-              {t('Thêm loại')}
-            </Button>
-            <Button
-              icon={Plus}
-              disabled={!types.data || types.data.length === 0}
-              title={
-                types.data && types.data.length === 0
-                  ? t('Hãy tạo một loại vật phẩm trước')
-                  : undefined
-              }
-              onClick={() => setItemForm({ open: true })}
-            >
-              {t('Thêm vật phẩm')}
-            </Button>
-          </div>
+          logTab ? undefined : (
+            <div className="flex gap-2">
+              <Button variant="secondary" icon={Tag} onClick={() => setTypeForm({ open: true })}>
+                {t('Thêm loại')}
+              </Button>
+              <Button
+                icon={Plus}
+                disabled={!types.data || types.data.length === 0}
+                title={
+                  types.data && types.data.length === 0
+                    ? t('Hãy tạo một loại vật phẩm trước')
+                    : undefined
+                }
+                onClick={() => setItemForm({ open: true })}
+              >
+                {t('Thêm vật phẩm')}
+              </Button>
+            </div>
+          )
         }
       />
-
-      <Card className="mb-4">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-content-muted">
-          {t('Loại vật phẩm')}
-        </h2>
-
-        {types.isLoading && <Skeleton className="h-20 w-full" />}
-        {types.isError && (
-          <ErrorState message={getErrorMessage(types.error)} onRetry={() => void types.refetch()} />
-        )}
-
-        {types.data && types.data.length === 0 && (
-          <p className="text-sm text-content-muted">
-            {t('Chưa có loại nào. Hãy tạo loại đầu tiên, ví dụ Linh vật.')}
-          </p>
-        )}
-
-        {types.data && types.data.length > 0 && (
-          <ul className="flex flex-wrap gap-2">
-            {types.data.map((type) => (
-              <li key={type.id}>
-                <TypeChip type={type} onEdit={() => setTypeForm({ open: true, type })} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-
-      <Card>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">
-            {t('Vật phẩm')}
+      <AdminLogTabs targetTypes={[AuditTargetType.SHOP_TYPE, AuditTargetType.SHOP_ITEM]}>
+        <Card className="mb-4">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-content-muted">
+            {t('Loại vật phẩm')}
           </h2>
 
-          <Select
-            value={typeFilter ?? ''}
-            onChange={(event) => setTypeFilter(event.target.value ? Number(event.target.value) : undefined)}
-            aria-label={t('Lọc theo loại')}
-            className="!mt-0 w-48"
-          >
-            <option value="">{t('Tất cả loại')}</option>
-            {types.data?.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.label}
-              </option>
-            ))}
-          </Select>
-        </div>
+          {types.isLoading && <Skeleton className="h-20 w-full" />}
+          {types.isError && (
+            <ErrorState message={getErrorMessage(types.error)} onRetry={() => void types.refetch()} />
+          )}
 
-        {items.isLoading && <Skeleton className="h-64 w-full" />}
-        {items.isError && (
-          <ErrorState message={getErrorMessage(items.error)} onRetry={() => void items.refetch()} />
+          {types.data && types.data.length === 0 && (
+            <p className="text-sm text-content-muted">
+              {t('Chưa có loại nào. Hãy tạo loại đầu tiên, ví dụ Linh vật.')}
+            </p>
+          )}
+
+          {types.data && types.data.length > 0 && (
+            <ul className="flex flex-wrap gap-2">
+              {types.data.map((type) => (
+                <li key={type.id}>
+                  <TypeChip type={type} onEdit={() => setTypeForm({ open: true, type })} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-content-muted">
+              {t('Vật phẩm')}
+            </h2>
+
+            <Select
+              value={typeFilter ?? ''}
+              onChange={(event) => setTypeFilter(event.target.value ? Number(event.target.value) : undefined)}
+              aria-label={t('Lọc theo loại')}
+              className="!mt-0 w-48"
+            >
+              <option value="">{t('Tất cả loại')}</option>
+              {types.data?.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {items.isLoading && <Skeleton className="h-64 w-full" />}
+          {items.isError && (
+            <ErrorState message={getErrorMessage(items.error)} onRetry={() => void items.refetch()} />
+          )}
+
+          {items.data && items.data.length === 0 && (
+            <EmptyState
+              icon={Store}
+              title={t('Chưa có vật phẩm nào')}
+              description={t('Thêm vật phẩm để người học có thứ để mua bằng xu.')}
+            />
+          )}
+
+          {items.data && items.data.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-content-muted">
+                    <th className="pb-2 pr-3 font-semibold">{t('Vật phẩm')}</th>
+                    <th className="pb-2 pr-3 font-semibold">{t('Loại')}</th>
+                    <th className="pb-2 pr-3 text-right font-semibold">{t('Giá')}</th>
+                    <th className="pb-2 pr-3 text-right font-semibold">{t('Đã bán')}</th>
+                    <th className="pb-2 pr-3 font-semibold">{t('Đang bán')}</th>
+                    <th className="pb-2 text-right font-semibold">{t('Thao tác')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.data.map((item) => (
+                    <ItemRow key={item.id} item={item} onEdit={() => setItemForm({ open: true, item })} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {typeForm.open && (
+          <TypeFormModal type={typeForm.type} onClose={() => setTypeForm({ open: false })} />
         )}
-
-        {items.data && items.data.length === 0 && (
-          <EmptyState
-            icon={Store}
-            title={t('Chưa có vật phẩm nào')}
-            description={t('Thêm vật phẩm để người học có thứ để mua bằng xu.')}
+        {itemForm.open && types.data && (
+          <ItemFormModal
+            item={itemForm.item}
+            types={types.data}
+            onClose={() => setItemForm({ open: false })}
           />
         )}
-
-        {items.data && items.data.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-content-muted">
-                  <th className="pb-2 pr-3 font-semibold">{t('Vật phẩm')}</th>
-                  <th className="pb-2 pr-3 font-semibold">{t('Loại')}</th>
-                  <th className="pb-2 pr-3 text-right font-semibold">{t('Giá')}</th>
-                  <th className="pb-2 pr-3 text-right font-semibold">{t('Đã bán')}</th>
-                  <th className="pb-2 pr-3 font-semibold">{t('Đang bán')}</th>
-                  <th className="pb-2 text-right font-semibold">{t('Thao tác')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.data.map((item) => (
-                  <ItemRow key={item.id} item={item} onEdit={() => setItemForm({ open: true, item })} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      {typeForm.open && (
-        <TypeFormModal type={typeForm.type} onClose={() => setTypeForm({ open: false })} />
-      )}
-      {itemForm.open && types.data && (
-        <ItemFormModal
-          item={itemForm.item}
-          types={types.data}
-          onClose={() => setItemForm({ open: false })}
-        />
-      )}
+      </AdminLogTabs>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Ban, Globe, Lock, Megaphone, Search, ShieldCheck, UsersRound, X } from 'lucide-react';
 import {
+  AuditTargetType,
   GroupMemberRole,
   GroupVisibility,
   blockGroupSchema,
@@ -31,6 +32,7 @@ import {
   useUnblockGroup,
   useWarnGroup,
 } from '../admin.hooks';
+import { AdminLogTabs } from './AdminLogTabs';
 
 /**
  * Quản lý toàn bộ nhóm lớp.
@@ -74,112 +76,113 @@ export function AdminGroupsPage(): JSX.Element {
         title={t('Quản lý nhóm')}
         description={t('Giám sát nhóm lớp do người học lập, gửi cảnh báo và chặn nhóm vi phạm')}
       />
+      <AdminLogTabs targetTypes={[AuditTargetType.GROUP]}>
+        <Card className="mb-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                aria-hidden
+              />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('Tìm theo tên nhóm hoặc mã')}
+                aria-label={t('Tìm nhóm')}
+                className="pl-9"
+              />
+            </label>
 
-      <Card className="mb-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="relative">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
-              aria-hidden
-            />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('Tìm theo tên nhóm hoặc mã')}
-              aria-label={t('Tìm nhóm')}
-              className="pl-9"
-            />
-          </label>
+            <Select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value as typeof status);
+                setPage(1);
+              }}
+              aria-label={t('Lọc theo trạng thái')}
+            >
+              <option value="all">{t('Mọi trạng thái')}</option>
+              <option value="active">{t('Đang hoạt động')}</option>
+              <option value="blocked">{t('Đang bị chặn')}</option>
+            </Select>
 
-          <Select
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value as typeof status);
-              setPage(1);
-            }}
-            aria-label={t('Lọc theo trạng thái')}
-          >
-            <option value="all">{t('Mọi trạng thái')}</option>
-            <option value="active">{t('Đang hoạt động')}</option>
-            <option value="blocked">{t('Đang bị chặn')}</option>
-          </Select>
+            <Select
+              value={visibility}
+              onChange={(e) => {
+                setVisibility(e.target.value as '' | GroupVisibility);
+                setPage(1);
+              }}
+              aria-label={t('Lọc theo quyền riêng tư')}
+            >
+              <option value="">{t('Công khai và riêng tư')}</option>
+              <option value={GroupVisibility.PUBLIC}>{t('Chỉ nhóm công khai')}</option>
+              <option value={GroupVisibility.PRIVATE}>{t('Chỉ nhóm riêng tư')}</option>
+            </Select>
 
-          <Select
-            value={visibility}
-            onChange={(e) => {
-              setVisibility(e.target.value as '' | GroupVisibility);
-              setPage(1);
-            }}
-            aria-label={t('Lọc theo quyền riêng tư')}
-          >
-            <option value="">{t('Công khai và riêng tư')}</option>
-            <option value={GroupVisibility.PUBLIC}>{t('Chỉ nhóm công khai')}</option>
-            <option value={GroupVisibility.PRIVATE}>{t('Chỉ nhóm riêng tư')}</option>
-          </Select>
+            <Select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label={t('Sắp xếp')}>
+              <option value="newest">{t('Mới lập nhất')}</option>
+              <option value="members">{t('Nhiều thành viên nhất')}</option>
+              <option value="posts">{t('Nhiều bài đăng nhất')}</option>
+            </Select>
+          </div>
+        </Card>
 
-          <Select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label={t('Sắp xếp')}>
-            <option value="newest">{t('Mới lập nhất')}</option>
-            <option value="members">{t('Nhiều thành viên nhất')}</option>
-            <option value="posts">{t('Nhiều bài đăng nhất')}</option>
-          </Select>
-        </div>
-      </Card>
+        {groups.isLoading && <SkeletonList rows={4} />}
+        {groups.isError && <ErrorMessage>{getErrorMessage(groups.error)}</ErrorMessage>}
 
-      {groups.isLoading && <SkeletonList rows={4} />}
-      {groups.isError && <ErrorMessage>{getErrorMessage(groups.error)}</ErrorMessage>}
+        {groups.data?.items.length === 0 && (
+          <EmptyState
+            icon={UsersRound}
+            title={t('Không có nhóm nào khớp')}
+            description={t('Thử bỏ bớt bộ lọc hoặc đổi từ khoá tìm kiếm.')}
+          />
+        )}
 
-      {groups.data?.items.length === 0 && (
-        <EmptyState
-          icon={UsersRound}
-          title={t('Không có nhóm nào khớp')}
-          description={t('Thử bỏ bớt bộ lọc hoặc đổi từ khoá tìm kiếm.')}
-        />
-      )}
+        {groups.data && groups.data.items.length > 0 && (
+          <>
+            <Card className="overflow-x-auto">
+              <table className="w-full min-w-[820px] text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-content-muted">
+                    <th className="pb-2 font-medium">{t('Nhóm')}</th>
+                    <th className="pb-2 font-medium">{t('Trưởng nhóm')}</th>
+                    <th className="pb-2 pr-6 text-right font-medium">{t('Thành viên')}</th>
+                    <th className="pb-2 pr-6 text-right font-medium">{t('Bài đăng')}</th>
+                    <th className="pb-2 font-medium">{t('Trạng thái')}</th>
+                    <th className="pb-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {groups.data.items.map((group) => (
+                    <GroupRow key={group.id} group={group} onOpen={() => setDetailId(group.id)} />
+                  ))}
+                </tbody>
+              </table>
+            </Card>
 
-      {groups.data && groups.data.items.length > 0 && (
-        <>
-          <Card className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
-              <thead>
-                <tr className="border-b border-line text-left text-content-muted">
-                  <th className="pb-2 font-medium">{t('Nhóm')}</th>
-                  <th className="pb-2 font-medium">{t('Trưởng nhóm')}</th>
-                  <th className="pb-2 pr-6 text-right font-medium">{t('Thành viên')}</th>
-                  <th className="pb-2 pr-6 text-right font-medium">{t('Bài đăng')}</th>
-                  <th className="pb-2 font-medium">{t('Trạng thái')}</th>
-                  <th className="pb-2" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {groups.data.items.map((group) => (
-                  <GroupRow key={group.id} group={group} onOpen={() => setDetailId(group.id)} />
-                ))}
-              </tbody>
-            </table>
-          </Card>
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+                  {t('Trước')}
+                </Button>
+                <span className="text-sm tabular-nums text-on-page-muted">
+                  {t('Trang {page} / {total}', { page, total: totalPages })}
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  {t('Sau')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
 
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-center gap-3">
-              <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-                {t('Trước')}
-              </Button>
-              <span className="text-sm tabular-nums text-on-page-muted">
-                {t('Trang {page} / {total}', { page, total: totalPages })}
-              </span>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                {t('Sau')}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-
-      {detailId !== null && <GroupDetailModal groupId={detailId} onClose={() => setDetailId(null)} />}
+        {detailId !== null && <GroupDetailModal groupId={detailId} onClose={() => setDetailId(null)} />}
+      </AdminLogTabs>
     </div>
   );
 }

@@ -836,20 +836,21 @@ export const EN: Dictionary = {
   'Không có lần nào trong 7 ngày qua': 'None in the last 7 days',
   'Chưa tải được': 'Could not load',
 
-  // --- Nhật ký thao tác --------------------------------------------------------
+  // --- Nhật ký thao tác (tab Nhật ký của từng màn quản lý) ----------------------
   // Tên thao tác, loại đối tượng, tên trường và nhãn ghi chú nằm trong BẢNG ở
   // features/admin/audit-labels.ts — script check:i18n không quét được, sửa bảng đó
   // thì sửa cả ở đây.
-  'Nhật ký thao tác': 'Audit log',
-  'Mọi thao tác chỉnh sửa trong các màn quản lý: ai làm, lúc nào, đổi từ gì sang gì':
-    'Every change made in the admin screens: who did it, when, and what changed',
+  // Nhãn tab của từng màn quản lý (`mainLabel` của AdminLogTabs) đi qua t() ở chỗ hiển thị.
+  'Soạn thông báo': 'Compose',
+  'Diễn đàn': 'Forum',
+  'Phần của màn hình': 'Screen sections',
   'Lọc theo loại đối tượng': 'Filter by item type',
   'Lọc theo người thực hiện': 'Filter by admin',
   'Mọi loại đối tượng': 'All item types',
   'Mọi quản trị viên': 'All admins',
   'Chưa có thao tác nào được ghi': 'Nothing has been logged yet',
-  'Nhật ký bắt đầu ghi từ thao tác chỉnh sửa tiếp theo trong các màn quản lý.':
-    'The log starts with the next change made in the admin screens.',
+  'Nhật ký bắt đầu ghi từ thao tác chỉnh sửa tiếp theo ở màn này.':
+    'The log starts with the next change made on this screen.',
   'Không có thao tác nào khớp bộ lọc': 'No entries match these filters',
   'Thử bỏ bớt điều kiện lọc.': 'Try removing some filters.',
   'Thực hiện bởi {actor}': 'By {actor}',

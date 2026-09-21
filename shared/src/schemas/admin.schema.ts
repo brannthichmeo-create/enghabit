@@ -121,14 +121,31 @@ export const accessLogQuerySchema = z.object({
 });
 export type AccessLogQueryInput = z.infer<typeof accessLogQuerySchema>;
 
+/**
+ * Các loại đối tượng cần xem, gửi dạng `TOPIC,VOCABULARY` trên query string.
+ *
+ * Nhận NHIỀU loại vì mỗi màn quản lý có tab Nhật ký riêng và một màn có thể quản lý hơn
+ * một loại (Nội dung học tập: chủ đề và từ vựng; Cửa hàng: loại và vật phẩm).
+ */
+const auditTargetTypesSchema = z.preprocess(
+  (value) => (typeof value === 'string' ? value.split(',').filter(Boolean) : value),
+  z.array(z.nativeEnum(AuditTargetType)).min(1).max(Object.keys(AuditTargetType).length),
+);
+
 /** Lọc nhật ký thao tác của quản trị viên. */
 export const auditLogQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  targetType: z.nativeEnum(AuditTargetType).optional(),
+  targetTypes: auditTargetTypesSchema.optional(),
   actorId: z.coerce.number().int().positive().optional(),
 });
 export type AuditLogQueryInput = z.infer<typeof auditLogQuerySchema>;
+
+/** Ô lọc "Người thực hiện" chỉ liệt kê người có thao tác trên đúng các loại đang xem. */
+export const auditActorQuerySchema = z.object({
+  targetTypes: auditTargetTypesSchema.optional(),
+});
+export type AuditActorQueryInput = z.infer<typeof auditActorQuerySchema>;
 
 /** Một dòng nhật ký thao tác. */
 export interface AuditLogRow {

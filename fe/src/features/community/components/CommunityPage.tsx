@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AuditTargetType, UserRole } from '@enghabit/shared';
 import { Check, Heart, MessageCircle, MessagesSquare, Paperclip, Plus, Search } from 'lucide-react';
 import type { PostQueryInput, PostSummary } from '@enghabit/shared';
 import {
@@ -15,6 +16,8 @@ import { Modal } from '../../../shared/components/Modal';
 import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { usePosts } from '../community.hooks';
 import { useT } from '../../../shared/i18n/language';
+import { AdminLogTabs, useAdminLogTab } from '../../admin/components/AdminLogTabs';
+import { useCurrentUser } from '../../auth/auth.store';
 
 /**
  * Diễn đàn Cộng đồng.
@@ -49,6 +52,11 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 export function CommunityPage(): JSX.Element {
   const t = useT();
+  // Diễn đàn dùng chung hai vai trò; chỉ quản trị viên có tab Nhật ký kiểm duyệt (bài và
+  // bình luận của người khác mà họ đã xoá). Ở tab đó thì ẩn nút Đăng bài — ô soạn bài
+  // nằm trong tab Diễn đàn.
+  const isAdmin = useCurrentUser()?.role === UserRole.ADMIN;
+  const logTab = useAdminLogTab() && isAdmin;
   const confirm = useConfirm();
 
   const [openPostId, setOpenPostId] = useState<number | null>(null);
@@ -116,164 +124,167 @@ export function CommunityPage(): JSX.Element {
         title={t('Cộng đồng')}
         description={t('Đặt câu hỏi, chia sẻ kinh nghiệm học tiếng Anh với mọi người.')}
         action={
-          <Button icon={Plus} onClick={() => setComposing(true)}>
-            {t('Đăng bài')}
-          </Button>
+          logTab ? undefined : (
+            <Button icon={Plus} onClick={() => setComposing(true)}>
+              {t('Đăng bài')}
+            </Button>
+          )
         }
       />
-
-      {/*
-        Soạn bài trong hộp thoại thay vì chèn thẳng vào trang: ô soạn cao gần hết màn
-        hình nên khi mở, danh sách bài bị đẩy xuống dưới và người dùng mất chỗ đang đọc.
-      */}
-      <Modal
-        open={composing}
-        onClose={() => void requestCloseComposer()}
-        title={t('Đăng bài viết')}
-        size="lg"
-        // Đang soạn dở mà bấm trượt ra nền là mất cả bài — chỉ đóng bằng nút hoặc Esc.
-        closeOnBackdrop={false}
-      >
-        <PostComposer
-          onDone={() => {
-            // Đăng xong thì nội dung đã gửi đi rồi, đóng thẳng không hỏi lại.
-            setComposerDirty(false);
-            setComposing(false);
-          }}
-          onCancel={() => void requestCloseComposer()}
-          onDirtyChange={setComposerDirty}
-        />
-      </Modal>
-
-      <Card>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          <form noValidate
-            onSubmit={(event) => {
-              event.preventDefault();
-              setSearch(searchInput.trim());
-              setPage(1);
+      <AdminLogTabs targetTypes={[AuditTargetType.POST, AuditTargetType.COMMENT]} mainLabel="Diễn đàn" enabled={isAdmin}>
+        {/*
+          Soạn bài trong hộp thoại thay vì chèn thẳng vào trang: ô soạn cao gần hết màn
+          hình nên khi mở, danh sách bài bị đẩy xuống dưới và người dùng mất chỗ đang đọc.
+        */}
+        <Modal
+          open={composing}
+          onClose={() => void requestCloseComposer()}
+          title={t('Đăng bài viết')}
+          size="lg"
+          // Đang soạn dở mà bấm trượt ra nền là mất cả bài — chỉ đóng bằng nút hoặc Esc.
+          closeOnBackdrop={false}
+        >
+          <PostComposer
+            onDone={() => {
+              // Đăng xong thì nội dung đã gửi đi rồi, đóng thẳng không hỏi lại.
+              setComposerDirty(false);
+              setComposing(false);
             }}
-            className="flex min-w-0 flex-1 gap-2"
-          >
-            <div className="relative min-w-0 flex-1">
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
-                aria-hidden
-              />
-              <Input
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder={t('Tìm trong tiêu đề và nội dung')}
-                className="!mt-0 pl-9"
-              />
-            </div>
-            <Button type="submit" variant="secondary">
-              {t('Tìm')}
-            </Button>
-          </form>
+            onCancel={() => void requestCloseComposer()}
+            onDirtyChange={setComposerDirty}
+          />
+        </Modal>
 
-          <div className="flex gap-0.5 rounded-lg bg-sunken p-0.5" role="group" aria-label={t('Sắp xếp')}>
-            {SORTS.map((option) => (
-              <Tab
-                key={option.value}
-                label={t(option.label)}
-                active={sort === option.value}
-                onClick={() => {
-                  setSort(option.value);
-                  setPage(1);
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-          <span className="text-xs font-medium uppercase tracking-wide text-content-muted">
-            {t('Lọc')}
-          </span>
-
-          {FILTERS.map((filter) => (
-            <FilterChip
-              key={filter.key}
-              label={t(filter.label)}
-              active={filters.has(filter.key)}
-              onClick={() => toggleFilter(filter.key)}
-            />
-          ))}
-
-          {filters.size > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setFilters(new Set());
+        <Card>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+            <form noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                setSearch(searchInput.trim());
                 setPage(1);
               }}
-              className="ml-auto text-xs text-brand-strong hover:underline"
+              className="flex min-w-0 flex-1 gap-2"
             >
-              {t('Bỏ tất cả bộ lọc ({n})', { n: filters.size })}
-            </button>
-          )}
-        </div>
-      </Card>
-
-      {posts.isLoading && <SkeletonList rows={4} />}
-
-      {posts.isError && (
-        <Card>
-          <p className="py-6 text-center text-sm text-danger">{t('Không tải được danh sách bài viết')}</p>
-        </Card>
-      )}
-
-      {posts.data && posts.data.items.length === 0 && (
-        <EmptyState
-          icon={MessagesSquare}
-          title={hasQuery ? t('Không có bài nào khớp') : t('Chưa có bài viết nào')}
-          description={
-            hasQuery
-              ? t('Các bộ lọc cộng dồn với nhau — bỏ bớt một cái hoặc đổi từ khoá.')
-              : t('Hãy là người mở đầu — đặt một câu hỏi cho cộng đồng.')
-          }
-          action={
-            !hasQuery ? (
-              <Button icon={Plus} onClick={() => setComposing(true)}>
-                {t('Đăng bài')}
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                  aria-hidden
+                />
+                <Input
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  placeholder={t('Tìm trong tiêu đề và nội dung')}
+                  className="!mt-0 pl-9"
+                />
+              </div>
+              <Button type="submit" variant="secondary">
+                {t('Tìm')}
               </Button>
-            ) : undefined
-          }
-        />
-      )}
+            </form>
 
-      {posts.data && posts.data.items.length > 0 && (
-        <div className={`space-y-3 transition-opacity ${posts.isPlaceholderData ? 'opacity-60' : ''}`}>
-          {posts.data.items.map((post) => (
-            <PostCard key={post.id} post={post} onOpen={() => setOpenPostId(post.id)} />
-          ))}
-        </div>
-      )}
+            <div className="flex gap-0.5 rounded-lg bg-sunken p-0.5" role="group" aria-label={t('Sắp xếp')}>
+              {SORTS.map((option) => (
+                <Tab
+                  key={option.value}
+                  label={t(option.label)}
+                  active={sort === option.value}
+                  onClick={() => {
+                    setSort(option.value);
+                    setPage(1);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((current) => current - 1)}
-          >
-            {t('Trước')}
-          </Button>
-          <span className="text-sm text-on-page-muted">
-            {t('Trang {page}/{total}', { page, total: totalPages })}
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            {t('Sau')}
-          </Button>
-        </div>
-      )}
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-content-muted">
+              {t('Lọc')}
+            </span>
+
+            {FILTERS.map((filter) => (
+              <FilterChip
+                key={filter.key}
+                label={t(filter.label)}
+                active={filters.has(filter.key)}
+                onClick={() => toggleFilter(filter.key)}
+              />
+            ))}
+
+            {filters.size > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilters(new Set());
+                  setPage(1);
+                }}
+                className="ml-auto text-xs text-brand-strong hover:underline"
+              >
+                {t('Bỏ tất cả bộ lọc ({n})', { n: filters.size })}
+              </button>
+            )}
+          </div>
+        </Card>
+
+        {posts.isLoading && <SkeletonList rows={4} />}
+
+        {posts.isError && (
+          <Card>
+            <p className="py-6 text-center text-sm text-danger">{t('Không tải được danh sách bài viết')}</p>
+          </Card>
+        )}
+
+        {posts.data && posts.data.items.length === 0 && (
+          <EmptyState
+            icon={MessagesSquare}
+            title={hasQuery ? t('Không có bài nào khớp') : t('Chưa có bài viết nào')}
+            description={
+              hasQuery
+                ? t('Các bộ lọc cộng dồn với nhau — bỏ bớt một cái hoặc đổi từ khoá.')
+                : t('Hãy là người mở đầu — đặt một câu hỏi cho cộng đồng.')
+            }
+            action={
+              !hasQuery ? (
+                <Button icon={Plus} onClick={() => setComposing(true)}>
+                  {t('Đăng bài')}
+                </Button>
+              ) : undefined
+            }
+          />
+        )}
+
+        {posts.data && posts.data.items.length > 0 && (
+          <div className={`space-y-3 transition-opacity ${posts.isPlaceholderData ? 'opacity-60' : ''}`}>
+            {posts.data.items.map((post) => (
+              <PostCard key={post.id} post={post} onOpen={() => setOpenPostId(post.id)} />
+            ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((current) => current - 1)}
+            >
+              {t('Trước')}
+            </Button>
+            <span className="text-sm text-on-page-muted">
+              {t('Trang {page}/{total}', { page, total: totalPages })}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              {t('Sau')}
+            </Button>
+          </div>
+        )}
+      </AdminLogTabs>
     </div>
   );
 }

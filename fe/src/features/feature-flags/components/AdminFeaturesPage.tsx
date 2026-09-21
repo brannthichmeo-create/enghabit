@@ -1,5 +1,5 @@
 import { ToggleRight } from 'lucide-react';
-import { FEATURES, findFeature, type AdminFeatureRow, type FeatureKey } from '@enghabit/shared';
+import { AuditTargetType, FEATURES, findFeature, type AdminFeatureRow, type FeatureKey } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import {
   Card,
@@ -14,6 +14,7 @@ import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { useLocale, useT } from '../../../shared/i18n/language';
 import { formatDateTime } from '../../admin/components/AdminUsersPage';
 import { useAdminFeatures, useSetFeatureEnabled } from '../feature-flag.hooks';
+import { AdminLogTabs } from '../../admin/components/AdminLogTabs';
 
 /**
  * Quản lý tính năng — bật/tắt từng tính năng cho toàn bộ người học.
@@ -32,28 +33,29 @@ export function AdminFeaturesPage(): JSX.Element {
         title={t('Quản lý tính năng')}
         description={t('Bật hoặc tắt từng tính năng cho toàn bộ người học')}
       />
+      <AdminLogTabs targetTypes={[AuditTargetType.FEATURE]}>
+        {/* Nói rõ độ trễ: không nói thì quản trị viên bấm tắt, thử ngay, thấy vẫn vào
+            được, rồi bấm đi bấm lại vài lần vì tưởng nút hỏng. */}
+        <p className="mb-4 text-sm text-on-page-muted">
+          {t('Thay đổi có hiệu lực trong vòng 30 giây. Tắt tính năng không xoá dữ liệu đã có của người học.')}
+        </p>
 
-      {/* Nói rõ độ trễ: không nói thì quản trị viên bấm tắt, thử ngay, thấy vẫn vào
-          được, rồi bấm đi bấm lại vài lần vì tưởng nút hỏng. */}
-      <p className="mb-4 text-sm text-on-page-muted">
-        {t('Thay đổi có hiệu lực trong vòng 30 giây. Tắt tính năng không xoá dữ liệu đã có của người học.')}
-      </p>
+        {list.isLoading && <SkeletonList rows={5} />}
+        {list.isError && <ErrorMessage>{getErrorMessage(list.error)}</ErrorMessage>}
 
-      {list.isLoading && <SkeletonList rows={5} />}
-      {list.isError && <ErrorMessage>{getErrorMessage(list.error)}</ErrorMessage>}
-
-      {list.data && (
-        <Card>
-          <SectionTitle>{t('Tính năng của người học')}</SectionTitle>
-          <ul className="divide-y divide-line">
-            {list.data.map((row) => (
-              <li key={row.key}>
-                <FeatureRow row={row} />
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
+        {list.data && (
+          <Card>
+            <SectionTitle>{t('Tính năng của người học')}</SectionTitle>
+            <ul className="divide-y divide-line">
+              {list.data.map((row) => (
+                <li key={row.key}>
+                  <FeatureRow row={row} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+      </AdminLogTabs>
     </div>
   );
 }
