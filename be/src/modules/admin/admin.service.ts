@@ -636,7 +636,26 @@ async function assertSystemVocabulary(vocabularyId: number) {
 /** Các trường của từ vựng được so trong nhật ký khi sửa. */
 const VOCABULARY_FIELDS = ['word', 'meaning', 'phonetic', 'example', 'audioUrl'] as const;
 
-export async function createVocabulary(input: CreateVocabularyInput, actorId: number) {
+/**
+ * Trường tuỳ chọn để trống là "không có" — lưu null, đúng như thẻ của người học (xem
+ * `optionalText` của library.service). Để nguyên chuỗi rỗng thì thẻ Hệ thống và thẻ
+ * người học có hai cách biểu diễn cùng một điều, và nhật ký ghi nhầm "đổi từ trống sang trống".
+ */
+function normalizeVocabularyInput<T extends { phonetic?: string; example?: string; audioUrl?: string }>(
+  input: T,
+): T {
+  const clean = (value: string | undefined): string | null | undefined =>
+    value === undefined ? undefined : value || null;
+  return {
+    ...input,
+    ...(input.phonetic !== undefined && { phonetic: clean(input.phonetic) }),
+    ...(input.example !== undefined && { example: clean(input.example) }),
+    ...(input.audioUrl !== undefined && { audioUrl: clean(input.audioUrl) }),
+  };
+}
+
+export async function createVocabulary(rawInput: CreateVocabularyInput, actorId: number) {
+  const input = normalizeVocabularyInput(rawInput);
   await assertSystemTopic(input.topicId);
   return prisma.$transaction(async (tx) => {
     const vocabulary = await tx.vocabulary.create({ data: input, include: { topic: { select: { name: true } } } });
@@ -655,7 +674,8 @@ export async function createVocabulary(input: CreateVocabularyInput, actorId: nu
   });
 }
 
-export async function updateVocabulary(vocabularyId: number, input: UpdateVocabularyInput, actorId: number) {
+export async function updateVocabulary(vocabularyId: number, rawInput: UpdateVocabularyInput, actorId: number) {
+  const input = normalizeVocabularyInput(rawInput);
   const before = await assertSystemVocabulary(vocabularyId);
   const changes = diffFields(before, input, VOCABULARY_FIELDS);
 

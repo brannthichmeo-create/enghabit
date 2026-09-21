@@ -22,6 +22,9 @@ import type {
   AdminUserRow,
   CreateTopicInput,
   CreateVocabularyInput,
+  StudySetVisibility,
+  UpdateTopicInput,
+  UpdateVocabularyInput,
   LoginEventRow,
   Paginated,
   RejectResetRequestInput,
@@ -42,6 +45,14 @@ export interface Topic {
   name: string;
   description: string | null;
   level: VocabLevel;
+  /** Bộ "Hệ thống" luôn công khai — backend ghi tường minh lúc tạo, không sửa được. */
+  visibility: StudySetVisibility;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Một dòng trong danh sách — kèm số thẻ để hiện trên thẻ xem trước. */
+export interface TopicWithCount extends Topic {
   vocabularyCount: number;
 }
 
@@ -114,8 +125,13 @@ export async function listLoginEvents(
 
 // --- Nội dung học tập ---
 
-export async function listTopics(): Promise<Topic[]> {
-  const { data } = await apiClient.get<Topic[]>('/topics');
+export async function listTopics(): Promise<TopicWithCount[]> {
+  const { data } = await apiClient.get<TopicWithCount[]>('/topics');
+  return data;
+}
+
+export async function getTopic(id: number): Promise<Topic> {
+  const { data } = await apiClient.get<Topic>(`/topics/${id}`);
   return data;
 }
 
@@ -129,12 +145,22 @@ export async function createTopic(input: CreateTopicInput): Promise<Topic> {
   return data;
 }
 
+export async function updateTopic(id: number, input: UpdateTopicInput): Promise<Topic> {
+  const { data } = await apiClient.patch<Topic>(`/admin/topics/${id}`, input);
+  return data;
+}
+
 export async function deleteTopic(id: number): Promise<void> {
   await apiClient.delete(`/admin/topics/${id}`);
 }
 
 export async function createVocabulary(input: CreateVocabularyInput): Promise<Vocabulary> {
   const { data } = await apiClient.post<Vocabulary>('/admin/vocabulary', input);
+  return data;
+}
+
+export async function updateVocabulary(id: number, input: UpdateVocabularyInput): Promise<Vocabulary> {
+  const { data } = await apiClient.patch<Vocabulary>(`/admin/vocabulary/${id}`, input);
   return data;
 }
 

@@ -1,4 +1,4 @@
-import { AdminAction, type CreateTopicInput, type UpdateTopicInput } from '@enghabit/shared';
+import { AdminAction, StudySetVisibility, type CreateTopicInput, type UpdateTopicInput } from '@enghabit/shared';
 import type { Topic, Vocabulary } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { NotFoundError } from '../../common/errors/app-error.js';
@@ -36,10 +36,20 @@ export async function listVocabularyByTopic(topicId: number): Promise<Vocabulary
 /** Các trường của chủ đề được so trong nhật ký thao tác khi sửa. */
 const TOPIC_FIELDS = ['name', 'description', 'level'] as const;
 
-export async function createTopic(input: CreateTopicInput, createdById: number): Promise<Topic> {
+/** Mô tả để trống nghĩa là "không có mô tả" — lưu null, như bộ thẻ của người học. */
+function normalizeTopicInput<T extends { description?: string }>(input: T): T & { description?: string | null } {
+  return input.description === undefined ? input : { ...input, description: input.description || null };
+}
+
+export async function createTopic(rawInput: CreateTopicInput, createdById: number): Promise<Topic> {
+  const input = normalizeTopicInput(rawInput);
   return prisma.$transaction(async (tx) => {
     // ownerId để null: bộ quản trị viên tạo là bộ "Hệ thống", không thuộc tài khoản nào.
-    const topic = await tx.topic.create({ data: { ...input, createdById } });
+    // Bộ "Hệ thống" LUÔN công khai — ghi tường minh thay vì dựa vào giá trị mặc định của
+    // cột: đổi mặc định về sau thì bộ mới của quản trị viên sẽ lặng lẽ biến khỏi Thư viện.
+    const topic = await tx.topic.create({
+      data: { ...input, visibility: StudySetVisibility.PUBLIC, createdById },
+    });
     await recordAdminAction(
       {
         actorId: createdById,
@@ -54,7 +64,8 @@ export async function createTopic(input: CreateTopicInput, createdById: number):
   });
 }
 
-export async function updateTopic(topicId: number, input: UpdateTopicInput, actorId: number): Promise<Topic> {
+export async function updateTopic(topicId: number, rawInput: UpdateTopicInput, actorId: number): Promise<Topic> {
+  const input = normalizeTopicInput(rawInput);
   const before = await getTopic(topicId);
   const changes = diffFields(before, input, TOPIC_FIELDS);
 

@@ -63,10 +63,11 @@ export function crumbsForPath(pathname: string, isAdmin: boolean): Crumb[] {
   // Bỏ dấu "/" thừa ở cuối để "/habits/" và "/habits" cùng tra được một dòng
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
 
-  // `/groups/:id` và `/library/:id` có URL riêng nhưng mang id động nên không tra thẳng
-  // được từ bản đồ tĩnh. Mới có hai route kiểu này nên xử lý từng cái thay vì dựng cả
-  // cơ chế khớp mẫu. Trang tự nối thêm tên nhóm / tên bộ thẻ bằng `useBreadcrumbTail`.
-  for (const parent of ['/groups', '/library']) {
+  // `/groups/:id`, `/library/:id` và `/admin/content/:id` có URL riêng nhưng mang id động
+  // nên không tra thẳng được từ bản đồ tĩnh. Mới có vài route kiểu này nên liệt kê từng
+  // cái thay vì dựng cả cơ chế khớp mẫu. Trang tự nối thêm tên nhóm / tên bộ thẻ bằng
+  // `useBreadcrumbTail`.
+  for (const parent of ['/groups', '/library', '/admin/content']) {
     if (path !== parent && path.startsWith(`${parent}/`)) {
       return [root, ...(TRAILS[parent] ?? [])];
     }

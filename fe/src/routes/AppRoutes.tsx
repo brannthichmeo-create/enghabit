@@ -24,6 +24,7 @@ import { AdminAccessPage } from '../features/admin/components/AdminAccessPage';
 import { AdminAuditPage } from '../features/admin/components/AdminAuditPage';
 import { AdminGroupsPage } from '../features/admin/components/AdminGroupsPage';
 import { AdminContentPage } from '../features/admin/components/AdminContentPage';
+import { AdminContentSetPage } from '../features/admin/components/AdminContentSetPage';
 import { AdminRequestsPage } from '../features/admin/components/AdminRequestsPage';
 import { AdminStudySetsPage } from '../features/admin/components/AdminStudySetsPage';
 import { AdminShopPage } from '../features/admin/components/AdminShopPage';
@@ -107,6 +108,10 @@ export function AppRoutes(): JSX.Element {
         <Route path="/admin/access" element={<Admin name="Lượt truy cập"><AdminAccessPage /></Admin>} />
         <Route path="/admin/audit" element={<Admin name="Nhật ký thao tác"><AdminAuditPage /></Admin>} />
         <Route path="/admin/content" element={<Admin name="Nội dung học tập"><AdminContentPage /></Admin>} />
+        <Route
+          path="/admin/content/:id"
+          element={<Admin name="Nội dung học tập"><AdminContentSetPage /></Admin>}
+        />
         <Route path="/admin/groups" element={<Admin name="Quản lý nhóm"><AdminGroupsPage /></Admin>} />
         <Route path="/admin/study-sets" element={<Admin name="Kiểm duyệt bộ thẻ"><AdminStudySetsPage /></Admin>} />
         <Route path="/admin/shop" element={<Admin name="Quản lý cửa hàng"><AdminShopPage /></Admin>} />

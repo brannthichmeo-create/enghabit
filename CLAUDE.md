@@ -142,7 +142,7 @@ Quản trị viên **vận hành hệ thống, không phải người học**: �
 - **Quản lý tài khoản** (`/admin/users`) — tìm kiếm/lọc/sắp xếp (theo tên, **tên tài khoản** hoặc email), xem hồ sơ chi tiết, đổi vai trò, khoá–mở khoá, xoá
 - **Quản lý yêu cầu** (`/admin/requests`) — duyệt hoặc từ chối (kèm lý do) yêu cầu cấp lại mật khẩu; tab Nhật ký ghi ai xử lý, lúc nào, vì sao
 - **Lượt truy cập** (`/admin/access`) — nhật ký đăng nhập (cả lần thất bại), lượt truy cập theo ngày, phiên đang mở
-- **Nội dung học tập** (`/admin/content`) — bộ thẻ "Hệ thống" (chủ đề, từ vựng); không sửa được bộ người học tự tạo
+- **Nội dung học tập** (`/admin/content`, chi tiết `/admin/content/:id`) — bộ thẻ "Hệ thống": hiển thị y như Thư viện của người học, tạo/sửa/xoá bộ và thẻ. Bộ "Hệ thống" **luôn công khai** (backend ghi `PUBLIC` tường minh lúc tạo, biểu mẫu không có lựa chọn chế độ) và là CÙNG dòng `topics` người học đọc ở tab Khám phá — sửa ở đây là bên đó đổi ngay, không có bản sao nào để đồng bộ. Biểu mẫu bộ thẻ và thẻ dùng chung với Thư viện (`StudySetFormDialog`, `CardFormView` — chỉ phần hiển thị, mỗi phía tự nối API của mình). Không sửa được bộ người học tự tạo
 - **Kiểm duyệt bộ thẻ** (`/admin/study-sets`) — xem báo cáo vi phạm, chặn/mở chặn bộ thẻ công khai, bỏ qua báo cáo
 - **Quản lý cửa hàng** (`/admin/shop`) — CRUD loại vật phẩm và vật phẩm bán bằng xu; không xoá được vật phẩm đã có người mua
 - **Quản lý tính năng** (`/admin/features`) — bật/tắt từng tính năng của người học

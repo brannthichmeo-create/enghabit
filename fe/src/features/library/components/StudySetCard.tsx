@@ -14,10 +14,19 @@ export function authorLabel(set: Pick<StudySetSummary, 'author'>, t: TranslateFn
 /**
  * Thẻ xem trước một bộ thẻ: tên, tác giả (bắt buộc), số thẻ, mô tả.
  *
- * Mặc định là liên kết tới trang chi tiết; truyền `onSelect` để dùng làm lựa chọn
- * (vd chọn bộ để học) mà không rời trang.
+ * Mặc định là liên kết tới trang chi tiết ở Thư viện; truyền `to` để dẫn tới trang khác
+ * (màn Nội dung học tập của quản trị viên), hoặc `onSelect` để dùng làm lựa chọn (vd chọn
+ * bộ để học) mà không rời trang.
  */
-export function StudySetCard({ set, onSelect }: { set: StudySetSummary; onSelect?: () => void }): JSX.Element {
+export function StudySetCard({
+  set,
+  onSelect,
+  to,
+}: {
+  set: StudySetSummary;
+  onSelect?: () => void;
+  to?: string;
+}): JSX.Element {
   const t = useT();
 
   const body = (
@@ -59,7 +68,7 @@ export function StudySetCard({ set, onSelect }: { set: StudySetSummary; onSelect
   }
 
   return (
-    <Link to={`/library/${set.id}`} className="block h-full">
+    <Link to={to ?? `/library/${set.id}`} className="block h-full">
       {body}
     </Link>
   );

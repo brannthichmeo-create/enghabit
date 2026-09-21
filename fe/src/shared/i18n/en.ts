@@ -291,9 +291,7 @@ export const EN: Dictionary = {
   'Chọn chủ đề để bắt đầu học từ mới': 'Pick a topic to start learning new words',
   'Chưa có chủ đề nào': 'No topics yet',
   'Quản trị viên cần thêm nội dung học tập': 'An administrator needs to add learning content',
-  '{n} từ vựng': { one: '{n} word', other: '{n} words' },
   '← Chủ đề khác': '← Other topics',
-  'Chủ đề này chưa có từ nào': 'This topic has no words yet',
   'Chủ đề này chưa có từ vựng': 'This topic has no vocabulary yet',
   '+ Học từ này': '+ Learn this word',
   'Đang học': 'Learning',
@@ -786,18 +784,11 @@ export const EN: Dictionary = {
 
   // --- Quản trị: nội dung -------------------------------------------------------------------------
   'Chủ đề và từ vựng dùng chung cho mọi người học': 'Topics and vocabulary shared by every learner',
-  'Tên chủ đề mới': 'New topic name',
-  'Ví dụ: Travel English': 'For example: Travel English',
   'Thêm chủ đề': 'Add topic',
-  'Đang thêm...': 'Adding...',
-  'Chọn một chủ đề': 'Pick a topic',
-  'Chọn chủ đề bên trái để quản lý từ vựng': 'Pick a topic on the left to manage its vocabulary',
   'Thêm từ mới': 'Add a word',
   'Thêm từ vựng': 'Add vocabulary',
   'Từ': 'Word',
   'Nghĩa': 'Meaning',
-  'Phiên âm (tuỳ chọn)': 'Phonetic (optional)',
-  'Câu ví dụ (tuỳ chọn)': 'Example sentence (optional)',
   'Trình độ': 'Level',
   'Cơ bản': 'Beginner',
   'Trung cấp': 'Intermediate',
@@ -1272,9 +1263,6 @@ export const EN: Dictionary = {
   'Toàn bộ {n} hoạt động, chuỗi ngày và tiến độ học sẽ mất và không khôi phục được. Nếu chỉ muốn chặn đăng nhập, hãy dùng "Khoá tài khoản".':
     'All {n} activities, the streak and every bit of learning progress will be gone for good. To block sign-in only, use "Lock account" instead.',
   'Xoá chủ đề': 'Delete topic',
-  'Xoá chủ đề "{name}"?': 'Delete the topic "{name}"?',
-  'Toàn bộ từ vựng, tiến độ và lịch sử ôn của người học trên chủ đề này sẽ mất theo.':
-    "Every word, plus learners' progress and review history on this topic, goes with it.",
 
   // --- Bộ lọc diễn đàn ---------------------------------------------------------
   'Lọc': 'Filter',
@@ -1420,6 +1408,14 @@ export const EN: Dictionary = {
   'Xoá thẻ': 'Delete card',
   'Xoá thẻ "{word}"?': 'Delete the card "{word}"?',
   'Tiến độ học của thẻ này cũng mất theo.': 'Your study progress on this card goes with it.',
+  'Tiến độ học của mọi người trên thẻ này cũng mất theo.': "Everyone's progress on this card goes with it.",
+  'Bộ thẻ Hệ thống luôn công khai: mọi người học thấy ngay trong Thư viện': 'System study sets are always public: every learner sees them right away in the Library',
+  'Bộ thẻ Hệ thống luôn công khai: mọi người học thấy ngay trong Thư viện, tác giả hiện là "Hệ thống".':
+    'System study sets are always public: every learner sees them right away in the Library, with "System" as the author.',
+  'Chưa có bộ thẻ Hệ thống nào': 'No system study sets yet',
+  'Bộ thẻ tạo ở đây hiện ngay cho mọi người học trong Thư viện.': 'Study sets created here show up right away for every learner in the Library.',
+  'Mọi người học thấy bộ này trong Thư viện. Thêm, sửa hay xoá thẻ ở đây là bên đó đổi theo ngay.':
+    'Every learner sees this set in the Library. Adding, editing or deleting cards here changes it there right away.',
   'Phiên âm (không bắt buộc)': 'Phonetics (optional)',
   'Câu ví dụ (không bắt buộc)': 'Example sentence (optional)',
   'Báo cáo bộ thẻ': 'Report card set',
@@ -1570,7 +1566,6 @@ export const EN: Dictionary = {
   // --- Kiểm duyệt bộ thẻ -----------------------------------------------------------
   'Kiểm duyệt bộ thẻ': 'Card set moderation',
   'Xử lý báo cáo vi phạm về bộ thẻ công khai do người học tạo': 'Handle reports about public card sets created by learners',
-  'Bộ thẻ Hệ thống dùng chung cho mọi người học': 'System card sets shared by every learner',
   'Chờ xử lý': 'Pending',
   'Đã chặn bộ thẻ': 'Card set blocked',
   'Đã bỏ qua': 'Dismissed',

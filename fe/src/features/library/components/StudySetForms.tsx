@@ -6,7 +6,9 @@ import {
   createStudySetSchema,
   reportStudySetSchema,
   studySetCardSchema,
+  type CreateStudySetInput,
   type StudySetCard,
+  type StudySetCardInput,
   type StudySetSummary,
 } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
@@ -30,6 +32,9 @@ const TEXTAREA_CLASS =
 // Tạo / sửa bộ thẻ
 // ---------------------------------------------------------------------------
 
+/**
+ * Bộ thẻ của người học ở Thư viện: nối `StudySetFormDialog` với API thư viện.
+ */
 export function StudySetFormModal({
   open,
   onClose,
@@ -42,20 +47,62 @@ export function StudySetFormModal({
   initial?: StudySetSummary;
   onSaved?: (set: StudySetSummary) => void;
 }): JSX.Element {
-  const t = useT();
-  const toast = useToast();
   const create = useCreateStudySet();
   const update = useUpdateStudySet();
+
+  return (
+    <StudySetFormDialog
+      open={open}
+      onClose={onClose}
+      initial={initial}
+      onSubmit={async (input) => {
+        const set = initial
+          ? await update.mutateAsync({ setId: initial.id, input })
+          : await create.mutateAsync(input);
+        onSaved?.(set);
+      }}
+    />
+  );
+}
+
+/**
+ * Biểu mẫu tạo / sửa bộ thẻ — CHỈ phần hiển thị, không tự gọi API.
+ *
+ * Dùng chung cho Thư viện của người học và màn Nội dung học tập của quản trị viên: hai
+ * nơi soạn cùng một thứ (một dòng `topics`) thì phải cùng một biểu mẫu, cùng một luật
+ * kiểm tra. Mỗi nơi tự nối `onSubmit` với API của mình.
+ */
+export function StudySetFormDialog({
+  open,
+  onClose,
+  initial,
+  onSubmit,
+  publicOnly = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  initial?: Pick<StudySetSummary, 'name' | 'description' | 'level' | 'visibility'>;
+  /** Ném lỗi thì biểu mẫu hiện lỗi đó và giữ nguyên những gì đã gõ. */
+  onSubmit: (input: CreateStudySetInput) => Promise<void>;
+  /**
+   * Bộ "Hệ thống" của quản trị viên LUÔN công khai: bỏ hẳn lựa chọn chế độ thay vì để một
+   * nút "Riêng tư" bấm được mà máy chủ bỏ qua.
+   */
+  publicOnly?: boolean;
+}): JSX.Element {
+  const t = useT();
+  const toast = useToast();
 
   const [name, setName] = useState(initial?.name ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [level, setLevel] = useState<VocabLevel>(initial?.level ?? VocabLevel.BEGINNER);
-  const [visibility, setVisibility] = useState<StudySetVisibility>(initial?.visibility ?? StudySetVisibility.PRIVATE);
+  const [visibility, setVisibility] = useState<StudySetVisibility>(
+    publicOnly ? StudySetVisibility.PUBLIC : (initial?.visibility ?? StudySetVisibility.PRIVATE),
+  );
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
 
-  const pending = create.isPending || update.isPending;
-
-  const submit = (event: FormEvent): void => {
+  const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
     const parsed = createStudySetSchema.safeParse({ name, description, level, visibility });
     if (!parsed.success) {
@@ -63,22 +110,21 @@ export function StudySetFormModal({
       return;
     }
 
-    const handlers = {
-      onSuccess: (set: StudySetSummary) => {
-        toast.success(initial ? t('Đã lưu bộ thẻ') : t('Đã tạo bộ thẻ'));
-        onSaved?.(set);
-        onClose();
-      },
-      onError: (err: Error) => setError(getErrorMessage(err)),
-    };
-
-    if (initial) update.mutate({ setId: initial.id, input: parsed.data }, handlers);
-    else create.mutate(parsed.data, handlers);
+    setPending(true);
+    try {
+      await onSubmit(parsed.data);
+      toast.success(initial ? t('Đã lưu bộ thẻ') : t('Đã tạo bộ thẻ'));
+      onClose();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
     <Modal open={open} onClose={onClose} title={initial ? t('Sửa bộ thẻ') : t('Tạo bộ thẻ')} closeOnBackdrop={false}>
-      <form noValidate onSubmit={submit} className="space-y-4">
+      <form noValidate onSubmit={(e) => void submit(e)} className="space-y-4">
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
         <Field label={t('Tên bộ thẻ')}>
@@ -106,25 +152,32 @@ export function StudySetFormModal({
           </Select>
         </Field>
 
-        <fieldset>
-          <legend className="text-sm font-medium text-content-soft">{t('Ai được xem')}</legend>
-          <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
-            <VisibilityOption
-              selected={visibility === StudySetVisibility.PRIVATE}
-              icon={Lock}
-              label={t('Riêng tư')}
-              hint={t('Chỉ mình bạn xem và học')}
-              onClick={() => setVisibility(StudySetVisibility.PRIVATE)}
-            />
-            <VisibilityOption
-              selected={visibility === StudySetVisibility.PUBLIC}
-              icon={Globe}
-              label={t('Công khai')}
-              hint={t('Ai cũng tìm thấy, học và chia sẻ được')}
-              onClick={() => setVisibility(StudySetVisibility.PUBLIC)}
-            />
-          </div>
-        </fieldset>
+        {publicOnly ? (
+          <p className="flex items-start gap-2 rounded-lg bg-sunken px-3 py-2.5 text-sm text-content-soft">
+            <Globe className="mt-0.5 h-4 w-4 shrink-0 text-brand-strong" aria-hidden />
+            {t('Bộ thẻ Hệ thống luôn công khai: mọi người học thấy ngay trong Thư viện, tác giả hiện là "Hệ thống".')}
+          </p>
+        ) : (
+          <fieldset>
+            <legend className="text-sm font-medium text-content-soft">{t('Ai được xem')}</legend>
+            <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+              <VisibilityOption
+                selected={visibility === StudySetVisibility.PRIVATE}
+                icon={Lock}
+                label={t('Riêng tư')}
+                hint={t('Chỉ mình bạn xem và học')}
+                onClick={() => setVisibility(StudySetVisibility.PRIVATE)}
+              />
+              <VisibilityOption
+                selected={visibility === StudySetVisibility.PUBLIC}
+                icon={Globe}
+                label={t('Công khai')}
+                hint={t('Ai cũng tìm thấy, học và chia sẻ được')}
+                onClick={() => setVisibility(StudySetVisibility.PUBLIC)}
+              />
+            </div>
+          </fieldset>
+        )}
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -175,6 +228,7 @@ function VisibilityOption({
 // Thêm / sửa thẻ
 // ---------------------------------------------------------------------------
 
+/** Thẻ trong bộ của người học ở Thư viện: nối `CardFormView` với API thư viện. */
 export function CardForm({
   setId,
   card,
@@ -185,9 +239,36 @@ export function CardForm({
   card?: StudySetCard;
   onDone?: () => void;
 }): JSX.Element {
-  const t = useT();
   const add = useAddCard();
   const update = useUpdateCard();
+
+  return (
+    <CardFormView
+      card={card}
+      onDone={onDone}
+      onSubmit={async (input) => {
+        if (card) await update.mutateAsync({ cardId: card.id, input });
+        else await add.mutateAsync({ setId, input });
+      }}
+    />
+  );
+}
+
+/**
+ * Biểu mẫu thêm / sửa một thẻ — CHỈ phần hiển thị, không tự gọi API. Dùng chung cho
+ * Thư viện và màn Nội dung học tập của quản trị viên (xem `StudySetFormDialog`).
+ */
+export function CardFormView({
+  card,
+  onSubmit,
+  onDone,
+}: {
+  card?: StudySetCard;
+  /** Ném lỗi thì biểu mẫu hiện lỗi đó và giữ nguyên những gì đã gõ. */
+  onSubmit: (input: StudySetCardInput) => Promise<void>;
+  onDone?: () => void;
+}): JSX.Element {
+  const t = useT();
   const empty = { word: '', meaning: '', phonetic: '', example: '' };
   const [form, setForm] = useState(
     card
@@ -195,8 +276,9 @@ export function CardForm({
       : empty,
   );
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
 
-  const submit = (event: FormEvent): void => {
+  const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
     setError('');
     const parsed = studySetCardSchema.safeParse(form);
@@ -205,25 +287,21 @@ export function CardForm({
       return;
     }
 
-    if (card) {
-      update.mutate(
-        { cardId: card.id, input: parsed.data },
-        { onSuccess: () => onDone?.(), onError: (err) => setError(getErrorMessage(err)) },
-      );
-    } else {
-      add.mutate(
-        { setId, input: parsed.data },
-        {
-          // Thêm xong thì xoá trắng để gõ thẻ kế tiếp luôn — soạn bộ thẻ là gõ liên tiếp nhiều thẻ.
-          onSuccess: () => setForm(empty),
-          onError: (err) => setError(getErrorMessage(err)),
-        },
-      );
+    setPending(true);
+    try {
+      await onSubmit(parsed.data);
+      if (card) onDone?.();
+      // Thêm xong thì xoá trắng để gõ thẻ kế tiếp luôn — soạn bộ thẻ là gõ liên tiếp nhiều thẻ.
+      else setForm(empty);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setPending(false);
     }
   };
 
   return (
-    <form noValidate onSubmit={submit} className="space-y-3">
+    <form noValidate onSubmit={(e) => void submit(e)} className="space-y-3">
       {error && <ErrorMessage>{error}</ErrorMessage>}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label={t('Từ')}>
@@ -240,7 +318,7 @@ export function CardForm({
         </Field>
       </div>
       <div className="flex gap-2">
-        <Button type="submit" size="sm" icon={card ? Check : Plus} loading={add.isPending || update.isPending}>
+        <Button type="submit" size="sm" icon={card ? Check : Plus} loading={pending}>
           {card ? t('Lưu thẻ') : t('Thêm thẻ')}
         </Button>
         {card && (

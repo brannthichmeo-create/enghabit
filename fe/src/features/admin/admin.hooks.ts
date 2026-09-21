@@ -28,6 +28,8 @@ import type {
   AdminUserRow,
   CreateTopicInput,
   CreateVocabularyInput,
+  UpdateTopicInput,
+  UpdateVocabularyInput,
   LoginEventRow,
   Paginated,
   RejectResetRequestInput,
@@ -38,11 +40,12 @@ import type {
   UserStatus,
 } from '@enghabit/shared';
 import * as adminApi from './admin.api';
-import type { Topic, Vocabulary } from './admin.api';
+import type { Topic, TopicWithCount, Vocabulary } from './admin.api';
 
 export const adminKeys = {
   all: ['admin'] as const,
   topics: () => ['admin', 'topics'] as const,
+  topic: (topicId: number) => ['admin', 'topic', topicId] as const,
   topicVocabulary: (topicId: number) => ['admin', 'topic-vocabulary', topicId] as const,
   studySetReports: (query: Partial<AdminStudySetReportQueryInput>) => ['admin', 'study-set-reports', query] as const,
   studySet: (id: number) => ['admin', 'study-set', id] as const,
@@ -178,8 +181,16 @@ function useAdminMutation<TData, TVariables>(
 
 // --- Nội dung học tập: đụng cả dữ liệu phía người học nên invalidate thêm thư viện ---
 
-export function useTopics(): UseQueryResult<Topic[]> {
+export function useTopics(): UseQueryResult<TopicWithCount[]> {
   return useQuery({ queryKey: adminKeys.topics(), queryFn: adminApi.listTopics });
+}
+
+export function useTopic(topicId: number | null): UseQueryResult<Topic> {
+  return useQuery({
+    queryKey: adminKeys.topic(topicId ?? 0),
+    queryFn: () => adminApi.getTopic(topicId as number),
+    enabled: topicId !== null,
+  });
 }
 
 export function useTopicVocabulary(topicId: number | null): UseQueryResult<Vocabulary[]> {
@@ -194,12 +205,28 @@ export function useCreateTopic(): UseMutationResult<Topic, Error, CreateTopicInp
   return useContentMutation(adminApi.createTopic);
 }
 
+export function useUpdateTopic(): UseMutationResult<Topic, Error, { id: number; input: UpdateTopicInput }> {
+  return useContentMutation(({ id, input }) => adminApi.updateTopic(id, input));
+}
+
 export function useDeleteTopic(): UseMutationResult<void, Error, number> {
   return useContentMutation(adminApi.deleteTopic);
 }
 
 export function useCreateVocabulary(): UseMutationResult<Vocabulary, Error, CreateVocabularyInput> {
   return useContentMutation(adminApi.createVocabulary);
+}
+
+export function useUpdateVocabulary(): UseMutationResult<
+  Vocabulary,
+  Error,
+  { id: number; input: UpdateVocabularyInput }
+> {
+  return useContentMutation(({ id, input }) => adminApi.updateVocabulary(id, input));
+}
+
+export function useDeleteVocabulary(): UseMutationResult<void, Error, number> {
+  return useContentMutation(adminApi.deleteVocabulary);
 }
 
 function useContentMutation<TData, TVariables>(
