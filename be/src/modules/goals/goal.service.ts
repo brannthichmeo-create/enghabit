@@ -8,6 +8,7 @@ import {
   startOfWeek,
   todayLocalDate,
   type CreateGoalInput,
+  type FinishGoalInput,
   type GoalProgress,
   type LocalDate,
   type UpdateGoalInput,
@@ -48,6 +49,7 @@ export async function updateGoal(
   input: UpdateGoalInput,
 ): Promise<Goal> {
   const goal = await assertOwnership(userId, goalId);
+  assertStillActive(goal);
 
   if (input.endDate) {
     assertDeadlineNotPast(input.endDate, timezone);
@@ -60,10 +62,39 @@ export async function updateGoal(
     where: { id: goalId },
     data: {
       ...(input.targetValue !== undefined && { targetValue: input.targetValue }),
-      ...(input.status !== undefined && { status: input.status }),
       ...(input.endDate !== undefined && { endDate: input.endDate ? toDbDate(input.endDate) : null }),
     },
   });
+}
+
+/**
+ * Kết thúc một mục tiêu: đã đạt (`COMPLETED`) hoặc thôi theo dõi (`ARCHIVED`).
+ *
+ * Chốt luôn hạn về hôm nay nếu hạn còn ở phía trước hoặc chưa có hạn: nhờ vậy mục tiêu
+ * đã kết thúc vẫn mang đúng khoảng thời gian nó từng được theo dõi, và giao diện nói
+ * được "kết thúc ngày nào". Hạn đã qua thì giữ nguyên — mục tiêu thật sự dừng từ hôm đó.
+ *
+ * Không có chiều ngược lại. Mở lại một mục tiêu đã chốt hạn thì khoảng từ lúc kết thúc
+ * tới lúc mở lại thành ngày "đang theo dõi" mà không ai theo dõi; muốn làm tiếp thì tạo
+ * mục tiêu mới.
+ */
+export async function finishGoal(
+  userId: number,
+  timezone: string,
+  goalId: number,
+  outcome: FinishGoalInput['outcome'],
+): Promise<Goal> {
+  const goal = await assertOwnership(userId, goalId);
+  assertStillActive(goal);
+
+  const today = todayLocalDate(timezone);
+  if (fromDbDate(goal.startDate) > today) {
+    throw new BadRequestError('Mục tiêu chưa bắt đầu nên không kết thúc được. Hãy xoá nó');
+  }
+
+  const endDate = goal.endDate && fromDbDate(goal.endDate) < today ? goal.endDate : toDbDate(today);
+
+  return prisma.goal.update({ where: { id: goalId }, data: { status: outcome, endDate } });
 }
 
 export async function deleteGoal(userId: number, goalId: number): Promise<void> {
@@ -140,6 +171,13 @@ async function measureProgress(
 function assertDeadlineNotPast(endDate: LocalDate, timezone: string): void {
   if (endDate < todayLocalDate(timezone)) {
     throw new BadRequestError('Hạn phải từ hôm nay trở đi');
+  }
+}
+
+/** Mục tiêu đã kết thúc là một dòng lịch sử: không sửa, không kết thúc lần hai. */
+function assertStillActive(goal: Goal): void {
+  if (goal.status !== GoalStatus.ACTIVE) {
+    throw new BadRequestError('Mục tiêu này đã kết thúc nên không sửa được nữa');
   }
 }
 

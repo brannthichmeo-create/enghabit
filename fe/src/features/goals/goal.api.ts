@@ -1,5 +1,6 @@
 import type {
   CreateGoalInput,
+  FinishGoalInput,
   GoalPeriod,
   GoalProgress,
   GoalStatus,
@@ -36,6 +37,11 @@ export async function createGoal(input: CreateGoalInput): Promise<Goal> {
 
 export async function updateGoal(id: number, input: UpdateGoalInput): Promise<Goal> {
   const { data } = await apiClient.patch<Goal>(`/goals/${id}`, input);
+  return data;
+}
+
+export async function finishGoal(id: number, input: FinishGoalInput): Promise<Goal> {
+  const { data } = await apiClient.post<Goal>(`/goals/${id}/finish`, input);
   return data;
 }
 

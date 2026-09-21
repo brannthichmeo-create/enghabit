@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import type { CreateGoalInput, GoalProgress, UpdateGoalInput } from '@enghabit/shared';
+import type { CreateGoalInput, FinishGoalInput, GoalProgress, UpdateGoalInput } from '@enghabit/shared';
+import { statisticsKeys } from '../statistics/statistics.hooks';
 import * as goalApi from './goal.api';
 import type { Goal } from './goal.api';
 
@@ -31,6 +32,21 @@ export function useUpdateGoal(): UseMutationResult<Goal, Error, { id: number; in
   return useMutation({
     mutationFn: ({ id, input }) => goalApi.updateGoal(id, input),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: goalKeys.all }),
+  });
+}
+
+/**
+ * Kết thúc mục tiêu. Làm mới cả thống kê: trang Báo cáo chỉ chấm mục tiêu đang theo
+ * dõi, nên mục tiêu vừa kết thúc phải rời khỏi đó ngay.
+ */
+export function useFinishGoal(): UseMutationResult<Goal, Error, { id: number; input: FinishGoalInput }> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }) => goalApi.finishGoal(id, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: goalKeys.all });
+      void queryClient.invalidateQueries({ queryKey: statisticsKeys.all });
+    },
   });
 }
 

@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { UserRole, createGoalSchema, updateGoalSchema, type CreateGoalInput, type UpdateGoalInput } from '@enghabit/shared';
+import {
+  UserRole,
+  createGoalSchema,
+  finishGoalSchema,
+  updateGoalSchema,
+  type CreateGoalInput,
+  type FinishGoalInput,
+  type UpdateGoalInput,
+} from '@enghabit/shared';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
 import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
 import { validateBody } from '../../common/middlewares/validate.js';
@@ -45,6 +53,16 @@ goalRoutes.patch(
     res.json(
       await goalService.updateGoal(user.id, user.timezone, parseId(req.params.id), req.body as UpdateGoalInput),
     );
+  }),
+);
+
+goalRoutes.post(
+  '/:id/finish',
+  validateBody(finishGoalSchema),
+  asyncHandler(async (req, res) => {
+    const user = currentUser(req);
+    const { outcome } = req.body as FinishGoalInput;
+    res.json(await goalService.finishGoal(user.id, user.timezone, parseId(req.params.id), outcome));
   }),
 );
 

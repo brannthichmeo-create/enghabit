@@ -18,6 +18,7 @@ export * from './rewards/rewards.js';
 export * from './shop/shop.js';
 export * from './report/report.js';
 export * from './goal/goal-deadline.js';
+export * from './habit/habit-schedule.js';
 export * from './avatar/avatar.js';
 export * from './attachment/attachment.js';
 export * from './mention/mention.js';

@@ -1,5 +1,13 @@
 import cron from 'node-cron';
-import { FeatureKey, NotificationType, UserRole, toLocalDate } from '@enghabit/shared';
+import {
+  FeatureKey,
+  HabitFrequency,
+  NotificationType,
+  UserRole,
+  habitPeriodStart,
+  isScheduledDay,
+  toLocalDate,
+} from '@enghabit/shared';
 import { prisma } from '../lib/prisma.js';
 import { jobLogger } from '../lib/logger.js';
 import { toDbDate } from '../common/utils/db-date.js';
@@ -14,12 +22,14 @@ import { sendPush } from './onesignal.client.js';
  * Đây là nơi DUY NHẤT quyết định lịch gửi — không dùng tính năng lên lịch của OneSignal
  * (xem CLAUDE.md), nếu không sẽ có hai nguồn cùng gửi và user nhận thông báo trùng.
  *
- * Mỗi lượt quét xử lý hai mốc trong ngày của từng user, tính theo timezone của họ:
+ * Mỗi lượt quét xử lý ba loại mốc trong ngày của từng user, tính theo timezone của họ:
  *   1. Giờ nhắc user tự đặt  → nhắc học, kèm việc đang tồn (thẻ tới hạn, từ sai)
  *   2. 21:30 tối            → cảnh báo chuỗi sắp đứt, chỉ khi hôm đó chưa học
+ *   3. Giờ nhắc của từng thói quen → nhắc đúng thói quen đó
  *
- * Cả hai đều BỎ QUA nếu hôm nay user đã học rồi — nhắc người đang học đều là cách
- * nhanh nhất khiến họ tắt thông báo.
+ * Hai loại đầu BỎ QUA nếu hôm nay user đã học rồi — nhắc người đang học đều là cách
+ * nhanh nhất khiến họ tắt thông báo. Loại thứ ba chỉ im khi CHÍNH thói quen đó đã
+ * check-in trong kỳ, xem `sendDueHabitReminders`.
  *
  * Thông báo luôn được lưu vào bảng notifications (nguồn chính), push chỉ là kênh báo
  * thêm: push có thể bị chặn hoặc bỏ lỡ, mở app lên vẫn phải thấy.
@@ -45,6 +55,8 @@ export interface ReminderTickResult {
   reminders: number;
   /** Số cảnh báo chuỗi sắp đứt đã tạo. */
   streakWarnings: number;
+  /** Số lời nhắc thói quen đã tạo. */
+  habitReminders: number;
   skipped: number;
 }
 
@@ -60,10 +72,11 @@ export interface ReminderTickResult {
  * khoản có thể được nâng lên quản trị sau khi đã có sẵn nhắc nhở.
  */
 export async function runReminderTick(now: Date = new Date()): Promise<ReminderTickResult> {
-  const result: ReminderTickResult = { reminders: 0, streakWarnings: 0, skipped: 0 };
+  const result: ReminderTickResult = { reminders: 0, streakWarnings: 0, habitReminders: 0, skipped: 0 };
 
   await sendDueReminders(now, result);
   await sendDueStreakWarnings(now, result);
+  await sendDueHabitReminders(now, result);
 
   jobLogger.debug(result, 'Kết thúc lượt quét nhắc nhở');
   return result;
@@ -153,6 +166,83 @@ async function sendDueStreakWarnings(now: Date, result: ReminderTickResult): Pro
 
     const created = await sendStreakWarning(user, localDate);
     if (created) result.streakWarnings += 1;
+    else result.skipped += 1;
+  }
+}
+
+/**
+ * Lượt 3: giờ nhắc riêng của từng thói quen.
+ *
+ * Khác hai lượt trên ở điều kiện im lặng: lời nhắc này nói về MỘT việc cụ thể người dùng
+ * tự đặt giờ, nên người đã ôn thẻ từ sáng mà chưa nghe podcast vẫn phải được nhắc nghe
+ * podcast. Chỉ im khi chính thói quen đó đã check-in trong kỳ — thói quen hằng tuần thì
+ * cả tuần, còn lại thì trong ngày.
+ *
+ * Thói quen đang tạm dừng không nhắc; công tắc tổng tắt thì im như mọi lời nhắc khác.
+ */
+async function sendDueHabitReminders(now: Date, result: ReminderTickResult): Promise<void> {
+  // Cờ tính năng kiểm tra ở job, cùng lý do với ôn tập ở `sendDailyReminder`: bấm vào
+  // lời nhắc mà ra trang 404 là cách nhanh nhất khiến người dùng tắt thông báo.
+  if (!(await featureService.isEnabled(FeatureKey.HABITS))) return;
+
+  const habits = await prisma.habit.findMany({
+    where: {
+      isActive: true,
+      reminderTime: { not: null },
+      user: { role: UserRole.USER, notificationSetting: { isEnabled: true } },
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          timezone: true,
+          devices: { select: { playerId: true } },
+          streak: { select: { currentStreak: true } },
+        },
+      },
+    },
+  });
+
+  for (const habit of habits) {
+    const { user } = habit;
+    const localDate = toLocalDate(now, user.timezone);
+    const schedule = { frequency: habit.frequency, customDays: habit.customDays as number[] | null };
+
+    if (
+      !habit.reminderTime ||
+      !inWindow(localMinutes(user.timezone, now), habit.reminderTime) ||
+      !isScheduledDay(schedule, localDate)
+    ) {
+      result.skipped += 1;
+      continue;
+    }
+
+    const doneThisPeriod = await prisma.habitCheckIn.count({
+      where: {
+        habitId: habit.id,
+        localDate: { gte: toDbDate(habitPeriodStart(habit.frequency, localDate)), lte: toDbDate(localDate) },
+      },
+    });
+    if (doneThisPeriod > 0) {
+      result.skipped += 1;
+      continue;
+    }
+
+    const created = await deliver(user, {
+      // Dùng chung loại "Nhắc học" thay vì thêm loại mới: đây vẫn là lời nhắc theo giờ
+      // người dùng đặt, và thêm giá trị vào enum là phải migrate bảng notifications.
+      type: NotificationType.DAILY_REMINDER,
+      title: `Đến giờ: ${habit.name}`,
+      body:
+        habit.frequency === HabitFrequency.WEEKLY
+          ? 'Tuần này bạn chưa check-in thói quen này.'
+          : 'Hôm nay bạn chưa check-in thói quen này.',
+      link: '/habits',
+      // Tiền tố HABIT- tách hẳn khỏi khoá của mốc nhắc chung (`DAILY_REMINDER:<reminderId>:…`):
+      // hai bảng có id riêng, thiếu tiền tố thì thói quen số 3 và mốc nhắc số 3 dẫm lên nhau.
+      dedupeKey: `${NotificationType.DAILY_REMINDER}:HABIT-${habit.id}:${localDate}`,
+    });
+    if (created) result.habitReminders += 1;
     else result.skipped += 1;
   }
 }

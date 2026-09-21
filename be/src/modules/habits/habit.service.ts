@@ -3,6 +3,8 @@ import {
   HabitFrequency,
   addDays,
   diffInDays,
+  eachDayBetween,
+  isScheduledDay,
   todayLocalDate,
   type CheckInHabitInput,
   type CreateHabitInput,
@@ -18,8 +20,11 @@ import { recordActivity } from '../activity-logs/activity-log.service.js';
 export interface HabitWithStatus extends Habit {
   /** Đã check-in trong ngày hôm nay chưa (theo timezone của user). */
   checkedInToday: boolean;
-  /** Các ngày đã check-in trong 7 ngày gần nhất — để client vẽ mức độ đều đặn. */
-  recentCheckIns: LocalDate[];
+  /**
+   * Các lần check-in trong 7 ngày gần nhất — để client vẽ mức độ đều đặn. Trả kèm ghi
+   * chú: người dùng viết ghi chú lúc check-in thì phải đọc lại được ở đúng ô ngày đó.
+   */
+  recentCheckIns: { date: LocalDate; note: string | null }[];
 }
 
 /** Số ngày lịch sử trả kèm mỗi thói quen, đủ để nhìn ra thói quen tuần này. */
@@ -41,14 +46,14 @@ export async function listHabits(userId: number, timezone: string): Promise<Habi
     include: {
       checkIns: {
         where: { localDate: { gte: toDbDate(from), lte: toDbDate(today) } },
-        select: { localDate: true },
+        select: { localDate: true, note: true },
       },
     },
   });
 
   return habits.map(({ checkIns, ...habit }) => {
-    const dates = checkIns.map((c) => fromDbDate(c.localDate));
-    return { ...habit, checkedInToday: dates.includes(today), recentCheckIns: dates };
+    const recent = checkIns.map((c) => ({ date: fromDbDate(c.localDate), note: c.note }));
+    return { ...habit, checkedInToday: recent.some((c) => c.date === today), recentCheckIns: recent };
   });
 }
 
@@ -101,7 +106,13 @@ export async function checkIn(
   timezone: string,
   input: CheckInHabitInput,
 ): Promise<{ date: LocalDate }> {
-  await assertOwnership(userId, habitId);
+  const habit = await assertOwnership(userId, habitId);
+
+  // Tạm dừng nghĩa là thôi theo dõi: không nhắc, không đếm. Cho check-in vào một thói
+  // quen đang dừng là lại ghi ActivityLog cho thứ người dùng đã nói là không làm nữa.
+  if (!habit.isActive) {
+    throw new BadRequestError('Thói quen đang tạm dừng. Tiếp tục theo dõi rồi mới check-in được');
+  }
 
   const today = todayLocalDate(timezone);
   const date = input.date ?? today;
@@ -184,26 +195,12 @@ export async function getCompletionRate(
 
 /** Số ngày thói quen đến hạn trong khoảng, theo tần suất đã cấu hình. */
 function countExpectedDays(habit: Habit, from: LocalDate, to: LocalDate): number {
-  const start = new Date(`${from}T00:00:00.000Z`);
-  const end = new Date(`${to}T00:00:00.000Z`);
-  const totalDays = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
-  if (totalDays <= 0) return 0;
+  const days = eachDayBetween(from, to);
+  if (habit.frequency === HabitFrequency.WEEKLY) return Math.ceil(days.length / 7);
 
-  if (habit.frequency === HabitFrequency.DAILY) return totalDays;
-  if (habit.frequency === HabitFrequency.WEEKLY) return Math.ceil(totalDays / 7);
-
-  // CUSTOM: đếm số ngày trong khoảng rơi vào các thứ đã chọn.
-  const days = new Set((habit.customDays as number[] | null) ?? []);
-  if (days.size === 0) return 0;
-
-  let count = 0;
-  for (let i = 0; i < totalDays; i += 1) {
-    const day = new Date(start.getTime() + i * 86_400_000);
-    // getUTCDay(): 0 = Chủ nhật → đổi sang ISO 1-7 (Thứ Hai = 1)
-    const isoWeekday = ((day.getUTCDay() + 6) % 7) + 1;
-    if (days.has(isoWeekday)) count += 1;
-  }
-  return count;
+  // Cùng một hàm với dải 7 ngày ở FE và job nhắc nhở, để ba chỗ đếm "đến hạn" như nhau.
+  const schedule = { frequency: habit.frequency, customDays: habit.customDays as number[] | null };
+  return days.filter((day) => isScheduledDay(schedule, day)).length;
 }
 
 async function assertOwnership(userId: number, habitId: number): Promise<Habit> {

@@ -73,7 +73,7 @@ File: `be/src/modules/auth/auth.routes.ts`
 
 ---
 
-## B.3. Mục tiêu — `/goals` (5 endpoint)
+## B.3. Mục tiêu — `/goals` (6 endpoint)
 
 File: `be/src/modules/goals/goal.routes.ts` · Toàn bộ router chặn `requireRole(UserRole.USER)`
 
@@ -82,12 +82,19 @@ File: `be/src/modules/goals/goal.routes.ts` · Toàn bộ router chặn `require
 | GET | `/goals` | USER | — | 200 · `Goal[]` sắp theo `createdAt` giảm dần |
 | GET | `/goals/progress` | USER | — | 200 · `GoalProgress[]` (goalId, targetValue, currentValue, completionRate, isCompleted) |
 | POST | `/goals` | USER | `type`, `targetValue` (1-10000), `period`, `startDate`, `endDate?` | 201 · `Goal` |
-| PATCH | `/goals/:id` | USER | `targetValue?`, `endDate?`, `status?` | 200 · `Goal` |
+| PATCH | `/goals/:id` | USER | `targetValue?`, `endDate?` | 200 · `Goal` |
+| POST | `/goals/:id/finish` | USER | `outcome` (`COMPLETED` = đã đạt, `ARCHIVED` = dừng theo dõi) | 200 · `Goal` |
 | DELETE | `/goals/:id` | USER | — | 204 |
 
-**Ghi chú:** `PATCH` và `DELETE` gọi `assertOwnership()` — sửa mục tiêu của người khác trả 404
-(không phải 403, để không lộ sự tồn tại của bản ghi). `createGoalSchema` có `refine` kiểm
-`endDate >= startDate`.
+**Ghi chú:** `PATCH`, `finish` và `DELETE` gọi `assertOwnership()` — sửa mục tiêu của người
+khác trả 404 (không phải 403, để không lộ sự tồn tại của bản ghi). `createGoalSchema` có
+`refine` kiểm `endDate >= startDate`.
+
+Kết thúc mục tiêu chỉ đi qua `finish`, `PATCH` không nhận `status`: kết thúc còn chốt
+`endDate` về hôm nay (nếu hạn còn ở phía trước hoặc chưa có hạn). Mục tiêu đã kết thúc không
+sửa, không kết thúc lại và không mở lại được — `PATCH`/`finish` trả 400. Mục tiêu chưa tới
+ngày bắt đầu không kết thúc được (400), chỉ xoá. Mục tiêu `STREAK_TARGET` tự chuyển
+`COMPLETED` khi đạt chuỗi, cùng lúc gửi thông báo đạt mục tiêu.
 
 ---
 
@@ -97,7 +104,7 @@ File: `be/src/modules/habits/habit.routes.ts` · Toàn bộ router chặn `requi
 
 | Method | Đường dẫn | Quyền | Tham số đầu vào | Phản hồi |
 |---|---|---|---|---|
-| GET | `/habits` | USER | — | 200 · `HabitWithStatus[]` kèm `checkedInToday` và `recentCheckIns` (7 ngày) |
+| GET | `/habits` | USER | — | 200 · `HabitWithStatus[]` kèm `checkedInToday` và `recentCheckIns` (`{date, note}[]`, 7 ngày) |
 | POST | `/habits` | USER | `name` (1-120), `frequency`, `customDays?` (bắt buộc khi CUSTOM), `reminderTime?`, `isActive` | 201 · `Habit` |
 | PATCH | `/habits/:id` | USER | các trường trên, tất cả optional | 200 · `Habit` |
 | DELETE | `/habits/:id` | USER | — | 204 |
@@ -108,8 +115,13 @@ File: `be/src/modules/habits/habit.routes.ts` · Toàn bộ router chặn `requi
 **Lỗi đặc thù:**
 - `check-in` → 409 "Thói quen này đã được check-in trong ngày" (ràng buộc
   `UNIQUE(habit_id, local_date)`).
+- `check-in` → 400 nếu thói quen đang tạm dừng (`isActive = false`).
 - `completion-rate` → 400 "Cần truyền cả from và to (YYYY-MM-DD)" nếu thiếu tham số.
-- `createHabitSchema` có `refine`: frequency CUSTOM bắt buộc `customDays` không rỗng.
+- `createHabitSchema` và `updateHabitSchema` có `refine`: frequency CUSTOM bắt buộc
+  `customDays` không rỗng.
+- `reminderTime` do job `be/src/jobs/reminder.job.ts` đọc: tới giờ mà thói quen chưa
+  check-in trong kỳ (tuần với WEEKLY, ngày với loại còn lại) thì gửi thông báo
+  `DAILY_REMINDER` với khoá `DAILY_REMINDER:HABIT-<habitId>:<local_date>`.
 
 ---
 
@@ -413,7 +425,7 @@ Tái dùng `topic.service` thay vì viết lại query.
 |---|---|---|
 | Hệ thống (`/health`) | 1 | Công khai |
 | Xác thực (`/auth`) | 9 | Công khai (4) + Đã đăng nhập (5) |
-| Mục tiêu (`/goals`) | 5 | USER |
+| Mục tiêu (`/goals`) | 6 | USER |
 | Thói quen (`/habits`) | 7 | USER |
 | Chủ đề (`/topics`) | 3 | Đã đăng nhập |
 | Flashcard (`/flashcards`) | 4 | USER |
@@ -423,7 +435,7 @@ Tái dùng `topic.service` thay vì viết lại query.
 | Phần thưởng (`/rewards`) | 4 | USER |
 | Bảng xếp hạng (`/leaderboard`) | 1 | USER |
 | Quản trị (`/admin`) | 17 | ADMIN |
-| **Tổng** | **76** | |
+| **Tổng** | **77** | |
 
 Phân bổ theo quyền:
 

@@ -25,13 +25,19 @@ export const createHabitSchema = z
   );
 export type CreateHabitInput = z.infer<typeof createHabitSchema>;
 
-export const updateHabitSchema = z.object({
-  name: z.string().trim().min(1).max(120).optional(),
-  frequency: z.nativeEnum(HabitFrequency).optional(),
-  customDays: z.array(weekdaySchema).min(1).max(7).optional(),
-  reminderTime: timeOfDaySchema.nullable().optional(),
-  isActive: z.boolean().optional(),
-});
+export const updateHabitSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Tên thói quen không được để trống').max(120).optional(),
+    frequency: z.nativeEnum(HabitFrequency).optional(),
+    customDays: z.array(weekdaySchema).min(1).max(7).optional(),
+    reminderTime: timeOfDaySchema.nullable().optional(),
+    isActive: z.boolean().optional(),
+  })
+  // Đổi sang "theo thứ" mà không gửi kèm thứ nào thì thói quen không bao giờ đến hạn.
+  .refine(
+    (data) => data.frequency !== HabitFrequency.CUSTOM || (data.customDays?.length ?? 0) > 0,
+    { message: 'Thói quen tuỳ chỉnh phải chọn ít nhất một ngày trong tuần', path: ['customDays'] },
+  );
 export type UpdateHabitInput = z.infer<typeof updateHabitSchema>;
 
 export const checkInHabitSchema = z.object({

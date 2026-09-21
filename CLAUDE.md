@@ -551,6 +551,12 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - **Mọi thông báo tự động phải có `dedupeKey`** dạng `<TYPE>:<local_date>` (mục tiêu thì thêm `goalId`, lời nhắc học thì thêm `reminderId`). Cron chạy lại 15 phút một lần, không có khoá này thì user nhận cùng một lời nhắc nhiều lần trong ngày.
 - **Một người đặt được NHIỀU mốc nhắc** (bảng `reminders`, tối đa `MAX_REMINDERS_PER_USER`), còn `notification_settings` chỉ giữ công tắc tổng và các loại cảnh báo — không còn cột giờ nhắc ở đó. Vì vậy khoá chống trùng của lời nhắc học **bắt buộc có `reminderId`**: đặt 8:00 và 20:00 là hai lời nhắc cố ý khác nhau trong cùng một ngày, thiếu id thì mốc thứ hai bị coi là trùng và im lặng. `@@unique([userId, timeOfDay])` chặn hai mốc cùng giờ.
 - **Không nhắc người đã học hôm nay.** Job kiểm tra `ActivityLog` theo `local_date` trước khi tạo thông báo — nhắc người đang học đều là cách nhanh nhất khiến họ tắt thông báo.
+  **Ngoại lệ duy nhất: giờ nhắc riêng của thói quen** (`habits.reminder_time`). Lời nhắc đó
+  nói về MỘT việc người dùng tự đặt giờ, nên chỉ im khi **chính thói quen đó** đã check-in
+  trong kỳ (tuần với `WEEKLY`, ngày với loại còn lại) — người ôn thẻ từ sáng vẫn phải được
+  nhắc nghe podcast lúc tối. Thói quen tạm dừng không nhắc. Khoá chống trùng
+  `DAILY_REMINDER:HABIT-<habitId>:<local_date>`: dùng chung loại `DAILY_REMINDER` để khỏi
+  migrate enum, tiền tố `HABIT-` để không dẫm lên khoá của bảng `reminders`.
 - Query param kiểu boolean **không dùng `z.coerce.boolean()`**: query string luôn là chuỗi và `Boolean('false') === true`, nên bộ lọc sẽ luôn bật. Dùng `z.preprocess` so khớp `'true'`/`'1'` (xem `notificationQuerySchema`).
 - Mọi route `/admin/*` bắt buộc đi qua role-guard middleware.
 - **Và ngược lại: module học tập chặn `requireRole(UserRole.USER)` ngay ở tầng router** —
@@ -579,7 +585,8 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - Test đặt cạnh file nguồn trong cùng thư mục module (`*.test.ts`), không gom vào thư mục `tests/` tách biệt.
 - FE: mỗi feature lớn (`study`, `community`...) có Error Boundary cục bộ, tránh lỗi 1 feature làm crash toàn app.
 - Debug cron/notification: xem log riêng của `be/src/jobs`, không lẫn với log của module `notifications` (module này giữ **nội dung và lưu trữ** thông báo + cấu hình nhắc nhở, nhưng **không chứa lịch trình gửi**).
-- Không nhận được nhắc nhở: kiểm tra theo thứ tự (1) `notification_settings.is_enabled` — công tắc tổng, tắt là im hết; (2) bảng `reminders`: có mốc nào `is_enabled` và `days_of_week` chứa thứ hôm nay không; (3) `User.timezone` — giờ nhắc tính theo giờ user, không phải giờ máy chủ; (4) hôm đó user đã có `ActivityLog` chưa (đã học thì hệ thống cố ý im lặng); (5) bảng `notifications` xem `dedupe_key` (`DAILY_REMINDER:<reminderId>:<local_date>`) của ngày đó đã tồn tại chưa.
+- Không nhận được nhắc nhở: kiểm tra theo thứ tự (1) `notification_settings.is_enabled` — công tắc tổng, tắt là im hết; (2) bảng `reminders`: có mốc nào `is_enabled` và `days_of_week` chứa thứ hôm nay không; (3) `User.timezone` — giờ nhắc tính theo giờ user, không phải giờ máy chủ; (4) hôm đó user đã có `ActivityLog` chưa (đã học thì hệ thống cố ý im lặng); (5) bảng `notifications` xem `dedupe_key` (`DAILY_REMINDER:<reminderId>:<local_date>`) của ngày đó đã tồn tại chưa. Nhắc riêng của thói quen thì khoá là `DAILY_REMINDER:HABIT-<habitId>:<local_date>`, và điều kiện im là thói quen đó đã check-in trong kỳ hoặc đang tạm dừng — không phải "đã học hôm nay".
+- Mục tiêu "tự biến mất" khỏi trang Báo cáo hoặc thẻ tiến độ: xem `goals.status`. Chỉ `ACTIVE` được đo; kết thúc (`POST /goals/:id/finish`) là chuyển hẳn sang `COMPLETED`/`ARCHIVED`, chốt `end_date` và không mở lại được. Mục tiêu `STREAK_TARGET` tự sang `COMPLETED` ngay khi đạt chuỗi — nếu không, mỗi ngày học sau đó lại sinh một thông báo "Đã đạt mục tiêu!".
 
 ## Quy tắc commit Git
 

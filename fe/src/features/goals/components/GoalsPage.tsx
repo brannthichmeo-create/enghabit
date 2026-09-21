@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { CalendarClock } from 'lucide-react';
+import { CalendarClock, Flag, Pencil, Trophy } from 'lucide-react';
 import {
   GoalPeriod,
   GoalStatus,
@@ -8,9 +8,12 @@ import {
   createGoalSchema,
   goalTimeline,
   todayLocalDate,
+  updateGoalSchema,
+  type FinishGoalInput,
   type GoalProgress,
   type GoalTimeline,
   type LocalDate,
+  type UpdateGoalInput,
 } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import {
@@ -26,6 +29,7 @@ import {
   Skeleton,
   SkeletonList,
   PageHeader,
+  SectionTitle,
   Select,
 } from '../../../shared/components/ui';
 import { Modal } from '../../../shared/components/Modal';
@@ -33,7 +37,14 @@ import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { useToast } from '../../../shared/components/Toast';
 import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
-import { useCreateGoal, useDeleteGoal, useGoalProgress, useGoals, useUpdateGoal } from '../goal.hooks';
+import {
+  useCreateGoal,
+  useDeleteGoal,
+  useFinishGoal,
+  useGoalProgress,
+  useGoals,
+  useUpdateGoal,
+} from '../goal.hooks';
 import type { Goal } from '../goal.api';
 import { useLocale, useT } from '../../../shared/i18n/language';
 
@@ -68,9 +79,15 @@ export function GoalsPage(): JSX.Element {
   const progress = useGoalProgress();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Goal | null>(null);
+  const [finishing, setFinishing] = useState<Goal | null>(null);
 
   const today = todayLocalDate(user?.timezone ?? 'Asia/Ho_Chi_Minh');
   const progressByGoal = new Map(progress.data?.map((p) => [p.goalId, p]) ?? []);
+
+  // Mục tiêu đã kết thúc tách xuống nhóm riêng: trộn chung thì danh sách dài dần theo
+  // thời gian và mục tiêu đang cần làm bị đẩy ra khỏi tầm mắt.
+  const active = goals.data?.filter((goal) => goal.status === GoalStatus.ACTIVE) ?? [];
+  const ended = goals.data?.filter((goal) => goal.status !== GoalStatus.ACTIVE) ?? [];
 
   return (
     <div>
@@ -107,8 +124,16 @@ export function GoalsPage(): JSX.Element {
         />
       )}
 
+      {active.length === 0 && ended.length > 0 && (
+        <EmptyState
+          title={t('Không có mục tiêu nào đang theo dõi')}
+          description={t('Tạo mục tiêu mới để tiếp tục theo dõi tiến độ.')}
+          action={<Button onClick={() => setShowForm(true)}>{t('+ Thêm mục tiêu')}</Button>}
+        />
+      )}
+
       <ul className="space-y-3">
-        {goals.data?.map((goal) => (
+        {active.map((goal) => (
           <li key={goal.id}>
             <GoalCard
               goal={goal}
@@ -121,13 +146,33 @@ export function GoalsPage(): JSX.Element {
               progressState={
                 progress.isPending ? 'loading' : progress.isError ? 'error' : 'ready'
               }
-              onEditDeadline={() => setEditing(goal)}
+              onEdit={() => setEditing(goal)}
+              onFinish={() => setFinishing(goal)}
             />
           </li>
         ))}
       </ul>
 
-      <DeadlineModal goal={editing} today={today} onClose={() => setEditing(null)} />
+      {ended.length > 0 && (
+        <section className="mt-8">
+          <SectionTitle>{t('Đã kết thúc')}</SectionTitle>
+          <ul className="space-y-3">
+            {ended.map((goal) => (
+              <li key={goal.id}>
+                <EndedGoalCard goal={goal} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* `key` theo mục tiêu để ô nhập nạp lại giá trị mỗi lần mở cho một mục tiêu khác. */}
+      {editing && (
+        <EditGoalModal key={editing.id} goal={editing} today={today} onClose={() => setEditing(null)} />
+      )}
+      {finishing && (
+        <FinishGoalModal key={finishing.id} goal={finishing} onClose={() => setFinishing(null)} />
+      )}
     </div>
   );
 }
@@ -137,19 +182,18 @@ function GoalCard({
   timeline,
   progress,
   progressState,
-  onEditDeadline,
+  onEdit,
+  onFinish,
 }: {
   goal: Goal;
   timeline: GoalTimeline;
   progress?: GoalProgress;
   /** Trạng thái của truy vấn tiến độ — nó về sau danh sách mục tiêu, xem `GoalProgressLine`. */
   progressState: ProgressState;
-  onEditDeadline: () => void;
+  onEdit: () => void;
+  onFinish: () => void;
 }): JSX.Element {
   const t = useT();
-  const toast = useToast();
-  const confirm = useConfirm();
-  const deleteGoal = useDeleteGoal();
   const expired = timeline.state === GoalTimelineState.EXPIRED;
   const name = t(GOAL_TYPE_LABELS[goal.type]);
 
@@ -191,42 +235,96 @@ function GoalCard({
         <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center">
           <Button
             variant="ghost"
-            icon={CalendarClock}
-            onClick={onEditDeadline}
-            aria-label={
-              expired
-                ? t('Gia hạn mục tiêu {name}', { name })
-                : goal.endDate
-                  ? t('Đổi hạn mục tiêu {name}', { name })
-                  : t('Đặt hạn mục tiêu {name}', { name })
-            }
+            icon={expired ? CalendarClock : Pencil}
+            onClick={onEdit}
+            aria-label={expired ? t('Gia hạn mục tiêu {name}', { name }) : t('Sửa mục tiêu {name}', { name })}
           >
-            {expired ? t('Gia hạn') : goal.endDate ? t('Đổi hạn') : t('Đặt hạn')}
+            {expired ? t('Gia hạn') : t('Sửa')}
           </Button>
-          <Button
-            variant="ghost"
-            loading={deleteGoal.isPending}
-            aria-label={t('Xoá mục tiêu {name}', { name })}
-            onClick={async () => {
-              const ok = await confirm({
-                title: t('Xoá mục tiêu này?'),
-                message: t('Tiến độ đã đạt của mục tiêu sẽ không còn được theo dõi.'),
-                confirmLabel: t('Xoá mục tiêu'),
-                tone: 'danger',
-              });
-              if (!ok) return;
-
-              deleteGoal.mutate(goal.id, {
-                onSuccess: () => toast.success(t('Đã xoá mục tiêu')),
-                onError: (error) => toast.error(getErrorMessage(error)),
-              });
-            }}
-          >
-            {t('Xoá')}
-          </Button>
+          {/* Mục tiêu chưa bắt đầu thì chưa có gì để kết thúc — không cần thì xoá. */}
+          {timeline.state !== GoalTimelineState.UPCOMING && (
+            <Button
+              variant="ghost"
+              icon={Flag}
+              onClick={onFinish}
+              aria-label={t('Kết thúc mục tiêu {name}', { name })}
+            >
+              {t('Kết thúc')}
+            </Button>
+          )}
+          <DeleteGoalButton goal={goal} name={name} />
         </div>
       </div>
     </Card>
+  );
+}
+
+/** Thẻ của mục tiêu đã kết thúc: chỉ để xem lại, không đo tiến độ và không sửa được nữa. */
+function EndedGoalCard({ goal }: { goal: Goal }): JSX.Element {
+  const t = useT();
+  const locale = useLocale();
+  const name = t(GOAL_TYPE_LABELS[goal.type]);
+  const achieved = goal.status === GoalStatus.COMPLETED;
+  const from = formatDay(toLocalDate(goal.startDate), locale);
+  // Kết thúc luôn chốt hạn (xem `finishGoal` ở backend); thiếu hạn chỉ có ở dữ liệu cũ.
+  const to = goal.endDate ? formatDay(toLocalDate(goal.endDate), locale) : null;
+
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold text-content">{name}</h3>
+            <Badge tone={achieved ? 'green' : 'slate'} icon={achieved ? Trophy : undefined}>
+              {achieved ? t('Đã đạt') : t('Đã dừng')}
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-content-muted">
+            {t('Chỉ tiêu {target} · {period}', {
+              target: goal.targetValue,
+              period: goal.period === GoalPeriod.DAILY ? t('Mỗi ngày') : t('Mỗi tuần'),
+            })}
+          </p>
+          <p className="mt-0.5 text-xs text-content-muted">
+            {to ? t('Từ {from} đến {to}', { from, to }) : t('Bắt đầu từ {date}', { date: from })}
+          </p>
+        </div>
+        <div className="shrink-0">
+          <DeleteGoalButton goal={goal} name={name} />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function DeleteGoalButton({ goal, name }: { goal: Goal; name: string }): JSX.Element {
+  const t = useT();
+  const toast = useToast();
+  const confirm = useConfirm();
+  const deleteGoal = useDeleteGoal();
+
+  return (
+    <Button
+      variant="ghost"
+      loading={deleteGoal.isPending}
+      aria-label={t('Xoá mục tiêu {name}', { name })}
+      onClick={async () => {
+        const ok = await confirm({
+          title: t('Xoá mục tiêu này?'),
+          message: t('Tiến độ đã đạt của mục tiêu sẽ không còn được theo dõi.'),
+          confirmLabel: t('Xoá mục tiêu'),
+          tone: 'danger',
+        });
+        if (!ok) return;
+
+        deleteGoal.mutate(goal.id, {
+          onSuccess: () => toast.success(t('Đã xoá mục tiêu')),
+          onError: (error) => toast.error(getErrorMessage(error)),
+        });
+      }}
+    >
+      {t('Xoá')}
+    </Button>
   );
 }
 
@@ -430,86 +528,86 @@ function GoalForm({ today, onCreated }: { today: LocalDate; onCreated: () => voi
 }
 
 /**
- * Đặt, đổi hoặc bỏ hạn của một mục tiêu có sẵn.
+ * Sửa chỉ tiêu và hạn của một mục tiêu đang theo dõi.
  *
- * Gia hạn thay vì bắt tạo lại: xoá rồi tạo mục tiêu mới là mất ngày bắt đầu, và trang
- * Báo cáo sẽ không còn đối chiếu được mục tiêu cho khoảng thời gian trước đó.
+ * Sửa thay vì bắt tạo lại: xoá rồi tạo mục tiêu mới là mất ngày bắt đầu, và trang Báo
+ * cáo sẽ không còn đối chiếu được mục tiêu cho khoảng thời gian trước đó.
+ *
+ * Chỉ gửi những ô đã đổi. Gửi lại hạn cũ của một mục tiêu đã quá hạn thì máy chủ từ chối
+ * "hạn phải từ hôm nay trở đi" — dù người dùng chỉ định sửa chỉ tiêu.
  */
-function DeadlineModal({
+function EditGoalModal({
   goal,
   today,
   onClose,
 }: {
-  goal: Goal | null;
+  goal: Goal;
   today: LocalDate;
   onClose: () => void;
 }): JSX.Element {
   const t = useT();
   const toast = useToast();
   const updateGoal = useUpdateGoal();
-  const [value, setValue] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [openedFor, setOpenedFor] = useState<number | null>(null);
+  const currentEnd = goal.endDate ? toLocalDate(goal.endDate) : null;
+  const expired = currentEnd !== null && currentEnd < today;
+  const [target, setTarget] = useState(String(goal.targetValue));
+  const [endDate, setEndDate] = useState(currentEnd ?? '');
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<'targetValue' | 'endDate', string>>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  // Nạp hạn hiện tại mỗi lần mở cho một mục tiêu khác. Làm ngay trong lúc render thay
-  // vì useEffect để ô nhập không nháy giá trị cũ ở khung hình đầu.
-  if (goal && goal.id !== openedFor) {
-    setOpenedFor(goal.id);
-    setValue(goal.endDate ? toLocalDate(goal.endDate) : '');
-    setError(null);
-  }
+  const save = (): void => {
+    setFieldErrors({});
+    setServerError(null);
 
-  const close = (): void => {
-    setOpenedFor(null);
-    onClose();
-  };
+    const input: UpdateGoalInput = {};
+    if (Number(target) !== goal.targetValue) input.targetValue = Number(target);
+    if ((endDate || null) !== currentEnd) input.endDate = endDate || null;
 
-  const save = (endDate: LocalDate | null): void => {
-    if (!goal) return;
-    setError(null);
-
-    if (endDate === '') {
-      setError(t('Chọn ngày hạn trước khi lưu'));
+    if (Object.keys(input).length === 0) {
+      onClose();
       return;
     }
 
-    if (endDate !== null && endDate < today) {
-      setError(t('Hạn phải từ hôm nay trở đi'));
+    if (input.endDate && input.endDate < today) {
+      setFieldErrors({ endDate: t('Hạn phải từ hôm nay trở đi') });
+      return;
+    }
+
+    const parsed = updateGoalSchema.safeParse(input);
+    if (!parsed.success) {
+      const next: Partial<Record<'targetValue' | 'endDate', string>> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if (field === 'targetValue' || field === 'endDate') next[field] ??= issue.message;
+      }
+      setFieldErrors(next);
       return;
     }
 
     updateGoal.mutate(
-      { id: goal.id, input: { endDate } },
+      { id: goal.id, input: parsed.data },
       {
         onSuccess: () => {
-          toast.success(endDate ? t('Đã lưu hạn mục tiêu') : t('Đã bỏ hạn mục tiêu'));
-          close();
+          toast.success(t('Đã lưu mục tiêu'));
+          onClose();
         },
-        onError: (err) => setError(getErrorMessage(err)),
+        onError: (err) => setServerError(getErrorMessage(err)),
       },
     );
   };
 
   return (
     <Modal
-      open={goal !== null}
-      onClose={close}
-      title={goal?.endDate ? t('Đổi hạn mục tiêu') : t('Đặt hạn mục tiêu')}
+      open
+      onClose={onClose}
+      title={expired ? t('Gia hạn mục tiêu') : t('Sửa mục tiêu')}
+      closeOnBackdrop={false}
       footer={
         <>
-          {goal?.endDate && (
-            <Button variant="ghost" disabled={updateGoal.isPending} onClick={() => save(null)}>
-              {t('Bỏ hạn')}
-            </Button>
-          )}
-          <Button variant="secondary" onClick={close}>
+          <Button variant="secondary" onClick={onClose}>
             {t('Huỷ')}
           </Button>
-          {/*
-            Cố ý KHÔNG khoá nút khi chưa chọn ngày: nút mờ đi mà không nói vì sao là câu
-            đố. Bấm thì `save` nói thẳng "Chọn ngày hạn trước khi lưu" ngay dưới ô nhập.
-          */}
-          <Button loading={updateGoal.isPending} onClick={() => save(value)}>
+          <Button loading={updateGoal.isPending} onClick={save}>
             {t('Lưu')}
           </Button>
         </>
@@ -519,17 +617,108 @@ function DeadlineModal({
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          if (value) save(value);
+          save();
         }}
+        className="space-y-4"
       >
+        <ErrorMessage>{serverError}</ErrorMessage>
+        <p>{t(GOAL_TYPE_LABELS[goal.type])}</p>
+
+        <Field label={t('Chỉ tiêu')} error={fieldErrors.targetValue}>
+          <Input
+            type="number"
+            min={1}
+            inputMode="numeric"
+            value={target}
+            aria-invalid={fieldErrors.targetValue !== undefined}
+            onChange={(e) => setTarget(e.target.value)}
+            autoFocus={!expired}
+          />
+        </Field>
+
         <Field
           label={t('Hạn hoàn thành')}
-          hint={t('Mục tiêu được theo dõi tới hết ngày này.')}
-          error={error ?? undefined}
+          hint={t('Không bắt buộc. Bỏ trống là mục tiêu không có hạn.')}
+          error={fieldErrors.endDate}
         >
-          <Input type="date" min={today} value={value} onChange={(e) => setValue(e.target.value)} autoFocus />
+          <Input
+            type="date"
+            min={today}
+            value={endDate}
+            aria-invalid={fieldErrors.endDate !== undefined}
+            onChange={(e) => setEndDate(e.target.value)}
+            autoFocus={expired}
+          />
         </Field>
       </form>
+    </Modal>
+  );
+}
+
+/**
+ * Kết thúc một mục tiêu: đã đạt, hoặc thôi theo dõi.
+ *
+ * Hai lựa chọn nằm trong thân hộp thoại chứ không ở chân: ba nút xếp hàng ngang ở chân
+ * tràn khỏi hộp thoại trên màn hình điện thoại.
+ */
+function FinishGoalModal({ goal, onClose }: { goal: Goal; onClose: () => void }): JSX.Element {
+  const t = useT();
+  const toast = useToast();
+  const finishGoal = useFinishGoal();
+  const name = t(GOAL_TYPE_LABELS[goal.type]);
+  const pendingOutcome = finishGoal.isPending ? finishGoal.variables?.input.outcome : undefined;
+
+  const finish = (outcome: FinishGoalInput['outcome']): void => {
+    finishGoal.mutate(
+      { id: goal.id, input: { outcome } },
+      {
+        onSuccess: () => {
+          toast.success(
+            outcome === GoalStatus.COMPLETED ? t('Chúc mừng! Đã ghi nhận mục tiêu đã đạt') : t('Đã dừng mục tiêu'),
+          );
+          onClose();
+        },
+        onError: (err) => toast.error(getErrorMessage(err)),
+      },
+    );
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t('Kết thúc mục tiêu này?')}
+      footer={
+        <Button variant="secondary" onClick={onClose}>
+          {t('Huỷ')}
+        </Button>
+      }
+    >
+      <p>
+        {t(
+          'Mục tiêu "{name}" sẽ chuyển xuống nhóm Đã kết thúc và thôi được theo dõi. Không mở lại được — muốn làm tiếp thì tạo mục tiêu mới.',
+          { name },
+        )}
+      </p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <Button
+          icon={Trophy}
+          loading={pendingOutcome === GoalStatus.COMPLETED}
+          disabled={finishGoal.isPending}
+          onClick={() => finish(GoalStatus.COMPLETED)}
+        >
+          {t('Đã đạt mục tiêu')}
+        </Button>
+        <Button
+          variant="secondary"
+          icon={Flag}
+          loading={pendingOutcome === GoalStatus.ARCHIVED}
+          disabled={finishGoal.isPending}
+          onClick={() => finish(GoalStatus.ARCHIVED)}
+        >
+          {t('Dừng theo dõi')}
+        </Button>
+      </div>
     </Modal>
   );
 }

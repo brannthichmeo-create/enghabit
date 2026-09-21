@@ -1,12 +1,13 @@
 import {
   GoalPeriod,
+  GoalStatus,
+  GoalType,
   NotificationType,
   applyActivity,
   computeStreak,
   startOfWeek,
   toLocalDate,
   type ActivityType,
-  type GoalType,
   type LocalDate,
   type StreakState,
 } from '@enghabit/shared';
@@ -14,7 +15,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { logger } from '../../lib/logger.js';
 import { fromDbDate, toDbDate } from '../../common/utils/db-date.js';
-import { getProgress } from '../goals/goal.service.js';
+import { finishGoal, getProgress } from '../goals/goal.service.js';
 import { createNotification } from '../notifications/notification.service.js';
 
 /**
@@ -143,6 +144,13 @@ async function notifyAchievedGoals(
       link: '/goals',
       dedupeKey: `${NotificationType.GOAL_ACHIEVED}:${goal.goalId}:${periodKey}`,
     });
+
+    // Mục tiêu chuỗi ngày là loại duy nhất có điểm đích: đạt chuỗi 30 ngày là xong.
+    // Để nó ACTIVE thì mỗi ngày học tiếp theo lại là một lần "Đã đạt mục tiêu!" mới,
+    // vì khoá chống trùng đi theo ngày. Các loại đếm theo kỳ thì kỳ sau đạt lại là đúng.
+    if (goal.type === GoalType.STREAK_TARGET) {
+      await finishGoal(userId, timezone, goal.goalId, GoalStatus.COMPLETED);
+    }
   }
 }
 
