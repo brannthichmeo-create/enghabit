@@ -1,4 +1,5 @@
 import {
+  AdminAction,
   MAX_REMINDERS_PER_USER,
   NotificationType,
   UserRole,
@@ -16,6 +17,7 @@ import {
 import type { Notification, NotificationSetting, Reminder } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../../common/errors/app-error.js';
+import { recordAdminAction } from '../admin/admin-audit.service.js';
 
 /**
  * Thông báo trong ứng dụng + cấu hình nhắc nhở.
@@ -251,20 +253,39 @@ export async function deleteNotification(userId: number, notificationId: number)
  */
 export async function createAnnouncement(
   input: CreateAnnouncementInput,
+  actorId: number,
 ): Promise<{ recipients: number }> {
   const where = input.audience === 'role' && input.role ? { role: input.role } : {};
   const users = await prisma.user.findMany({ where, select: { id: true } });
 
   const dedupeKey = `ANNOUNCEMENT:${Date.now()}`;
-  await prisma.notification.createMany({
-    data: users.map((user) => ({
-      userId: user.id,
-      type: NotificationType.ANNOUNCEMENT,
-      title: input.title,
-      body: input.body,
-      link: input.link || null,
-      dedupeKey,
-    })),
+  await prisma.$transaction(async (tx) => {
+    await tx.notification.createMany({
+      data: users.map((user) => ({
+        userId: user.id,
+        type: NotificationType.ANNOUNCEMENT,
+        title: input.title,
+        body: input.body,
+        link: input.link || null,
+        dedupeKey,
+      })),
+    });
+
+    await recordAdminAction(
+      {
+        actorId,
+        action: AdminAction.ANNOUNCEMENT_SENT,
+        targetId: dedupeKey,
+        targetLabel: input.title,
+        changes: {
+          audience: { from: null, to: input.audience === 'role' && input.role ? input.role : 'ALL' },
+          recipients: { from: null, to: users.length },
+          link: { from: null, to: input.link || null },
+        },
+        note: input.body,
+      },
+      tx,
+    );
   });
 
   return { recipients: users.length };

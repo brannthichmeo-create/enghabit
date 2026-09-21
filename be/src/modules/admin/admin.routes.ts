@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   UserRole,
   accessLogQuerySchema,
+  auditLogQuerySchema,
   adminGroupQuerySchema,
   adminUserQuerySchema,
   adminStudySetReportQuerySchema,
@@ -52,6 +53,7 @@ import * as adminService from './admin.service.js';
 import * as adminGroupService from './admin-group.service.js';
 import * as adminStudySetService from './admin-study-set.service.js';
 import * as adminShopService from './admin-shop.service.js';
+import * as adminAuditService from './admin-audit.service.js';
 
 export const adminRoutes: Router = Router();
 
@@ -131,6 +133,26 @@ adminRoutes.get(
   }),
 );
 
+// --- Nhật ký thao tác ---
+//
+// CHỈ ĐỌC. Không có route sửa hay xoá nhật ký, kể cả cho quản trị viên: nhật ký mà người
+// bị ghi tự xoá được thì không còn là nhật ký. Dòng mới do chính các service ghi, ngay
+// trong thao tác của chúng (xem admin-audit.service).
+adminRoutes.get(
+  '/audit-logs',
+  validateQuery(auditLogQuerySchema),
+  asyncHandler(async (req, res) => {
+    res.json(await adminAuditService.listAuditLogs(getValidatedQuery(req, auditLogQuerySchema)));
+  }),
+);
+
+adminRoutes.get(
+  '/audit-logs/actors',
+  asyncHandler(async (_req, res) => {
+    res.json(await adminAuditService.listAuditActors());
+  }),
+);
+
 // --- Yêu cầu cấp lại mật khẩu (tái dùng password-reset.service của module auth) ---
 //
 // Toàn bộ nghiệp vụ nằm ở service bên auth, ở đây chỉ nối route. Hai nửa của cùng một
@@ -178,7 +200,9 @@ adminRoutes.post(
   '/announcements',
   validateBody(createAnnouncementSchema),
   asyncHandler(async (req, res) => {
-    res.status(201).json(await notificationService.createAnnouncement(req.body as CreateAnnouncementInput));
+    res.status(201).json(
+      await notificationService.createAnnouncement(req.body as CreateAnnouncementInput, currentUser(req).id),
+    );
   }),
 );
 
@@ -206,7 +230,7 @@ adminRoutes.post(
   validateBody(warnGroupSchema),
   asyncHandler(async (req, res) => {
     const { message } = req.body as WarnGroupInput;
-    res.json(await adminGroupService.warnGroup(parseId(req.params.id), message));
+    res.json(await adminGroupService.warnGroup(parseId(req.params.id), message, currentUser(req).id));
   }),
 );
 
@@ -222,7 +246,7 @@ adminRoutes.post(
 adminRoutes.post(
   '/groups/:id/unblock',
   asyncHandler(async (req, res) => {
-    res.json(await adminGroupService.unblockGroup(parseId(req.params.id)));
+    res.json(await adminGroupService.unblockGroup(parseId(req.params.id), currentUser(req).id));
   }),
 );
 
@@ -239,14 +263,14 @@ adminRoutes.patch(
   '/topics/:id',
   validateBody(updateTopicSchema),
   asyncHandler(async (req, res) => {
-    res.json(await topicService.updateTopic(parseId(req.params.id), req.body as UpdateTopicInput));
+    res.json(await topicService.updateTopic(parseId(req.params.id), req.body as UpdateTopicInput, currentUser(req).id));
   }),
 );
 
 adminRoutes.delete(
   '/topics/:id',
   asyncHandler(async (req, res) => {
-    await topicService.deleteTopic(parseId(req.params.id));
+    await topicService.deleteTopic(parseId(req.params.id), currentUser(req).id);
     res.status(204).send();
   }),
 );
@@ -256,7 +280,7 @@ adminRoutes.post(
   '/vocabulary',
   validateBody(createVocabularySchema),
   asyncHandler(async (req, res) => {
-    res.status(201).json(await adminService.createVocabulary(req.body as CreateVocabularyInput));
+    res.status(201).json(await adminService.createVocabulary(req.body as CreateVocabularyInput, currentUser(req).id));
   }),
 );
 
@@ -264,14 +288,16 @@ adminRoutes.patch(
   '/vocabulary/:id',
   validateBody(updateVocabularySchema),
   asyncHandler(async (req, res) => {
-    res.json(await adminService.updateVocabulary(parseId(req.params.id), req.body as UpdateVocabularyInput));
+    res.json(
+      await adminService.updateVocabulary(parseId(req.params.id), req.body as UpdateVocabularyInput, currentUser(req).id),
+    );
   }),
 );
 
 adminRoutes.delete(
   '/vocabulary/:id',
   asyncHandler(async (req, res) => {
-    await adminService.deleteVocabulary(parseId(req.params.id));
+    await adminService.deleteVocabulary(parseId(req.params.id), currentUser(req).id);
     res.status(204).send();
   }),
 );
@@ -314,7 +340,7 @@ adminRoutes.post(
 adminRoutes.post(
   '/study-sets/:id/unblock',
   asyncHandler(async (req, res) => {
-    res.json(await adminStudySetService.unblockSet(parseId(req.params.id)));
+    res.json(await adminStudySetService.unblockSet(parseId(req.params.id), currentUser(req).id));
   }),
 );
 
@@ -358,7 +384,7 @@ adminRoutes.post(
   '/shop/types',
   validateBody(createShopTypeSchema),
   asyncHandler(async (req, res) => {
-    res.status(201).json(await adminShopService.createType(req.body as CreateShopTypeInput));
+    res.status(201).json(await adminShopService.createType(req.body as CreateShopTypeInput, currentUser(req).id));
   }),
 );
 
@@ -366,14 +392,16 @@ adminRoutes.patch(
   '/shop/types/:id',
   validateBody(updateShopTypeSchema),
   asyncHandler(async (req, res) => {
-    res.json(await adminShopService.updateType(parseId(req.params.id), req.body as UpdateShopTypeInput));
+    res.json(
+      await adminShopService.updateType(parseId(req.params.id), req.body as UpdateShopTypeInput, currentUser(req).id),
+    );
   }),
 );
 
 adminRoutes.delete(
   '/shop/types/:id',
   asyncHandler(async (req, res) => {
-    await adminShopService.deleteType(parseId(req.params.id));
+    await adminShopService.deleteType(parseId(req.params.id), currentUser(req).id);
     res.status(204).send();
   }),
 );
@@ -399,14 +427,16 @@ adminRoutes.patch(
   '/shop/items/:id',
   validateBody(updateShopItemSchema),
   asyncHandler(async (req, res) => {
-    res.json(await adminShopService.updateItem(parseId(req.params.id), req.body as UpdateShopItemInput));
+    res.json(
+      await adminShopService.updateItem(parseId(req.params.id), req.body as UpdateShopItemInput, currentUser(req).id),
+    );
   }),
 );
 
 adminRoutes.delete(
   '/shop/items/:id',
   asyncHandler(async (req, res) => {
-    await adminShopService.deleteItem(parseId(req.params.id));
+    await adminShopService.deleteItem(parseId(req.params.id), currentUser(req).id);
     res.status(204).send();
   }),
 );
@@ -414,7 +444,7 @@ adminRoutes.delete(
 adminRoutes.delete(
   '/shop/items/:id/image',
   asyncHandler(async (req, res) => {
-    res.json(await adminShopService.deleteItemImage(parseId(req.params.id)));
+    res.json(await adminShopService.deleteItemImage(parseId(req.params.id), currentUser(req).id));
   }),
 );
 

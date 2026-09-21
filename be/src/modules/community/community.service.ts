@@ -1,4 +1,5 @@
 import {
+  AdminAction,
   MAX_ATTACHMENTS_PER_POST,
   UserRole,
   isImageMime,
@@ -22,6 +23,7 @@ import { notifyMentions } from './mention.service.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors/app-error.js';
 import { getEquippedFrameUrls } from '../shop/shop.frame.js';
 import { getLevelsFor } from '../statistics/statistics.service.js';
+import { recordAdminAction } from '../admin/admin-audit.service.js';
 
 /**
  * Diễn đàn Cộng đồng.
@@ -50,6 +52,11 @@ const EXCERPT_LENGTH = 180;
  */
 function canDelete(authorId: number, viewer: { id: number; role: UserRole }): boolean {
   return authorId === viewer.id || viewer.role === UserRole.ADMIN;
+}
+
+/** Xoá nội dung của người khác với tư cách quản trị viên — thứ phải vào nhật ký thao tác. */
+function isModeration(authorId: number, viewer: { id: number; role: UserRole }): boolean {
+  return viewer.role === UserRole.ADMIN && authorId !== viewer.id;
 }
 
 /** Các cột của tác giả cần lấy kèm. Cố ý KHÔNG lấy ảnh đại diện — xem ghi chú ở listPosts. */
@@ -290,14 +297,33 @@ export async function deletePost(
   postId: number,
   viewer: { id: number; role: UserRole },
 ): Promise<void> {
-  const post = await prisma.post.findUnique({ where: { id: postId }, select: { authorId: true } });
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { authorId: true, title: true, author: { select: { name: true, username: true } } },
+  });
   if (!post) throw new NotFoundError('Không tìm thấy bài viết');
   if (!canDelete(post.authorId, viewer)) {
     throw new ForbiddenError('Bạn chỉ xoá được bài của chính mình');
   }
 
-  // Bình luận, lượt tim và tệp đính kèm đi theo nhờ onDelete: Cascade ở schema.
-  await prisma.post.delete({ where: { id: postId } });
+  await prisma.$transaction(async (tx) => {
+    // Quản trị viên xoá bài của NGƯỜI KHÁC là thao tác kiểm duyệt — ghi nhật ký. Tự xoá
+    // bài của chính mình thì là việc của một người viết, không có gì để kiểm duyệt.
+    if (isModeration(post.authorId, viewer)) {
+      await recordAdminAction(
+        {
+          actorId: viewer.id,
+          action: AdminAction.POST_DELETED,
+          targetId: postId,
+          targetLabel: post.title,
+          note: `${post.author.name} (@${post.author.username})`,
+        },
+        tx,
+      );
+    }
+    // Bình luận, lượt tim và tệp đính kèm đi theo nhờ onDelete: Cascade ở schema.
+    await tx.post.delete({ where: { id: postId } });
+  });
 }
 
 // --- Bình luận ---
@@ -344,14 +370,36 @@ export async function deleteComment(
 ): Promise<void> {
   const comment = await prisma.postComment.findUnique({
     where: { id: commentId },
-    select: { authorId: true },
+    select: {
+      authorId: true,
+      body: true,
+      postId: true,
+      author: { select: { name: true, username: true } },
+      post: { select: { title: true } },
+    },
   });
   if (!comment) throw new NotFoundError('Không tìm thấy bình luận');
   if (!canDelete(comment.authorId, viewer)) {
     throw new ForbiddenError('Bạn chỉ xoá được bình luận của chính mình');
   }
 
-  await prisma.postComment.delete({ where: { id: commentId } });
+  await prisma.$transaction(async (tx) => {
+    if (isModeration(comment.authorId, viewer)) {
+      await recordAdminAction(
+        {
+          actorId: viewer.id,
+          action: AdminAction.COMMENT_DELETED,
+          targetId: commentId,
+          targetLabel: comment.post.title,
+          // Nội dung bình luận mất theo lệnh xoá — nhật ký giữ lại để còn biết đã xoá gì.
+          changes: { body: { from: comment.body, to: null } },
+          note: `${comment.author.name} (@${comment.author.username})`,
+        },
+        tx,
+      );
+    }
+    await tx.postComment.delete({ where: { id: commentId } });
+  });
 }
 
 // --- Thả tim ---

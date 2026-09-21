@@ -394,6 +394,18 @@ cùng lúc thì chỉ lệnh đầu tiên có tác dụng.
 
 `GET /admin/access/overview` → 400 "Số ngày phải từ 1 đến 90" nếu `days` ngoài khoảng.
 
+### Nhật ký thao tác
+
+| Method | Đường dẫn | Tham số đầu vào | Phản hồi |
+|---|---|---|---|
+| GET | `/admin/audit-logs` | query `page`, `pageSize` (1-100), `targetType?`, `actorId?` | 200 · `Paginated<AuditLogRow>` `{id, createdAt, actor{id, name}, action, targetType, targetId, targetLabel, changes, note}` |
+| GET | `/admin/audit-logs/actors` | — | 200 · `AuditActorOption[]` — những người đã có thao tác, cho ô lọc |
+
+Chỉ có route ĐỌC: nhật ký không sửa, không xoá được qua API nào. Dòng mới do chính các
+service ghi (`recordAdminAction`) trong cùng transaction với thao tác — mọi route ghi của
+`/admin/*` ở trên, cộng với việc quản trị viên xoá bài viết/bình luận của người khác ở
+`/community`. `changes` dạng `{ tênTrường: { from, to } }`, chỉ gồm các trường thật sự đổi.
+
 ### Gửi thông báo tới người dùng
 
 | Method | Đường dẫn | Tham số đầu vào | Phản hồi |
@@ -443,8 +455,8 @@ Tái dùng `topic.service` thay vì viết lại query.
 | Thông báo (`/notifications`) | 13 | Đã đăng nhập (7) + USER (6) |
 | Phần thưởng (`/rewards`) | 4 | USER |
 | Bảng xếp hạng (`/leaderboard`) | 1 | USER |
-| Quản trị (`/admin`) | 17 | ADMIN |
-| **Tổng** | **79** | |
+| Quản trị (`/admin`) | 19 | ADMIN |
+| **Tổng** | **81** | |
 
 Phân bổ theo quyền:
 

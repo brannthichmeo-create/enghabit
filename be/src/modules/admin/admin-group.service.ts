@@ -1,4 +1,5 @@
 import {
+  AdminAction,
   GroupMemberRole,
   NotificationType,
   type AdminGroupDetail,
@@ -12,6 +13,7 @@ import { BadRequestError, NotFoundError } from '../../common/errors/app-error.js
 import { createNotification } from '../notifications/notification.service.js';
 import { toBlockInfo } from '../groups/group.service.js';
 import { getEquippedFrameUrls } from '../shop/shop.frame.js';
+import { recordAdminAction } from './admin-audit.service.js';
 
 /**
  * Quản trị nhóm lớp — góc nhìn vận hành, KHÁC hẳn góc nhìn thành viên.
@@ -152,7 +154,11 @@ export async function getGroupDetail(groupId: number): Promise<AdminGroupDetail>
 // ---------------------------------------------------------------------------
 
 /** Gửi cảnh báo vi phạm tới TOÀN BỘ thành viên nhóm, kể cả người mới vào hôm nay. */
-export async function warnGroup(groupId: number, message: string): Promise<{ recipients: number }> {
+export async function warnGroup(
+  groupId: number,
+  message: string,
+  adminId: number,
+): Promise<{ recipients: number }> {
   const group = await prisma.group.findUnique({
     where: { id: groupId },
     select: { name: true, members: { select: { userId: true } } },
@@ -167,6 +173,17 @@ export async function warnGroup(groupId: number, message: string): Promise<{ rec
     // Mốc thời gian trong khoá: mỗi lần gửi là một cảnh báo riêng, gộp lại thì lần
     // nhắc thứ hai im lặng đúng lúc cần nhắc mạnh nhất.
     dedupeKey: `${NotificationType.GROUP_WARNING}:${groupId}:${Date.now()}`,
+  });
+
+  // Cảnh báo không đổi gì ở bảng nhóm, nên không có transaction chung để gắn vào: ghi
+  // sau khi đã gửi xong, đúng thứ tự việc đã xảy ra.
+  await recordAdminAction({
+    actorId: adminId,
+    action: AdminAction.GROUP_WARNED,
+    targetId: groupId,
+    targetLabel: group.name,
+    changes: { recipients: { from: null, to: group.members.length } },
+    note: message,
   });
 
   return { recipients: group.members.length };
@@ -184,9 +201,15 @@ export async function blockGroup(
   if (!group) throw new NotFoundError('Không tìm thấy nhóm');
   if (group.blockedAt) throw new BadRequestError('Nhóm này đã bị chặn từ trước');
 
-  await prisma.group.update({
-    where: { id: groupId },
-    data: { blockedAt: new Date(), blockedReason: reason, blockedById: adminId },
+  await prisma.$transaction(async (tx) => {
+    await tx.group.update({
+      where: { id: groupId },
+      data: { blockedAt: new Date(), blockedReason: reason, blockedById: adminId },
+    });
+    await recordAdminAction(
+      { actorId: adminId, action: AdminAction.GROUP_BLOCKED, targetId: groupId, targetLabel: group.name, note: reason },
+      tx,
+    );
   });
 
   // Báo cho thành viên ngay thay vì để họ tự phát hiện lúc mở nhóm: người đang soạn
@@ -202,19 +225,32 @@ export async function blockGroup(
   return getGroupDetail(groupId);
 }
 
-export async function unblockGroup(groupId: number): Promise<AdminGroupDetail> {
+export async function unblockGroup(groupId: number, adminId: number): Promise<AdminGroupDetail> {
   const group = await prisma.group.findUnique({
     where: { id: groupId },
-    select: { name: true, blockedAt: true, members: { select: { userId: true } } },
+    select: { name: true, blockedAt: true, blockedReason: true, members: { select: { userId: true } } },
   });
   if (!group) throw new NotFoundError('Không tìm thấy nhóm');
   if (!group.blockedAt) throw new BadRequestError('Nhóm này không bị chặn');
 
   // Xoá sạch cả lý do và người chặn: để lại thì lần chặn sau sẽ hiện lý do cũ nếu
   // có chỗ nào quên kiểm tra `blockedAt`.
-  await prisma.group.update({
-    where: { id: groupId },
-    data: { blockedAt: null, blockedReason: null, blockedById: null },
+  await prisma.$transaction(async (tx) => {
+    await tx.group.update({
+      where: { id: groupId },
+      data: { blockedAt: null, blockedReason: null, blockedById: null },
+    });
+    await recordAdminAction(
+      {
+        actorId: adminId,
+        action: AdminAction.GROUP_UNBLOCKED,
+        targetId: groupId,
+        targetLabel: group.name,
+        // Lý do chặn cũ bị xoá khỏi bảng nhóm ngay dưới đây — nhật ký là nơi duy nhất còn giữ nó.
+        changes: { blockedReason: { from: group.blockedReason, to: null } },
+      },
+      tx,
+    );
   });
 
   await notifyMembers(group.members, {

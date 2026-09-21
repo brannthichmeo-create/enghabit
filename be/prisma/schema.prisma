@@ -226,6 +226,7 @@ model User {
   cardReviews         CardReview[]
   studySetReports     StudySetReport[]     @relation("StudySetReporter")
   resolvedStudySetReports StudySetReport[] @relation("StudySetReportResolver")
+  adminAuditLogs      AdminAuditLog[]      @relation("AdminAuditActor")
   createdGroups       Group[]              @relation("GroupCreatedBy")
   blockedGroups       Group[]              @relation("GroupBlockedBy")
   groupMemberships    GroupMember[]
@@ -274,6 +275,43 @@ model UserAvatar {
 
 /// Nhật ký đăng nhập — nguồn dữ liệu cho phần "lượt truy cập" của trang quản trị.
 ///
+/// Nhật ký thao tác của quản trị viên: ai đã sửa gì, lúc nào, từ giá trị nào sang giá trị nào.
+///
+/// CHỈ THÊM dòng — không có đường nào sửa hay xoá, kể cả với quản trị viên: nhật ký mà
+/// người bị ghi tự xoá được thì không còn là nhật ký.
+///
+/// Hai cột chụp lại TÊN (`actorName`, `targetLabel`) thay vì chỉ giữ id, vì cả người thực
+/// hiện lẫn đối tượng đều có thể bị xoá sau đó — dòng "đã xoá vật phẩm X" mà không còn
+/// biết X là gì thì vô dụng. `action`/`targetType` là chuỗi, danh mục nằm ở
+/// `shared/constants/admin-audit.ts`, để thêm thao tác mới không phải migrate enum.
+model AdminAuditLog {
+  id Int @id @default(autoincrement())
+
+  /// Null khi tài khoản thực hiện đã bị xoá — tên vẫn còn ở `actorName`.
+  actorId   Int?   @map("actor_id")
+  actorName String @map("actor_name") @db.VarChar(100)
+
+  action      String  @db.VarChar(60)
+  targetType  String  @map("target_type") @db.VarChar(30)
+  /// Chuỗi vì có đối tượng khoá bằng chuỗi (khoá tính năng), không phải id số.
+  targetId    String? @map("target_id") @db.VarChar(60)
+  targetLabel String? @map("target_label") @db.VarChar(200)
+
+  /// `{ tênTrường: { from, to } }` — chỉ các trường thật sự đổi.
+  changes Json?
+  /// Lý do chặn, nội dung cảnh báo, tiêu đề thông báo…
+  note    String? @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("AdminAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([targetType, createdAt])
+  @@map("admin_audit_logs")
+}
+
 /// Ghi cả lần thất bại (userId = null khi email không tồn tại) để quản trị viên nhìn
 /// ra được dấu hiệu dò mật khẩu, chứ không chỉ thấy các lần vào thành công.
 model LoginEvent {

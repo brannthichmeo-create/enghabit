@@ -20,6 +20,9 @@ import type {
   AdminStudySetReportRow,
   AccessLogQueryInput,
   AccessOverview,
+  AuditActorOption,
+  AuditLogQueryInput,
+  AuditLogRow,
   AdminUserDetail,
   AdminUserQueryInput,
   AdminUserRow,
@@ -50,6 +53,9 @@ export const adminKeys = {
   user: (id: number) => ['admin', 'user', id] as const,
   accessOverview: (days: number) => ['admin', 'access', 'overview', days] as const,
   accessLogs: (query: Partial<AccessLogQueryInput>) => ['admin', 'access', 'logs', query] as const,
+  // Nằm dưới `admin` nên mọi thao tác qua `useAdminMutation` tự làm mới nhật ký theo.
+  auditLogs: (query: Partial<AuditLogQueryInput>) => ['admin', 'audit-logs', query] as const,
+  auditActors: () => ['admin', 'audit-logs', 'actors'] as const,
   resetRequests: (query: Partial<ResetRequestQueryInput>) => ['admin', 'reset-requests', query] as const,
   shopTypes: () => ['admin', 'shop', 'types'] as const,
   shopItems: (typeId?: number) => ['admin', 'shop', 'items', typeId ?? 'all'] as const,
@@ -81,6 +87,18 @@ export function useAdminUser(id: number | null): UseQueryResult<AdminUserDetail>
     queryFn: () => adminApi.getUserDetail(id as number),
     enabled: id !== null,
   });
+}
+
+export function useAuditLogs(query: Partial<AuditLogQueryInput>): UseQueryResult<Paginated<AuditLogRow>> {
+  return useQuery({
+    queryKey: adminKeys.auditLogs(query),
+    queryFn: () => adminApi.listAuditLogs(query),
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useAuditActors(): UseQueryResult<AuditActorOption[]> {
+  return useQuery({ queryKey: adminKeys.auditActors(), queryFn: adminApi.listAuditActors });
 }
 
 export function useAccessOverview(days: number): UseQueryResult<AccessOverview> {

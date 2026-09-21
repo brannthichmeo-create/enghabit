@@ -1,4 +1,5 @@
 import {
+  AdminAction,
   FEATURES,
   FeatureKey,
   allFeaturesEnabled,
@@ -10,6 +11,7 @@ import {
 } from '@enghabit/shared';
 import { prisma } from '../../lib/prisma.js';
 import { BadRequestError } from '../../common/errors/app-error.js';
+import { recordAdminAction } from '../admin/admin-audit.service.js';
 
 /**
  * Trạng thái bật/tắt tính năng.
@@ -158,15 +160,41 @@ export async function setEnabled(
   const alsoDisabled = isEnabled ? [] : collectDependents(key);
   const keys = [key, ...alsoDisabled];
 
-  await prisma.$transaction(
-    keys.map((k) =>
-      prisma.featureFlag.upsert({
+  await prisma.$transaction(async (tx) => {
+    for (const k of keys) {
+      await tx.featureFlag.upsert({
         where: { key: k },
         create: { key: k, isEnabled, updatedById: adminId },
         update: { isEnabled, updatedById: adminId },
-      }),
-    ),
-  );
+      });
+    }
+
+    // Bấm vào công tắc đang ở đúng trạng thái đó thì không có gì đổi để ghi.
+    if (flags[key] !== isEnabled) {
+      await recordAdminAction(
+        {
+          actorId: adminId,
+          action: isEnabled ? AdminAction.FEATURE_ENABLED : AdminAction.FEATURE_DISABLED,
+          targetId: key,
+          targetLabel: findFeature(key)?.label ?? key,
+          changes: {
+            isEnabled: { from: flags[key], to: isEnabled },
+            // Tắt một tính năng là tắt kèm cả cây phụ thuộc — ghi rõ, không thì nhìn nhật
+            // ký sẽ không hiểu vì sao những tính năng kia cũng tắt theo.
+            ...(alsoDisabled.length > 0
+              ? {
+                  alsoDisabled: {
+                    from: null,
+                    to: alsoDisabled.map((dep) => findFeature(dep)?.label ?? dep).join(', '),
+                  },
+                }
+              : {}),
+          },
+        },
+        tx,
+      );
+    }
+  });
 
   invalidateCache();
   return { flags: await getFlags(), alsoDisabled };

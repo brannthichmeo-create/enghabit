@@ -13,6 +13,9 @@ import type {
   AdminStudySetReportRow,
   VocabLevel,
   AccessLogQueryInput,
+  AuditActorOption,
+  AuditLogQueryInput,
+  AuditLogRow,
   AccessOverview,
   AdminUserDetail,
   AdminUserQueryInput,
@@ -81,6 +84,18 @@ export async function updateUserStatus(id: number, status: UserStatus): Promise<
 
 export async function deleteUser(id: number): Promise<void> {
   await apiClient.delete(`/admin/users/${id}`);
+}
+
+// --- Nhật ký thao tác (chỉ đọc) ---
+
+export async function listAuditLogs(query: Partial<AuditLogQueryInput> = {}): Promise<Paginated<AuditLogRow>> {
+  const { data } = await apiClient.get<Paginated<AuditLogRow>>('/admin/audit-logs', { params: query });
+  return data;
+}
+
+export async function listAuditActors(): Promise<AuditActorOption[]> {
+  const { data } = await apiClient.get<AuditActorOption[]>('/admin/audit-logs/actors');
+  return data;
 }
 
 // --- Lượt truy cập ---

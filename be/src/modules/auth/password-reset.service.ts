@@ -1,4 +1,5 @@
 import {
+  AdminAction,
   NotificationType,
   PasswordResetOutcome,
   PasswordResetStatus,
@@ -17,6 +18,7 @@ import { prisma } from '../../lib/prisma.js';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../common/errors/app-error.js';
 import { createNotification } from '../notifications/notification.service.js';
 import { findByIdentifier, hashPassword } from './auth.service.js';
+import { recordAdminAction } from '../admin/admin-audit.service.js';
 
 /**
  * Quên mật khẩu có quản trị viên duyệt tay.
@@ -218,24 +220,46 @@ async function resolveRequest(
   status: PasswordResetStatus,
   rejectReason: string | null,
 ): Promise<void> {
-  const { count } = await prisma.passwordResetRequest.updateMany({
-    where: { id, status: PasswordResetStatus.PENDING },
-    data: {
-      status,
-      rejectReason,
-      reviewedById: adminId,
-      reviewedAt: new Date(),
-      // Trả cột về NULL để nhả ràng buộc UNIQUE, nhờ đó người dùng gửi được yêu
-      // cầu mới sau này mà vẫn giữ nguyên dòng cũ trong nhật ký.
-      pendingUserId: null,
-    },
-  });
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.passwordResetRequest.updateMany({
+      where: { id, status: PasswordResetStatus.PENDING },
+      data: {
+        status,
+        rejectReason,
+        reviewedById: adminId,
+        reviewedAt: new Date(),
+        // Trả cột về NULL để nhả ràng buộc UNIQUE, nhờ đó người dùng gửi được yêu
+        // cầu mới sau này mà vẫn giữ nguyên dòng cũ trong nhật ký.
+        pendingUserId: null,
+      },
+    });
 
-  if (count === 0) {
-    const exists = await prisma.passwordResetRequest.findUnique({ where: { id }, select: { id: true } });
-    if (!exists) throw new NotFoundError('Không tìm thấy yêu cầu');
-    throw new ConflictError('Yêu cầu này đã được xử lý');
-  }
+    if (count === 0) {
+      const exists = await tx.passwordResetRequest.findUnique({ where: { id }, select: { id: true } });
+      if (!exists) throw new NotFoundError('Không tìm thấy yêu cầu');
+      throw new ConflictError('Yêu cầu này đã được xử lý');
+    }
+
+    // Cùng transaction với lệnh duyệt: duyệt mà không có dòng nhật ký thì không ai trả lời
+    // được "ai đã cho người này đặt lại mật khẩu".
+    const request = await tx.passwordResetRequest.findUnique({
+      where: { id },
+      select: { user: { select: { name: true, username: true } } },
+    });
+    await recordAdminAction(
+      {
+        actorId: adminId,
+        action:
+          status === PasswordResetStatus.APPROVED
+            ? AdminAction.RESET_REQUEST_APPROVED
+            : AdminAction.RESET_REQUEST_REJECTED,
+        targetId: id,
+        targetLabel: request ? `${request.user.name} (@${request.user.username})` : null,
+        note: rejectReason,
+      },
+      tx,
+    );
+  });
 }
 
 // ---------------------------------------------------------------------------

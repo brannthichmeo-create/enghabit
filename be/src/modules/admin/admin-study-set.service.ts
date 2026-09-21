@@ -1,4 +1,5 @@
 import {
+  AdminAction,
   NotificationType,
   StudySetReportStatus,
   type AdminStudySetDetail,
@@ -11,6 +12,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { BadRequestError, NotFoundError } from '../../common/errors/app-error.js';
 import { createNotification } from '../notifications/notification.service.js';
+import { recordAdminAction } from './admin-audit.service.js';
 
 /**
  * Kiểm duyệt bộ thẻ công khai — cùng tinh thần với quản lý nhóm lớp.
@@ -115,19 +117,32 @@ export async function getStudySet(setId: number): Promise<AdminStudySetDetail> {
 export async function dismissReport(reportId: number, adminId: number): Promise<void> {
   const report = await prisma.studySetReport.findUnique({
     where: { id: reportId },
-    select: { status: true, reporterId: true, topic: { select: { name: true } } },
+    select: { status: true, reason: true, reporterId: true, topic: { select: { name: true } } },
   });
   if (!report) throw new NotFoundError('Không tìm thấy báo cáo');
   if (report.status !== StudySetReportStatus.PENDING) throw new BadRequestError('Báo cáo này đã được xử lý');
 
-  await prisma.studySetReport.update({
-    where: { id: reportId },
-    data: {
-      status: StudySetReportStatus.DISMISSED,
-      pendingKey: null,
-      resolvedById: adminId,
-      resolvedAt: new Date(),
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.studySetReport.update({
+      where: { id: reportId },
+      data: {
+        status: StudySetReportStatus.DISMISSED,
+        pendingKey: null,
+        resolvedById: adminId,
+        resolvedAt: new Date(),
+      },
+    });
+    await recordAdminAction(
+      {
+        actorId: adminId,
+        action: AdminAction.STUDY_SET_REPORT_DISMISSED,
+        targetId: reportId,
+        targetLabel: report.topic.name,
+        // Lý do NGƯỜI BÁO CÁO đưa ra — để sau này biết mình đã bỏ qua lời tố cáo nào.
+        note: report.reason,
+      },
+      tx,
+    );
   });
 
   await createNotification({
@@ -159,16 +174,27 @@ export async function blockSet(setId: number, adminId: number, reason: string): 
   });
 
   const now = new Date();
-  await prisma.$transaction([
-    prisma.topic.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.topic.update({
       where: { id: setId },
       data: { blockedAt: now, blockedReason: reason, blockedById: adminId },
-    }),
-    prisma.studySetReport.updateMany({
+    });
+    await tx.studySetReport.updateMany({
       where: { topicId: setId, status: StudySetReportStatus.PENDING },
       data: { status: StudySetReportStatus.RESOLVED, pendingKey: null, resolvedById: adminId, resolvedAt: now },
-    }),
-  ]);
+    });
+    await recordAdminAction(
+      {
+        actorId: adminId,
+        action: AdminAction.STUDY_SET_BLOCKED,
+        targetId: setId,
+        targetLabel: set.name,
+        changes: pending.length > 0 ? { resolvedReports: { from: null, to: pending.length } } : null,
+        note: reason,
+      },
+      tx,
+    );
+  });
 
   await createNotification({
     userId: set.ownerId,
@@ -196,18 +222,30 @@ export async function blockSet(setId: number, adminId: number, reason: string): 
   return getStudySet(setId);
 }
 
-export async function unblockSet(setId: number): Promise<AdminStudySetDetail> {
+export async function unblockSet(setId: number, adminId: number): Promise<AdminStudySetDetail> {
   const set = await prisma.topic.findUnique({
     where: { id: setId },
-    select: { name: true, ownerId: true, blockedAt: true },
+    select: { name: true, ownerId: true, blockedAt: true, blockedReason: true },
   });
   if (!set) throw new NotFoundError('Không tìm thấy bộ thẻ');
   if (!set.blockedAt) throw new BadRequestError('Bộ thẻ này không bị chặn');
 
   const now = new Date();
-  await prisma.topic.update({
-    where: { id: setId },
-    data: { blockedAt: null, blockedReason: null, blockedById: null },
+  await prisma.$transaction(async (tx) => {
+    await tx.topic.update({
+      where: { id: setId },
+      data: { blockedAt: null, blockedReason: null, blockedById: null },
+    });
+    await recordAdminAction(
+      {
+        actorId: adminId,
+        action: AdminAction.STUDY_SET_UNBLOCKED,
+        targetId: setId,
+        targetLabel: set.name,
+        changes: { blockedReason: { from: set.blockedReason, to: null } },
+      },
+      tx,
+    );
   });
 
   if (set.ownerId !== null) {

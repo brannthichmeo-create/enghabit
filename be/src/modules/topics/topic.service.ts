@@ -1,7 +1,8 @@
-import type { CreateTopicInput, UpdateTopicInput } from '@enghabit/shared';
+import { AdminAction, type CreateTopicInput, type UpdateTopicInput } from '@enghabit/shared';
 import type { Topic, Vocabulary } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { NotFoundError } from '../../common/errors/app-error.js';
+import { createdFields, diffFields, recordAdminAction } from '../admin/admin-audit.service.js';
 
 /**
  * Bộ thẻ "Hệ thống" — do quản trị viên soạn ở /admin/content.
@@ -32,17 +33,60 @@ export async function listVocabularyByTopic(topicId: number): Promise<Vocabulary
   return prisma.vocabulary.findMany({ where: { topicId }, orderBy: { word: 'asc' } });
 }
 
+/** Các trường của chủ đề được so trong nhật ký thao tác khi sửa. */
+const TOPIC_FIELDS = ['name', 'description', 'level'] as const;
+
 export async function createTopic(input: CreateTopicInput, createdById: number): Promise<Topic> {
-  // ownerId để null: bộ quản trị viên tạo là bộ "Hệ thống", không thuộc tài khoản nào.
-  return prisma.topic.create({ data: { ...input, createdById } });
+  return prisma.$transaction(async (tx) => {
+    // ownerId để null: bộ quản trị viên tạo là bộ "Hệ thống", không thuộc tài khoản nào.
+    const topic = await tx.topic.create({ data: { ...input, createdById } });
+    await recordAdminAction(
+      {
+        actorId: createdById,
+        action: AdminAction.TOPIC_CREATED,
+        targetId: topic.id,
+        targetLabel: topic.name,
+        changes: createdFields(input, TOPIC_FIELDS),
+      },
+      tx,
+    );
+    return topic;
+  });
 }
 
-export async function updateTopic(topicId: number, input: UpdateTopicInput): Promise<Topic> {
-  await getTopic(topicId);
-  return prisma.topic.update({ where: { id: topicId }, data: input });
+export async function updateTopic(topicId: number, input: UpdateTopicInput, actorId: number): Promise<Topic> {
+  const before = await getTopic(topicId);
+  const changes = diffFields(before, input, TOPIC_FIELDS);
+
+  return prisma.$transaction(async (tx) => {
+    const topic = await tx.topic.update({ where: { id: topicId }, data: input });
+    if (changes) {
+      await recordAdminAction(
+        { actorId, action: AdminAction.TOPIC_UPDATED, targetId: topicId, targetLabel: topic.name, changes },
+        tx,
+      );
+    }
+    return topic;
+  });
 }
 
-export async function deleteTopic(topicId: number): Promise<void> {
-  await getTopic(topicId);
-  await prisma.topic.delete({ where: { id: topicId } });
+export async function deleteTopic(topicId: number, actorId: number): Promise<void> {
+  const topic = await getTopic(topicId);
+  const cardCount = await prisma.vocabulary.count({ where: { topicId } });
+
+  await prisma.$transaction(async (tx) => {
+    await recordAdminAction(
+      {
+        actorId,
+        action: AdminAction.TOPIC_DELETED,
+        targetId: topicId,
+        targetLabel: topic.name,
+        // Xoá chủ đề là xoá luôn toàn bộ từ vựng trong đó — ghi lại số lượng để biết
+        // lần xoá này đã mất bao nhiêu thẻ.
+        changes: { vocabularyCount: { from: cardCount, to: null } },
+      },
+      tx,
+    );
+    await tx.topic.delete({ where: { id: topicId } });
+  });
 }

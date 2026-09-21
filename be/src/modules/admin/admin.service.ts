@@ -1,6 +1,7 @@
 import {
   ADMIN_USER_TREND_DAYS,
   ActivityType,
+  AdminAction,
   UserRole,
   UserStatus,
   addDays,
@@ -23,6 +24,12 @@ import { prisma } from '../../lib/prisma.js';
 import { BadRequestError, NotFoundError } from '../../common/errors/app-error.js';
 import { toPublicUser } from '../auth/auth.service.js';
 import * as statisticsService from '../statistics/statistics.service.js';
+import { createdFields, diffFields, recordAdminAction } from './admin-audit.service.js';
+
+/** Tên hiển thị của một tài khoản trong nhật ký thao tác. */
+function userLabel(user: { name: string; username: string }): string {
+  return `${user.name} (@${user.username})`;
+}
 
 /**
  * Nghiệp vụ quản trị — góc nhìn vận hành hệ thống, không phải góc nhìn người học.
@@ -234,7 +241,21 @@ export async function updateUserRole(userId: number, role: UserRole, actorId: nu
     await assertNotLastAdmin(userId);
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { role } });
+  if (user.role !== role) {
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: { role } });
+      await recordAdminAction(
+        {
+          actorId,
+          action: AdminAction.USER_ROLE_CHANGED,
+          targetId: userId,
+          targetLabel: userLabel(user),
+          changes: { role: { from: user.role, to: role } },
+        },
+        tx,
+      );
+    });
+  }
   return findRow(userId);
 }
 
@@ -257,14 +278,29 @@ export async function updateUserStatus(
     await assertNotLastAdmin(userId);
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { status } });
+  if (user.status === status) return findRow(userId);
 
-  if (status === UserStatus.LOCKED) {
-    await prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
-  }
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: userId }, data: { status } });
+
+    if (status === UserStatus.LOCKED) {
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    }
+
+    await recordAdminAction(
+      {
+        actorId,
+        action: status === UserStatus.LOCKED ? AdminAction.USER_LOCKED : AdminAction.USER_UNLOCKED,
+        targetId: userId,
+        targetLabel: userLabel(user),
+        changes: { status: { from: user.status, to: status } },
+      },
+      tx,
+    );
+  });
 
   return findRow(userId);
 }
@@ -275,7 +311,20 @@ export async function deleteUser(userId: number, actorId: number): Promise<void>
   if (user.id === actorId) throw new BadRequestError('Không thể tự xoá tài khoản của chính mình');
   if (user.role === UserRole.ADMIN) await assertNotLastAdmin(userId);
 
-  await prisma.user.delete({ where: { id: userId } });
+  // Ghi nhật ký TRƯỚC lệnh xoá, cùng transaction: xoá xong thì không còn tên, email để chụp.
+  await prisma.$transaction(async (tx) => {
+    await recordAdminAction(
+      {
+        actorId,
+        action: AdminAction.USER_DELETED,
+        targetId: userId,
+        targetLabel: userLabel(user),
+        note: user.email,
+      },
+      tx,
+    );
+    await tx.user.delete({ where: { id: userId } });
+  });
 }
 
 async function assertNotLastAdmin(userId: number): Promise<void> {
@@ -575,25 +624,74 @@ async function assertSystemTopic(topicId: number): Promise<void> {
   if (!topic) throw new NotFoundError('Không tìm thấy chủ đề');
 }
 
-async function assertSystemVocabulary(vocabularyId: number): Promise<void> {
+async function assertSystemVocabulary(vocabularyId: number) {
   const vocabulary = await prisma.vocabulary.findFirst({
     where: { id: vocabularyId, topic: { ownerId: null } },
-    select: { id: true },
+    include: { topic: { select: { name: true } } },
   });
   if (!vocabulary) throw new NotFoundError('Không tìm thấy từ vựng');
+  return vocabulary;
 }
 
-export async function createVocabulary(input: CreateVocabularyInput) {
+/** Các trường của từ vựng được so trong nhật ký khi sửa. */
+const VOCABULARY_FIELDS = ['word', 'meaning', 'phonetic', 'example', 'audioUrl'] as const;
+
+export async function createVocabulary(input: CreateVocabularyInput, actorId: number) {
   await assertSystemTopic(input.topicId);
-  return prisma.vocabulary.create({ data: input });
+  return prisma.$transaction(async (tx) => {
+    const vocabulary = await tx.vocabulary.create({ data: input, include: { topic: { select: { name: true } } } });
+    await recordAdminAction(
+      {
+        actorId,
+        action: AdminAction.VOCABULARY_CREATED,
+        targetId: vocabulary.id,
+        targetLabel: vocabulary.word,
+        changes: createdFields(input, VOCABULARY_FIELDS),
+        note: vocabulary.topic.name,
+      },
+      tx,
+    );
+    return vocabulary;
+  });
 }
 
-export async function updateVocabulary(vocabularyId: number, input: UpdateVocabularyInput) {
-  await assertSystemVocabulary(vocabularyId);
-  return prisma.vocabulary.update({ where: { id: vocabularyId }, data: input });
+export async function updateVocabulary(vocabularyId: number, input: UpdateVocabularyInput, actorId: number) {
+  const before = await assertSystemVocabulary(vocabularyId);
+  const changes = diffFields(before, input, VOCABULARY_FIELDS);
+
+  return prisma.$transaction(async (tx) => {
+    const vocabulary = await tx.vocabulary.update({ where: { id: vocabularyId }, data: input });
+    // Bấm Lưu mà không đổi gì thì không có gì để ghi.
+    if (changes) {
+      await recordAdminAction(
+        {
+          actorId,
+          action: AdminAction.VOCABULARY_UPDATED,
+          targetId: vocabularyId,
+          targetLabel: vocabulary.word,
+          changes,
+          note: before.topic.name,
+        },
+        tx,
+      );
+    }
+    return vocabulary;
+  });
 }
 
-export async function deleteVocabulary(vocabularyId: number): Promise<void> {
-  await assertSystemVocabulary(vocabularyId);
-  await prisma.vocabulary.delete({ where: { id: vocabularyId } });
+export async function deleteVocabulary(vocabularyId: number, actorId: number): Promise<void> {
+  const vocabulary = await assertSystemVocabulary(vocabularyId);
+  await prisma.$transaction(async (tx) => {
+    await recordAdminAction(
+      {
+        actorId,
+        action: AdminAction.VOCABULARY_DELETED,
+        targetId: vocabularyId,
+        targetLabel: vocabulary.word,
+        note: vocabulary.topic.name,
+      },
+      tx,
+    );
+    await tx.vocabulary.delete({ where: { id: vocabularyId } });
+  });
 }

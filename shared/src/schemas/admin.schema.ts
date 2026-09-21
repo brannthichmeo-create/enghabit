@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ActivityType, UserRole, UserStatus } from '../constants/enums.js';
+import { AuditTargetType, type AuditChanges } from '../constants/admin-audit.js';
 import type { PublicUser } from './auth.schema.js';
 import type { DailyStat } from './statistics.schema.js';
 
@@ -119,6 +120,38 @@ export const accessLogQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(90).default(30),
 });
 export type AccessLogQueryInput = z.infer<typeof accessLogQuerySchema>;
+
+/** Lọc nhật ký thao tác của quản trị viên. */
+export const auditLogQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  targetType: z.nativeEnum(AuditTargetType).optional(),
+  actorId: z.coerce.number().int().positive().optional(),
+});
+export type AuditLogQueryInput = z.infer<typeof auditLogQuerySchema>;
+
+/** Một dòng nhật ký thao tác. */
+export interface AuditLogRow {
+  id: number;
+  createdAt: string;
+  /** `id` null khi tài khoản đã bị xoá — tên vẫn giữ nguyên như lúc thao tác. */
+  actor: { id: number | null; name: string };
+  /** Chuỗi, không ép về `AdminAction`: dòng cũ có thể mang thao tác phiên bản sau đã bỏ. */
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  /** Tên đối tượng TẠI THỜI ĐIỂM thao tác — đối tượng có thể đã đổi tên hoặc bị xoá. */
+  targetLabel: string | null;
+  changes: AuditChanges | null;
+  /** Lý do, nội dung cảnh báo, tiêu đề thông báo… */
+  note: string | null;
+}
+
+/** Người đã từng có thao tác trong nhật ký, cho ô lọc "Người thực hiện". */
+export interface AuditActorOption {
+  id: number;
+  name: string;
+}
 
 export interface LoginEventRow {
   id: number;

@@ -146,6 +146,23 @@ Quản trị viên **vận hành hệ thống, không phải người học**: �
 - **Kiểm duyệt bộ thẻ** (`/admin/study-sets`) — xem báo cáo vi phạm, chặn/mở chặn bộ thẻ công khai, bỏ qua báo cáo
 - **Quản lý cửa hàng** (`/admin/shop`) — CRUD loại vật phẩm và vật phẩm bán bằng xu; không xoá được vật phẩm đã có người mua
 - **Quản lý tính năng** (`/admin/features`) — bật/tắt từng tính năng của người học
+- **Nhật ký thao tác** (`/admin/audit`) — mọi thao tác chỉnh sửa của quản trị viên: ai làm, lúc nào, đổi từ gì sang gì; lọc theo loại đối tượng và người thực hiện
+
+**Nhật ký thao tác (`admin_audit_logs`) — bốn quy tắc bắt buộc giữ:**
+
+- **Thêm thao tác ghi mới cho quản trị viên là phải ghi nhật ký.** Gọi
+  `recordAdminAction` của `admin/admin-audit.service.ts` ngay trong service, **cùng
+  transaction** với lệnh ghi chính khi được (truyền `tx`): thao tác đã xảy ra mà không có
+  dòng nhật ký là nhật ký nói dối, còn dòng cho một thao tác đã rollback là bịa. Thao tác
+  xoá thì ghi TRƯỚC lệnh xoá — xoá xong không còn tên để chụp. Thêm giá trị vào
+  `AdminAction` (`shared/constants/admin-audit.ts`) và nhãn vào `fe/src/features/admin/audit-labels.ts` + `en.ts`.
+- **Chỉ thêm, không sửa, không xoá** — kể cả với quản trị viên. API chỉ có hai route đọc.
+- **Chụp TÊN, không chỉ id** (`actor_name`, `target_label`): người thực hiện và đối tượng
+  đều có thể bị xoá sau đó. `action`/`target_type` là chuỗi, danh mục nằm trong mã nguồn —
+  thêm thao tác mới không phải migrate enum.
+- **Chỉ ghi khi có gì đổi** (`diffFields` trả null thì bỏ qua), và **không bao giờ ghi
+  blob** (ảnh vật phẩm chỉ ghi "đã thay ảnh"). Quản trị viên xoá bài/bình luận của NGƯỜI
+  KHÁC ở Cộng đồng cũng được ghi; tự xoá bài của mình thì không.
 
 Ba quy tắc an toàn bắt buộc giữ khi sửa module này (đã cài trong `admin.service.ts`):
 không tự hạ quyền/khoá/xoá chính mình, không xoá hay hạ quyền **quản trị viên hoạt
