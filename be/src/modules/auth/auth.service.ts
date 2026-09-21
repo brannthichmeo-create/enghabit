@@ -140,14 +140,30 @@ export async function login(input: LoginInput, client: LoginClientInfo = {}): Pr
  * Không đoán trước bằng cách xem có dấu "@" rồi mới tra một cột: email và tên tài
  * khoản đều đã unique nên `OR` chỉ có thể ra tối đa một dòng, mà lại đúng cả với
  * trường hợp tên tài khoản có chứa "@" nếu sau này nới luật đặt tên.
+ *
+ * So khớp CHÍNH XÁC: tên tài khoản phân biệt hoa thường và khoảng trắng; email không
+ * phân biệt hoa thường (email lưu chữ thường lúc đăng ký) nhưng vẫn không được thừa
+ * khoảng trắng. Luồng quên mật khẩu tự chuẩn hoá chuỗi trước khi gọi hàm này (xem
+ * `passwordResetIdentifierSchema`), nên ở đó gõ "User" vẫn tra ra tài khoản.
  */
 export async function findByIdentifier(
   identifier: string,
 ): Promise<(User & { avatar: UserAvatar | null }) | null> {
-  return prisma.user.findFirst({
-    where: { OR: [{ email: identifier }, { username: identifier }] },
+  const email = identifier.toLowerCase();
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ email }, { username: identifier }] },
     include: { avatar: true },
   });
+
+  /*
+    Kiểm lại trong JS, không tin kết quả so sánh của MySQL.
+
+    Collation `utf8mb4_unicode_ci` không phân biệt hoa thường, và là loại PAD SPACE nên
+    bỏ qua khoảng trắng CUỐI chuỗi: `username = 'User   '` vẫn khớp dòng `user`. Chỉ bỏ
+    `.trim().toLowerCase()` ở schema là chưa đủ — DB vẫn tự "tha" cho chuỗi sai.
+  */
+  if (!user) return null;
+  return user.username === identifier || user.email === email ? user : null;
 }
 
 export interface LoginClientInfo {

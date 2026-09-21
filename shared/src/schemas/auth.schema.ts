@@ -12,11 +12,13 @@ export const passwordSchema = z
 /**
  * Tên tài khoản đăng nhập — khác `name` là tên hiển thị (được phép trùng).
  *
- * Chuẩn hoá về chữ thường ngay tại schema, vì hai lý do:
- *  - Collation của DB là `utf8mb4_unicode_ci`, tức PHÂN BIỆT HOA THƯỜNG LÀ KHÔNG.
- *    "Admin" và "admin" vốn đã đụng nhau ở tầng DB; hạ chữ thường tại đây làm điều
- *    đó thành quy tắc tường minh thay vì một hành vi ngầm của MySQL.
- *  - Đăng nhập cũng hạ chữ thường, nên gõ "Admin" hay "admin" đều vào được.
+ * Lúc ĐĂNG KÝ chuẩn hoá về chữ thường ngay tại schema: collation của DB là
+ * `utf8mb4_unicode_ci`, tức KHÔNG phân biệt hoa thường — "Admin" và "admin" vốn đã đụng
+ * nhau ở tầng DB, hạ chữ thường tại đây làm điều đó thành quy tắc tường minh thay vì một
+ * hành vi ngầm của MySQL. Nhờ vậy tên lưu trong DB luôn là chữ thường.
+ *
+ * Lúc ĐĂNG NHẬP thì ngược lại: KHÔNG chuẩn hoá gì cả, phải gõ đúng từng ký tự — xem
+ * `loginSchema`.
  *
  * Không cho dấu tiếng Việt và khoảng trắng: tên này còn dùng để tra cứu khi quên
  * mật khẩu, gõ sai dấu một ly là không tìm ra tài khoản.
@@ -45,10 +47,21 @@ export type RegisterInput = z.infer<typeof registerSchema>;
  * Đăng nhập bằng email HOẶC tên tài khoản.
  *
  * Một ô nhập duy nhất chứ không phải hai ô hay một nút chuyển kiểu: người dùng chỉ
- * cần gõ thứ họ nhớ. Backend phân biệt bằng cách xem có dấu "@" hay không.
+ * cần gõ thứ họ nhớ.
+ *
+ * KHÔNG `.trim()`, KHÔNG `.toLowerCase()`: tên tài khoản phải khớp CHÍNH XÁC. Tài khoản
+ * `user` thì gõ `User` hay `  user  ` đều là sai tên đăng nhập — như mật khẩu, đây là
+ * thông tin xác thực, không phải một ô tìm kiếm. Riêng email vẫn không phân biệt hoa
+ * thường (xem `findByIdentifier`), vì đó là quy ước chung của địa chỉ email.
+ *
+ * Chuẩn hoá ở đây thôi CHƯA ĐỦ: collation `utf8mb4_unicode_ci` của MySQL cũng tự bỏ qua
+ * hoa thường và khoảng trắng cuối chuỗi. Phần so khớp chính xác nằm ở backend.
  */
 export const loginSchema = z.object({
-  identifier: z.string().trim().toLowerCase().min(1, 'Vui lòng nhập email hoặc tên tài khoản'),
+  identifier: z
+    .string()
+    .max(190)
+    .refine((value) => value.trim().length > 0, 'Vui lòng nhập email hoặc tên tài khoản'),
   password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
