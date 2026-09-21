@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addDays, type ActivityCalendar as CalendarData, type CalendarDay } from '@enghabit/shared';
@@ -36,8 +36,16 @@ function todayIso(): string {
 const MONTH_LABELS = ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'];
 
 /**
- * Kích thước một ô. 13px thay vì 11px: ở 11px, ô và khe giữa gần bằng nhau nên cả lưới
- * nhìn như một mảng nhiễu, khó dò theo hàng để biết ô nào là thứ mấy.
+ * Kích thước ô NHỎ NHẤT. 13px thay vì 11px: ở 11px, ô và khe giữa gần bằng nhau nên cả
+ * lưới nhìn như một mảng nhiễu, khó dò theo hàng để biết ô nào là thứ mấy.
+ *
+ * Ô không cố định 13px mà là Ô VUÔNG giãn theo bề ngang: cột tuần chia đều chiều rộng
+ * thẻ, như lịch đóng góp của GitHub. Cố định thì dải ngắn nằm lọt thỏm một góc thẻ; còn
+ * giãn mà không giữ vuông thì ô thành chữ nhật dẹt, không còn đọc ra là "một ngày một ô".
+ * Màn hẹp mà không đủ chỗ cho 13px mỗi cột thì lưới cuộn ngang.
+ *
+ * Vì ô vuông cao bằng bề ngang, khoảng thời gian phải đủ dài để có đủ cột — chỗ gọi chọn
+ * khoảng (6 hoặc 12 tháng) theo đúng lẽ đó.
  */
 const CELL = 13;
 const GAP = 3;
@@ -69,6 +77,17 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
 
   const weeks = useMemo(() => buildWeeks(data.days), [data.days]);
   const today = todayIso();
+
+  /*
+    Màn hẹp phải cuộn ngang thì mở ra ở TUẦN GẦN NHẤT, không ở đầu dải. Mở ở đầu thì
+    thứ người học quan tâm nhất — mấy hôm vừa rồi — nằm khuất ngoài màn hình, và họ
+    không biết là phải cuộn.
+  */
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [weeks]);
 
   const levelOf = (count: number): number => {
     if (count === 0) return 0;
@@ -117,53 +136,56 @@ export function ActivityCalendarChart({ data }: { data: CalendarData }): JSX.Ele
         </p>
       </div>
 
-      {/* Cuộn ngang trên màn hình hẹp — giữ nguyên kích thước ô để vẫn dễ nhìn */}
-      <div className="mt-3 overflow-x-auto pb-1">
-        <div className="inline-block min-w-full">
+      {/*
+        Hai lưới (nhãn tháng và ô ngày) dùng CHUNG một khuôn cột nên nhãn tháng luôn nằm
+        đúng trên cột tuần của nó, dù cột co giãn theo bề ngang thẻ. Không đủ chỗ cho cột
+        13px thì cả khối cuộn ngang.
+      */}
+      <div ref={scrollRef} className="mt-3 overflow-x-auto pb-1">
+        <div style={{ minWidth: LABEL_COL + weeks.length * (CELL + GAP) }}>
           <MonthLabels weeks={weeks} />
 
-          <div className="flex gap-[3px]">
+          <div
+            className="grid grid-flow-col"
+            style={{
+              gridTemplateColumns: gridColumns(weeks.length),
+              gridTemplateRows: 'repeat(7, auto)',
+              gap: GAP,
+            }}
+          >
             <WeekdayLabels />
 
-            <div className="flex gap-[3px]">
-              {weeks.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-[3px]">
-                  {week.days.map((day, dayIndex) =>
-                    day === null ? (
-                      <div key={dayIndex} style={{ width: CELL, height: CELL }} />
-                    ) : (
-                      <button
-                        key={dayIndex}
-                        type="button"
-                        onMouseEnter={() => setHovered(day)}
-                        onMouseLeave={() => setHovered(null)}
-                        onFocus={() => setHovered(day)}
-                        onBlur={() => setHovered(null)}
-                        onClick={() => setPinned((current) => (current === day.date ? null : day.date))}
-                        aria-label={`${day.date}: ${t('{n} hoạt động', { n: day.count })}`}
-                        aria-pressed={pinned === day.date}
-                        title={`${formatDate(day.date, locale)} — ${t('{n} hoạt động', { n: day.count })}`}
-                        // Viền quanh ô HÔM NAY để người xem định vị được mình đang ở
-                        // đâu trên dải ngày — không có mốc này thì phải đếm ngược từ
-                        // nhãn tháng mới biết ô cuối là ngày nào.
-                        className={`rounded-[3px] transition-transform hover:scale-125 ${
-                          pinned === day.date
-                            ? 'ring-2 ring-brand ring-offset-1 ring-offset-surface'
-                            : day.date === today
-                              ? 'ring-1 ring-content-muted'
-                              : ''
-                        }`}
-                        style={{
-                          width: CELL,
-                          height: CELL,
-                          backgroundColor: LEVEL_COLORS[levelOf(day.count)],
-                        }}
-                      />
-                    ),
-                  )}
-                </div>
-              ))}
-            </div>
+            {weeks.flatMap((week, weekIndex) =>
+              week.days.map((day, dayIndex) =>
+                day === null ? (
+                  <div key={`${weekIndex}-${dayIndex}`} className="aspect-square" />
+                ) : (
+                  <button
+                    key={`${weekIndex}-${dayIndex}`}
+                    type="button"
+                    onMouseEnter={() => setHovered(day)}
+                    onMouseLeave={() => setHovered(null)}
+                    onFocus={() => setHovered(day)}
+                    onBlur={() => setHovered(null)}
+                    onClick={() => setPinned((current) => (current === day.date ? null : day.date))}
+                    aria-label={`${day.date}: ${t('{n} hoạt động', { n: day.count })}`}
+                    aria-pressed={pinned === day.date}
+                    title={`${formatDate(day.date, locale)} — ${t('{n} hoạt động', { n: day.count })}`}
+                    // Viền quanh ô HÔM NAY để người xem định vị được mình đang ở
+                    // đâu trên dải ngày — không có mốc này thì phải đếm ngược từ
+                    // nhãn tháng mới biết ô cuối là ngày nào.
+                    className={`aspect-square rounded-[3px] transition-transform hover:scale-110 ${
+                      pinned === day.date
+                        ? 'ring-2 ring-brand ring-offset-1 ring-offset-surface'
+                        : day.date === today
+                          ? 'ring-1 ring-content-muted'
+                          : ''
+                    }`}
+                    style={{ backgroundColor: LEVEL_COLORS[levelOf(day.count)] }}
+                  />
+                ),
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -205,23 +227,28 @@ function Legend(): JSX.Element {
   );
 }
 
+/**
+ * Khuôn cột dùng chung cho hàng nhãn tháng và lưới ô ngày: một cột nhãn thứ cố định,
+ * rồi mỗi tuần một cột chia đều phần còn lại, không nhỏ hơn một ô tối thiểu.
+ */
+function gridColumns(weekCount: number): string {
+  return `${LABEL_COL}px repeat(${weekCount}, minmax(${CELL}px, 1fr))`;
+}
+
 function WeekdayLabels(): JSX.Element {
   // Nhãn khai báo trong mảng hằng số nên dịch tại CHỖ HIỂN THỊ (xem CLAUDE.md).
   // Ô trống là khoảng cách cố ý giữa các thứ — không đưa chuỗi rỗng qua `t()`.
+  // Mỗi nhãn là một ô của cột đầu lưới, nên luôn cao đúng bằng hàng ô ngày của nó.
   const t = useT();
 
   return (
-    <div className="flex shrink-0 flex-col gap-[3px]" style={{ width: LABEL_COL }}>
+    <>
       {WEEKDAY_LABELS.map((label, i) => (
-        <span
-          key={i}
-          className="text-[10px] leading-none text-content-muted"
-          style={{ height: CELL, lineHeight: `${CELL}px` }}
-        >
+        <span key={i} className="flex items-center text-[10px] leading-none text-content-muted">
           {label ? t(label) : ''}
         </span>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -249,13 +276,18 @@ function MonthLabels({ weeks }: { weeks: Week[] }): JSX.Element {
     labels[labels.length - 1] = candidate;
   });
 
+  // Cùng khuôn cột với lưới ô ngày (cột 1 là cột nhãn thứ, để trống ở hàng này), nên
+  // nhãn rơi đúng cột tuần dù cột co giãn. Nhãn được tràn sang cột bên cạnh.
   return (
-    <div className="relative mb-1.5 h-3.5" style={{ marginLeft: LABEL_COL }}>
+    <div
+      className="mb-1.5 grid h-3.5"
+      style={{ gridTemplateColumns: gridColumns(weeks.length), columnGap: GAP }}
+    >
       {labels.map((label) => (
         <span
           key={label.index}
-          className="absolute text-[10px] font-medium leading-none text-content-muted"
-          style={{ left: label.index * (CELL + GAP) }}
+          className="whitespace-nowrap text-[10px] font-medium leading-none text-content-muted"
+          style={{ gridColumnStart: label.index + 2, gridRowStart: 1 }}
         >
           {label.text ? t(label.text) : ''}
         </span>
