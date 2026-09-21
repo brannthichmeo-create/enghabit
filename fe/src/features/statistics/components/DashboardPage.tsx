@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, CalendarCheck, ChevronRight, Layers, Target } from 'lucide-react';
-import { FeatureKey, type StatsRangeInput } from '@enghabit/shared';
+import { FeatureKey, type GoalProgress, type StatsRangeInput } from '@enghabit/shared';
 import { ActivityChart } from '../../../shared/components/ActivityChart';
 import { HeroCard } from './HeroCard';
 import { RewardsBar } from '../../rewards/components/RewardsBar';
 import { ActivityCalendarChart } from '../../../shared/components/ActivityCalendar';
 import { Card, ErrorState, ProgressBar, Skeleton } from '../../../shared/components/ui';
 import { getErrorMessage } from '../../../shared/lib/api-client';
-import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
+import { goalName } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useGoalProgress } from '../../goals/goal.hooks';
 import { useDueCount } from '../../study/study.hooks';
@@ -369,7 +369,7 @@ function GoalCard({
   errorMessage,
   onRetry,
 }: {
-  goals?: { goalId: number; type: keyof typeof GOAL_TYPE_LABELS; currentValue: number; targetValue: number; completionRate: number; isCompleted: boolean }[];
+  goals?: GoalProgress[];
   loading: boolean;
   errorMessage?: string;
   onRetry?: () => void;
@@ -412,7 +412,7 @@ function GoalCard({
           {goals.map((goal) => (
             <li key={goal.goalId}>
               <div className="mb-1.5 flex items-baseline justify-between gap-2">
-                <span className="truncate text-sm text-content-soft">{t(GOAL_TYPE_LABELS[goal.type])}</span>
+                <span className="truncate text-sm text-content-soft">{t(goalName(goal.type, goal.period))}</span>
                 <span
                   className={`shrink-0 text-xs tabular-nums ${
                     goal.isCompleted ? 'font-semibold text-success' : 'text-content-muted'
@@ -424,7 +424,7 @@ function GoalCard({
               <ProgressBar
                 percent={goal.completionRate}
                 done={goal.isCompleted}
-                label={t(GOAL_TYPE_LABELS[goal.type])}
+                label={t(goalName(goal.type, goal.period))}
               />
             </li>
           ))}

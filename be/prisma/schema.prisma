@@ -40,6 +40,8 @@ enum GoalType {
 enum GoalPeriod {
   DAILY
   WEEKLY
+  /// Cộng dồn từ ngày bắt đầu tới hạn, vd "thuộc 1500 từ trước Tết".
+  TOTAL
 }
 
 enum GoalStatus {
@@ -367,10 +369,16 @@ model Goal {
   endDate     DateTime?  @map("end_date") @db.Date
   status      GoalStatus @default(ACTIVE)
 
+  /// Ngày bắt đầu tạm dừng, null = đang chạy. Tiếp tục thì hạn lùi đúng số ngày đã dừng.
+  /// Là cột chứ không là giá trị của `status`: mục tiêu tạm dừng vẫn là mục tiêu đang
+  /// theo dõi, thêm trạng thái thứ tư thì mọi chỗ lọc `ACTIVE` phải sửa theo.
+  pausedAt DateTime? @map("paused_at") @db.Date
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habits Habit[]
 
   @@index([userId, status])
   @@map("goals")
@@ -390,13 +398,36 @@ model Habit {
 
   isActive Boolean @default(true) @map("is_active")
 
+  /// Null = người dùng tự tích. Có giá trị = tự hoàn thành khi ActivityLog của ngày có đủ
+  /// `targetAmount` dòng loại này. Loại này KHÔNG lưu check-in: trạng thái chấm lại từ
+  /// ActivityLog mỗi lần đọc, như tiến độ nhiệm vụ ngày — lưu thêm là nguồn số liệu thứ hai.
+  autoActivity ActivityType? @map("auto_activity")
+
+  /// Lượng mỗi lần làm (số thẻ, số từ, số phút...). Null = chỉ có làm / chưa làm.
+  targetAmount Int? @map("target_amount")
+
+  /// Mức tối thiểu cho ngày bận: đạt mức này vẫn tính là đã làm. Null = không có mức riêng.
+  minAmount Int? @map("min_amount")
+
+  /// Đơn vị của lượng, chỉ cho thói quen tự tích (vd "phút"). Thói quen tự động có đơn vị
+  /// cố định theo loại hoạt động nên cột này để trống.
+  unit String? @db.VarChar(20)
+
+  /// Số lần mỗi tuần, chỉ dùng khi frequency = WEEKLY. Null = 1.
+  timesPerWeek Int? @map("times_per_week")
+
+  /// Mục tiêu mà thói quen này phục vụ. Xoá mục tiêu thì thói quen vẫn còn, chỉ mất liên kết.
+  goalId Int? @map("goal_id")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal     Goal?          @relation(fields: [goalId], references: [id], onDelete: SetNull)
   checkIns HabitCheckIn[]
 
   @@index([userId, isActive])
+  @@index([goalId])
   @@map("habits")
 }
 
@@ -407,6 +438,9 @@ model HabitCheckIn {
 
   /// Ngày check-in theo timezone user. Unique cùng habitId để mỗi ngày chỉ check-in một lần.
   localDate DateTime @map("local_date") @db.Date
+
+  /// Lượng đã làm, khi thói quen có `targetAmount`. Null = chỉ đánh dấu đã làm.
+  amount Int?
 
   note      String?  @db.VarChar(500)
   createdAt DateTime @default(now()) @map("created_at")

@@ -17,6 +17,8 @@ export interface Goal {
   startDate: string;
   endDate: string | null;
   status: GoalStatus;
+  /** Ngày bắt đầu tạm dừng, null = đang chạy. */
+  pausedAt: string | null;
   createdAt: string;
 }
 
@@ -42,6 +44,16 @@ export async function updateGoal(id: number, input: UpdateGoalInput): Promise<Go
 
 export async function finishGoal(id: number, input: FinishGoalInput): Promise<Goal> {
   const { data } = await apiClient.post<Goal>(`/goals/${id}/finish`, input);
+  return data;
+}
+
+export async function pauseGoal(id: number): Promise<Goal> {
+  const { data } = await apiClient.post<Goal>(`/goals/${id}/pause`);
+  return data;
+}
+
+export async function resumeGoal(id: number): Promise<Goal> {
+  const { data } = await apiClient.post<Goal>(`/goals/${id}/resume`);
   return data;
 }
 

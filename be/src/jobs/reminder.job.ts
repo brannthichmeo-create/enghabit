@@ -4,13 +4,14 @@ import {
   HabitFrequency,
   NotificationType,
   UserRole,
-  habitPeriodStart,
   isScheduledDay,
   toLocalDate,
+  weeklyQuota,
 } from '@enghabit/shared';
 import { prisma } from '../lib/prisma.js';
 import { jobLogger } from '../lib/logger.js';
 import { toDbDate } from '../common/utils/db-date.js';
+import * as habitService from '../modules/habits/habit.service.js';
 import * as notificationService from '../modules/notifications/notification.service.js';
 import * as studyService from '../modules/study/study.service.js';
 import * as featureService from '../modules/feature-flags/feature.service.js';
@@ -175,8 +176,8 @@ async function sendDueStreakWarnings(now: Date, result: ReminderTickResult): Pro
  *
  * Khác hai lượt trên ở điều kiện im lặng: lời nhắc này nói về MỘT việc cụ thể người dùng
  * tự đặt giờ, nên người đã ôn thẻ từ sáng mà chưa nghe podcast vẫn phải được nhắc nghe
- * podcast. Chỉ im khi chính thói quen đó đã check-in trong kỳ — thói quen hằng tuần thì
- * cả tuần, còn lại thì trong ngày.
+ * podcast. Chỉ im khi chính thói quen đó đã làm đủ trong kỳ — thói quen hằng tuần là đủ
+ * số lần của tuần, còn lại là trong ngày.
  *
  * Thói quen đang tạm dừng không nhắc; công tắc tổng tắt thì im như mọi lời nhắc khác.
  */
@@ -206,24 +207,19 @@ async function sendDueHabitReminders(now: Date, result: ReminderTickResult): Pro
   for (const habit of habits) {
     const { user } = habit;
     const localDate = toLocalDate(now, user.timezone);
-    const schedule = { frequency: habit.frequency, customDays: habit.customDays as number[] | null };
 
     if (
       !habit.reminderTime ||
       !inWindow(localMinutes(user.timezone, now), habit.reminderTime) ||
-      !isScheduledDay(schedule, localDate)
+      !isScheduledDay(habitService.toSchedule(habit), localDate)
     ) {
       result.skipped += 1;
       continue;
     }
 
-    const doneThisPeriod = await prisma.habitCheckIn.count({
-      where: {
-        habitId: habit.id,
-        localDate: { gte: toDbDate(habitPeriodStart(habit.frequency, localDate)), lte: toDbDate(localDate) },
-      },
-    });
-    if (doneThisPeriod > 0) {
+    // Hỏi module habits thay vì tự đếm check-in: thói quen tự động không có check-in nào,
+    // trạng thái của nó chấm từ ActivityLog — tự đếm ở đây là nhắc cả người đã học xong.
+    if (await habitService.isHabitDoneThisPeriod(habit, localDate)) {
       result.skipped += 1;
       continue;
     }
@@ -235,8 +231,8 @@ async function sendDueHabitReminders(now: Date, result: ReminderTickResult): Pro
       title: `Đến giờ: ${habit.name}`,
       body:
         habit.frequency === HabitFrequency.WEEKLY
-          ? 'Tuần này bạn chưa check-in thói quen này.'
-          : 'Hôm nay bạn chưa check-in thói quen này.',
+          ? `Tuần này bạn chưa làm đủ ${weeklyQuota(habit.timesPerWeek)} lần.`
+          : 'Hôm nay bạn chưa hoàn thành thói quen này.',
       link: '/habits',
       // Tiền tố HABIT- tách hẳn khỏi khoá của mốc nhắc chung (`DAILY_REMINDER:<reminderId>:…`):
       // hai bảng có id riêng, thiếu tiền tố thì thói quen số 3 và mốc nhắc số 3 dẫm lên nhau.

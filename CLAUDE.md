@@ -14,8 +14,8 @@ Các feature FE còn lại (habits, goals, admin) đã có sẵn API backend và
 
 ### Chức năng cho người học
 - Tạo tài khoản, quản lý thông tin cá nhân
-- Thiết lập mục tiêu học (số từ/ngày, số phút/ngày, số bài/tuần, streak N ngày)
-- Tạo và quản lý thói quen học tập (tần suất daily/weekly/custom), check-in hoàn thành
+- Thiết lập mục tiêu học (số từ, lượt ôn, phiên học theo ngày/tuần hoặc cộng dồn tới hạn kèm dự báo ngày đạt; streak N ngày), tạm dừng và kết thúc mục tiêu
+- Tạo và quản lý thói quen học tập (hằng ngày, N lần/tuần, theo thứ), có lượng mỗi lần và mức tối thiểu cho ngày bận; thói quen tự tích (việc ngoài app) hoặc tự động hoàn thành khi học trong app; gắn thói quen vào mục tiêu
 - Ghi danh sách việc cần làm trong ngày (`/todos`), đánh dấu xong ngay trên thanh trên cùng mà không rời màn hình đang mở
 - Khám phá bộ thẻ công khai, tự tạo bộ thẻ riêng tư/công khai, chia sẻ và báo cáo vi phạm (`/library`)
 - Học một bộ thẻ bằng flashcard hoặc trắc nghiệm (`/learn`), ôn thẻ tới hạn/quá hạn/yếu theo SM-2 (`/review`)
@@ -252,6 +252,42 @@ thống, không gắn với "một ngày học" của riêng người dùng nào
 - Khi phát hiện streak sai: chạy lại script này, **không sửa tay** giá trị trong bảng.
 - Thống kê ngày/tuần/tháng **tính trực tiếp từ `ActivityLog`** (query on-the-fly), không tạo bảng tổng hợp riêng — ở quy mô vài trăm user, thêm bảng tổng hợp chỉ làm tăng nguy cơ lệch số liệu mà không có lợi ích thực tế.
 - **Bảng xếp hạng cũng vậy**: `leaderboard.service` group `ActivityLog` theo user mỗi lần đọc, không có bảng điểm riêng. Điểm xếp hạng dùng lại đúng `xpFromActivityCounts` của `shared/level` — dựng thang điểm riêng cho bảng xếp hạng là tạo ra hai cách tính song song, và người dùng sẽ thấy "cấp độ nói một đằng, thứ hạng nói một nẻo". Chỉ xếp hạng tài khoản `USER` đang `ACTIVE`.
+
+### Mục tiêu và thói quen (module `goals` + `habits`)
+
+Mục tiêu là ĐÍCH (có hạn), thói quen là VIỆC LẶP LẠI để tới đích; thói quen gắn được vào
+một mục tiêu (`habits.goal_id`, xoá mục tiêu thì chỉ mất liên kết). Sáu quyết định bắt
+buộc giữ:
+
+- **Thói quen tự động (`auto_activity`) KHÔNG lưu check-in.** Trạng thái từng ngày chấm
+  lại từ `ActivityLog` mỗi lần đọc (`loadHabitDays` trong `habit.service`), như tiến độ
+  nhiệm vụ ngày — chép sang `habit_check_ins` là nguồn số liệu thứ hai. Loại này không
+  cho check-in tay (400), và không nhận `HABIT_CHECKIN` làm nguồn.
+- **Tích tay ghi tối đa MỘT dòng `HABIT_CHECKIN` mỗi ngày** (`dedupeKey =
+  HABIT_CHECKIN:<local_date>`), dù tích bao nhiêu thói quen. Tích tay là việc app không
+  kiểm được: mỗi lượt một dòng thì mười thói quen "abc" là 120 XP/ngày. Một dòng vẫn đủ
+  giữ chuỗi và làm nhiệm vụ "Check-in 1 thói quen". Hệ quả: số "Check-in thói quen" ở
+  thống kê là số NGÀY có tích tay, không phải số lượt.
+- **Mức tối thiểu vẫn tính là đã làm.** Chấm bằng `habitDayLevel` của `shared/habit` —
+  một chỗ duy nhất cho BE (nhắc nhở, tỷ lệ), FE (dải 7 ngày). Đạt mức tối thiểu vẽ bằng
+  VIỀN, làm đủ thì tô kín: khác nhau ở hình, không chỉ ở màu.
+- **"Đã làm trong kỳ chưa" chỉ hỏi `isHabitPeriodDone`** — thói quen hằng tuần cần đủ
+  `times_per_week` ngày trong tuần. Job nhắc nhở hỏi `habitService.isHabitDoneThisPeriod`,
+  không tự đếm `habit_check_ins` (thói quen tự động không có dòng nào ở đó).
+- **Mục tiêu có điểm đích tự chuyển `COMPLETED` khi đạt**: `STREAK_TARGET` và chu kỳ
+  `TOTAL` (cộng dồn từ ngày bắt đầu). Để ACTIVE thì mỗi ngày học sau đó lại một thông báo
+  "Đã đạt mục tiêu!". Kết thúc (tay hay tự động) chốt `end_date`, không mở lại được.
+- **Tạm dừng mục tiêu là cột `paused_at`, không phải giá trị `status`** — mục tiêu tạm
+  dừng vẫn là mục tiêu đang theo dõi. Dừng thì thôi đo tiến độ và thôi chúc mừng; tiếp
+  tục thì `end_date` lùi đúng số ngày đã dừng. Chưa làm: trang Báo cáo vẫn chấm mục tiêu
+  trong những ngày nó tạm dừng.
+
+Tên hiển thị của mục tiêu luôn lấy qua `goalName(type, period)` (`fe/src/shared/lib/labels.ts`),
+không ghép "{loại} {chu kỳ}". Tên enum `VOCAB_PER_DAY`, `MINUTES_PER_DAY`, `LESSONS_PER_WEEK`
+là lịch sử, không phải nghĩa — cả ba giờ đặt được theo ngày, theo tuần hoặc cộng dồn.
+Dự báo ngày đạt (`forecastGoal`) và quy đổi chỉ tiêu cho báo cáo (`expectedForRange`)
+đều ở `shared`; mục tiêu cộng dồn không có hạn bị loại khỏi trang Báo cáo vì không chia
+được chỉ tiêu theo khoảng.
 
 ### Việc cần làm (module `todos`)
 
@@ -586,7 +622,8 @@ ngay lúc code — màn hình vẫn chạy, chỉ sai lệch dần so với ph�
 - FE: mỗi feature lớn (`study`, `community`...) có Error Boundary cục bộ, tránh lỗi 1 feature làm crash toàn app.
 - Debug cron/notification: xem log riêng của `be/src/jobs`, không lẫn với log của module `notifications` (module này giữ **nội dung và lưu trữ** thông báo + cấu hình nhắc nhở, nhưng **không chứa lịch trình gửi**).
 - Không nhận được nhắc nhở: kiểm tra theo thứ tự (1) `notification_settings.is_enabled` — công tắc tổng, tắt là im hết; (2) bảng `reminders`: có mốc nào `is_enabled` và `days_of_week` chứa thứ hôm nay không; (3) `User.timezone` — giờ nhắc tính theo giờ user, không phải giờ máy chủ; (4) hôm đó user đã có `ActivityLog` chưa (đã học thì hệ thống cố ý im lặng); (5) bảng `notifications` xem `dedupe_key` (`DAILY_REMINDER:<reminderId>:<local_date>`) của ngày đó đã tồn tại chưa. Nhắc riêng của thói quen thì khoá là `DAILY_REMINDER:HABIT-<habitId>:<local_date>`, và điều kiện im là thói quen đó đã check-in trong kỳ hoặc đang tạm dừng — không phải "đã học hôm nay".
-- Mục tiêu "tự biến mất" khỏi trang Báo cáo hoặc thẻ tiến độ: xem `goals.status`. Chỉ `ACTIVE` được đo; kết thúc (`POST /goals/:id/finish`) là chuyển hẳn sang `COMPLETED`/`ARCHIVED`, chốt `end_date` và không mở lại được. Mục tiêu `STREAK_TARGET` tự sang `COMPLETED` ngay khi đạt chuỗi — nếu không, mỗi ngày học sau đó lại sinh một thông báo "Đã đạt mục tiêu!".
+- Mục tiêu "tự biến mất" khỏi trang Báo cáo hoặc thẻ tiến độ: xem `goals.status` và `goals.paused_at`. Chỉ `ACTIVE` không tạm dừng mới được đo; kết thúc (`POST /goals/:id/finish`) là chuyển hẳn sang `COMPLETED`/`ARCHIVED`, chốt `end_date` và không mở lại được. Mục tiêu `STREAK_TARGET` và chu kỳ `TOTAL` tự sang `COMPLETED` ngay khi đạt. Mục tiêu `TOTAL` không có hạn thì không bao giờ có trong Báo cáo.
+- Thói quen tự động "không chịu xong" dù đã học: nó đếm `activity_logs` đúng loại `habits.auto_activity` theo `local_date` và so với `target_amount` — kiểm hai cột đó trước. Thói quen tự động không có dòng nào trong `habit_check_ins`, đó là đúng thiết kế.
 
 ## Quy tắc commit Git
 

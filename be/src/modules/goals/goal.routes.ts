@@ -66,6 +66,22 @@ goalRoutes.post(
   }),
 );
 
+goalRoutes.post(
+  '/:id/pause',
+  asyncHandler(async (req, res) => {
+    const user = currentUser(req);
+    res.json(await goalService.pauseGoal(user.id, user.timezone, parseId(req.params.id)));
+  }),
+);
+
+goalRoutes.post(
+  '/:id/resume',
+  asyncHandler(async (req, res) => {
+    const user = currentUser(req);
+    res.json(await goalService.resumeGoal(user.id, user.timezone, parseId(req.params.id)));
+  }),
+);
+
 goalRoutes.delete(
   '/:id',
   asyncHandler(async (req, res) => {

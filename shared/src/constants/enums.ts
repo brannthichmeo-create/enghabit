@@ -43,6 +43,8 @@ export type GoalType = (typeof GoalType)[keyof typeof GoalType];
 export const GoalPeriod = {
   DAILY: 'DAILY',
   WEEKLY: 'WEEKLY',
+  /** Cộng dồn từ ngày bắt đầu tới hạn, vd "thuộc 1500 từ trước Tết". */
+  TOTAL: 'TOTAL',
 } as const;
 export type GoalPeriod = (typeof GoalPeriod)[keyof typeof GoalPeriod];
 

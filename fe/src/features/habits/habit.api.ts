@@ -1,4 +1,15 @@
-import type { CheckInHabitInput, CreateHabitInput, HabitFrequency, LocalDate, UpdateHabitInput } from '@enghabit/shared';
+import type {
+  CheckInHabitInput,
+  CreateHabitInput,
+  GoalPeriod,
+  GoalStatus,
+  GoalType,
+  HabitAutoActivity,
+  HabitDayLevel,
+  HabitFrequency,
+  LocalDate,
+  UpdateHabitInput,
+} from '@enghabit/shared';
 import { apiClient } from '../../shared/lib/api-client';
 
 /** Bản ghi thói quen trả về từ API. */
@@ -9,15 +20,34 @@ export interface Habit {
   customDays: number[] | null;
   reminderTime: string | null;
   isActive: boolean;
+  /** Null = tự tích. Có giá trị = tự hoàn thành từ hoạt động học trong app. */
+  autoActivity: HabitAutoActivity | null;
+  targetAmount: number | null;
+  minAmount: number | null;
+  unit: string | null;
+  timesPerWeek: number | null;
+  goalId: number | null;
+  goal: { id: number; type: GoalType; period: GoalPeriod; targetValue: number; status: GoalStatus } | null;
   createdAt: string;
-  /** Backend tính sẵn theo timezone user — client không tự đoán để tránh bấm nhầm gây lỗi 409. */
+  /** Hôm nay đã đạt ít nhất mức tối thiểu chưa — backend tính theo timezone user. */
   checkedInToday: boolean;
-  /** Các lần check-in trong 7 ngày gần nhất, kèm ghi chú — để vẽ dải mức độ đều đặn. */
-  recentCheckIns: CheckInRecord[];
+  /** Lượng đã làm hôm nay, null nếu chưa làm gì. */
+  todayAmount: number | null;
+  /** Các ngày có làm trong 7 ngày gần nhất, kèm lượng và ghi chú — để vẽ dải 7 ngày. */
+  recentDays: HabitDay[];
+}
+
+export interface HabitDay {
+  date: LocalDate;
+  amount: number | null;
+  note: string | null;
+  /** Null = có làm nhưng chưa tới mức tối thiểu (chỉ gặp ở thói quen tự động). */
+  level: HabitDayLevel | null;
 }
 
 export interface CheckInRecord {
   date: LocalDate;
+  amount: number | null;
   note: string | null;
 }
 

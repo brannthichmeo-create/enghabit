@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { CalendarClock, Flag, Pencil, Trophy } from 'lucide-react';
+import { CalendarClock, Check, Circle, Flag, Pause, Pencil, Play, Trophy } from 'lucide-react';
 import {
+  FeatureKey,
   GoalPeriod,
   GoalStatus,
   GoalTimelineState,
@@ -10,6 +11,7 @@ import {
   todayLocalDate,
   updateGoalSchema,
   type FinishGoalInput,
+  type GoalForecast,
   type GoalProgress,
   type GoalTimeline,
   type LocalDate,
@@ -35,14 +37,19 @@ import {
 import { Modal } from '../../../shared/components/Modal';
 import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { useToast } from '../../../shared/components/Toast';
-import { GOAL_TYPE_LABELS } from '../../../shared/lib/labels';
+import { GOAL_PERIOD_LABELS, GOAL_TYPE_LABELS, goalName } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
+import { useFeatureQueryEnabled } from '../../feature-flags/feature-flag.hooks';
+import { useHabits } from '../../habits/habit.hooks';
+import type { Habit } from '../../habits/habit.api';
 import {
   useCreateGoal,
   useDeleteGoal,
   useFinishGoal,
   useGoalProgress,
   useGoals,
+  usePauseGoal,
+  useResumeGoal,
   useUpdateGoal,
 } from '../goal.hooks';
 import type { Goal } from '../goal.api';
@@ -77,6 +84,7 @@ export function GoalsPage(): JSX.Element {
   const user = useCurrentUser();
   const goals = useGoals();
   const progress = useGoalProgress();
+  const habits = useHabits(useFeatureQueryEnabled(FeatureKey.HABITS));
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Goal | null>(null);
   const [finishing, setFinishing] = useState<Goal | null>(null);
@@ -88,6 +96,14 @@ export function GoalsPage(): JSX.Element {
   // thời gian và mục tiêu đang cần làm bị đẩy ra khỏi tầm mắt.
   const active = goals.data?.filter((goal) => goal.status === GoalStatus.ACTIVE) ?? [];
   const ended = goals.data?.filter((goal) => goal.status !== GoalStatus.ACTIVE) ?? [];
+
+  // Thói quen đang chạy của từng mục tiêu. Thói quen tạm dừng không hiện: nó không còn
+  // góp gì cho mục tiêu, liệt kê vào là làm người dùng tưởng mình đang có việc phải làm.
+  const habitsByGoal = new Map<number, Habit[]>();
+  for (const habit of habits.data ?? []) {
+    if (habit.goalId === null || !habit.isActive) continue;
+    habitsByGoal.set(habit.goalId, [...(habitsByGoal.get(habit.goalId) ?? []), habit]);
+  }
 
   return (
     <div>
@@ -146,6 +162,7 @@ export function GoalsPage(): JSX.Element {
               progressState={
                 progress.isPending ? 'loading' : progress.isError ? 'error' : 'ready'
               }
+              habits={habitsByGoal.get(goal.id) ?? []}
               onEdit={() => setEditing(goal)}
               onFinish={() => setFinishing(goal)}
             />
@@ -182,6 +199,7 @@ function GoalCard({
   timeline,
   progress,
   progressState,
+  habits,
   onEdit,
   onFinish,
 }: {
@@ -190,12 +208,18 @@ function GoalCard({
   progress?: GoalProgress;
   /** Trạng thái của truy vấn tiến độ — nó về sau danh sách mục tiêu, xem `GoalProgressLine`. */
   progressState: ProgressState;
+  /** Thói quen đang chạy phục vụ mục tiêu này. */
+  habits: Habit[];
   onEdit: () => void;
   onFinish: () => void;
 }): JSX.Element {
   const t = useT();
-  const expired = timeline.state === GoalTimelineState.EXPIRED;
-  const name = t(GOAL_TYPE_LABELS[goal.type]);
+  const locale = useLocale();
+  const paused = goal.pausedAt !== null;
+  // Hạn trôi qua trong lúc tạm dừng thì chưa phải hết hạn: tiếp tục là hạn lùi đúng số
+  // ngày đã dừng. Báo "Đã hết hạn — gia hạn đi" lúc này là bảo người dùng làm thừa một việc.
+  const expired = timeline.state === GoalTimelineState.EXPIRED && !paused;
+  const name = t(goalName(goal.type, goal.period));
 
   return (
     <Card>
@@ -203,10 +227,11 @@ function GoalCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-semibold text-content">{name}</h2>
-            <Badge tone={goal.status === GoalStatus.ACTIVE && !expired ? 'brand' : 'slate'}>
-              {goal.period === GoalPeriod.DAILY ? t('Mỗi ngày') : t('Mỗi tuần')}
-            </Badge>
+            {goal.type !== GoalType.STREAK_TARGET && (
+              <Badge tone={!expired && !paused ? 'brand' : 'slate'}>{t(GOAL_PERIOD_LABELS[goal.period])}</Badge>
+            )}
             {expired && <Badge tone="red">{t('Đã hết hạn')}</Badge>}
+            {paused && <Badge icon={Pause}>{t('Tạm dừng')}</Badge>}
           </div>
 
           <DeadlineLine goal={goal} timeline={timeline} />
@@ -217,6 +242,12 @@ function GoalCard({
             <p className="mt-3 text-sm text-content-muted">
               {t('Đã qua hạn nên không còn theo dõi tiến độ. Gia hạn để tiếp tục.')}
             </p>
+          ) : paused && goal.pausedAt ? (
+            <p className="mt-3 text-sm text-content-muted">
+              {t('Tạm dừng từ {date}. Tiếp tục thì hạn lùi đúng số ngày đã dừng.', {
+                date: formatDay(toLocalDate(goal.pausedAt), locale),
+              })}
+            </p>
           ) : (
             <GoalProgressLine
               name={name}
@@ -225,6 +256,8 @@ function GoalCard({
               state={progressState}
             />
           )}
+
+          {habits.length > 0 && <LinkedHabits habits={habits} />}
         </div>
 
         {/*
@@ -241,6 +274,9 @@ function GoalCard({
           >
             {expired ? t('Gia hạn') : t('Sửa')}
           </Button>
+          {(paused || timeline.state === GoalTimelineState.ACTIVE) && (
+            <PauseGoalButton goal={goal} name={name} paused={paused} />
+          )}
           {/* Mục tiêu chưa bắt đầu thì chưa có gì để kết thúc — không cần thì xoá. */}
           {timeline.state !== GoalTimelineState.UPCOMING && (
             <Button
@@ -263,7 +299,7 @@ function GoalCard({
 function EndedGoalCard({ goal }: { goal: Goal }): JSX.Element {
   const t = useT();
   const locale = useLocale();
-  const name = t(GOAL_TYPE_LABELS[goal.type]);
+  const name = t(goalName(goal.type, goal.period));
   const achieved = goal.status === GoalStatus.COMPLETED;
   const from = formatDay(toLocalDate(goal.startDate), locale);
   // Kết thúc luôn chốt hạn (xem `finishGoal` ở backend); thiếu hạn chỉ có ở dữ liệu cũ.
@@ -282,7 +318,7 @@ function EndedGoalCard({ goal }: { goal: Goal }): JSX.Element {
           <p className="mt-1 text-xs text-content-muted">
             {t('Chỉ tiêu {target} · {period}', {
               target: goal.targetValue,
-              period: goal.period === GoalPeriod.DAILY ? t('Mỗi ngày') : t('Mỗi tuần'),
+              period: t(GOAL_PERIOD_LABELS[goal.period]),
             })}
           </p>
           <p className="mt-0.5 text-xs text-content-muted">
@@ -411,7 +447,105 @@ function GoalProgressLine({
         </span>
       </div>
       <ProgressBar percent={rate} done={progress?.isCompleted} label={name} />
+      {progress?.forecast && !progress.isCompleted && <ForecastLine forecast={progress.forecast} />}
     </div>
+  );
+}
+
+/**
+ * Dự báo của mục tiêu cộng dồn tới hạn. Câu "trễ, cần N mỗi ngày" là thứ khiến người ta
+ * cố thêm — nên nói ra con số cụ thể, không chỉ báo "đang trễ".
+ */
+function ForecastLine({ forecast }: { forecast: GoalForecast }): JSX.Element {
+  const t = useT();
+  const locale = useLocale();
+  const pace = forecast.dailyPace.toLocaleString(locale);
+
+  if (!forecast.projectedDate) {
+    return (
+      <p className="mt-2 text-xs text-content-muted">
+        {forecast.requiredPerDay !== null
+          ? t('Chưa có tiến độ để dự báo. Cần {n} mỗi ngày để kịp hạn.', { n: forecast.requiredPerDay })
+          : t('Chưa có tiến độ để dự báo.')}
+      </p>
+    );
+  }
+
+  const date = formatDay(forecast.projectedDate, locale);
+
+  if (forecast.onTrack === false) {
+    return (
+      <p className="mt-2 text-xs font-medium text-accent-ink">
+        {t('Khoảng {pace} mỗi ngày, dự kiến đạt ngày {date} — trễ hạn. Cần {n} mỗi ngày để kịp.', {
+          pace,
+          date,
+          n: forecast.requiredPerDay ?? 0,
+        })}
+      </p>
+    );
+  }
+
+  return (
+    <p className="mt-2 text-xs text-content-muted">
+      {forecast.onTrack
+        ? t('Khoảng {pace} mỗi ngày, dự kiến đạt ngày {date} — kịp hạn.', { pace, date })
+        : t('Khoảng {pace} mỗi ngày, dự kiến đạt ngày {date}.', { pace, date })}
+    </p>
+  );
+}
+
+/** Các thói quen phục vụ mục tiêu, kèm hôm nay đã làm chưa. */
+function LinkedHabits({ habits }: { habits: Habit[] }): JSX.Element {
+  const t = useT();
+
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-medium text-content-soft">{t('Thói quen phục vụ mục tiêu này')}</p>
+      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+        {habits.map((habit) => (
+          <li
+            key={habit.id}
+            className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-xs text-content-soft"
+          >
+            {habit.checkedInToday ? (
+              <Check className="h-3 w-3 text-success" aria-label={t('Hôm nay đã xong')} />
+            ) : (
+              <Circle className="h-3 w-3 text-content-muted" aria-label={t('Hôm nay chưa xong')} />
+            )}
+            {habit.name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Tạm dừng hoặc tiếp tục. Không hỏi xác nhận: cả hai chiều đều đảo ngược được, và tiếp
+ * tục thì hạn tự lùi nên người dùng không mất ngày nào.
+ */
+function PauseGoalButton({ goal, name, paused }: { goal: Goal; name: string; paused: boolean }): JSX.Element {
+  const t = useT();
+  const toast = useToast();
+  const pauseGoal = usePauseGoal();
+  const resumeGoal = useResumeGoal();
+  const mutation = paused ? resumeGoal : pauseGoal;
+
+  return (
+    <Button
+      variant="ghost"
+      icon={paused ? Play : Pause}
+      loading={mutation.isPending}
+      aria-label={paused ? t('Tiếp tục mục tiêu {name}', { name }) : t('Tạm dừng mục tiêu {name}', { name })}
+      onClick={() =>
+        mutation.mutate(goal.id, {
+          onSuccess: () => toast.success(paused ? t('Đã tiếp tục mục tiêu') : t('Đã tạm dừng mục tiêu')),
+          onError: (error) => toast.error(getErrorMessage(error)),
+        })
+      }
+    >
+      {paused ? t('Tiếp tục') : t('Tạm dừng')}
+    </Button>
   );
 }
 
@@ -440,7 +574,7 @@ function GoalForm({ today, onCreated }: { today: LocalDate; onCreated: () => voi
     const parsed = createGoalSchema.safeParse({
       type,
       targetValue: Number(targetValue),
-      period,
+      period: type === GoalType.STREAK_TARGET ? GoalPeriod.DAILY : period,
       startDate: today,
       endDate: endDate || undefined,
     });
@@ -497,16 +631,33 @@ function GoalForm({ today, onCreated }: { today: LocalDate; onCreated: () => voi
             />
           </Field>
 
-          <Field label={t('Chu kỳ')}>
-            <Select value={period} onChange={(e) => setPeriod(e.target.value as GoalPeriod)}>
-              <option value={GoalPeriod.DAILY}>{t('Mỗi ngày')}</option>
-              <option value={GoalPeriod.WEEKLY}>{t('Mỗi tuần')}</option>
-            </Select>
-          </Field>
+          {/* Chuỗi ngày không có chu kỳ: "chuỗi 30 ngày" là một con số duy nhất. */}
+          {type !== GoalType.STREAK_TARGET && (
+            <Field
+              label={t('Chu kỳ')}
+              hint={
+                period === GoalPeriod.TOTAL
+                  ? t('Cộng dồn từ hôm nay tới hạn, vd thuộc 1500 từ trước Tết.')
+                  : undefined
+              }
+            >
+              <Select value={period} onChange={(e) => setPeriod(e.target.value as GoalPeriod)}>
+                {Object.values(GoalPeriod).map((value) => (
+                  <option key={value} value={value}>
+                    {t(GOAL_PERIOD_LABELS[value])}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
 
           <Field
             label={t('Hạn hoàn thành')}
-            hint={t('Không bắt buộc. Bỏ trống là mục tiêu không có hạn.')}
+            hint={
+              period === GoalPeriod.TOTAL && type !== GoalType.STREAK_TARGET
+                ? t('Nên đặt hạn: có hạn mới biết mình đang kịp hay trễ.')
+                : t('Không bắt buộc. Bỏ trống là mục tiêu không có hạn.')
+            }
             error={fieldErrors.endDate}
           >
             <Input
@@ -622,7 +773,7 @@ function EditGoalModal({
         className="space-y-4"
       >
         <ErrorMessage>{serverError}</ErrorMessage>
-        <p>{t(GOAL_TYPE_LABELS[goal.type])}</p>
+        <p>{t(goalName(goal.type, goal.period))}</p>
 
         <Field label={t('Chỉ tiêu')} error={fieldErrors.targetValue}>
           <Input
@@ -665,7 +816,7 @@ function FinishGoalModal({ goal, onClose }: { goal: Goal; onClose: () => void })
   const t = useT();
   const toast = useToast();
   const finishGoal = useFinishGoal();
-  const name = t(GOAL_TYPE_LABELS[goal.type]);
+  const name = t(goalName(goal.type, goal.period));
   const pendingOutcome = finishGoal.isPending ? finishGoal.variables?.input.outcome : undefined;
 
   const finish = (outcome: FinishGoalInput['outcome']): void => {

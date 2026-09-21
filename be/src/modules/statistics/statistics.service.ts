@@ -1,6 +1,7 @@
 import {
   ActivityType,
   GOAL_ACTIVITY_TYPE,
+  GoalPeriod,
   GoalStatus,
   addDays,
   computeStreak,
@@ -319,6 +320,9 @@ export async function getLearningReport(
  *
  * Bỏ qua mục tiêu bắt đầu SAU khoảng hoặc đã kết thúc TRƯỚC khoảng — chấm một mục
  * tiêu trong quãng thời gian nó chưa tồn tại thì lúc nào cũng ra 0%.
+ *
+ * Bỏ cả mục tiêu cộng dồn KHÔNG có hạn: không có độ dài thì không chia được chỉ tiêu
+ * cho khoảng đang xem, và chấm nó theo cả chỉ tiêu thì tuần nào cũng gần như 0%.
  */
 async function findGoalsOverlapping(userId: number, from: LocalDate, to: LocalDate): Promise<Goal[]> {
   return prisma.goal.findMany({
@@ -327,6 +331,7 @@ async function findGoalsOverlapping(userId: number, from: LocalDate, to: LocalDa
       status: GoalStatus.ACTIVE,
       startDate: { lte: toDbDate(to) },
       OR: [{ endDate: null }, { endDate: { gte: toDbDate(from) } }],
+      NOT: { period: GoalPeriod.TOTAL, endDate: null },
     },
     orderBy: { createdAt: 'asc' },
   });
@@ -379,7 +384,9 @@ function measureGoalInRange(
   totals: Record<ActivityType, number>,
   longestStreakInRange: number,
 ): ReportGoalProgress {
-  const expectedValue = expectedForRange(goal.type, goal.period, goal.targetValue, days);
+  // Mục tiêu cộng dồn chia chỉ tiêu theo độ dài cả đời mục tiêu (xem `expectedForRange`).
+  const goalDays = goal.endDate ? diffInDays(fromDbDate(goal.startDate), fromDbDate(goal.endDate)) + 1 : null;
+  const expectedValue = expectedForRange(goal.type, goal.period, goal.targetValue, days, goalDays);
 
   const currentValue = isCumulativeGoal(goal.type)
     ? totals[GOAL_ACTIVITY_TYPE[goal.type]]

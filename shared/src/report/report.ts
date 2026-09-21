@@ -50,15 +50,27 @@ export function isCumulativeGoal(type: GoalType): type is Exclude<GoalType, 'STR
  * Mục tiêu tuần lấy số tuần làm tròn LÊN, giống cách `countExpectedDays` của module
  * habits đếm số lần một thói quen tuần đến hạn — hai chỗ cùng một cách hiểu "tuần đã
  * bắt đầu thì tính là một tuần".
+ *
+ * Mục tiêu cộng dồn tới hạn (`TOTAL`) chia đều chỉ tiêu cho cả đời mục tiêu: "1500 từ
+ * trong 100 ngày" xem một tuần thì chỉ tiêu là 105. Không có hạn thì không chia được —
+ * trả 0 và chỗ gọi phải tự bỏ mục tiêu đó ra khỏi báo cáo.
+ *
+ * @param goalDays Số ngày từ ngày bắt đầu tới hạn của mục tiêu (tính cả hai đầu). Chỉ
+ *   cần cho `TOTAL`; null khi mục tiêu không có hạn.
  */
 export function expectedForRange(
   type: GoalType,
   period: GoalPeriod,
   targetValue: number,
   days: number,
+  goalDays: number | null = null,
 ): number {
   if (days <= 0) return 0;
   if (!isCumulativeGoal(type)) return targetValue;
+  if (period === GoalPeriod.TOTAL) {
+    if (!goalDays || goalDays <= 0) return 0;
+    return Math.ceil((targetValue * Math.min(days, goalDays)) / goalDays);
+  }
   return period === GoalPeriod.WEEKLY ? targetValue * Math.ceil(days / 7) : targetValue * days;
 }
 

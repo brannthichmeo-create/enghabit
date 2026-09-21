@@ -73,17 +73,19 @@ File: `be/src/modules/auth/auth.routes.ts`
 
 ---
 
-## B.3. Mục tiêu — `/goals` (6 endpoint)
+## B.3. Mục tiêu — `/goals` (8 endpoint)
 
 File: `be/src/modules/goals/goal.routes.ts` · Toàn bộ router chặn `requireRole(UserRole.USER)`
 
 | Method | Đường dẫn | Quyền | Tham số đầu vào | Phản hồi |
 |---|---|---|---|---|
 | GET | `/goals` | USER | — | 200 · `Goal[]` sắp theo `createdAt` giảm dần |
-| GET | `/goals/progress` | USER | — | 200 · `GoalProgress[]` (goalId, targetValue, currentValue, completionRate, isCompleted) |
-| POST | `/goals` | USER | `type`, `targetValue` (1-10000), `period`, `startDate`, `endDate?` | 201 · `Goal` |
+| GET | `/goals/progress` | USER | — | 200 · `GoalProgress[]` (goalId, type, period, targetValue, currentValue, completionRate, isCompleted, `forecast` — chỉ có với `period = TOTAL`) |
+| POST | `/goals` | USER | `type`, `targetValue` (1-10000), `period` (`DAILY`/`WEEKLY`/`TOTAL`), `startDate`, `endDate?` | 201 · `Goal` |
 | PATCH | `/goals/:id` | USER | `targetValue?`, `endDate?` | 200 · `Goal` |
 | POST | `/goals/:id/finish` | USER | `outcome` (`COMPLETED` = đã đạt, `ARCHIVED` = dừng theo dõi) | 200 · `Goal` |
+| POST | `/goals/:id/pause` | USER | — | 200 · `Goal` (`pausedAt` = hôm nay) |
+| POST | `/goals/:id/resume` | USER | — | 200 · `Goal` (`endDate` lùi đúng số ngày đã dừng) |
 | DELETE | `/goals/:id` | USER | — | 204 |
 
 **Ghi chú:** `PATCH`, `finish` và `DELETE` gọi `assertOwnership()` — sửa mục tiêu của người
@@ -93,8 +95,11 @@ khác trả 404 (không phải 403, để không lộ sự tồn tại của b�
 Kết thúc mục tiêu chỉ đi qua `finish`, `PATCH` không nhận `status`: kết thúc còn chốt
 `endDate` về hôm nay (nếu hạn còn ở phía trước hoặc chưa có hạn). Mục tiêu đã kết thúc không
 sửa, không kết thúc lại và không mở lại được — `PATCH`/`finish` trả 400. Mục tiêu chưa tới
-ngày bắt đầu không kết thúc được (400), chỉ xoá. Mục tiêu `STREAK_TARGET` tự chuyển
-`COMPLETED` khi đạt chuỗi, cùng lúc gửi thông báo đạt mục tiêu.
+ngày bắt đầu không kết thúc được (400), chỉ xoá. Mục tiêu `STREAK_TARGET` và mục tiêu
+`period = TOTAL` tự chuyển `COMPLETED` khi đạt, cùng lúc gửi thông báo đạt mục tiêu.
+
+`TOTAL` cộng dồn từ `startDate`; `STREAK_TARGET` không nhận `TOTAL` (400). Chỉ tạm dừng
+được mục tiêu đang trong hạn; mục tiêu tạm dừng không có trong `/goals/progress`.
 
 ---
 
@@ -104,23 +109,27 @@ File: `be/src/modules/habits/habit.routes.ts` · Toàn bộ router chặn `requi
 
 | Method | Đường dẫn | Quyền | Tham số đầu vào | Phản hồi |
 |---|---|---|---|---|
-| GET | `/habits` | USER | — | 200 · `HabitWithStatus[]` kèm `checkedInToday` và `recentCheckIns` (`{date, note}[]`, 7 ngày) |
-| POST | `/habits` | USER | `name` (1-120), `frequency`, `customDays?` (bắt buộc khi CUSTOM), `reminderTime?`, `isActive` | 201 · `Habit` |
+| GET | `/habits` | USER | — | 200 · `HabitWithStatus[]` kèm `checkedInToday`, `todayAmount`, `goal` và `recentDays` (`{date, amount, note, level}[]`, 7 ngày) |
+| POST | `/habits` | USER | `name` (1-120), `frequency`, `customDays?` (bắt buộc khi CUSTOM), `reminderTime?`, `isActive`, `autoActivity?` (`VOCAB_LEARNED`/`FLASHCARD_REVIEWED`/`QUIZ_COMPLETED`), `targetAmount?`, `minAmount?`, `unit?`, `timesPerWeek?` (1-7, chỉ WEEKLY), `goalId?` | 201 · `Habit` |
 | PATCH | `/habits/:id` | USER | các trường trên, tất cả optional | 200 · `Habit` |
 | DELETE | `/habits/:id` | USER | — | 204 |
-| POST | `/habits/:id/check-in` | USER | `date?` (mặc định hôm nay theo timezone user), `note?` (max 500) | 201 · `{date}` |
-| GET | `/habits/:id/check-ins` | USER | query `from?`, `to?` (YYYY-MM-DD) | 200 · `{date, note}[]` |
+| POST | `/habits/:id/check-in` | USER | `date?` (mặc định hôm nay theo timezone user), `amount?` (bỏ trống = làm đủ), `note?` (max 500) | 201 · `{date}` |
+| GET | `/habits/:id/check-ins` | USER | query `from?`, `to?` (YYYY-MM-DD) | 200 · `{date, amount, note}[]` |
 | GET | `/habits/:id/completion-rate` | USER | query `from`, `to` (**bắt buộc cả hai**) | 200 · `{expected, completed, rate}` |
 
 **Lỗi đặc thù:**
 - `check-in` → 409 "Thói quen này đã được check-in trong ngày" (ràng buộc
   `UNIQUE(habit_id, local_date)`).
-- `check-in` → 400 nếu thói quen đang tạm dừng (`isActive = false`).
+- `check-in` → 400 nếu thói quen đang tạm dừng (`isActive = false`), là thói quen tự động
+  (`autoActivity` khác null — loại này chấm từ ActivityLog), hoặc `amount` chưa tới mức tối thiểu.
+- Mỗi ngày chỉ lượt tích tay ĐẦU TIÊN ghi `HABIT_CHECKIN` vào ActivityLog
+  (`dedupeKey = HABIT_CHECKIN:<local_date>`); các lượt sau chỉ lưu `habit_check_ins`.
 - `completion-rate` → 400 "Cần truyền cả from và to (YYYY-MM-DD)" nếu thiếu tham số.
 - `createHabitSchema` và `updateHabitSchema` có `refine`: frequency CUSTOM bắt buộc
-  `customDays` không rỗng.
-- `reminderTime` do job `be/src/jobs/reminder.job.ts` đọc: tới giờ mà thói quen chưa
-  check-in trong kỳ (tuần với WEEKLY, ngày với loại còn lại) thì gửi thông báo
+  `customDays` không rỗng; `minAmount` cần `targetAmount` và phải nhỏ hơn nó. `goalId` phải
+  là mục tiêu của chính mình (404) và còn `ACTIVE` (400).
+- `reminderTime` do job `be/src/jobs/reminder.job.ts` đọc: tới giờ mà thói quen chưa làm
+  đủ trong kỳ (đủ `timesPerWeek` lần với WEEKLY, trong ngày với loại còn lại) thì gửi thông báo
   `DAILY_REMINDER` với khoá `DAILY_REMINDER:HABIT-<habitId>:<local_date>`.
 
 ---
@@ -425,7 +434,7 @@ Tái dùng `topic.service` thay vì viết lại query.
 |---|---|---|
 | Hệ thống (`/health`) | 1 | Công khai |
 | Xác thực (`/auth`) | 9 | Công khai (4) + Đã đăng nhập (5) |
-| Mục tiêu (`/goals`) | 6 | USER |
+| Mục tiêu (`/goals`) | 8 | USER |
 | Thói quen (`/habits`) | 7 | USER |
 | Chủ đề (`/topics`) | 3 | Đã đăng nhập |
 | Flashcard (`/flashcards`) | 4 | USER |
@@ -435,7 +444,7 @@ Tái dùng `topic.service` thay vì viết lại query.
 | Phần thưởng (`/rewards`) | 4 | USER |
 | Bảng xếp hạng (`/leaderboard`) | 1 | USER |
 | Quản trị (`/admin`) | 17 | ADMIN |
-| **Tổng** | **77** | |
+| **Tổng** | **79** | |
 
 Phân bổ theo quyền:
 

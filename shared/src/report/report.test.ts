@@ -36,6 +36,17 @@ describe('expectedForRange', () => {
     expect(expectedForRange(GoalType.STREAK_TARGET, GoalPeriod.DAILY, 30, 90)).toBe(30);
   });
 
+  it('mục tiêu cộng dồn chia đều chỉ tiêu cho cả đời mục tiêu', () => {
+    // 1500 từ trong 100 ngày, xem 7 ngày → 105
+    expect(expectedForRange(GoalType.VOCAB_PER_DAY, GoalPeriod.TOTAL, 1500, 7, 100)).toBe(105);
+    // khoảng dài hơn cả mục tiêu thì chỉ tiêu là toàn bộ, không vượt quá
+    expect(expectedForRange(GoalType.VOCAB_PER_DAY, GoalPeriod.TOTAL, 1500, 200, 100)).toBe(1500);
+  });
+
+  it('mục tiêu cộng dồn không có hạn thì không quy đổi được', () => {
+    expect(expectedForRange(GoalType.VOCAB_PER_DAY, GoalPeriod.TOTAL, 1500, 7)).toBe(0);
+  });
+
   it('khoảng rỗng thì chỉ tiêu bằng 0', () => {
     expect(expectedForRange(GoalType.VOCAB_PER_DAY, GoalPeriod.DAILY, 10, 0)).toBe(0);
     expect(expectedForRange(GoalType.VOCAB_PER_DAY, GoalPeriod.DAILY, 10, -3)).toBe(0);

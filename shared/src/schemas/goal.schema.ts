@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { GoalPeriod, GoalStatus, GoalType } from '../constants/enums.js';
+import type { GoalForecast } from '../goal/goal-forecast.js';
 import { localDateSchema } from './common.schema.js';
 
 export const createGoalSchema = z
@@ -13,6 +14,11 @@ export const createGoalSchema = z
   .refine((data) => !data.endDate || data.endDate >= data.startDate, {
     message: 'Hạn phải từ ngày bắt đầu mục tiêu trở đi',
     path: ['endDate'],
+  })
+  // Chuỗi ngày không cộng dồn được: "chuỗi 30 ngày" không có nghĩa "tổng 30 ngày chuỗi".
+  .refine((data) => data.type !== GoalType.STREAK_TARGET || data.period !== GoalPeriod.TOTAL, {
+    message: 'Mục tiêu chuỗi ngày không cộng dồn được',
+    path: ['period'],
   });
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
 
@@ -33,13 +39,20 @@ export const finishGoalSchema = z.object({
 });
 export type FinishGoalInput = z.infer<typeof finishGoalSchema>;
 
-/** Tiến độ của một mục tiêu trong kỳ hiện tại. */
+/**
+ * Tiến độ của một mục tiêu trong kỳ hiện tại (hôm nay, tuần này, hoặc cả đời mục tiêu
+ * với `TOTAL`).
+ */
 export interface GoalProgress {
   goalId: number;
   type: GoalType;
+  /** Kèm chu kỳ để nơi hiển thị gọi đúng tên "mỗi ngày / mỗi tuần / tổng". */
+  period: GoalPeriod;
   targetValue: number;
   currentValue: number;
   /** 0-100, đã làm tròn. */
   completionRate: number;
   isCompleted: boolean;
+  /** Dự báo ngày đạt — chỉ mục tiêu cộng dồn tới hạn mới có, còn lại là null. */
+  forecast: GoalForecast | null;
 }

@@ -12,8 +12,9 @@ export const habitKeys = {
     ['habits', id, 'completion-rate', from, to] as const,
 };
 
-export function useHabits(): UseQueryResult<Habit[]> {
-  return useQuery({ queryKey: habitKeys.list(), queryFn: habitApi.listHabits });
+/** `enabled` để trang Mục tiêu khỏi gọi khi quản trị viên đã tắt tính năng Thói quen. */
+export function useHabits(enabled = true): UseQueryResult<Habit[]> {
+  return useQuery({ queryKey: habitKeys.list(), queryFn: habitApi.listHabits, enabled });
 }
 
 export function useCreateHabit(): UseMutationResult<Habit, Error, CreateHabitInput> {

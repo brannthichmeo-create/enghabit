@@ -131,35 +131,36 @@ async function notifyAchievedGoals(
   const periodById = new Map(goals.map((g) => [g.id, g.period]));
 
   for (const goal of achieved) {
-    const isWeekly = periodById.get(goal.goalId) === GoalPeriod.WEEKLY;
-    const periodKey = isWeekly ? startOfWeek(localDate) : localDate;
+    const period = periodById.get(goal.goalId);
+    // Mục tiêu có điểm đích — chuỗi ngày, hoặc cộng dồn tới hạn — đạt là XONG hẳn. Để nó
+    // ACTIVE thì mỗi ngày học tiếp theo lại là một lần "Đã đạt mục tiêu!" mới, vì khoá
+    // chống trùng đi theo kỳ. Các loại đếm theo ngày/tuần thì kỳ sau đạt lại là đúng.
+    const isFinal = goal.type === GoalType.STREAK_TARGET || period === GoalPeriod.TOTAL;
+    const periodKey = isFinal ? 'FINAL' : period === GoalPeriod.WEEKLY ? startOfWeek(localDate) : localDate;
+    const when = isFinal ? '' : period === GoalPeriod.WEEKLY ? ' tuần này' : ' hôm nay';
 
     await createNotification({
       userId,
       type: NotificationType.GOAL_ACHIEVED,
       title: 'Đã đạt mục tiêu!',
-      body: `${GOAL_TYPE_LABELS[goal.type]}: ${goal.currentValue}/${goal.targetValue} — hoàn thành ${
-        isWeekly ? 'tuần này' : 'hôm nay'
-      }.`,
+      body: `${GOAL_TYPE_LABELS[goal.type]}: ${goal.currentValue}/${goal.targetValue} — hoàn thành${when}.`,
       link: '/goals',
       dedupeKey: `${NotificationType.GOAL_ACHIEVED}:${goal.goalId}:${periodKey}`,
     });
 
-    // Mục tiêu chuỗi ngày là loại duy nhất có điểm đích: đạt chuỗi 30 ngày là xong.
-    // Để nó ACTIVE thì mỗi ngày học tiếp theo lại là một lần "Đã đạt mục tiêu!" mới,
-    // vì khoá chống trùng đi theo ngày. Các loại đếm theo kỳ thì kỳ sau đạt lại là đúng.
-    if (goal.type === GoalType.STREAK_TARGET) {
-      await finishGoal(userId, timezone, goal.goalId, GoalStatus.COMPLETED);
-    }
+    if (isFinal) await finishGoal(userId, timezone, goal.goalId, GoalStatus.COMPLETED);
   }
 }
 
 /** Nhãn tiếng Việt cho nội dung thông báo. Trùng ý với nhãn ở FE nhưng phải có bản
- * riêng ở BE, vì nội dung thông báo được sinh và lưu ở phía máy chủ. */
+ * riêng ở BE, vì nội dung thông báo được sinh và lưu ở phía máy chủ.
+ *
+ * Không nói "mỗi ngày/mỗi tuần" trong nhãn: chu kỳ là một trường riêng của mục tiêu, và
+ * mục tiêu từ vựng giờ có cả loại cộng dồn tới hạn. */
 const GOAL_TYPE_LABELS: Record<GoalType, string> = {
-  VOCAB_PER_DAY: 'Số từ vựng mỗi ngày',
-  MINUTES_PER_DAY: 'Số lượt ôn tập mỗi ngày',
-  LESSONS_PER_WEEK: 'Số phiên học mỗi tuần',
+  VOCAB_PER_DAY: 'Số từ vựng học',
+  MINUTES_PER_DAY: 'Số lượt ôn tập',
+  LESSONS_PER_WEEK: 'Số phiên học',
   STREAK_TARGET: 'Chuỗi ngày học liên tiếp',
 };
 

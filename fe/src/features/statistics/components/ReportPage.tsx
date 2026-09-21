@@ -29,7 +29,7 @@ import { Card, EmptyState, Field, Input, PageHeader, ProgressBar, Skeleton } fro
 import {
   EFFECTIVENESS_LABELS,
   EFFECTIVENESS_NOTES,
-  GOAL_TYPE_LABELS,
+  goalName,
 } from '../../../shared/lib/labels';
 import { useCurrentUser } from '../../auth/auth.store';
 import { useLearningReport } from '../statistics.hooks';
@@ -510,7 +510,7 @@ function GoalRow({ goal }: { goal: ReportGoalProgress }): JSX.Element {
       <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <span className="flex min-w-0 items-center gap-1.5 text-sm text-content-soft">
           <Target className="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden />
-          <span className="truncate">{t(GOAL_TYPE_LABELS[goal.type])}</span>
+          <span className="truncate">{t(goalName(goal.type, goal.period))}</span>
         </span>
 
         <span
@@ -526,7 +526,7 @@ function GoalRow({ goal }: { goal: ReportGoalProgress }): JSX.Element {
       <ProgressBar
         percent={goal.completionRate}
         done={goal.isCompleted}
-        label={t(GOAL_TYPE_LABELS[goal.type])}
+        label={t(goalName(goal.type, goal.period))}
       />
 
       {/*
