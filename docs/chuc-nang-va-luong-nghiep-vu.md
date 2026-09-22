@@ -3,17 +3,18 @@
 > Tài liệu mô tả **toàn bộ chức năng** và **các luồng nghiệp vụ** của hệ thống, kèm sơ đồ
 > use case và sơ đồ luồng viết bằng Mermaid.
 >
-> **Nguồn:** quét trực tiếp mã nguồn ngày 20/09/2026 — 16 module ở `be/src/modules`, 2 cron
-> ở `be/src/jobs`, bản đồ route ở `fe/src/routes/AppRoutes.tsx`, hằng số nghiệp vụ ở
-> `shared/src`. Mọi con số (giá xu, ngưỡng, giới hạn) lấy từ code, không lấy từ tài liệu cũ.
+> **Nguồn:** quét trực tiếp mã nguồn ngày 20/09/2026, bổ sung ngày 21/09/2026 (thêm Việc cần
+> làm) và 22/09/2026 (thói quen tự động, mục tiêu cộng dồn, kết thúc và tạm dừng mục tiêu, nhắc
+> theo giờ của thói quen, đăng nhập so khớp chính xác, nhật ký thao tác quản trị) — 17 module ở `be/src/modules`, 2 cron ở `be/src/jobs`, bản đồ route ở
+> `fe/src/routes/AppRoutes.tsx`, hằng số nghiệp vụ ở `shared/src`. Mọi con số (giá xu, ngưỡng,
+> giới hạn) lấy từ code, không lấy từ tài liệu cũ.
 >
-> **Thay thế phần B của `docs/phan-tich-do-an.md`.** File đó còn mô tả module `lessons`
-> (lộ trình bài học, quiz) đã gỡ ngày 12/09/2026, và chưa có Thư viện, Học/Ôn tập, Cửa hàng,
-> Quản lý tính năng.
+> Tài liệu đi kèm: `docs/phan-tich-do-an.md` (mô tả tổng thể, cập nhật cùng ngày) và
+> `docs/logic-nghiep-vu/` (logic từng module: cách hoạt động, liên kết, ảnh hưởng dây chuyền).
 >
 > Đặc tả chi tiết từng phân hệ vẫn nằm ở tài liệu riêng — file này chỉ tổng hợp và trỏ tới:
 > `ke-hoach-hoc-on-flashcard.md`, `luong-quen-mat-khau.md`, `ke-hoach-cua-hang-vat-pham.md`,
-> `ke-hoach-quan-ly-tinh-nang.md`.
+> `ke-hoach-quan-ly-tinh-nang.md`, `ke-hoach-viec-can-lam.md`.
 
 ---
 
@@ -71,6 +72,7 @@ flowchart LR
         P2(["Thư viện bộ thẻ"])
         P3(["Học, Ôn tập, Cram"])
         P4(["Thói quen và Mục tiêu"])
+        P12(["Việc cần làm"])
         P5(["Thống kê, Báo cáo, Bảng xếp hạng"])
         P6(["Phần thưởng: điểm danh, nhiệm vụ, giữ chuỗi"])
         P7(["Cửa hàng, Ví, Kho vật phẩm"])
@@ -85,6 +87,7 @@ flowchart LR
     Learner --> P2
     Learner --> P3
     Learner --> P4
+    Learner --> P12
     Learner --> P5
     Learner --> P6
     Learner --> P7
@@ -206,7 +209,7 @@ flowchart LR
     L7 -.->|"«include» báo cho mọi admin"| M2
 ```
 
-### 2.4 Thói quen, Mục tiêu, Thống kê, Phần thưởng, Cửa hàng
+### 2.4 Thói quen, Mục tiêu, Việc cần làm, Thống kê, Phần thưởng, Cửa hàng
 
 ```mermaid
 flowchart LR
@@ -215,13 +218,25 @@ flowchart LR
 
     subgraph HAB["Thói quen và Mục tiêu"]
         direction TB
-        H1(["Tạo, sửa, xoá thói quen"])
-        H2(["Check-in thói quen"])
+        H1(["Tạo, sửa, xoá, tạm dừng thói quen"])
+        H2(["Check-in thói quen tự tích"])
         H3(["Check-in bù trong 7 ngày"])
         H4(["Xem tỷ lệ hoàn thành thói quen"])
-        G1(["Tạo, sửa, xoá mục tiêu"])
-        G2(["Xem tiến độ mục tiêu"])
+        H5(["Thói quen tự động đạt khi học trong app"])
+        H6(["Nhận lời nhắc theo giờ của thói quen"])
+        G1(["Tạo, sửa, gia hạn, xoá mục tiêu"])
+        G2(["Xem tiến độ và dự báo ngày đạt"])
         G3(["Nhận thông báo đạt mục tiêu"])
+        G4(["Kết thúc, tạm dừng, tiếp tục mục tiêu"])
+    end
+
+    subgraph TODOS["Việc cần làm"]
+        direction TB
+        D1(["Xem việc của một ngày"])
+        D2(["Xem việc quá hạn"])
+        D3(["Thêm, sửa, dời ngày, xoá việc"])
+        D4(["Đánh dấu xong từ thanh trên cùng"])
+        D5(["Dọn mọi việc đã xong"])
     end
 
     subgraph STAT["Thống kê"]
@@ -253,9 +268,17 @@ flowchart LR
     Learner --> H2
     H2 -.->|"«extend» ngày đã qua"| H3
     Learner --> H4
+    Cron --> H5
+    Cron --> H6
     Learner --> G1
     Learner --> G2
+    Learner --> G4
     H2 -.->|"«include» ghi hoạt động"| G3
+    Learner --> D1
+    Learner --> D3
+    Learner --> D4
+    Learner --> D5
+    D1 -.->|"«extend» khi xem hôm nay"| D2
     Learner --> T1
     Learner --> T2
     Learner --> T3
@@ -400,6 +423,8 @@ flowchart LR
         A13(["CRUD loại vật phẩm và vật phẩm"])
         A14(["Bật hoặc tắt tính năng người học"])
         A15(["Gửi thông báo"])
+        A16(["Ghi nhật ký thao tác"])
+        A17(["Xem tab Nhật ký của từng màn quản lý"])
     end
 
     Admin --> A1
@@ -415,6 +440,12 @@ flowchart LR
     Admin --> A13
     Admin --> A14
     Admin --> A15
+    Admin --> A17
+    A3 -.->|"«include»"| A16
+    A4 -.->|"«include»"| A16
+    A5 -.->|"«include»"| A16
+    A10 -.->|"«include»"| A16
+    A14 -.->|"«include»"| A16
     A4 -.->|"«include» khi khoá"| A6
     A3 -.->|"«include»"| A7
     A4 -.->|"«include»"| A7
@@ -433,7 +464,7 @@ tiền tố `/api/v1`.
 | Chức năng | Màn | Endpoint | Quy tắc |
 |---|---|---|---|
 | Đăng ký | `/register` | `POST /auth/register` | Email và tên tài khoản đều unique. Kiểm trước để báo đúng trường trùng; ràng buộc DB mới là thứ chặn thật (bắt `P2002`). Timezone mặc định `Asia/Ho_Chi_Minh` |
-| Đăng nhập | `/login` | `POST /auth/login` | Nhận **email hoặc tên tài khoản**. Sai tài khoản và sai mật khẩu trả **cùng một** thông báo. Tài khoản `LOCKED` báo rõ lý do (mật khẩu đã đúng nên không lộ gì thêm). Mọi lần thử đều ghi `LoginEvent` |
+| Đăng nhập | `/login` | `POST /auth/login` | Nhận **email hoặc tên tài khoản**, so khớp **chính xác**: tên tài khoản phân biệt hoa thường và khoảng trắng (`User`, `" user "` không vào được tài khoản `user`), email không phân biệt hoa thường. BE kiểm lại trong JS vì collation MySQL tự bỏ qua hoa thường và khoảng trắng cuối. Sai tài khoản và sai mật khẩu trả **cùng một** thông báo. Tài khoản `LOCKED` báo rõ lý do (mật khẩu đã đúng nên không lộ gì thêm). Mọi lần thử đều ghi `LoginEvent` |
 | Làm mới phiên | — | `POST /auth/refresh` | Refresh token trong cookie, **xoay vòng**: dùng một lần rồi cấp token mới |
 | Đăng xuất | — | `POST /auth/logout` | Thu hồi refresh token hiện tại |
 | Quên mật khẩu | `/forgot-password` | `POST /auth/password-reset/request`, `/confirm` | Không gửi email. Quản trị viên duyệt tay; người dùng tự đặt mật khẩu mới. Chi tiết mục 4.3 |
@@ -493,25 +524,60 @@ Tự chấm ở chế độ Flashcard ánh xạ sang chất lượng SM-2:
 
 | Chức năng | Màn | Endpoint | Quy tắc |
 |---|---|---|---|
-| CRUD thói quen | `/habits` | `GET`, `POST /habits`, `PATCH`, `DELETE /habits/:id` | Tần suất daily / weekly / custom |
-| Check-in | `/habits` | `POST /habits/:id/check-in` | Một lần mỗi ngày mỗi thói quen. Không check-in cho ngày tương lai |
+| CRUD thói quen | `/habits` | `GET`, `POST /habits`, `PATCH`, `DELETE /habits/:id` | Tần suất hằng ngày / theo thứ / hằng tuần (`times_per_week` lần). Lượng mỗi lần và mức tối thiểu cho ngày bận (tuỳ chọn). Gắn được vào một mục tiêu đang theo dõi. Tạm dừng = `is_active = false` |
+| Thói quen tự động | `/habits` | cùng endpoint, `auto_activity` | Bám theo `VOCAB_LEARNED` / `FLASHCARD_REVIEWED` / `QUIZ_COMPLETED`; tự đạt khi học trong app, chấm thẳng từ `ActivityLog`, không có check-in |
+| Check-in | `/habits` | `POST /habits/:id/check-in` | Chỉ thói quen tự tích, đang theo dõi. Một lần mỗi ngày mỗi thói quen, kèm lượng và ghi chú. Không check-in cho ngày tương lai |
 | Check-in bù | `/habits` | cùng endpoint, gửi `date` | Chỉ trong **7 ngày** gần nhất. Hoạt động được tính cho **đúng ngày được bù** |
-| Lịch sử, tỷ lệ | `/habits` | `GET /habits/:id/check-ins`, `/completion-rate` | |
+| Lịch sử, tỷ lệ | `/habits` | `GET /habits/:id/check-ins`, `/completion-rate` | Đạt mức tối thiểu vẫn tính là đã làm |
+| Nhắc theo giờ | chuông | cron nhắc nhở (mục 4.11) | Tới `reminder_time`, đến hạn mà chưa xong trong kỳ thì nhắc riêng thói quen đó |
 
-### 3.5 Mục tiêu — module `goals`
+Check-in ghi `HABIT_CHECKIN` vào `ActivityLog` — **tối đa một dòng mỗi ngày** dù tích bao nhiêu
+thói quen (`dedupeKey = HABIT_CHECKIN:<ngày>`) — nên giữ chuỗi và cộng 12 XP một lần mỗi ngày. Mỗi
+lượt một dòng thì tạo mười thói quen "abc" rồi tích là được 120 XP/ngày mà không học chữ nào.
 
-| Loại mục tiêu | Nhãn hiển thị | Kỳ | Đo bằng |
+### 3.5 Việc cần làm — module `todos`
+
+Sổ tay việc trong ngày. **Không** ghi `ActivityLog`, không cộng XP, không giữ chuỗi — việc lặp theo
+lịch là Thói quen. Đặc tả: `docs/ke-hoach-viec-can-lam.md`.
+
+| Chức năng | Màn | Endpoint | Quy tắc |
 |---|---|---|---|
-| `VOCAB_PER_DAY` | Số từ vựng mỗi ngày | Ngày | Đếm `VOCAB_LEARNED` |
-| `MINUTES_PER_DAY` | Số lượt ôn tập mỗi ngày | Ngày | Đếm `FLASHCARD_REVIEWED` |
-| `LESSONS_PER_WEEK` | Số phiên học mỗi tuần | Tuần | Đếm `QUIZ_COMPLETED` |
-| `STREAK_TARGET` | Chuỗi ngày học liên tiếp | — | Chuỗi hiện tại, không cộng dồn |
+| Xem việc một ngày | `/todos`, bảng thả xuống trên thanh trên cùng | `GET /todos?date=` | Xếp theo lúc tạo, việc xong **không** bị đẩy xuống cuối. Xem hôm nay thì kèm khối `overdue`: việc chưa xong của các ngày trước (tối đa 20) |
+| Thêm việc | `/todos`, bảng thả xuống | `POST /todos` | Tối đa **50** việc mỗi ngày, tên ≤ 200 ký tự |
+| Sửa, đánh dấu xong, dời ngày | `/todos`, bảng thả xuống | `PATCH /todos/:id` | `done_at` do BE đặt; bấm "xong" lần nữa không làm mới mốc |
+| Xoá một việc | `/todos` | `DELETE /todos/:id` | Không phải của mình → 404 |
+| Dọn việc đã xong | `/todos` | `DELETE /todos/done?date=` | Khai báo **trước** `/:id` |
 
-Tiến độ **không lưu ở đâu cả** — tính lại từ `ActivityLog` mỗi lần đọc (`GET /goals/progress`).
-Đạt mục tiêu thì sinh thông báo `GOAL_ACHIEVED`, mỗi kỳ một lần nhờ khoá
-`GOAL_ACHIEVED:<goalId>:<ngày hoặc đầu tuần>`.
+Trang, bảng thả xuống và huy hiệu sidebar dùng **chung một khoá cache** `todoKeys.day(today)` —
+ba chỗ không thể lệch nhau và chỉ tốn một request. Cờ `TODO`, không phụ thuộc `HABITS`.
 
-### 3.6 Thống kê và Bảng xếp hạng — `statistics`, `leaderboard`
+### 3.6 Mục tiêu — module `goals`
+
+| Loại mục tiêu | Nhãn hiển thị | Chu kỳ | Đo bằng |
+|---|---|---|---|
+| `VOCAB_PER_DAY` | Số từ vựng học | Ngày / tuần / cộng dồn | Đếm `VOCAB_LEARNED` |
+| `MINUTES_PER_DAY` | Số lượt ôn tập | Ngày / tuần / cộng dồn | Đếm `FLASHCARD_REVIEWED` |
+| `LESSONS_PER_WEEK` | Số phiên học | Ngày / tuần / cộng dồn | Đếm `QUIZ_COMPLETED` |
+| `STREAK_TARGET` | Chuỗi ngày học liên tiếp | Không cộng dồn | Chuỗi hiện tại |
+
+Tên enum là lịch sử; tên hiển thị ghép từ loại và chu kỳ (`goalName`). Chu kỳ **cộng dồn**
+(`TOTAL`) đếm từ ngày bắt đầu tới hạn, vd "1500 từ trước Tết".
+
+| Chức năng | Endpoint | Quy tắc |
+|---|---|---|
+| Tạo, sửa, xoá | `POST /goals`, `PATCH`, `DELETE /goals/:id` | Hạn không ở quá khứ. `PATCH` chỉ sửa chỉ tiêu và hạn (gia hạn mục tiêu đã quá hạn cũng qua đây). Mục tiêu đã kết thúc không sửa được |
+| Tiến độ | `GET /goals/progress` | Chỉ mục tiêu đang trong hạn, không tạm dừng. Mục tiêu cộng dồn kèm **dự báo**: tốc độ trung bình, ngày dự kiến đạt, cần bao nhiêu mỗi ngày, kịp hạn hay không |
+| Kết thúc | `POST /goals/:id/finish` | Đã đạt (`COMPLETED`) hoặc thôi theo dõi (`ARCHIVED`). Chốt hạn về hôm nay; không mở lại được |
+| Tạm dừng, tiếp tục | `POST /goals/:id/pause`, `/resume` | Chỉ dừng được mục tiêu đang trong hạn. Tiếp tục thì hạn **lùi đúng số ngày đã dừng** |
+
+Tiến độ **không lưu ở đâu cả** — tính lại từ `ActivityLog` mỗi lần đọc. Đạt mục tiêu thì sinh
+thông báo `GOAL_ACHIEVED`, mỗi kỳ một lần nhờ khoá `GOAL_ACHIEVED:<goalId>:<ngày hoặc đầu tuần>`.
+Mục tiêu **có điểm đích** (chuỗi ngày, cộng dồn) dùng khoá `…:FINAL` và **tự chuyển `COMPLETED`**
+khi đạt. **Hiện trạng:** việc kiểm này chỉ chạy khi kết thúc một phiên Học (xem mục 4.1) — người
+chỉ ôn tập hoặc check-in thói quen vẫn thấy tiến độ đúng ở `/goals` nhưng không nhận thông báo,
+và mục tiêu có điểm đích của họ không tự kết thúc.
+
+### 3.7 Thống kê và Bảng xếp hạng — `statistics`, `leaderboard`
 
 | Chức năng | Màn | Endpoint | Ghi chú |
 |---|---|---|---|
@@ -525,7 +591,7 @@ Tiến độ **không lưu ở đâu cả** — tính lại từ `ActivityLog` m
 Điểm XP mỗi hoạt động (`XP_PER_ACTIVITY`): ôn thẻ **4**, học thẻ mới **8**, check-in thói
 quen **12**, hoàn thành phiên Học **20**. Bảng xếp hạng dùng **đúng** công thức này.
 
-### 3.7 Phần thưởng — module `rewards`
+### 3.8 Phần thưởng — module `rewards`
 
 | Chức năng | Endpoint | Quy tắc |
 |---|---|---|
@@ -537,7 +603,7 @@ quen **12**, hoàn thành phiên Học **20**. Bảng xếp hạng dùng **đún
 
 Điểm danh và nhận thưởng **không ghi `ActivityLog`** và **không cộng XP**.
 
-### 3.8 Cửa hàng, Ví, Kho — module `shop`
+### 3.9 Cửa hàng, Ví, Kho — module `shop`
 
 | Chức năng | Màn | Endpoint | Quy tắc |
 |---|---|---|---|
@@ -552,7 +618,7 @@ quen **12**, hoàn thành phiên Học **20**. Bảng xếp hạng dùng **đún
 Khung viền ảnh đại diện (`AVATAR_FRAME`) là loại vật phẩm duy nhất **người khác thấy** — ở
 Cộng đồng, Bảng xếp hạng và danh sách thành viên nhóm.
 
-### 3.9 Cộng đồng — module `community`
+### 3.10 Cộng đồng — module `community`
 
 | Chức năng | Endpoint | Quy tắc |
 |---|---|---|
@@ -565,7 +631,7 @@ Cộng đồng, Bảng xếp hạng và danh sách thành viên nhóm.
 
 Tắt Cộng đồng **không khoá quản trị viên** (`adminBypass`) để vẫn kiểm duyệt được.
 
-### 3.10 Nhóm lớp — module `groups`
+### 3.11 Nhóm lớp — module `groups`
 
 | Chức năng | Ai | Endpoint |
 |---|---|---|
@@ -594,7 +660,7 @@ Quy tắc chính:
 - Nhóm bị chặn: `isMember` trả false với mọi người, nên bài, bình luận, tim, tệp, bộ thẻ
   chia sẻ đều khoá theo; nhóm biến mất khỏi tìm kiếm.
 
-### 3.11 Thông báo và nhắc nhở — module `notifications`
+### 3.12 Thông báo và nhắc nhở — module `notifications`
 
 | Chức năng | Ai | Endpoint |
 |---|---|---|
@@ -608,7 +674,7 @@ Các loại thông báo và nơi sinh ra:
 
 | Loại | Sinh bởi |
 |---|---|
-| `DAILY_REMINDER`, `STREAK_AT_RISK` | Cron nhắc nhở |
+| `DAILY_REMINDER`, `STREAK_AT_RISK` | Cron nhắc nhở (kể cả lời nhắc theo giờ của từng thói quen) |
 | `GOAL_ACHIEVED` | `recordActivity` |
 | `GROUP_JOIN_*`, đề cập `@` | Module `groups`, `community` |
 | `GROUP_WARNING`, `GROUP_BLOCKED`, `GROUP_UNBLOCKED` | Quản lý nhóm |
@@ -617,20 +683,27 @@ Các loại thông báo và nơi sinh ra:
 | Thông báo hệ thống | Quản trị viên gửi tay |
 | `MISTAKES_PENDING` | **Không ai sinh nữa**. Giữ trong enum để đọc được thông báo cũ |
 
-### 3.12 Quản trị — module `admin` (+ `topics`, `feature-flags`)
+### 3.13 Quản trị — module `admin` (+ `topics`, `feature-flags`)
 
 | Màn | Chức năng | Endpoint |
 |---|---|---|
-| `/admin` | Tổng quan: quy mô, người hoạt động 1/7/30 ngày, cơ cấu hoạt động, kho nội dung, DB, uptime | `GET /admin/overview` |
+| `/admin` | Tổng quan: dải bốn con số (người dùng, hoạt động 7 ngày, học trong 24 giờ, phiên đang mở), **Việc cần xử lý** (yêu cầu cấp lại mật khẩu, báo cáo bộ thẻ, đăng nhập thất bại), xu hướng 30 ngày, cơ cấu hoạt động, người học tích cực, kho nội dung, DB, uptime | `GET /admin/overview` |
 | `/admin/users` | Tìm, lọc, sắp xếp; chi tiết 3 tab; đổi vai trò; khoá, mở khoá; xoá | `GET /admin/users[/:id]`, `PATCH .../role`, `.../status`, `DELETE /admin/users/:id` |
 | `/admin/requests` | Duyệt, từ chối kèm lý do; tab Nhật ký | `GET /admin/password-reset-requests`, `POST .../:id/approve`, `.../reject` |
 | `/admin/access` | Lượt truy cập theo ngày, nhật ký đăng nhập, phiên đang mở | `GET /admin/access/overview`, `/access/logs` |
-| `/admin/content` | Chủ đề và từ vựng của bộ Hệ thống | `GET /topics…`, `POST`, `PATCH`, `DELETE /admin/topics`, `/admin/vocabulary` |
+| `/admin/content`, `/admin/content/:id` | Bộ thẻ Hệ thống hiện **y như Thư viện**; tạo, sửa, xoá bộ và thẻ. Luôn công khai; là cùng dòng `topics` người học thấy ở Khám phá | `GET /topics…`, `POST`, `PATCH`, `DELETE /admin/topics`, `/admin/vocabulary` |
 | `/admin/study-sets` | Báo cáo vi phạm; chặn, mở chặn; bỏ qua | `GET /admin/study-set-reports`, `POST .../dismiss`, `POST /admin/study-sets/:id/block`, `/unblock` |
 | `/admin/groups` | Xem; cảnh báo; chặn, mở chặn | `GET /admin/groups[/:id]`, `POST .../warn`, `/block`, `/unblock` |
 | `/admin/shop` | CRUD loại, vật phẩm, ảnh | `/admin/shop/types…`, `/admin/shop/items…` |
 | `/admin/features` | Bật, tắt tính năng người học | `GET /admin/features`, `PATCH /admin/features/:key` |
 | `/admin/announcements` | Gửi thông báo tới tất cả hoặc theo vai trò | `GET /admin/announcements/audience`, `POST /admin/announcements` |
+| Tab **Nhật ký** (`?tab=log`) của mỗi màn quản lý | Ai làm gì, lúc nào, đổi trường nào; lọc theo người thực hiện | `GET /admin/audit-logs?targetTypes=…`, `/admin/audit-logs/actors` |
+
+**Nhật ký thao tác** (`admin_audit_logs`) không phải một màn riêng: mỗi màn quản lý (Tài khoản,
+Nội dung học tập, Kiểm duyệt bộ thẻ, Quản lý nhóm, Cửa hàng, Tính năng, Gửi thông báo, và Cộng đồng
+với quản trị viên) có tab Nhật ký chỉ hiện thao tác trên đúng loại đối tượng của màn đó. Mỗi thao
+tác ghi của quản trị viên thêm một dòng trong cùng transaction với thao tác chính; bảng chỉ thêm,
+không sửa, không xoá; tên người thực hiện và đối tượng được chụp lại lúc ghi.
 
 Ba quy tắc an toàn: **không tự** hạ quyền / khoá / xoá chính mình; **không** xoá hay hạ quyền
 **quản trị viên hoạt động cuối cùng**; khoá tài khoản thì **thu hồi luôn refresh token**.
@@ -652,7 +725,7 @@ nhiệm vụ ngày, báo cáo và cron nhắc nhở đều đọc từ `Activity
 flowchart TD
     A["Học hoặc Ôn tập: nộp một câu"] --> F
     B["Học: kết thúc phiên"] --> F
-    C["Thói quen: check-in"] --> F
+    C["Thói quen: check-in đầu tiên trong ngày"] --> F
     F["recordActivity()<br/>activity-log.service.ts"] --> T{"Transaction"}
     T --> W["Ghi 1 dòng ActivityLog<br/>occurredAt = giờ UTC hiện tại<br/>localDate = ngày theo múi giờ user"]
     W --> D{"localDate trước hôm nay?<br/>(ghi bù)"}
@@ -661,8 +734,8 @@ flowchart TD
     U --> S["Upsert user_streaks"]
     R --> S
     S --> K{"Transaction do chính<br/>recordActivity mở?"}
-    K -- "Có" --> G["Đọc tiến độ mục tiêu<br/>sinh GOAL_ACHIEVED nếu đạt<br/>(lỗi thì nuốt, chỉ ghi log)"]
-    K -- "Không (caller truyền tx)" --> X["Bỏ qua, lần ghi sau sẽ phát hiện"]
+    K -- "Có" --> G["Đọc tiến độ mục tiêu<br/>sinh GOAL_ACHIEVED nếu đạt,<br/>mục tiêu có điểm đích tự kết thúc<br/>(lỗi thì nuốt, chỉ ghi log)"]
+    K -- "Không (caller truyền tx)" --> X["Bỏ qua kiểm mục tiêu"]
 
     S -.-> O1["Streak, XP, cấp độ"]
     S -.-> O2["Bảng xếp hạng"]
@@ -678,7 +751,16 @@ Loại hoạt động ghi ra:
 | Trả lời thẻ **chưa từng học** | `VOCAB_LEARNED` | Mỗi thẻ một dòng |
 | Trả lời thẻ **đã có lịch ôn** | `FLASHCARD_REVIEWED` | Mỗi thẻ một dòng |
 | Kết thúc phiên Học | `QUIZ_COMPLETED` | `dedupeKey = SESSION:<sessionKey>` |
-| Check-in thói quen | `HABIT_CHECKIN` | Có thể mang `localDate` quá khứ |
+| Check-in thói quen tự tích | `HABIT_CHECKIN` | Tối đa một dòng mỗi ngày (`dedupeKey = HABIT_CHECKIN:<ngày>`); có thể mang `localDate` quá khứ |
+
+Ai truyền `tx`: trả lời thẻ (`study.submitAnswer`) và check-in thói quen (`habits.checkIn`) đều
+truyền, vì phải ghi cùng transaction với tiến độ / bản ghi check-in. Chỉ kết thúc phiên Học
+(`study.finishSession`) không truyền — nên đó là **đường duy nhất** hiện nay sinh `GOAL_ACHIEVED`
+và tự kết thúc mục tiêu có điểm đích. "Lần ghi sau sẽ phát hiện" (chú thích trong code) không xảy
+ra với hai đường kia.
+
+Thói quen **tự động** không đi qua phễu này: nó không ghi gì, chỉ đọc lại `ActivityLog` do Học và
+Ôn tập đã ghi.
 
 ### 4.2 Đăng nhập và duy trì phiên
 
@@ -690,8 +772,9 @@ sequenceDiagram
     participant DB as MySQL
 
     U->>FE: Nhập email hoặc tên tài khoản, mật khẩu
-    FE->>BE: POST /auth/login
+    FE->>BE: POST /auth/login (không trim, không đổi chữ thường)
     BE->>DB: Tìm user theo email hoặc username
+    BE->>BE: Kiểm lại khớp chính xác trong JS<br/>(collation MySQL bỏ qua hoa thường và khoảng trắng cuối)
     alt Không có tài khoản
         BE->>DB: Ghi LoginEvent (NO_ACCOUNT)
         BE-->>FE: 401 Thông tin đăng nhập hoặc mật khẩu không đúng
@@ -807,17 +890,28 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    S["POST /habits/:id/check-in (date tuỳ chọn)"] --> O{"Là chủ thói quen?"}
+    S["POST /habits/:id/check-in (date, amount, note tuỳ chọn)"] --> O{"Là chủ thói quen?"}
     O -- "Không" --> E1["404"]
-    O -- "Có" --> F{"date > hôm nay?"}
+    O -- "Có" --> P{"Đang tạm dừng<br/>hoặc là thói quen tự động?"}
+    P -- "Có" --> E5["400"]
+    P -- "Không" --> F{"date > hôm nay?"}
     F -- "Có" --> E2["400 Không check-in cho ngày chưa tới"]
     F -- "Không" --> B{"Cách hôm nay >= 7 ngày?"}
     B -- "Có" --> E3["400 Chỉ bù trong 7 ngày"]
-    B -- "Không" --> D{"Đã check-in ngày đó?"}
+    B -- "Không" --> M{"amount (mặc định = lượng mỗi lần)<br/>đạt mức tối thiểu?"}
+    M -- "Không" --> E6["400"]
+    M -- "Có" --> D{"Đã check-in thói quen này ngày đó?"}
     D -- "Có" --> E4["409"]
-    D -- "Không" --> T["Transaction: ghi habit_check_ins<br/>+ recordActivity(HABIT_CHECKIN, localDate = date)"]
-    T --> OK["Thành công"]
+    D -- "Không" --> T["Transaction: ghi habit_check_ins"]
+    T --> Q{"Ngày đó đã có dòng<br/>HABIT_CHECKIN nào?"}
+    Q -- "Có" --> OK["Thành công<br/>(không thêm XP)"]
+    Q -- "Chưa" --> R["recordActivity(HABIT_CHECKIN, localDate = date,<br/>dedupeKey = HABIT_CHECKIN:date)"]
+    R --> OK2["Thành công"]
+    R -.->|"Trùng dedupeKey do thói quen khác<br/>tích cùng lúc: chạy lại"| T
 ```
+
+Trùng khoá `dedupe_key` (hai thói quen tích cùng lúc) làm transaction huỷ; service chạy lại một
+lần, lúc đó thấy dòng của bên kia và bỏ qua bước ghi hoạt động.
 
 ### 4.6 Phần thưởng — điểm danh, nhiệm vụ, vật phẩm giữ chuỗi
 
@@ -956,6 +1050,7 @@ số thẻ tới hạn và cron nhắc nhở đều tự bỏ qua thẻ của b�
 flowchart TD
     T["reminder.job — mỗi 15 phút"] --> P1["Lượt 1: mốc nhắc người dùng đặt"]
     T --> P2["Lượt 2: cảnh báo chuỗi sắp đứt"]
+    T --> P3["Lượt 3: giờ nhắc của từng thói quen"]
 
     P1 --> Q1["reminders đang bật<br/>user USER, công tắc tổng bật"]
     Q1 --> W1{"Đúng thứ trong tuần<br/>và trong cửa sổ 15 phút?"}
@@ -972,6 +1067,13 @@ flowchart TD
     H2 -- "Có" --> SK
     H2 -- "Chưa" --> DL
 
+    P3 --> Q3["Cờ HABITS bật; thói quen đang theo dõi<br/>có reminder_time; user USER, công tắc tổng bật"]
+    Q3 --> W3{"Trong cửa sổ 15 phút<br/>và hôm nay đến hạn?"}
+    W3 -- "Không" --> SK
+    W3 -- "Có" --> H3{"Chính thói quen này đã xong<br/>trong kỳ (ngày / tuần)?"}
+    H3 -- "Có" --> SK
+    H3 -- "Chưa" --> DL
+
     DL["createNotification (dedupeKey)"] --> DD{"Đã tạo trước đó?"}
     DD -- "Có" --> SK
     DD -- "Chưa" --> PU{"Có thiết bị?"}
@@ -979,8 +1081,10 @@ flowchart TD
     PU -- "Không" --> END1["Chỉ lưu trong app"]
 ```
 
-Khoá chống trùng: `DAILY_REMINDER:<reminderId>:<ngày>` và `STREAK_AT_RISK:<ngày>`. Thông
-báo **luôn lưu DB trước**, push chỉ là kênh báo thêm.
+Khoá chống trùng: `DAILY_REMINDER:<reminderId>:<ngày>`, `STREAK_AT_RISK:<ngày>` và
+`DAILY_REMINDER:HABIT-<habitId>:<ngày>`. Lượt 3 khác hai lượt đầu ở điều kiện im lặng: người đã học
+trong app vẫn được nhắc thói quen họ tự đặt giờ nếu thói quen đó chưa xong. Thông báo **luôn lưu
+DB trước**, push chỉ là kênh báo thêm.
 
 ### 4.12 Bật, tắt tính năng
 
@@ -1010,7 +1114,7 @@ flowchart TD
     S -- "Không" --> L{"Là admin hoạt động cuối cùng?"}
     L -- "Có" --> E2["400"]
     L -- "Không" --> U["Đặt status = LOCKED"]
-    U --> R["Thu hồi mọi refresh token"]
+    U --> R["Thu hồi mọi refresh token<br/>+ ghi nhật ký thao tác USER_LOCKED"]
     R --> X["Lần refresh kế tiếp thất bại,<br/>đăng nhập lại nhận 403 Tài khoản đã bị khoá"]
 ```
 
@@ -1029,6 +1133,7 @@ flowchart TD
 | Học | — | ✔ | ✘ | `LEARN` (phụ thuộc `VOCABULARY`) |
 | Ôn tập, Cram | — | ✔ | ✘ | `FLASHCARDS` (phụ thuộc `VOCABULARY`) |
 | Thói quen | — | ✔ | ✘ | `HABITS` |
+| Việc cần làm | — | ✔ | ✘ | `TODO` |
 | Mục tiêu | — | ✔ | ✘ | `GOALS` |
 | Báo cáo | — | ✔ | ✘ | `REPORT` |
 | Bảng xếp hạng | — | ✔ | ✘ | `LEADERBOARD` |
@@ -1056,7 +1161,7 @@ làm số liệu sai lệch dần.
 | 4 | Số dư xu = `SUM(amount)` của `coin_transactions`; không có cột số dư | `getCoinBalance` |
 | 5 | Chống trùng bằng ràng buộc unique của DB, không bằng đọc-rồi-ghi | `dedupeKey`, `attemptKey`, `pendingKey`, `usedOnDate` |
 | 6 | Trừ xu nằm trong transaction có khoá dòng user | `buyItem`, `buyStreakFreeze` |
-| 7 | Phần thưởng và mua hàng không ghi `ActivityLog`, không cộng XP | `rewards`, `shop` |
+| 7 | Phần thưởng, mua hàng, việc cần làm, bài đăng và Cram không ghi `ActivityLog`, không cộng XP | `rewards`, `shop`, `todos`, `community`, `study` (nguồn `CRAM`) |
 | 8 | Quyền đọc bộ thẻ tính ở đúng một chỗ, không có quyền thì 404 | `readableSetWhere` |
 | 9 | Đáp án không rời server trước khi trả lời | Token AES-GCM, `question-token.ts` |
 | 10 | Thông báo lưu DB trước, push sau; mọi thông báo tự động có `dedupeKey` | `notification.service`, `reminder.job` |
