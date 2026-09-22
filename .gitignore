@@ -24,6 +24,9 @@ Thumbs.db
 # chỉ bỏ qua cấu hình cá nhân của từng người
 .claude/settings.local.json
 
+# Playwright MCP — ảnh chụp và log console sinh ra khi kiểm thử bằng trình duyệt
+.playwright-mcp/
+
 # Dự án dùng pnpm — chặn lockfile của npm/yarn lọt vào gây xung đột
 package-lock.json
 yarn.lock

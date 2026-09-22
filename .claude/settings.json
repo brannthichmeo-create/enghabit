@@ -5,5 +5,9 @@
       "Bash(pnpm --filter @enghabit/shared test)",
       "Bash(grep -v \"^$\")"
     ]
+  },
+  "enabledPlugins": {
+    "playwright@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true
   }
 }
