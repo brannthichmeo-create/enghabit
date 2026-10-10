@@ -61,7 +61,7 @@ export function LoginPage(): JSX.Element {
             value={form.identifier}
             onChange={(e) => setForm({ ...form, identifier: e.target.value })}
             error={fieldErrors.identifier}
-            placeholder={t('ban@example.com hoặc tentaikhoan')}
+            placeholder={t('Nhập email hoặc tên tài khoản')}
             autoComplete="username"
             autoFocus
           />
@@ -88,7 +88,7 @@ export function LoginPage(): JSX.Element {
         </div>
 
         <div className="animate-enter-up [animation-delay:180ms]">
-          <Button type="submit" loading={login.isPending} className="w-full" icon={ArrowRight}>
+          <Button type="submit" loading={login.isPending} className="w-full">
             {login.isPending ? t('Đang đăng nhập...') : t('Đăng nhập')}
           </Button>
         </div>

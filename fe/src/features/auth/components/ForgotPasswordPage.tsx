@@ -122,7 +122,7 @@ export function ForgotPasswordPage(): JSX.Element {
           </div>
 
           <div className="animate-enter-up [animation-delay:180ms]">
-            <Button type="submit" loading={confirm.isPending} className="w-full" icon={ArrowRight}>
+            <Button type="submit" loading={confirm.isPending} className="w-full">
               {confirm.isPending ? t('Đang đổi mật khẩu...') : t('Đổi mật khẩu')}
             </Button>
           </div>
@@ -156,7 +156,7 @@ export function ForgotPasswordPage(): JSX.Element {
                 setResult(null);
               }}
               error={fieldErrors.identifier}
-              placeholder={t('ban@example.com hoặc tentaikhoan')}
+              placeholder={t('Nhập email hoặc tên tài khoản')}
               autoComplete="username"
               autoFocus
             />
@@ -193,7 +193,7 @@ export function ForgotPasswordPage(): JSX.Element {
           )}
 
           <div className="animate-enter-up [animation-delay:120ms]">
-            <Button type="submit" loading={lookup.isPending} className="w-full" icon={ArrowRight}>
+            <Button type="submit" loading={lookup.isPending} className="w-full">
               {lookup.isPending ? t('Đang kiểm tra...') : t('Xác nhận')}
             </Button>
           </div>

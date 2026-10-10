@@ -60,7 +60,7 @@ export function RegisterPage(): JSX.Element {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             error={fieldErrors.name}
-            placeholder={t('Nguyễn Văn A')}
+            placeholder={t('Nhập họ tên của bạn')}
             autoComplete="name"
             autoFocus
           />
@@ -76,7 +76,7 @@ export function RegisterPage(): JSX.Element {
             onChange={(e) => setForm({ ...form, username: e.target.value })}
             error={fieldErrors.username}
             hint={t('Dùng để đăng nhập. Chỉ gồm chữ không dấu, số và . _ -')}
-            placeholder={t('vidu: nguyenvana')}
+            placeholder={t('Nhập tên tài khoản')}
             autoComplete="username"
           />
         </div>
@@ -89,7 +89,7 @@ export function RegisterPage(): JSX.Element {
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             error={fieldErrors.email}
-            placeholder="ban@example.com"
+            placeholder={t('Nhập email của bạn')}
             autoComplete="email"
           />
         </div>
@@ -102,14 +102,14 @@ export function RegisterPage(): JSX.Element {
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             error={fieldErrors.password}
             hint={t('Ít nhất 8 ký tự, gồm cả chữ và số')}
-            placeholder={t('Tạo mật khẩu')}
+            placeholder={t('Nhập mật khẩu')}
             autoComplete="new-password"
           />
           <PasswordStrength password={form.password} />
         </div>
 
         <div className="animate-enter-up [animation-delay:300ms]">
-          <Button type="submit" loading={register.isPending} className="w-full" icon={ArrowRight}>
+          <Button type="submit" loading={register.isPending} className="w-full">
             {register.isPending ? t('Đang tạo tài khoản...') : t('Tạo tài khoản')}
           </Button>
         </div>
