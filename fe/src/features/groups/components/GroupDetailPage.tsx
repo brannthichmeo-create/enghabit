@@ -391,7 +391,7 @@ function MemberList({ group }: { group: GroupDetail }): JSX.Element {
                   {/* Trước đây chỉ có tên chữ. Thêm avatar để thành viên thấy khung viền của
                       nhau — đó là lý do người ta bỏ xu ra mua khung. */}
                   <span className="flex items-center gap-2.5">
-                    <Avatar name={member.name} frameUrl={member.avatarFrameUrl} />
+                    <Avatar name={member.name} src={member.avatarDataUrl} frameUrl={member.avatarFrameUrl} />
                     <span className="min-w-0">
                       <span className="block font-medium text-content">{member.name}</span>
                       <span className="block text-xs text-content-muted">@{member.username}</span>

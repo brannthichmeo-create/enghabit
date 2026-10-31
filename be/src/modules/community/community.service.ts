@@ -22,6 +22,7 @@ import { isMember } from '../groups/group.service.js';
 import { notifyMentions } from './mention.service.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../common/errors/app-error.js';
 import { getEquippedFrameUrls } from '../shop/shop.frame.js';
+import { avatarToDataUrl } from '../auth/avatar-data.js';
 import { getLevelsFor } from '../statistics/statistics.service.js';
 import { recordAdminAction } from '../admin/admin-audit.service.js';
 
@@ -60,7 +61,7 @@ function isModeration(authorId: number, viewer: { id: number; role: UserRole }):
 }
 
 /** Các cột của tác giả cần lấy kèm. Cố ý KHÔNG lấy ảnh đại diện — xem ghi chú ở listPosts. */
-const AUTHOR_SELECT = { id: true, name: true, role: true } as const;
+const AUTHOR_SELECT = { id: true, name: true, role: true, avatar: true } as const;
 
 /** Mô tả tệp đính kèm, không kèm nội dung. */
 const ATTACHMENT_SELECT = {
@@ -477,7 +478,7 @@ export async function getAttachmentContent(
 // --- Chuyển đổi ---
 
 /** Người viết bài hoặc bình luận, dạng thô lấy từ Prisma. */
-type AuthorRow = { id: number; name: string; role: UserRole };
+type AuthorRow = { id: number; name: string; role: UserRole; avatar: Parameters<typeof avatarToDataUrl>[0] };
 
 /**
  * Cấp độ của những người viết trong trang, tính bằng đúng một truy vấn.
@@ -511,6 +512,7 @@ function toAuthor(author: AuthorRow, extras: AuthorExtras): PostAuthor {
     name: author.name,
     role: author.role,
     level: author.role === UserRole.ADMIN ? null : (extras.levels.get(author.id) ?? 1),
+    avatarDataUrl: avatarToDataUrl(author.avatar),
     avatarFrameUrl: extras.frames.get(author.id) ?? null,
   };
 }

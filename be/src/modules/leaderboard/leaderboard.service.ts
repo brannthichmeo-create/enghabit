@@ -15,6 +15,7 @@ import { prisma } from '../../lib/prisma.js';
 import { toDbDate } from '../../common/utils/db-date.js';
 import { getLevelsFor } from '../statistics/statistics.service.js';
 import { getEquippedFrameUrls } from '../shop/shop.frame.js';
+import { avatarToDataUrl } from '../auth/avatar-data.js';
 
 /**
  * Bảng xếp hạng người học.
@@ -106,6 +107,7 @@ export async function getLeaderboard(
     activities: item.activities,
     currentStreak: profiles.get(item.userId)?.currentStreak ?? 0,
     isMe: item.userId === userId,
+    avatarDataUrl: avatarToDataUrl(profiles.get(item.userId)?.avatar),
     avatarFrameUrl: frames.get(item.userId) ?? null,
   }));
 
@@ -125,16 +127,16 @@ export async function getLeaderboard(
 /** Tên và chuỗi ngày của những người có mặt trong bảng. */
 async function loadProfiles(
   userIds: number[],
-): Promise<Map<number, { name: string; currentStreak: number }>> {
+): Promise<Map<number, { name: string; currentStreak: number; avatar: Parameters<typeof avatarToDataUrl>[0] }>> {
   if (userIds.length === 0) return new Map();
 
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
-    select: { id: true, name: true, streak: { select: { currentStreak: true } } },
+    select: { id: true, name: true, avatar: true, streak: { select: { currentStreak: true } } },
   });
 
   return new Map(
-    users.map((user) => [user.id, { name: user.name, currentStreak: user.streak?.currentStreak ?? 0 }]),
+    users.map((user) => [user.id, { name: user.name, currentStreak: user.streak?.currentStreak ?? 0, avatar: user.avatar }]),
   );
 }
 

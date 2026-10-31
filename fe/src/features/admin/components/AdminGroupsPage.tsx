@@ -311,7 +311,7 @@ function GroupDetailModal({ groupId, onClose }: { groupId: number; onClose: () =
                 {group.members.map((member) => (
                   <li key={member.userId} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
                     <span className="flex min-w-0 items-center gap-2.5">
-                      <Avatar name={member.name} frameUrl={member.avatarFrameUrl} />
+                      <Avatar name={member.name} src={member.avatarDataUrl} frameUrl={member.avatarFrameUrl} />
                       <span className="min-w-0">
                         <span className="block truncate text-content">{member.name}</span>
                         <span className="block text-xs text-content-muted">@{member.username}</span>

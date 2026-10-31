@@ -13,6 +13,7 @@ import { BadRequestError, NotFoundError } from '../../common/errors/app-error.js
 import { createNotification } from '../notifications/notification.service.js';
 import { toBlockInfo } from '../groups/group.service.js';
 import { getEquippedFrameUrls } from '../shop/shop.frame.js';
+import { avatarToDataUrl } from '../auth/avatar-data.js';
 import { recordAdminAction } from './admin-audit.service.js';
 
 /**
@@ -102,6 +103,7 @@ export async function getGroupDetail(groupId: number): Promise<AdminGroupDetail>
             id: true,
             name: true,
             username: true,
+            avatar: true,
             streak: { select: { currentStreak: true } },
             _count: { select: { activityLogs: true } },
           },
@@ -138,6 +140,7 @@ export async function getGroupDetail(groupId: number): Promise<AdminGroupDetail>
       joinedAt: m.joinedAt.toISOString(),
       activityCount: m.user._count.activityLogs,
       currentStreak: m.user.streak?.currentStreak ?? 0,
+      avatarDataUrl: avatarToDataUrl(m.user.avatar),
       avatarFrameUrl: frames.get(m.user.id) ?? null,
     })),
     recentPosts: recentPosts.map((post) => ({

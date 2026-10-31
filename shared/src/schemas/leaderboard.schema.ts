@@ -50,6 +50,7 @@ export interface LeaderboardEntry {
   currentStreak: number;
   /** Dòng này có phải chính người đang xem không — FE dùng để tô sáng. */
   isMe: boolean;
+  avatarDataUrl: string | null;
   /**
    * Khung viền đang dùng — URL ảnh DƯỚI GỐC API, tầng api của frontend tự ghép như ảnh
    * vật phẩm. `null` = khung mặc định (viền trắng), vẽ bằng CSS chứ không phải ảnh.

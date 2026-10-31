@@ -94,6 +94,7 @@ export interface PostAuthor {
    * họ thay chỗ đó — mỗi người luôn có đúng một nhãn, không bao giờ có cả hai.
    */
   level: number | null;
+  avatarDataUrl: string | null;
   /**
    * Khung viền đang dùng — URL ảnh DƯỚI GỐC API, tầng api của frontend tự ghép như ảnh
    * vật phẩm. `null` = khung mặc định (viền trắng), vẽ bằng CSS chứ không phải ảnh.

@@ -1,4 +1,4 @@
-import { useMutation, type UseMutationResult } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import type { ChangePasswordInput, PublicUser, UpdateProfileInput } from '@enghabit/shared';
 import * as authApi from '../auth/auth.api';
 import { useAuthStore } from '../auth/auth.store';
@@ -32,10 +32,32 @@ export function useChangePassword(): UseMutationResult<void, Error, ChangePasswo
  */
 export function useUpdateAvatar(): UseMutationResult<PublicUser, Error, string> {
   const setUser = useAuthStore((s) => s.setUser);
-  return useMutation({ mutationFn: authApi.updateAvatar, onSuccess: (user) => setUser(user) });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: authApi.updateAvatar,
+    onSuccess: (user) => {
+      setUser(user);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['community'] }),
+        queryClient.invalidateQueries({ queryKey: ['leaderboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['groups'] }),
+      ]);
+    },
+  });
 }
 
 export function useRemoveAvatar(): UseMutationResult<PublicUser, Error, void> {
   const setUser = useAuthStore((s) => s.setUser);
-  return useMutation({ mutationFn: authApi.removeAvatar, onSuccess: (user) => setUser(user) });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: authApi.removeAvatar,
+    onSuccess: (user) => {
+      setUser(user);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['community'] }),
+        queryClient.invalidateQueries({ queryKey: ['leaderboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['groups'] }),
+      ]);
+    },
+  });
 }

@@ -13,6 +13,7 @@ import {
 } from '@enghabit/shared';
 import { Prisma, type User, type UserAvatar } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
+import { avatarToDataUrl } from './avatar-data.js';
 import {
   BadRequestError,
   ConflictError,
@@ -274,13 +275,10 @@ export function toPublicUser(user: User & { avatar?: UserAvatar | null }): Publi
     timezone: user.timezone,
     createdAt: user.createdAt.toISOString(),
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
-    avatarDataUrl: user.avatar ? toDataUrl(user.avatar) : null,
+    avatarDataUrl: avatarToDataUrl(user.avatar),
   };
 }
 
-function toDataUrl(avatar: UserAvatar): string {
-  return `data:${avatar.mimeType};base64,${Buffer.from(avatar.data).toString('base64')}`;
-}
 
 // --- Ảnh đại diện ---
 //

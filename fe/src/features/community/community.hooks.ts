@@ -49,6 +49,7 @@ export function usePosts(query: PostQueryInput): UseQueryResult<Paginated<PostSu
     queryFn: () => communityApi.listPosts(query),
     // Giữ trang cũ khi chuyển trang/đổi bộ lọc để danh sách không nháy trắng.
     placeholderData: (previous) => previous,
+    refetchInterval: 30_000,
   });
 }
 
@@ -57,6 +58,7 @@ export function usePost(postId: number | null): UseQueryResult<PostDetail> {
     queryKey: communityKeys.detail(postId ?? 0),
     queryFn: () => communityApi.getPost(postId as number),
     enabled: postId !== null,
+    refetchInterval: 30_000,
   });
 }
 

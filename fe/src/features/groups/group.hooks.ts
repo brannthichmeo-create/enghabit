@@ -77,6 +77,7 @@ export function useGroup(groupId: number | null): UseQueryResult<GroupDetail> {
     queryFn: () => groupApi.getGroup(groupId as number),
     enabled: groupId !== null,
     retry: false,
+    refetchInterval: 30_000,
   });
 }
 

@@ -17,5 +17,6 @@ export function useLeaderboard(
     queryFn: () => leaderboardApi.getLeaderboard(range, metric),
     // Giữ bảng cũ trong lúc đổi khoảng/tiêu chí để danh sách không nháy trắng một nhịp.
     placeholderData: (previous) => previous,
+    refetchInterval: 30_000,
   });
 }

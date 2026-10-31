@@ -139,6 +139,7 @@ export interface GroupMemberRow {
   /** Số hoạt động học của thành viên, để trưởng nhóm thấy ai đang học đều. */
   activityCount: number;
   currentStreak: number;
+  avatarDataUrl: string | null;
   /**
    * Khung viền đang dùng — URL ảnh DƯỚI GỐC API, tầng api của frontend tự ghép như ảnh
    * vật phẩm. `null` = khung mặc định (viền trắng), vẽ bằng CSS chứ không phải ảnh.

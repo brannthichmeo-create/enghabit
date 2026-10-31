@@ -37,6 +37,7 @@ import {
 import { isUniqueViolation } from '../../common/utils/prisma-error.js';
 import { createNotification } from '../notifications/notification.service.js';
 import { getEquippedFrameUrls } from '../shop/shop.frame.js';
+import { avatarToDataUrl } from '../auth/avatar-data.js';
 
 /**
  * Nhóm lớp — không gian trao đổi nội bộ do người học tự lập.
@@ -318,6 +319,7 @@ export async function getGroupDetail(groupId: number, userId: number): Promise<G
           id: true,
           name: true,
           username: true,
+          avatar: true,
           streak: { select: { currentStreak: true } },
           _count: { select: { activityLogs: true } },
         },
@@ -346,6 +348,7 @@ export async function getGroupDetail(groupId: number, userId: number): Promise<G
       joinedAt: m.joinedAt.toISOString(),
       activityCount: m.user._count.activityLogs,
       currentStreak: m.user.streak?.currentStreak ?? 0,
+      avatarDataUrl: avatarToDataUrl(m.user.avatar),
       avatarFrameUrl: frames.get(m.user.id) ?? null,
     })),
     pendingRequests,
@@ -570,6 +573,7 @@ export async function addMember(
       id: true,
       name: true,
       username: true,
+      avatar: true,
       streak: { select: { currentStreak: true } },
       _count: { select: { activityLogs: true } },
     },
@@ -602,6 +606,7 @@ export async function addMember(
     joinedAt: member.joinedAt.toISOString(),
     activityCount: user._count.activityLogs,
     currentStreak: user.streak?.currentStreak ?? 0,
+    avatarDataUrl: avatarToDataUrl(user.avatar),
     avatarFrameUrl: (await getEquippedFrameUrls([user.id])).get(user.id) ?? null,
   };
 }
