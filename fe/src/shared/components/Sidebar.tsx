@@ -401,6 +401,12 @@ const AVATAR_BOX = {
   xl: 'h-24 w-24 text-2xl',
 } as const;
 
+const AVATAR_WITH_FRAME_BOX = {
+  md: 'h-[46.8px] w-[46.8px]',
+  lg: 'h-[83.2px] w-[83.2px]',
+  xl: 'h-[124.8px] w-[124.8px]',
+} as const;
+
 /**
  * Viền MẶC ĐỊNH khi chưa dùng khung nào: vòng trắng 2px, ngoài cùng một nét `line` 1px.
  *
@@ -450,46 +456,50 @@ export function Avatar({
   const ring = frameUrl ? '' : DEFAULT_FRAME;
 
   return (
-    // inline-flex: bản `relative` trần là phần tử inline nên để thừa một khe dưới chân
-    // ảnh (khoảng dành cho phần đuôi chữ), làm khung phủ lên lệch xuống vài điểm ảnh.
-    <span className="relative inline-flex shrink-0">
-      {src ? (
-        <img
-          src={src}
-          alt=""
-          className={`rounded-full object-cover ${ring} ${box}`}
-          // Ảnh là avatar của chính người đang xem, không mang thông tin gì thêm ngoài
-          // cái tên đã hiện ngay cạnh — để alt rỗng cho trình đọc màn hình bỏ qua.
-        />
-      ) : (
-        <span
-          className={`flex items-center justify-center rounded-full bg-brand font-semibold text-on-brand ${ring} ${box}`}
-        >
-          {initials || '?'}
-        </span>
-      )}
-      {frameUrl && (
-        <img
-          src={apiUrl(frameUrl)}
-          alt=""
-          aria-hidden
-          // Khung là ảnh vuông to hơn avatar đúng AVATAR_FRAME_SCALE lần, căn giữa. Tỉ lệ
-          // lấy từ shared — backend vẽ ảnh khung theo cùng con số, lệch là viền đè lên mặt.
-          style={FRAME_OVERLAY_STYLE}
-          className="pointer-events-none absolute max-w-none"
-        />
-      )}
-      {level !== undefined && (
-        // `aria-hidden`: avatar luôn đứng cạnh tên, và chip này nằm TRONG link trang cá
-        // nhân — để nó đọc được thì tên link thành "Minh · Trang cá nhân · 7", một con
-        // số trần không có ngữ cảnh. Cấp độ đã có nhãn đầy đủ ở thanh trên cùng.
-        <span
-          aria-hidden
-          className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface bg-accent px-1 text-[10px] font-bold leading-[14px] text-on-brand"
-        >
-          {level}
-        </span>
-      )}
+    <span
+      className={`relative inline-flex shrink-0 items-center justify-center ${
+        frameUrl ? AVATAR_WITH_FRAME_BOX[size] : ''
+      }`}
+    >
+      <span className="relative inline-flex shrink-0">
+        {src ? (
+          <img
+            src={src}
+            alt=""
+            className={`rounded-full object-cover ${ring} ${box}`}
+            // Ảnh là avatar của chính người đang xem, không mang thông tin gì thêm ngoài
+            // cái tên đã hiện ngay cạnh — để alt rỗng cho trình đọc màn hình bỏ qua.
+          />
+        ) : (
+          <span
+            className={`flex items-center justify-center rounded-full bg-brand font-semibold text-on-brand ${ring} ${box}`}
+          >
+            {initials || '?'}
+          </span>
+        )}
+        {frameUrl && (
+          <img
+            src={apiUrl(frameUrl)}
+            alt=""
+            aria-hidden
+            // Khung là ảnh vuông to hơn avatar đúng AVATAR_FRAME_SCALE lần, căn giữa. Tỉ lệ
+            // lấy từ shared — backend vẽ ảnh khung theo cùng con số, lệch là viền đè lên mặt.
+            style={FRAME_OVERLAY_STYLE}
+            className="pointer-events-none absolute max-w-none"
+          />
+        )}
+        {level !== undefined && (
+          // `aria-hidden`: avatar luôn đứng cạnh tên, và chip này nằm TRONG link trang cá
+          // nhân — để nó đọc được thì tên link thành "Minh · Trang cá nhân · 7", một con
+          // số trần không có ngữ cảnh. Cấp độ đã có nhãn đầy đủ ở thanh trên cùng.
+          <span
+            aria-hidden
+            className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-surface bg-accent px-1 text-[10px] font-bold leading-[14px] text-on-brand"
+          >
+            {level}
+          </span>
+        )}
+      </span>
     </span>
   );
 }

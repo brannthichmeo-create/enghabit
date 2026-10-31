@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { ArrowLeft, Heart, MessageCircle, Send, Trash2 } from 'lucide-react';
+import {
+  ArrowDownNarrowWide,
+  ArrowLeft,
+  ArrowUpNarrowWide,
+  Heart,
+  MessageCircle,
+  Send,
+  Trash2,
+} from 'lucide-react';
 import {
   UserRole,
   type MentionTarget,
@@ -172,9 +180,20 @@ function CommentSection({
   const confirm = useConfirm();
   const toast = useToast();
   const [body, setBody] = useState('');
+  const [commentOrder, setCommentOrder] = useState<'newest' | 'oldest'>('newest');
   const createComment = useCreateComment(post.id);
   const deleteComment = useDeleteComment();
   const mentionNames = mentionTargets.map((target) => target.username);
+  const sortedComments = [...post.comments].sort((left, right) => {
+    const leftTime = Date.parse(left.createdAt);
+    const rightTime = Date.parse(right.createdAt);
+    const timeOrder =
+      (Number.isNaN(leftTime) ? 0 : leftTime) - (Number.isNaN(rightTime) ? 0 : rightTime);
+    if (timeOrder !== 0) return commentOrder === 'newest' ? -timeOrder : timeOrder;
+    return commentOrder === 'newest'
+      ? String(right.id).localeCompare(String(left.id))
+      : String(left.id).localeCompare(String(right.id));
+  });
 
   const submit = (event?: React.FormEvent): void => {
     event?.preventDefault();
@@ -192,9 +211,35 @@ function CommentSection({
 
   return (
     <Card>
-      <h2 className="font-semibold text-content">
-        {t('Bình luận ({n})', { n: post.comments.length })}
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-semibold text-content">
+          {t('Bình luận ({n})', { n: post.comments.length })}
+        </h2>
+        {post.comments.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setCommentOrder((current) => (current === 'newest' ? 'oldest' : 'newest'))}
+            className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-surface-muted hover:text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            title={
+              commentOrder === 'newest'
+                ? t('Xem bình luận cũ nhất lên đầu')
+                : t('Xem bình luận mới nhất lên đầu')
+            }
+            aria-label={
+              commentOrder === 'newest'
+                ? t('Xem bình luận cũ nhất lên đầu')
+                : t('Xem bình luận mới nhất lên đầu')
+            }
+            aria-pressed={commentOrder === 'oldest'}
+          >
+            {commentOrder === 'newest' ? (
+              <ArrowDownNarrowWide className="h-4 w-4" aria-hidden />
+            ) : (
+              <ArrowUpNarrowWide className="h-4 w-4" aria-hidden />
+            )}
+          </button>
+        )}
+      </div>
 
       <form noValidate onSubmit={submit} className="mt-3 flex items-start gap-2">
         <div className="min-w-0 flex-1">
@@ -225,7 +270,7 @@ function CommentSection({
         </p>
       ) : (
         <ul className="mt-4 space-y-4">
-          {post.comments.map((comment) => (
+          {sortedComments.map((comment) => (
             <li key={comment.id} className="flex gap-2.5">
               <Avatar name={comment.author.name} src={comment.author.avatarDataUrl} frameUrl={comment.author.avatarFrameUrl} />
               <div className="min-w-0 flex-1">

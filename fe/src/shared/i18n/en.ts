@@ -1009,6 +1009,8 @@ export const EN: Dictionary = {
 
   // Bình luận
   'Bình luận ({n})': 'Comments ({n})',
+  'Xem bình luận cũ nhất lên đầu': 'Show oldest comments first',
+  'Xem bình luận mới nhất lên đầu': 'Show newest comments first',
   'Viết bình luận của bạn…': 'Write a comment…',
   'Gửi': 'Send',
   'Chưa có bình luận nào. Hãy là người đầu tiên trả lời.':
