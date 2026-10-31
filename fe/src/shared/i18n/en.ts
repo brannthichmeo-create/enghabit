@@ -624,8 +624,15 @@ export const EN: Dictionary = {
   'Gỡ ảnh': 'Remove photo',
   'Đã đổi ảnh đại diện': 'Profile photo updated',
   'Đã gỡ ảnh đại diện': 'Profile photo removed',
-  'Ảnh JPG, PNG hoặc WebP. Ảnh sẽ được thu nhỏ và cắt vuông tự động.':
-    'JPG, PNG or WebP. The image is resized and cropped to a square automatically.',
+  'Ảnh JPG, PNG hoặc WebP. Sau khi chọn, bạn có thể kéo và zoom để cắt hình tròn.':
+    'JPG, PNG or WebP. After selecting, drag and zoom to crop a circle.',
+  'Cắt ảnh đại diện': 'Crop profile photo',
+  'Chọn ảnh khác': 'Choose another photo',
+  'Thu nhỏ': 'Zoom out',
+  'Phóng to': 'Zoom in',
+  'Phóng to ảnh': 'Zoom image',
+  'Không cắt được ảnh này. Hãy thử điều chỉnh lại vùng cắt.':
+    'Could not crop this image. Try adjusting the crop area again.',
   'Không đọc được ảnh này. Hãy thử một ảnh khác.': 'Could not read this image. Try another one.',
   'Chỉ nhận ảnh JPG, PNG hoặc WebP': 'Only JPG, PNG or WebP images are accepted',
   'Ảnh không đúng định dạng': 'That is not a valid image',
