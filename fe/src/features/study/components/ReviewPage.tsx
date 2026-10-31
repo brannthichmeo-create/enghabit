@@ -232,7 +232,7 @@ function HistoryTab(): JSX.Element {
                   )}
                 </td>
                 <td className="py-2.5 pr-2 text-right tabular-nums text-content-muted">
-                  {new Date(row.reviewedAt).toLocaleString(locale)}
+                  {new Date(row.reviewedAt).toLocaleString(locale, { hourCycle: 'h23' })}
                 </td>
               </tr>
             ))}

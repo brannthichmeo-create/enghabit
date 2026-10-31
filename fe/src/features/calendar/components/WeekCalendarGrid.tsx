@@ -1,3 +1,4 @@
+import { formatTime } from '../../../shared/lib/date-time';
 import type { CalendarOccurrence } from '../calendar.types';
 import { addDays, durationMinutes, mondayStart, overlapsDay } from '../calendar.utils';
 
@@ -20,7 +21,7 @@ export function WeekCalendarGrid({ week, events, onCreate, onOpen }: { week: Dat
               const minutes = eventStart.getHours() * 60 + eventStart.getMinutes();
               const top = (minutes / 60) * HOUR_HEIGHT;
               const height = Math.max(28, (durationMinutes(event.startsAt, event.endsAt) / 60) * HOUR_HEIGHT);
-              return <button key={`${event.calendarId}-${event.occurrenceKey}`} onClick={(e) => { e.stopPropagation(); onOpen(event); }} style={{ top, height, left: 3, right: 3 }} className="absolute overflow-hidden rounded-md border-l-2 border-brand bg-brand/15 px-1.5 py-1 text-left hover:bg-brand/25"><span className="block truncate text-xs font-medium text-content">{event.title}</span>{height > 40 && <span className="line-clamp-2 text-[10px] text-content-soft">{event.notes}</span>}</button>;
+              return <button key={`${event.calendarId}-${event.occurrenceKey}`} onClick={(e) => { e.stopPropagation(); onOpen(event); }} style={{ top, height, left: 3, right: 3 }} className="absolute overflow-hidden rounded-md border-l-2 border-brand bg-brand/15 px-1.5 py-1 text-left hover:bg-brand/25"><span className="block truncate text-[10px] text-content-muted">{formatTime(event.startsAt)}–{formatTime(event.endsAt)}</span><span className="block truncate text-xs font-medium text-content">{event.title}</span>{height > 40 && event.notes && <span className="block truncate text-[10px] text-content-soft">{event.notes}</span>}</button>;
             })}
           </div>;
         })}

@@ -125,7 +125,7 @@ export function GroupDetailPage(): JSX.Element {
           <p className="mt-2 text-sm text-content-soft">{data.block.reason}</p>
           <p className="mt-3 border-t border-line pt-3 text-xs text-content-muted">
             {t('Bị chặn lúc {time} bởi quản trị viên. Liên hệ quản trị viên nếu bạn cho rằng có nhầm lẫn.', {
-              time: new Date(data.block.blockedAt).toLocaleString(locale),
+              time: new Date(data.block.blockedAt).toLocaleString(locale, { hourCycle: 'h23' }),
             })}
           </p>
         </Card>

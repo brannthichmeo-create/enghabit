@@ -739,5 +739,6 @@ export function formatDateTime(value: string | null, t: TranslateFn, locale: str
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
   });
 }

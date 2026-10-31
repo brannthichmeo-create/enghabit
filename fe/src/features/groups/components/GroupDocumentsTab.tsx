@@ -151,6 +151,7 @@ function DocumentRow({ document: row }: { document: GroupDocumentRow }): JSX.Ele
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
+            hourCycle: 'h23',
           })}
         </span>
       </div>

@@ -367,6 +367,7 @@ export function AuthorLine({
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
+            hourCycle: 'h23',
           })}
         </span>
       </span>

@@ -149,7 +149,7 @@ function ReportRow({ report, onOpen }: { report: AdminStudySetReportRow; onOpen:
       </td>
       <td className="py-2.5 text-content-soft">
         <span className="block">{report.reporter.name}</span>
-        <span className="block text-xs text-content-muted">{new Date(report.createdAt).toLocaleString(locale)}</span>
+        <span className="block text-xs text-content-muted">{new Date(report.createdAt).toLocaleString(locale, { hourCycle: 'h23' })}</span>
       </td>
       <td className="max-w-xs py-2.5 text-content-soft">
         <span className="line-clamp-2">{report.reason}</span>

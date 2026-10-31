@@ -360,6 +360,7 @@ function JoinRequestCard({ request }: { request: MyJoinRequestRow }): JSX.Elemen
           year: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
+          hourCycle: 'h23',
         })
       : '';
 

@@ -3,6 +3,7 @@ import { CalendarRecurrence } from '@enghabit/shared';
 import { Modal } from '../../../shared/components/Modal';
 import { Button } from '../../../shared/components/ui';
 import { useT } from '../../../shared/i18n/language';
+import { formatDateTime } from '../../../shared/lib/date-time';
 import type { CalendarOccurrence, CalendarRow } from '../calendar.types';
 
 interface Props {
@@ -25,7 +26,7 @@ export function CalendarDetailDialog({ open, event, onClose, onEdit, onDelete }:
   const start = new Date(event.startsAt);
   const end = new Date(event.endsAt);
   const sameDay = start.toLocaleDateString() === end.toLocaleDateString();
-  const dateTime = (date: Date) => date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  const dateTime = (date: Date) => formatDateTime(date);
 
   return (
     <Modal open={open} onClose={onClose} title={t('Chi tiết lịch')} size="lg"

@@ -171,6 +171,7 @@ function EntryRow({ entry }: { entry: WalletEntry }): JSX.Element {
           year: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
+          hourCycle: 'h23',
         })}
       </td>
       <td className="py-2.5 pr-3 text-content">

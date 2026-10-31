@@ -267,7 +267,7 @@ function GroupDetailModal({ groupId, onClose }: { groupId: number; onClose: () =
               <p className="mt-1 text-sm text-content-soft">{group.block.reason}</p>
               <p className="mt-1 text-xs text-content-muted">
                 {t('Chặn lúc {time}', {
-                  time: new Date(group.block.blockedAt).toLocaleString(locale),
+                  time: new Date(group.block.blockedAt).toLocaleString(locale, { hourCycle: 'h23' }),
                 })}
                 {group.block.blockedBy ? ` · ${group.block.blockedBy}` : ''}
               </p>

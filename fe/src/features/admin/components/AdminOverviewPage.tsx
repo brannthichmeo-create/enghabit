@@ -147,7 +147,7 @@ export function AdminOverviewPage(): JSX.Element {
         {t(
           'Số liệu cập nhật lúc {time} · tự làm mới mỗi phút · Node {node} · môi trường {env} · API đã chạy {uptime}',
           {
-            time: new Date(data.system.generatedAt).toLocaleTimeString(locale),
+            time: new Date(data.system.generatedAt).toLocaleTimeString(locale, { hourCycle: 'h23' }),
             node: data.system.nodeVersion,
             env: data.system.environment,
             uptime: formatUptime(data.system.uptimeSeconds, t),

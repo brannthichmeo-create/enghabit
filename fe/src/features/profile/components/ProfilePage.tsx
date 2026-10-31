@@ -267,7 +267,7 @@ function sameZone(a: string, b: string): boolean {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false,
+        hourCycle: 'h23',
       }).format(now);
     return format(a) === format(b);
   } catch {
