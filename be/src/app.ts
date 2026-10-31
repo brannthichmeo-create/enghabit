@@ -27,6 +27,7 @@ import { featureRoutes } from './modules/feature-flags/feature.routes.js';
 import { requireFeature } from './modules/feature-flags/feature.guard.js';
 import { groupRoutes } from './modules/groups/group.routes.js';
 import { communityRoutes } from './modules/community/community.routes.js';
+import { calendarRoutes } from './modules/calendar/calendar.routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -122,6 +123,7 @@ export function createApp(): Express {
   */
   api.use('/community', requireAuth, requireFeature(FeatureKey.COMMUNITY, { adminBypass: true }), communityRoutes);
   api.use('/groups', requireAuth, requireFeature(FeatureKey.GROUPS), groupRoutes);
+  api.use('/calendar', requireAuth, requireFeature(FeatureKey.CALENDAR), calendarRoutes);
 
   app.use('/api/v1', api);
 

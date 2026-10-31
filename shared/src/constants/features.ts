@@ -26,6 +26,7 @@ export const FeatureKey = {
   GROUPS: 'GROUPS',
   REWARDS: 'REWARDS',
   SHOP: 'SHOP',
+  CALENDAR: 'CALENDAR',
 } as const;
 export type FeatureKey = (typeof FeatureKey)[keyof typeof FeatureKey];
 
@@ -144,6 +145,12 @@ export const FEATURES: readonly FeatureDefinition[] = [
     description: 'Dùng xu mua vật phẩm trang trí, xem ví và kho vật phẩm đã mua.',
     routes: ['/shop', '/wallet', '/inventory'],
     dependsOn: [FeatureKey.REWARDS],
+  },
+  {
+    key: FeatureKey.CALENDAR,
+    label: 'Lịch',
+    description: 'Quản lý lịch cá nhân theo ngày, tuần, tháng và năm.',
+    routes: ['/calendar'],
   },
 ];
 

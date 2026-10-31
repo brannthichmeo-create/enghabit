@@ -23,4 +23,5 @@ export * from './habit/habit-schedule.js';
 export * from './avatar/avatar.js';
 export * from './attachment/attachment.js';
 export * from './mention/mention.js';
+export * from './calendar/calendar-occurrences.js';
 export * from './schemas/index.js';

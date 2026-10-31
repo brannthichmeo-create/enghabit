@@ -1,6 +1,6 @@
 import { Eye, EyeOff, Loader2, RotateCcw, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { useT } from '../i18n/language';
 
 /**
@@ -189,6 +189,10 @@ export function PasswordInput(props: InputHTMLAttributes<HTMLInputElement>): JSX
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>): JSX.Element {
   return <select {...props} className={`${CONTROL_CLASS} ${props.className ?? ''}`} />;
+}
+
+export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>): JSX.Element {
+  return <textarea {...props} className={`${CONTROL_CLASS} resize-y ${props.className ?? ''}`} />;
 }
 
 export function ErrorMessage({ children }: { children: ReactNode }): JSX.Element | null {

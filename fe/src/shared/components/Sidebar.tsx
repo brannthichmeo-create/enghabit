@@ -2,6 +2,7 @@ import {
   Activity,
   Bell,
   BookOpen,
+  CalendarDays,
   ChartColumn,
   ChevronLeft,
   Flag,
@@ -133,6 +134,7 @@ export function Sidebar({
   */
   const personalItems: NavItem[] = visibleItems(
     [
+      { to: '/calendar', label: 'Lịch', icon: CalendarDays, flag: FeatureKey.CALENDAR },
       { to: '/shop', label: 'Cửa hàng', icon: Store, flag: FeatureKey.SHOP },
       { to: '/inventory', label: 'Kho vật phẩm', icon: PackageOpen, flag: FeatureKey.SHOP },
       { to: '/wallet', label: 'Ví của tôi', icon: Wallet, flag: FeatureKey.SHOP },

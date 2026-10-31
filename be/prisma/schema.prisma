@@ -162,6 +162,14 @@ enum DevicePlatform {
 }
 
 /// Lý do một dòng trong sổ cái xu. Thêm loại mới phải thêm cả ở shared/constants/enums.ts.
+enum CalendarRecurrence {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
 enum CoinReason {
   /// Điểm danh hằng ngày
   DAILY_CHECKIN
@@ -236,6 +244,7 @@ model User {
   posts               Post[]
   postComments        PostComment[]
   postLikes           PostLike[]
+  personalCalendars   PersonalCalendar[]
 
   /// Yêu cầu cấp lại mật khẩu do CHÍNH người này gửi
   passwordResetRequests PasswordResetRequest[] @relation("ResetRequester")
@@ -525,6 +534,42 @@ model Todo {
   /// Việc quá hạn: userId + chưa xong + localDate < hôm nay.
   @@index([userId, isDone, localDate])
   @@map("todos")
+}
+
+model PersonalCalendar {
+  id               Int                 @id @default(autoincrement())
+  userId           Int                 @map("user_id")
+  title            String              @db.VarChar(100)
+  notes            String              @default("") @db.VarChar(200)
+  startsAt         DateTime            @map("starts_at")
+  endsAt           DateTime            @map("ends_at")
+  recurrence       CalendarRecurrence  @default(NONE)
+  recurrenceEndsAt DateTime?           @map("recurrence_ends_at") @db.Date
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exceptions PersonalCalendarException[]
+
+  @@index([userId, startsAt])
+  @@map("personal_calendars")
+}
+
+model PersonalCalendarException {
+  id             Int     @id @default(autoincrement())
+  calendarId     Int     @map("calendar_id")
+  occurrenceKey  String  @map("occurrence_key") @db.VarChar(30)
+  isDeleted      Boolean @default(false) @map("is_deleted")
+  title          String? @db.VarChar(100)
+  notes          String? @db.VarChar(200)
+  overriddenStart DateTime? @map("overridden_start")
+  overriddenEnd   DateTime? @map("overridden_end")
+
+  calendar PersonalCalendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  @@unique([calendarId, occurrenceKey])
+  @@index([calendarId])
+  @@map("personal_calendar_exceptions")
 }
 
 // ---------------------------------------------------------------------------

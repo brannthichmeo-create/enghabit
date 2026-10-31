@@ -169,6 +169,21 @@ export const GroupJoinStatus = {
 } as const;
 export type GroupJoinStatus = (typeof GroupJoinStatus)[keyof typeof GroupJoinStatus];
 
+export const CalendarRecurrence = {
+  NONE: 'NONE',
+  DAILY: 'DAILY',
+  WEEKLY: 'WEEKLY',
+  MONTHLY: 'MONTHLY',
+  YEARLY: 'YEARLY',
+} as const;
+export type CalendarRecurrence = (typeof CalendarRecurrence)[keyof typeof CalendarRecurrence];
+
+export const CalendarScope = {
+  THIS: 'THIS',
+  FUTURE: 'FUTURE',
+} as const;
+export type CalendarScope = (typeof CalendarScope)[keyof typeof CalendarScope];
+
 export const VocabLevel = {
   BEGINNER: 'BEGINNER',
   INTERMEDIATE: 'INTERMEDIATE',

@@ -32,6 +32,10 @@ describe('danh mục tính năng', () => {
     }
   });
 
+  it('Lịch cá nhân nằm trong danh mục và trỏ tới route đúng', () => {
+    expect(findFeature(FeatureKey.CALENDAR)?.routes).toEqual(['/calendar']);
+  });
+
   it('dependentsOf tìm ra tính năng phụ thuộc trực tiếp', () => {
     expect(dependentsOf(FeatureKey.VOCABULARY)).toContain(FeatureKey.FLASHCARDS);
     expect(dependentsOf(FeatureKey.COMMUNITY)).toContain(FeatureKey.GROUPS);
