@@ -7,9 +7,11 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npx --yes pnpm@9.15.4 install --frozen-lockfile && npx --yes pnpm@9.15.4 --filter @enghabit/shared build && npx --yes pnpm@9.15.4 --filter @enghabit/be build
-    startCommand: npx --yes pnpm@9.15.4 --filter @enghabit/be start
+    buildCommand: corepack pnpm install --frozen-lockfile && corepack pnpm --filter @enghabit/shared build && corepack pnpm --filter @enghabit/be build
+    startCommand: corepack pnpm --filter @enghabit/be start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 20.19.5
