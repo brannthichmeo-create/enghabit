@@ -8,8 +8,11 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @enghabit/shared build && pnpm --filter @enghabit/be build
-    startCommand: pnpm --filter @enghabit/be start
+    # Không dùng `corepack enable`: nó cố tạo/ghi lại shim trong /usr/bin,
+    # nơi hệ thống file của Render là read-only. Corepack chạy pnpm trực tiếp,
+    # không ghi vào thư mục hệ thống.
+    buildCommand: corepack pnpm install --frozen-lockfile && corepack pnpm --filter @enghabit/shared build && corepack pnpm --filter @enghabit/be build
+    startCommand: corepack pnpm --filter @enghabit/be start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
