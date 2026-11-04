@@ -4,11 +4,13 @@ import { logger } from './lib/logger.js';
 import { assertDatabaseConnection, disconnectPrisma } from './lib/prisma.js';
 import { startReminderJob } from './jobs/reminder.job.js';
 import { startStreakFreezeJob } from './jobs/streak-freeze.job.js';
+import { ensurePublicIds } from './modules/friends/friends.service.js';
 
 async function main(): Promise<void> {
   // Kiểm tra DB trước khi mở cổng — fail sớm với thông báo rõ ràng.
   await assertDatabaseConnection();
   logger.info('Kết nối MySQL thành công');
+  await ensurePublicIds();
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {

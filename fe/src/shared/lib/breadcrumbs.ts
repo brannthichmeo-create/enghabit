@@ -28,6 +28,7 @@ const TRAILS: Record<string, Crumb[]> = {
   '/learn': [{ label: 'Học' }],
   '/review': [{ label: 'Ôn tập' }],
   '/leaderboard': [{ label: 'Bảng xếp hạng' }],
+  '/friends': [{ label: 'Bạn bè' }],
   '/shop': [{ label: 'Cửa hàng' }],
   '/wallet': [{ label: 'Ví của tôi' }],
   '/inventory': [{ label: 'Kho vật phẩm' }],

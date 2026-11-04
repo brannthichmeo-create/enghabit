@@ -30,6 +30,11 @@ enum UserStatus {
   LOCKED
 }
 
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
 enum GoalType {
   VOCAB_PER_DAY
   MINUTES_PER_DAY
@@ -83,6 +88,8 @@ enum NotificationType {
   GOAL_ACHIEVED
   /// Quản trị viên gửi tới người dùng
   ANNOUNCEMENT
+  /// Có người gửi lời mời kết bạn
+  FRIEND_REQUEST
   /// Quản trị viên gửi cảnh báo vi phạm — gửi cho MỌI thành viên của nhóm
   GROUP_WARNING
   /// Nhóm bị chặn hoặc được mở chặn — gửi cho MỌI thành viên
@@ -204,6 +211,8 @@ model User {
 
   /// Timezone IANA, vd "Asia/Ho_Chi_Minh". Dùng để tính localDate của ActivityLog.
   timezone String @default("Asia/Ho_Chi_Minh") @db.VarChar(64)
+  /// ID công khai dùng để tìm bạn, chỉ hiện ở profile/modal và không lộ ở danh sách chung.
+  publicId String? @unique @map("public_id") @db.Char(8)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -245,6 +254,8 @@ model User {
   postComments        PostComment[]
   postLikes           PostLike[]
   personalCalendars   PersonalCalendar[]
+  sentFriendships     Friendship[] @relation("FriendshipRequester")
+  receivedFriendships Friendship[] @relation("FriendshipAddressee")
 
   /// Yêu cầu cấp lại mật khẩu do CHÍNH người này gửi
   passwordResetRequests PasswordResetRequest[] @relation("ResetRequester")
@@ -256,6 +267,24 @@ model User {
   featureFlagChanges FeatureFlag[] @relation("FeatureFlagUpdatedBy")
 
   @@map("users")
+}
+
+model Friendship {
+  id          Int              @id @default(autoincrement())
+  requesterId Int              @map("requester_id")
+  addresseeId Int              @map("addressee_id")
+  pairKey     String           @unique @map("pair_key") @db.VarChar(21)
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  acceptedAt  DateTime?        @map("accepted_at")
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+  @@map("friendships")
 }
 
 /// Ảnh đại diện, lưu thẳng trong DB.

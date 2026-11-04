@@ -8,16 +8,12 @@ import {
   Send,
   Trash2,
 } from 'lucide-react';
-import {
-  UserRole,
-  type MentionTarget,
-  type PostAuthor,
-  type PostDetail,
-} from '@enghabit/shared';
+import { UserRole, type MentionTarget, type PostAuthor, type PostDetail } from '@enghabit/shared';
 import { Button, Card, Skeleton } from '../../../shared/components/ui';
 import { Avatar } from '../../../shared/components/Sidebar';
 import { useBreadcrumbTail } from '../../../shared/components/Breadcrumb';
 import { useToast } from '../../../shared/components/Toast';
+import { UserProfileDialog } from '../../friends/components/UserProfileDialog';
 import { useConfirm } from '../../../shared/components/ConfirmDialog';
 import { getErrorMessage } from '../../../shared/lib/api-client';
 import { AttachmentList } from './AttachmentView';
@@ -82,6 +78,7 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
   const toast = useToast();
   const toggleLike = useToggleLike();
   const deletePost = useDeletePost();
+  const [profileId, setProfileId] = useState<string | null>(null);
 
   // Bài ở diễn đàn chung không có nhóm nên không có ai để nhắc — hook tự tắt khi null.
   const mentionTargets = useMentionTargets(post.groupId ?? null);
@@ -95,7 +92,11 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
 
       <Card>
         <div className="flex items-start justify-between gap-3">
-          <AuthorLine author={post.author} createdAt={post.createdAt} />
+          <AuthorLine
+            author={post.author}
+            createdAt={post.createdAt}
+            onOpenProfile={setProfileId}
+          />
 
           {post.canDelete && (
             <button
@@ -103,7 +104,9 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
               onClick={async () => {
                 const ok = await confirm({
                   title: t('Xoá bài viết này?'),
-                  message: t('Bình luận và tệp đính kèm của bài cũng mất theo. Thao tác không thể hoàn tác.'),
+                  message: t(
+                    'Bình luận và tệp đính kèm của bài cũng mất theo. Thao tác không thể hoàn tác.',
+                  ),
                   confirmLabel: t('Xoá bài viết'),
                   tone: 'danger',
                 });
@@ -164,7 +167,12 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
         </div>
       </Card>
 
-      <CommentSection post={post} mentionTargets={mentionTargets.data ?? []} />
+      <CommentSection
+        post={post}
+        mentionTargets={mentionTargets.data ?? []}
+        onOpenProfile={setProfileId}
+      />
+      {profileId && <UserProfileDialog publicId={profileId} onClose={() => setProfileId(null)} />}
     </div>
   );
 }
@@ -172,9 +180,11 @@ function Loaded({ post, onBack }: { post: PostDetail; onBack: () => void }): JSX
 function CommentSection({
   post,
   mentionTargets,
+  onOpenProfile,
 }: {
   post: PostDetail;
   mentionTargets: MentionTarget[];
+  onOpenProfile: (publicId: string) => void;
 }): JSX.Element {
   const t = useT();
   const confirm = useConfirm();
@@ -218,7 +228,9 @@ function CommentSection({
         {post.comments.length > 0 && (
           <button
             type="button"
-            onClick={() => setCommentOrder((current) => (current === 'newest' ? 'oldest' : 'newest'))}
+            onClick={() =>
+              setCommentOrder((current) => (current === 'newest' ? 'oldest' : 'newest'))
+            }
             className="rounded-lg p-1.5 text-content-muted transition-colors hover:bg-surface-muted hover:text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             title={
               commentOrder === 'newest'
@@ -272,10 +284,26 @@ function CommentSection({
         <ul className="mt-4 space-y-4">
           {sortedComments.map((comment) => (
             <li key={comment.id} className="flex gap-2.5">
-              <Avatar name={comment.author.name} src={comment.author.avatarDataUrl} frameUrl={comment.author.avatarFrameUrl} />
+              <button
+                type="button"
+                disabled={!comment.author.publicId}
+                onClick={() => comment.author.publicId && onOpenProfile(comment.author.publicId)}
+                className="shrink-0 disabled:cursor-default"
+              >
+                <Avatar
+                  name={comment.author.name}
+                  src={comment.author.avatarDataUrl}
+                  frameUrl={comment.author.avatarFrameUrl}
+                />
+              </button>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <AuthorLine author={comment.author} createdAt={comment.createdAt} compact />
+                  <AuthorLine
+                    author={comment.author}
+                    createdAt={comment.createdAt}
+                    compact
+                    onOpenProfile={onOpenProfile}
+                  />
                   {comment.canDelete && (
                     <button
                       type="button"
@@ -344,20 +372,57 @@ export function AuthorLine({
   author,
   createdAt,
   compact = false,
+  onOpenProfile,
 }: {
   author: PostAuthor;
   createdAt: string;
   compact?: boolean;
+  onOpenProfile?: (publicId: string) => void;
 }): JSX.Element {
   const t = useT();
   const locale = useLocale();
 
   return (
     <span className={compact ? '' : 'flex items-center gap-2.5'}>
-      {!compact && <Avatar name={author.name} src={author.avatarDataUrl} frameUrl={author.avatarFrameUrl} />}
+      {!compact && (
+        <span
+          role={author.publicId ? 'button' : undefined}
+          tabIndex={author.publicId ? 0 : undefined}
+          onClick={
+            author.publicId
+              ? (event) => {
+                  event.stopPropagation();
+                  onOpenProfile?.(author.publicId!);
+                }
+              : undefined
+          }
+          onKeyDown={
+            author.publicId
+              ? (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onOpenProfile?.(author.publicId!);
+                  }
+                }
+              : undefined
+          }
+        >
+          <Avatar name={author.name} src={author.avatarDataUrl} frameUrl={author.avatarFrameUrl} />
+        </span>
+      )}
       <span className="min-w-0">
         <span className="flex flex-wrap items-center gap-1.5">
-          <span className="text-sm font-medium text-content">{author.name}</span>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              if (author.publicId) onOpenProfile?.(author.publicId);
+            }}
+            disabled={!author.publicId}
+            className="text-left text-sm font-medium text-content disabled:cursor-default disabled:opacity-100"
+          >
+            {author.name}
+          </button>
           <AuthorTag author={author} />
         </span>
         <span className="block text-xs text-content-muted">

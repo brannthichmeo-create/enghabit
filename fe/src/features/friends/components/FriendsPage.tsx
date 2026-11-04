@@ -1,0 +1,62 @@
+import { useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, Sparkles } from 'lucide-react';
+import { Avatar } from '../../../shared/components/Sidebar';
+import { Button, Card, EmptyState, ErrorMessage, Input, PageHeader, SkeletonList } from '../../../shared/components/ui';
+import { useT } from '../../../shared/i18n/language';
+import { useAcceptFriendRequest, useFriends, useRemoveFriend, useRemoveFriendRequest, useSearchFriend, useSendFriendRequest } from '../friends.hooks';
+import { UserProfileDialog } from './UserProfileDialog';
+
+const tabs = ['friends', 'find', 'incoming', 'outgoing'] as const;
+
+export function FriendsPage() {
+  const t = useT();
+  const [params, setParams] = useSearchParams();
+  const current = tabs.includes(params.get('tab') as typeof tabs[number]) ? params.get('tab') as typeof tabs[number] : 'friends';
+  const [search, setSearch] = useState('');
+  const [publicId, setPublicId] = useState('');
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const data = useFriends();
+  const searchFriend = useSearchFriend();
+  const send = useSendFriendRequest();
+  const accept = useAcceptFriendRequest();
+  const removeRequest = useRemoveFriendRequest();
+  const removeFriend = useRemoveFriend();
+  const tabLabel: Record<typeof tabs[number], string> = { friends: 'Bạn hệ thống', find: 'Tìm bạn', incoming: 'Yêu cầu kết bạn', outgoing: 'Đã gửi' };
+
+  return <div>
+    <PageHeader title={t('Bạn bè')} description={t('Kết nối và theo dõi việc học cùng bạn bè')} />
+    <div className="mb-4 flex flex-wrap gap-1 rounded-lg bg-sunken p-1" role="tablist">
+      {tabs.map((tab) => <button key={tab} role="tab" aria-selected={current === tab} onClick={() => setParams({ tab })} className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ${current === tab ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'}`}>
+        <span>{t(tabLabel[tab])}</span>
+        {tab === 'incoming' && data.data && <span className="min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-xs font-semibold text-on-brand" aria-label={t('{n} lời mời đang chờ', { n: data.data.incoming.length })}>{data.data.incoming.length}</span>}
+      </button>)}
+    </div>
+    {data.isLoading && <SkeletonList rows={4} />}
+    {data.isError && <ErrorMessage>{t('Không thể tải danh sách bạn bè')}</ErrorMessage>}
+    {current === 'friends' && <>
+      <div className="mb-4 max-w-md"><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t('Tìm trong danh sách bạn bè')} /></div>
+      <Card>{(data.data?.friends ?? []).filter((user) => user.name.toLowerCase().includes(search.toLowerCase())).map((user) => <FriendRow key={user.userId} user={user} onOpen={() => setProfileId(user.publicId)} action={<Button variant="secondary" onClick={() => removeFriend.mutate(user.userId)}>{t('Hủy kết bạn')}</Button>} />)}
+      {data.data && data.data.friends.length === 0 && <EmptyState icon={Sparkles} title={t('Chưa có bạn bè')} description={t('Mở tab Tìm bạn để gửi lời mời đầu tiên')} />}</Card>
+    </>}
+    {current === 'find' && <Card>
+      <div className="flex gap-2"><Input value={publicId} onChange={(event) => setPublicId(event.target.value.toUpperCase())} placeholder={t('Nhập mã bạn bè 8 ký tự')} /><Button onClick={() => searchFriend.mutate(publicId)}><Search className="mr-2 h-4 w-4" />{t('Tìm')}</Button></div>
+      {searchFriend.data && <div className="mt-4"><FriendRow user={searchFriend.data} onOpen={() => setProfileId(searchFriend.data!.publicId)} action={<Button onClick={() => send.mutate(searchFriend.data!.publicId)}>{t('Thêm bạn bè')}</Button>} /></div>}
+      {searchFriend.isError && <p className="mt-3 text-sm text-danger">{t('Không tìm thấy người dùng với mã này')}</p>}
+    </Card>}
+    {current === 'incoming' && <Card>{data.data?.incoming.map((request) => <FriendRow key={request.id} user={request.user} onOpen={() => setProfileId(request.user.publicId)} action={<><Button variant="secondary" onClick={() => removeRequest.mutate(request.id)}>{t('Từ chối')}</Button><Button onClick={() => accept.mutate(request.id)}>{t('Chấp nhận')}</Button></>} />)}
+      {data.data && data.data.incoming.length === 0 && <EmptyState icon={Sparkles} title={t('Không có lời mời')} description={t('Lời mời kết bạn mới sẽ hiện ở đây')} />}</Card>}
+    {current === 'outgoing' && <Card>{data.data?.outgoing.map((request) => <FriendRow key={request.id} user={request.user} onOpen={() => setProfileId(request.user.publicId)} action={<Button variant="secondary" onClick={() => removeRequest.mutate(request.id)}>{t('Thu hồi')}</Button>} />)}
+      {data.data && data.data.outgoing.length === 0 && <EmptyState icon={Sparkles} title={t('Chưa gửi lời mời')} description={t('Tìm bạn bằng mã công khai để bắt đầu')} />}</Card>}
+    {profileId && <UserProfileDialog publicId={profileId} onClose={() => setProfileId(null)} />}
+  </div>;
+}
+
+function FriendRow({ user, action, onOpen }: { user: { name: string; publicId: string; level: number; currentStreak: number; avatarDataUrl: string | null; avatarFrameUrl: string | null }; action: ReactNode; onOpen: () => void }) {
+  const t = useT();
+  return <div className="flex items-center gap-3 border-b border-line py-3 last:border-0">
+    <button onClick={onOpen} className="shrink-0" aria-label={t('Xem trang cá nhân')}><Avatar name={user.name} src={user.avatarDataUrl} frameUrl={user.avatarFrameUrl} /></button>
+    <button onClick={onOpen} className="min-w-0 flex-1 text-left"><strong className="block truncate text-content">{user.name}</strong><span className="text-xs text-content-muted">{t('Cấp {n} · Chuỗi {streak} ngày', { n: user.level, streak: user.currentStreak })}</span></button>
+    <div className="flex shrink-0 gap-2">{action}</div>
+  </div>;
+}

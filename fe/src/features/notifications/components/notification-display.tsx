@@ -40,6 +40,11 @@ const DISPLAY: Record<NotificationType, Display> = {
   [NotificationType.MISTAKES_PENDING]: { icon: AlertTriangle, label: 'Từ sai', tone: 'text-accent-ink' },
   [NotificationType.GOAL_ACHIEVED]: { icon: Target, label: 'Đạt mục tiêu', tone: 'text-success' },
   [NotificationType.ANNOUNCEMENT]: { icon: Megaphone, label: 'Thông báo', tone: 'text-brand-strong' },
+  [NotificationType.FRIEND_REQUEST]: {
+    icon: UserPlus,
+    label: 'Lời mời kết bạn',
+    tone: 'text-brand-strong',
+  },
   [NotificationType.GROUP_WARNING]: {
     icon: Megaphone,
     label: 'Cảnh báo vi phạm',

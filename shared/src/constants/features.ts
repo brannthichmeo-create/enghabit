@@ -22,6 +22,7 @@ export const FeatureKey = {
   TODO: 'TODO',
   REPORT: 'REPORT',
   LEADERBOARD: 'LEADERBOARD',
+  FRIENDS: 'FRIENDS',
   COMMUNITY: 'COMMUNITY',
   GROUPS: 'GROUPS',
   REWARDS: 'REWARDS',
@@ -109,6 +110,12 @@ export const FEATURES: readonly FeatureDefinition[] = [
     label: 'Bảng xếp hạng',
     description: 'So thứ hạng với người học khác theo tuần, tháng và toàn thời gian.',
     routes: ['/leaderboard'],
+  },
+  {
+    key: FeatureKey.FRIENDS,
+    label: 'Bạn bè',
+    description: 'Tìm, thêm và quản lý bạn bè, gửi và xử lý lời mời kết bạn.',
+    routes: ['/friends'],
   },
   {
     key: FeatureKey.COMMUNITY,

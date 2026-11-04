@@ -93,6 +93,7 @@ export interface PublicUser {
   role: UserRole;
   status: UserStatus;
   timezone: string;
+  publicId: string;
   createdAt: string;
   /** ISO datetime lần đăng nhập gần nhất, null nếu chưa từng đăng nhập. */
   lastLoginAt: string | null;

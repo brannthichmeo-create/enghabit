@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Award, Crown, Flame, Layers, Medal, Sparkles, Trophy } from 'lucide-react';
-import type { LeaderboardEntry, LeaderboardMetric, LeaderboardQueryInput } from '@enghabit/shared';
+import { FeatureKey, type LeaderboardEntry, type LeaderboardMetric, type LeaderboardQueryInput } from '@enghabit/shared';
 import { getErrorMessage } from '../../../shared/lib/api-client';
-import { Card, EmptyState, ErrorMessage, PageHeader, SkeletonList } from '../../../shared/components/ui';
+import {
+  Card,
+  EmptyState,
+  ErrorMessage,
+  PageHeader,
+  SkeletonList,
+} from '../../../shared/components/ui';
 import { Avatar } from '../../../shared/components/Sidebar';
 import { useT } from '../../../shared/i18n/language';
 import { useLeaderboard } from '../leaderboard.hooks';
+import { useFeatureQueryEnabled } from '../../feature-flags/feature-flag.hooks';
+import { UserProfileDialog } from '../../friends/components/UserProfileDialog';
 
 /**
  * Bảng xếp hạng người học.
@@ -49,9 +57,17 @@ const PODIUM_SIZE = 3;
 
 export function LeaderboardPage(): JSX.Element {
   const t = useT();
-  const [range, setRange] = useState<LeaderboardQueryInput['range']>('week');
+  const [range, setRange] = useState<LeaderboardQueryInput['range']>('all');
   const [metric, setMetric] = useState<LeaderboardMetric>('xp');
-  const board = useLeaderboard(range, metric);
+  const [scope, setScope] = useState<LeaderboardQueryInput['scope']>('all');
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const friendsEnabled = useFeatureQueryEnabled(FeatureKey.FRIENDS);
+  const effectiveScope = friendsEnabled && scope === 'friends' ? 'friends' : 'all';
+  const board = useLeaderboard(range, metric, effectiveScope);
+
+  useEffect(() => {
+    if (!friendsEnabled && scope === 'friends') setScope('all');
+  }, [friendsEnabled, scope]);
 
   const entries = board.data?.entries ?? [];
   const hasPodium = entries.length >= PODIUM_SIZE;
@@ -72,7 +88,11 @@ export function LeaderboardPage(): JSX.Element {
         nhóm sát mép hai bên trên khổ hẹp trông rời rạc hơn là đứng cạnh nhau.
       */}
       <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 sm:justify-between">
-        <div className="flex gap-1 rounded-lg bg-sunken p-1" role="tablist" aria-label={t('Xếp theo')}>
+        <div
+          className="flex gap-1 rounded-lg bg-sunken p-1"
+          role="tablist"
+          aria-label={t('Xếp theo')}
+        >
           {(Object.keys(METRIC_LABELS) as LeaderboardMetric[]).map((key) => {
             const Icon = METRIC_ICONS[key];
             return (
@@ -82,7 +102,9 @@ export function LeaderboardPage(): JSX.Element {
                 aria-selected={metric === key}
                 onClick={() => setMetric(key)}
                 className={`flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm transition ${
-                  metric === key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
+                  metric === key
+                    ? 'bg-surface font-medium text-content shadow-sm'
+                    : 'text-content-soft'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -92,7 +114,34 @@ export function LeaderboardPage(): JSX.Element {
           })}
         </div>
 
-        <div className="flex gap-1 rounded-lg bg-sunken p-1" role="tablist" aria-label={t('Khoảng thời gian')}>
+        {friendsEnabled && <div
+          className="flex gap-1 rounded-lg bg-sunken p-1"
+          role="tablist"
+          aria-label={t('Phạm vi bạn bè')}
+        >
+          <button
+            role="tab"
+            aria-selected={scope === 'all'}
+            onClick={() => setScope('all')}
+            className={`rounded-md px-3 py-1.5 text-sm transition ${scope === 'all' ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'}`}
+          >
+            {t('Tất cả')}
+          </button>
+          <button
+            role="tab"
+            aria-selected={scope === 'friends'}
+            onClick={() => setScope('friends')}
+            className={`rounded-md px-3 py-1.5 text-sm transition ${scope === 'friends' ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'}`}
+          >
+            {t('Bạn bè')}
+          </button>
+        </div>}
+
+        <div
+          className="flex gap-1 rounded-lg bg-sunken p-1"
+          role="tablist"
+          aria-label={t('Khoảng thời gian')}
+        >
           {(Object.keys(RANGE_LABELS) as LeaderboardQueryInput['range'][]).map((key) => (
             <button
               key={key}
@@ -100,7 +149,9 @@ export function LeaderboardPage(): JSX.Element {
               aria-selected={range === key}
               onClick={() => setRange(key)}
               className={`rounded-md px-4 py-1.5 text-sm transition ${
-                range === key ? 'bg-surface font-medium text-content shadow-sm' : 'text-content-soft'
+                range === key
+                  ? 'bg-surface font-medium text-content shadow-sm'
+                  : 'text-content-soft'
               }`}
             >
               {t(RANGE_LABELS[key])}
@@ -145,9 +196,17 @@ export function LeaderboardPage(): JSX.Element {
       */}
       {podium.length > 0 && (
         <div className="mb-4 rounded-2xl border-2 border-accent/50 bg-surface px-3 pb-3 pt-6 shadow-card sm:px-4 sm:pb-4 sm:pt-7">
-          <div key={metric} className="grid animate-fade-in gap-x-3 gap-y-7 sm:grid-cols-3 sm:items-end">
+          <div
+            key={metric}
+            className="grid animate-fade-in gap-x-3 gap-y-7 sm:grid-cols-3 sm:items-end"
+          >
             {podium.map((entry) => (
-              <PodiumCard key={entry.userId} entry={entry} metric={metric} />
+              <PodiumCard
+                key={entry.userId}
+                entry={entry}
+                metric={metric}
+                onOpenProfile={setProfileId}
+              />
             ))}
           </div>
         </div>
@@ -158,7 +217,7 @@ export function LeaderboardPage(): JSX.Element {
           <ul className="divide-y divide-line">
             {rest.map((entry) => (
               <li key={entry.userId}>
-                <Row entry={entry} metric={metric} />
+                <Row entry={entry} metric={metric} onOpenProfile={setProfileId} />
               </li>
             ))}
           </ul>
@@ -167,7 +226,7 @@ export function LeaderboardPage(): JSX.Element {
               để không ai tưởng mình đang đứng ngay sau người cuối cùng của bảng. */}
           {board.data?.me && (
             <div className="mt-2 border-t-2 border-dashed border-line pt-2">
-              <Row entry={board.data.me} metric={metric} />
+              <Row entry={board.data.me} metric={metric} onOpenProfile={setProfileId} />
             </div>
           )}
         </Card>
@@ -176,7 +235,7 @@ export function LeaderboardPage(): JSX.Element {
       {/* Người đang xem ngoài top mà danh sách dưới bục rỗng — vẫn phải thấy mình ở đâu */}
       {rest.length === 0 && board.data?.me && (
         <Card>
-          <Row entry={board.data.me} metric={metric} />
+          <Row entry={board.data.me} metric={metric} onOpenProfile={setProfileId} />
         </Card>
       )}
 
@@ -185,6 +244,7 @@ export function LeaderboardPage(): JSX.Element {
           {t('{n} người có điểm trong khoảng này', { n: board.data.totalRanked })}
         </p>
       )}
+      {profileId && <UserProfileDialog publicId={profileId} onClose={() => setProfileId(null)} />}
     </div>
   );
 }
@@ -241,9 +301,11 @@ function primaryStat(
 function PodiumCard({
   entry,
   metric,
+  onOpenProfile,
 }: {
   entry: LeaderboardEntry;
   metric: LeaderboardMetric;
+  onOpenProfile: (publicId: string) => void;
 }): JSX.Element {
   const t = useT();
   const style = PODIUM_STYLES[entry.rank as 1 | 2 | 3] ?? PODIUM_STYLES[3];
@@ -269,15 +331,36 @@ function PodiumCard({
         <span className="sr-only">{t(style.label)}</span>
       </span>
 
-      <Avatar name={entry.name} src={entry.avatarDataUrl} frameUrl={entry.avatarFrameUrl} size={entry.rank === 1 ? 'lg' : 'md'} />
+      <button
+        type="button"
+        disabled={entry.isMe || !entry.publicId}
+        onClick={() => entry.publicId && onOpenProfile(entry.publicId)}
+        className="rounded-full disabled:cursor-default"
+      >
+        <Avatar
+          name={entry.name}
+          src={entry.avatarDataUrl}
+          frameUrl={entry.avatarFrameUrl}
+          size={entry.rank === 1 ? 'lg' : 'md'}
+        />
+      </button>
 
-      <p className="mt-2 w-full truncate font-semibold text-content">{entry.name}</p>
+      <button
+        type="button"
+        disabled={entry.isMe || !entry.publicId}
+        onClick={() => entry.publicId && onOpenProfile(entry.publicId)}
+        className="mt-2 w-full truncate font-semibold text-content disabled:cursor-default disabled:opacity-100"
+      >
+        {entry.name}
+      </button>
 
       {entry.isMe && <span className="text-xs font-medium text-brand-strong">{t('bạn')}</span>}
 
       <p className="mt-1 text-xs text-content-muted">{t('Cấp {n}', { n: entry.level })}</p>
 
-      <p className="mt-2.5 text-2xl font-bold leading-none tabular-nums text-content">{stat.value}</p>
+      <p className="mt-2.5 text-2xl font-bold leading-none tabular-nums text-content">
+        {stat.value}
+      </p>
       <p className="text-xs text-content-muted">{stat.unit}</p>
 
       <p className="mt-2 flex items-center justify-center gap-1 text-xs text-content-muted">
@@ -290,21 +373,45 @@ function PodiumCard({
   );
 }
 
-function Row({ entry, metric }: { entry: LeaderboardEntry; metric: LeaderboardMetric }): JSX.Element {
+function Row({
+  entry,
+  metric,
+  onOpenProfile,
+}: {
+  entry: LeaderboardEntry;
+  metric: LeaderboardMetric;
+  onOpenProfile: (publicId: string) => void;
+}): JSX.Element {
   const t = useT();
   const stat = primaryStat(entry, metric, t);
 
   return (
-    <div className={`flex items-center gap-3 rounded-lg px-2 py-3 ${entry.isMe ? 'bg-brand-soft' : ''}`}>
+    <div
+      className={`flex items-center gap-3 rounded-lg px-2 py-3 ${entry.isMe ? 'bg-brand-soft' : ''}`}
+    >
       <span className="w-8 shrink-0 text-center text-sm font-bold tabular-nums text-content-muted">
         {entry.rank}
       </span>
 
-      <Avatar name={entry.name} src={entry.avatarDataUrl} frameUrl={entry.avatarFrameUrl} />
+      <button
+        type="button"
+        disabled={entry.isMe || !entry.publicId}
+        onClick={() => entry.publicId && onOpenProfile(entry.publicId)}
+        className="shrink-0 rounded-full disabled:cursor-default"
+      >
+        <Avatar name={entry.name} src={entry.avatarDataUrl} frameUrl={entry.avatarFrameUrl} />
+      </button>
 
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-2">
-          <span className="truncate font-medium text-content">{entry.name}</span>
+          <button
+            type="button"
+            disabled={entry.isMe || !entry.publicId}
+            onClick={() => entry.publicId && onOpenProfile(entry.publicId)}
+            className="truncate font-medium text-content disabled:cursor-default disabled:opacity-100"
+          >
+            {entry.name}
+          </button>
           <span className="rounded-full bg-sunken px-1.5 py-0.5 text-[10px] font-semibold text-content-muted">
             {t('Cấp {n}', { n: entry.level })}
           </span>

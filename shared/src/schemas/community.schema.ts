@@ -83,6 +83,7 @@ export type PostQueryInput = z.infer<typeof postQuerySchema>;
 /** Người viết bài hoặc bình luận. Không kèm ảnh đại diện — xem ghi chú ở community.service. */
 export interface PostAuthor {
   id: number;
+  publicId: string | null;
   name: string;
   /** Để giao diện gắn nhãn cho câu trả lời của quản trị viên. */
   role: UserRole;

@@ -25,6 +25,8 @@ export const leaderboardQuerySchema = z.object({
   range: z.enum(['week', 'month', 'all']).default('week'),
   /** Xếp theo điểm học tập (XP) hay theo tổng số lượt hoạt động. */
   metric: z.enum(['xp', 'activities']).default('xp'),
+  /** Chỉ xếp hạng mọi người hoặc riêng bạn bè ACCEPTED. */
+  scope: z.enum(['all', 'friends']).default('all'),
   /** Số người hiển thị trong bảng. */
   limit: z.coerce.number().int().min(3).max(50).default(20),
 });
@@ -34,6 +36,7 @@ export type LeaderboardMetric = LeaderboardQueryInput['metric'];
 export interface LeaderboardEntry {
   rank: number;
   userId: number;
+  publicId: string | null;
   name: string;
   /** XP kiếm được TRONG khoảng đang xem. */
   xp: number;

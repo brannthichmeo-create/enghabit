@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { randomInt } from 'node:crypto';
 import {
   DEFAULT_TIMEZONE,
   LoginFailReason,
@@ -59,6 +60,7 @@ async function createUser(input: RegisterInput): Promise<User> {
         email: input.email,
         passwordHash: await bcrypt.hash(input.password, BCRYPT_ROUNDS),
         timezone: input.timezone ?? DEFAULT_TIMEZONE,
+        publicId: createPublicId(),
         // Khởi tạo sẵn streak và cài đặt nhắc nhở để các module sau không phải kiểm tra null.
         streak: { create: {} },
         notificationSetting: { create: {} },
@@ -78,6 +80,12 @@ async function createUser(input: RegisterInput): Promise<User> {
     }
     throw err;
   }
+}
+
+const FRIEND_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function createPublicId(): string {
+  return Array.from({ length: 8 }, () => FRIEND_ALPHABET[randomInt(FRIEND_ALPHABET.length)]).join('');
 }
 
 function conflictFor(
@@ -273,6 +281,7 @@ export function toPublicUser(user: User & { avatar?: UserAvatar | null }): Publi
     role: user.role,
     status: user.status,
     timezone: user.timezone,
+    publicId: user.publicId ?? '',
     createdAt: user.createdAt.toISOString(),
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     avatarDataUrl: avatarToDataUrl(user.avatar),

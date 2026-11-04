@@ -18,6 +18,7 @@ import { usePosts } from '../community.hooks';
 import { useT } from '../../../shared/i18n/language';
 import { AdminLogTabs, useAdminLogTab } from '../../admin/components/AdminLogTabs';
 import { useCurrentUser } from '../../auth/auth.store';
+import { UserProfileDialog } from '../../friends/components/UserProfileDialog';
 
 /**
  * Diễn đàn Cộng đồng.
@@ -60,6 +61,7 @@ export function CommunityPage(): JSX.Element {
   const confirm = useConfirm();
 
   const [openPostId, setOpenPostId] = useState<number | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
   const [composerDirty, setComposerDirty] = useState(false);
   const [sort, setSort] = useState<PostQueryInput['sort']>('latest');
@@ -131,7 +133,11 @@ export function CommunityPage(): JSX.Element {
           )
         }
       />
-      <AdminLogTabs targetTypes={[AuditTargetType.POST, AuditTargetType.COMMENT]} mainLabel="Diễn đàn" enabled={isAdmin}>
+      <AdminLogTabs
+        targetTypes={[AuditTargetType.POST, AuditTargetType.COMMENT]}
+        mainLabel="Diễn đàn"
+        enabled={isAdmin}
+      >
         {/*
           Soạn bài trong hộp thoại thay vì chèn thẳng vào trang: ô soạn cao gần hết màn
           hình nên khi mở, danh sách bài bị đẩy xuống dưới và người dùng mất chỗ đang đọc.
@@ -157,7 +163,8 @@ export function CommunityPage(): JSX.Element {
 
         <Card>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-            <form noValidate
+            <form
+              noValidate
               onSubmit={(event) => {
                 event.preventDefault();
                 setSearch(searchInput.trim());
@@ -182,7 +189,11 @@ export function CommunityPage(): JSX.Element {
               </Button>
             </form>
 
-            <div className="flex gap-0.5 rounded-lg bg-sunken p-0.5" role="group" aria-label={t('Sắp xếp')}>
+            <div
+              className="flex gap-0.5 rounded-lg bg-sunken p-0.5"
+              role="group"
+              aria-label={t('Sắp xếp')}
+            >
               {SORTS.map((option) => (
                 <Tab
                   key={option.value}
@@ -230,7 +241,9 @@ export function CommunityPage(): JSX.Element {
 
         {posts.isError && (
           <Card>
-            <p className="py-6 text-center text-sm text-danger">{t('Không tải được danh sách bài viết')}</p>
+            <p className="py-6 text-center text-sm text-danger">
+              {t('Không tải được danh sách bài viết')}
+            </p>
           </Card>
         )}
 
@@ -254,9 +267,16 @@ export function CommunityPage(): JSX.Element {
         )}
 
         {posts.data && posts.data.items.length > 0 && (
-          <div className={`space-y-3 transition-opacity ${posts.isPlaceholderData ? 'opacity-60' : ''}`}>
+          <div
+            className={`space-y-3 transition-opacity ${posts.isPlaceholderData ? 'opacity-60' : ''}`}
+          >
             {posts.data.items.map((post) => (
-              <PostCard key={post.id} post={post} onOpen={() => setOpenPostId(post.id)} />
+              <PostCard
+                key={post.id}
+                post={post}
+                onOpen={() => setOpenPostId(post.id)}
+                onOpenProfile={setProfileId}
+              />
             ))}
           </div>
         )}
@@ -285,6 +305,7 @@ export function CommunityPage(): JSX.Element {
           </div>
         )}
       </AdminLogTabs>
+      {profileId && <UserProfileDialog publicId={profileId} onClose={() => setProfileId(null)} />}
     </div>
   );
 }
@@ -346,16 +367,23 @@ function Tab({
 }
 
 /** Một bài trong danh sách. Cả thẻ bấm được để mở chi tiết. */
-export function PostCard({ post, onOpen }: { post: PostSummary; onOpen: () => void }): JSX.Element {
+export function PostCard({
+  post,
+  onOpen,
+  onOpenProfile,
+}: {
+  post: PostSummary;
+  onOpen: () => void;
+  onOpenProfile?: (publicId: string) => void;
+}): JSX.Element {
   const t = useT();
   const imageCount = post.attachments.filter((file) => file.isImage).length;
 
   return (
     <Card interactive>
-      <button type="button" onClick={onOpen} className="w-full text-left">
-        <AuthorLine author={post.author} createdAt={post.createdAt} />
-
-        <h2 className="mt-2.5 font-semibold text-content">{post.title}</h2>
+      <AuthorLine author={post.author} createdAt={post.createdAt} onOpenProfile={onOpenProfile} />
+      <button type="button" onClick={onOpen} className="mt-2.5 w-full text-left">
+        <h2 className="font-semibold text-content">{post.title}</h2>
         <p className="mt-1 line-clamp-2 text-sm text-content-soft">{post.excerpt}</p>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-content-muted">

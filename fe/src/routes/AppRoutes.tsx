@@ -33,6 +33,7 @@ import { ForgotPasswordPage } from '../features/auth/components/ForgotPasswordPa
 import { GroupsPage } from '../features/groups/components/GroupsPage';
 import { GroupDetailPage } from '../features/groups/components/GroupDetailPage';
 import { CommunityPage } from '../features/community/components/CommunityPage';
+import { FriendsPage } from '../features/friends/components/FriendsPage';
 import { NotificationsPage } from '../features/notifications/components/NotificationsPage';
 import { AnnouncementPage } from '../features/notifications/components/AnnouncementPage';
 import { FeatureErrorBoundary } from '../shared/components/FeatureErrorBoundary';
@@ -77,6 +78,7 @@ export function AppRoutes(): JSX.Element {
           path="/leaderboard"
           element={<Gated flag={FeatureKey.LEADERBOARD} name="Bảng xếp hạng"><LeaderboardPage /></Gated>}
         />
+        <Route path="/friends" element={<Gated flag={FeatureKey.FRIENDS} name="Bạn bè"><FriendsPage /></Gated>} />
 
         {/* Cửa hàng, Ví và Kho vật phẩm dùng CHUNG một cờ: không có xu thì ví và kho
             đều vô nghĩa (xem shared/constants/features.ts). */}

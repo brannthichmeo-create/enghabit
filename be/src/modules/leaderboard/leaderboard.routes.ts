@@ -1,5 +1,7 @@
 import { Router } from 'express';
-import { UserRole, leaderboardQuerySchema } from '@enghabit/shared';
+import { FeatureKey, UserRole, leaderboardQuerySchema } from '@enghabit/shared';
+import type { RequestHandler } from 'express';
+import { requireFeature } from '../feature-flags/feature.guard.js';
 import { asyncHandler } from '../../common/middlewares/async-handler.js';
 import { currentUser, requireAuth, requireRole } from '../../common/middlewares/auth-guard.js';
 import { getValidatedQuery, validateQuery } from '../../common/middlewares/validate.js';
@@ -11,9 +13,15 @@ export const leaderboardRoutes: Router = Router();
 // (xem CLAUDE.md > Chức năng cho quản trị viên).
 leaderboardRoutes.use(requireAuth, requireRole(UserRole.USER));
 
+const requireFriendsScopeFeature: RequestHandler = (req, res, next) => {
+  if (req.query.scope !== 'friends') return next();
+  return requireFeature(FeatureKey.FRIENDS)(req, res, next);
+};
+
 leaderboardRoutes.get(
   '/',
   validateQuery(leaderboardQuerySchema),
+  requireFriendsScopeFeature,
   asyncHandler(async (req, res) => {
     const user = currentUser(req);
     res.json(

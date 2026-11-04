@@ -102,6 +102,7 @@ export function Sidebar({
       { to: '/learn', label: 'Học', icon: GraduationCap, flag: FeatureKey.LEARN },
       { to: '/review', label: 'Ôn tập', icon: Layers, badge: dueCount.data, flag: FeatureKey.FLASHCARDS },
       { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy, flag: FeatureKey.LEADERBOARD },
+      { to: '/friends', label: 'Bạn bè', icon: Users, flag: FeatureKey.FRIENDS },
       { to: '/community', label: 'Cộng đồng', icon: MessagesSquare, flag: FeatureKey.COMMUNITY },
       { to: '/groups', label: 'Nhóm lớp', icon: UsersRound, flag: FeatureKey.GROUPS },
       { to: '/notifications', label: 'Thông báo', icon: Bell, badge: unread.data },

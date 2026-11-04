@@ -1402,6 +1402,8 @@ export const EN: Dictionary = {
     'Detailed daily, weekly and monthly statistics. The Dashboard is not affected.',
   'So thứ hạng với người học khác theo tuần, tháng và toàn thời gian.':
     'Compare your rank with other learners weekly, monthly and all-time.',
+  'Tìm, thêm và quản lý bạn bè, gửi và xử lý lời mời kết bạn.':
+    'Find, add and manage friends, and send or process friend requests.',
   'Diễn đàn chung. Tắt thì các nhóm lớp cũng dừng theo vì dùng chung bài đăng.':
     'The shared forum. Turning it off stops groups too, since they share the same posts.',
   'Người học tự lập nhóm và trao đổi riêng trong nhóm.':
@@ -1861,4 +1863,35 @@ export const EN: Dictionary = {
 
   // --- Khung app: nút lên đầu trang --------------------------------------------------
   'Lên đầu trang': 'Back to top',
+  // --- Bạn bè -----------------------------------------------------------------
+  'Bạn bè': 'Friends',
+  'Bạn hệ thống': 'My friends',
+  'Cấp {n} · Chuỗi {streak} ngày': 'Level {n} · {streak}-day streak',
+  'Chấp nhận': 'Accept',
+  'Chưa có bạn bè': 'No friends yet',
+  'Chưa gửi lời mời': 'No sent requests',
+  'hoạt động tháng': 'activities this month',
+  '{n} lời mời đang chờ': '{n} pending requests',
+  'Hủy kết bạn': 'Remove friend',
+  'Kết nối và theo dõi việc học cùng bạn bè': 'Connect and learn alongside your friends',
+  'Không có lời mời': 'No requests',
+  'Không thể tải danh sách bạn bè': 'Could not load friends',
+  'Không thể tải hồ sơ người dùng': 'Could not load user profile',
+  'Không tìm thấy người dùng với mã này': 'No user found with this ID',
+  'Lời mời kết bạn': 'Friend requests',
+  'Lời mời kết bạn mới sẽ hiện ở đây': 'New friend requests will appear here',
+  'Mã bạn bè: {id}': 'Friend ID: {id}',
+  'Mở tab Tìm bạn để gửi lời mời đầu tiên': 'Open Find friends and send your first request',
+  'ngày chuỗi': 'day streak',
+  'Nhập mã bạn bè 8 ký tự': 'Enter the 8-character friend ID',
+  'Phạm vi bạn bè': 'Friend scope',
+  'Thêm bạn bè': 'Add friend',
+  'Thu hồi': 'Withdraw',
+  'Thu hồi lời mời': 'Withdraw request',
+  'Đã gửi': 'Sent',
+  'Tiến độ lên cấp': 'Level progress',
+  'Tìm bạn': 'Find friends',
+  'Tìm bạn bằng mã công khai để bắt đầu': 'Use a public friend ID to get started',
+  'Tìm trong danh sách bạn bè': 'Search your friends',
+  'Xem trang cá nhân': 'View profile',
 };

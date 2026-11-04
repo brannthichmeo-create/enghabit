@@ -43,12 +43,24 @@ export async function getLeaderboard(
   query: LeaderboardQueryInput,
 ): Promise<LeaderboardResult> {
   const from = rangeStart(query.range, todayLocalDate(timezone));
+  let scopeUserIds: number[] | undefined;
+  if (query.scope === 'friends') {
+    const friendships = await prisma.friendship.findMany({
+      where: {
+        status: 'ACCEPTED',
+        OR: [{ requesterId: userId }, { addresseeId: userId }],
+      },
+      select: { requesterId: true, addresseeId: true },
+    });
+    scopeUserIds = [...new Set([userId, ...friendships.map((row) => row.requesterId === userId ? row.addresseeId : row.requesterId)])];
+  }
 
   const rows = await prisma.activityLog.groupBy({
     by: ['userId', 'type'],
     where: {
       ...(from && { localDate: { gte: toDbDate(from) } }),
       user: { role: UserRole.USER, status: UserStatus.ACTIVE },
+      ...(scopeUserIds ? { userId: { in: scopeUserIds } } : {}),
     },
     _count: { _all: true },
   });
@@ -59,6 +71,16 @@ export async function getLeaderboard(
     const counts = byUser.get(row.userId) ?? {};
     counts[row.type] = row._count._all;
     byUser.set(row.userId, counts);
+  }
+
+  if (scopeUserIds) {
+    const scopedUsers = await prisma.user.findMany({
+      where: { id: { in: scopeUserIds }, role: UserRole.USER, status: UserStatus.ACTIVE },
+      select: { id: true },
+    });
+    for (const user of scopedUsers) {
+      if (!byUser.has(user.id)) byUser.set(user.id, {});
+    }
   }
 
   const scored = [...byUser.entries()].map(([id, counts]) => ({
@@ -101,6 +123,7 @@ export async function getLeaderboard(
   const all: LeaderboardEntry[] = scored.map((item, index) => ({
     rank: index + 1,
     userId: item.userId,
+    publicId: profiles.get(item.userId)?.publicId ?? null,
     name: profiles.get(item.userId)?.name ?? '—',
     xp: item.xp,
     level: levels.get(item.userId) ?? 1,
@@ -127,16 +150,16 @@ export async function getLeaderboard(
 /** Tên và chuỗi ngày của những người có mặt trong bảng. */
 async function loadProfiles(
   userIds: number[],
-): Promise<Map<number, { name: string; currentStreak: number; avatar: Parameters<typeof avatarToDataUrl>[0] }>> {
+): Promise<Map<number, { publicId: string | null; name: string; currentStreak: number; avatar: Parameters<typeof avatarToDataUrl>[0] }>> {
   if (userIds.length === 0) return new Map();
 
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
-    select: { id: true, name: true, avatar: true, streak: { select: { currentStreak: true } } },
+    select: { id: true, publicId: true, name: true, avatar: true, streak: { select: { currentStreak: true } } },
   });
 
   return new Map(
-    users.map((user) => [user.id, { name: user.name, currentStreak: user.streak?.currentStreak ?? 0, avatar: user.avatar }]),
+    users.map((user) => [user.id, { publicId: user.publicId, name: user.name, currentStreak: user.streak?.currentStreak ?? 0, avatar: user.avatar }]),
   );
 }
 

@@ -17,3 +17,4 @@ export * from './leaderboard.schema.js';
 export * from './community.schema.js';
 export * from './group.schema.js';
 export * from './calendar.schema.js';
+export * from './friends.schema.js';

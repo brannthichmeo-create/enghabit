@@ -28,6 +28,7 @@ import { requireFeature } from './modules/feature-flags/feature.guard.js';
 import { groupRoutes } from './modules/groups/group.routes.js';
 import { communityRoutes } from './modules/community/community.routes.js';
 import { calendarRoutes } from './modules/calendar/calendar.routes.js';
+import { friendsRoutes } from './modules/friends/friends.routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -112,6 +113,7 @@ export function createApp(): Express {
   api.use('/shop', shopImageRoutes);
   api.use('/shop', requireAuth, requireFeature(FeatureKey.SHOP), shopRoutes);
   api.use('/leaderboard', requireAuth, requireFeature(FeatureKey.LEADERBOARD), leaderboardRoutes);
+  api.use('/friends', requireAuth, requireFeature(FeatureKey.FRIENDS), friendsRoutes);
   api.use('/admin', adminRoutes);
   /*
     Bài đăng của nhóm dùng chung module community, nên tắt Cộng đồng là nhóm lớp mất
