@@ -1347,6 +1347,9 @@ export const EN: Dictionary = {
 
   // --- Nhóm lớp: hai tab, bộ lọc và vào nhóm bằng mã ---
   'Khám phá nhóm': 'Discover groups',
+  'Lọc theo trạng thái yêu cầu': 'Filter by request status',
+  'Đã yêu cầu': 'Requested',
+  'Chưa yêu cầu': 'Not requested',
   'Nhập mã nhóm': 'Enter group code',
   'Yêu cầu vào': 'Ask to join',
   'Là thành viên': 'Member',

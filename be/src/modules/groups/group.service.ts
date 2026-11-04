@@ -240,9 +240,18 @@ export async function searchPublicGroups(
 ): Promise<Paginated<GroupSummary>> {
   const where: Prisma.GroupWhereInput = {
     visibility: GroupVisibility.PUBLIC,
+    // Tab Khám phá chỉ dành cho nhóm người dùng chưa tham gia. Lọc tại truy vấn để
+    // phân trang không bị thiếu kết quả khi danh sách có nhiều nhóm đã tham gia.
+    members: { none: { userId } },
     // Nhóm đang bị chặn biến mất khỏi tìm kiếm: không ai nên xin vào một nhóm đã bị
     // đóng băng, và để nó trong danh sách chỉ tạo thêm yêu cầu không ai duyệt được.
     blockedAt: null,
+    ...(query.requestStatus === 'REQUESTED'
+      ? { joinRequests: { some: { userId, status: GroupJoinStatus.PENDING } } }
+      : {}),
+    ...(query.requestStatus === 'NOT_REQUESTED'
+      ? { joinRequests: { none: { userId, status: GroupJoinStatus.PENDING } } }
+      : {}),
     ...(query.search
       ? {
           OR: [{ name: { contains: query.search } }, { description: { contains: query.search } }],

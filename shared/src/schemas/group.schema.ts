@@ -51,6 +51,8 @@ export const groupSearchSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(50).default(12),
   /** Tìm trong tên và mô tả nhóm. Chỉ áp dụng cho nhóm công khai. */
   search: z.string().trim().max(120).optional(),
+  /** Lọc theo yêu cầu đang chờ của người xem ở tab Khám phá. */
+  requestStatus: z.enum(['ALL', 'REQUESTED', 'NOT_REQUESTED']).optional(),
 });
 export type GroupSearchInput = z.infer<typeof groupSearchSchema>;
 

@@ -253,20 +253,26 @@ function DiscoverTab(): JSX.Element {
   const t = useT();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
+  const [requestStatus, setRequestStatus] = useState<'ALL' | 'REQUESTED' | 'NOT_REQUESTED'>('ALL');
 
-  const results = useGroupSearch({ search: search || undefined, page: 1, pageSize: 12 });
+  const results = useGroupSearch({
+    search: search || undefined,
+    requestStatus: requestStatus === 'ALL' ? undefined : requestStatus,
+    page: 1,
+    pageSize: 12,
+  });
 
   return (
     <section>
       <form
         noValidate
-        className="mb-4 flex gap-2"
+        className="mb-4 flex flex-wrap gap-2 sm:flex-nowrap"
         onSubmit={(e) => {
           e.preventDefault();
           setSearch(input.trim());
         }}
       >
-        <div className="relative flex-1">
+        <div className="relative w-full sm:flex-1">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
             aria-hidden
@@ -278,6 +284,18 @@ function DiscoverTab(): JSX.Element {
             className="!mt-0 pl-9"
           />
         </div>
+        <Select
+          value={requestStatus}
+          onChange={(event) =>
+            setRequestStatus(event.target.value as 'ALL' | 'REQUESTED' | 'NOT_REQUESTED')
+          }
+          aria-label={t('Lọc theo trạng thái yêu cầu')}
+          className="!mt-0 w-full sm:w-40"
+        >
+          <option value="ALL">{t('Tất cả')}</option>
+          <option value="REQUESTED">{t('Đã yêu cầu')}</option>
+          <option value="NOT_REQUESTED">{t('Chưa yêu cầu')}</option>
+        </Select>
         <Button type="submit" variant="secondary">
           {t('Tìm')}
         </Button>
