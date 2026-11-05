@@ -23,6 +23,7 @@ export interface FriendUser {
   currentStreak: number;
   avatarDataUrl: string | null;
   avatarFrameUrl: string | null;
+  lastActiveAt: string | null;
 }
 
 export interface FriendRequest {

@@ -127,7 +127,7 @@ async function buildFriendUsers(ids: number[]): Promise<FriendUser[]> {
   return ids.map((id) => {
     const user = users.find((item) => item.id === id);
     if (!user) return null;
-    return { userId: user.id, publicId: user.publicId ?? '', name: user.name, level: byLevel.get(user.id) ?? 1, currentStreak: user.streak?.currentStreak ?? 0, avatarDataUrl: avatarToDataUrl(user.avatar), avatarFrameUrl: frames.get(user.id) ?? null };
+    return { userId: user.id, publicId: user.publicId ?? '', name: user.name, level: byLevel.get(user.id) ?? 1, currentStreak: user.streak?.currentStreak ?? 0, avatarDataUrl: avatarToDataUrl(user.avatar), avatarFrameUrl: frames.get(user.id) ?? null, lastActiveAt: user.lastLoginAt?.toISOString() ?? null };
   }).filter((user): user is FriendUser => user !== null);
 }
 
