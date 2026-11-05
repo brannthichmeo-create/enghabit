@@ -76,11 +76,11 @@ export function AvatarPicker({ user }: { user: PublicUser }): JSX.Element {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-4">
-      <Avatar name={user.name} src={user.avatarDataUrl} frameUrl={myFrame} size="lg" />
+    <div className="flex flex-col items-center gap-3">
+      <Avatar name={user.name} src={user.avatarDataUrl} frameUrl={myFrame} size="xl" />
 
-      <div className="min-w-0">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col items-center">
+        <div className="flex flex-wrap justify-center gap-2">
           <Button size="sm" icon={Camera} loading={update.isPending} onClick={() => inputRef.current?.click()}>
             {user.avatarDataUrl ? t('Đổi ảnh') : t('Tải ảnh lên')}
           </Button>
@@ -102,10 +102,6 @@ export function AvatarPicker({ user }: { user: PublicUser }): JSX.Element {
             </Button>
           )}
         </div>
-
-        <p className="mt-1.5 text-xs text-content-muted">
-          {t('Ảnh JPG, PNG hoặc WebP. Sau khi chọn, bạn có thể kéo và zoom để cắt hình tròn.')}
-        </p>
 
         {error && !cropOpen && (
           <div className="mt-2"><ErrorMessage>{error}</ErrorMessage></div>

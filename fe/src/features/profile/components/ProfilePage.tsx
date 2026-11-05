@@ -84,7 +84,7 @@ export function ProfilePage(): JSX.Element {
           {user ? (
             <AvatarPicker user={user} />
           ) : (
-            <Avatar name="?" size="lg" />
+            <Avatar name="?" size="xl" />
           )}
 
           <div className="min-w-0 flex-1">
@@ -99,7 +99,7 @@ export function ProfilePage(): JSX.Element {
                 {t('Tham gia từ {date}', { date: new Date(user.createdAt).toLocaleDateString(locale) })}
               </p>
             )}
-            {user?.publicId && <p className="mt-1 font-mono text-xs text-content-muted">{t('Mã bạn bè: {id}', { id: user.publicId })}</p>}
+            {user?.publicId && <p className="mt-1 font-mono text-xs text-content-muted">{t('Mã người dùng: {id}', { id: user.publicId })}</p>}
           </div>
 
           {/* Quản trị viên không có vật phẩm nên KHÔNG gọi API của người học — gọi rồi
